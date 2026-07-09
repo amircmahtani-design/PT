@@ -136,7 +136,7 @@ textarea.txtin{min-height:88px;resize:vertical;line-height:1.45;}
 .typing i{width:6px;height:6px;border-radius:50%;background:var(--cyan);animation:tp 1s infinite;}
 .typing i:nth-child(2){animation-delay:.15s;}.typing i:nth-child(3){animation-delay:.3s;}
 @keyframes tp{0%,60%,100%{opacity:.25;transform:translateY(0);}30%{opacity:1;transform:translateY(-3px);}}
-.chat{display:flex;flex-direction:column;gap:11px;padding-bottom:8px;}
+.chat{display:flex;flex-direction:column;gap:11px;padding-bottom:118px;}
 .msg{max-width:82%;padding:12px 15px;border-radius:18px;font-size:15px;line-height:1.5;}
 .msg.me{align-self:flex-end;background:linear-gradient(100deg,#ff8a2b,#ff5a1a);color:#fff;border-bottom-right-radius:5px;}
 .msg.ai{align-self:flex-start;background:var(--card2);border:1px solid #1c3a5c;border-bottom-left-radius:5px;}
@@ -660,7 +660,6 @@ CONCEPT2 ROWING PBs:
 ${rowing}`;
 }
 
-/* --- OpenAI call: adapts params for reasoning models (gpt-5.x / o-series) --- */
 function aiIsReasoning(model){ return /^gpt-5/i.test(model)||/^o\d/i.test(model); }
 function aiBody(messages,maxTokens){
   const model=DB.ai.model||"gpt-4o-mini"; const b={model,messages};
@@ -720,7 +719,7 @@ function renderChat(){
   const w=document.getElementById('chatWrap');
   if(!DB.chat.length){ DB.chat.push({role:"ai",text:"Morning Amir 👊 I've got your whole history — injuries, phase, lifts, the lot. Tell me how you're feeling and I'll sort your day. And you can log lifts right here — just type e.g. \"bench 40 x8 x8 x8\" and I'll save it to your history."}); }
   w.innerHTML=DB.chat.map(m=> m.role==='log' ? `<div class="logchip">${m.text}</div>` : `<div class="msg ${m.role==='me'?'me':'ai'}">${m.text}</div>`).join('');
-  window.scrollTo(0,document.body.scrollHeight);
+  setTimeout(()=>window.scrollTo(0,document.body.scrollHeight),50);
 }
 async function sendChat(){
   const inp=document.getElementById('chatInput'); const txt=inp.value.trim(); if(!txt)return;
@@ -734,7 +733,7 @@ async function sendChat(){
   }
   const w=document.getElementById('chatWrap');
   w.insertAdjacentHTML('beforeend',`<div class="msg ai" id="typing"><span class="typing"><i></i><i></i><i></i></span></div>`);
-  window.scrollTo(0,document.body.scrollHeight);
+  setTimeout(()=>window.scrollTo(0,document.body.scrollHeight),50);
   let reply;
   if(DB.ai.provider==="openai"&&DB.ai.key){
     const msgs=[{role:"system",content:coachSystem()}];
@@ -940,7 +939,6 @@ function exportData(){
 function resetAll(){ if(confirm("Reset all data? This can't be undone.")){ localStorage.removeItem("amirpt"); DB=structuredClone(DEFAULTS); location.reload(); } }
 function escapeHtml(s){return s.replace(/[&<>]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;'}[c]));}
 
-/* Morning reminder */
 function pad2(n){return String(n).padStart(2,'0');}
 function addReminderICS(){
   const t=(document.getElementById('setRemindTime').value)||"07:00"; DB.reminder=t; save();
