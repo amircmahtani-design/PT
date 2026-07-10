@@ -283,17 +283,6 @@ a{color:var(--orange);}
     <div class="head"><div><div class="greet">The long game</div><h1 class="display">Progress</h1></div></div>
     <div class="card"><div class="card-title"><span>Strength PBs · your lifts</span></div><div id="strengthPBs"></div></div>
     <div class="card">
-      <div class="card-title"><span>Concept2 Rowing · your times</span></div>
-      <div id="rowingPBs"></div>
-      <div class="logrow mt">
-        <select class="txtin" id="rowDist" style="flex:0 0 104px;padding:13px 8px;font-size:14px">
-          <option>500m</option><option>1000m</option><option selected>2000m</option><option>5000m</option><option>10000m</option></select>
-        <input class="txtin" id="rowTime" placeholder="mm:ss.s" style="text-align:center"/>
-        <button class="btn" style="flex:0 0 64px;padding:13px 0;font-size:13px" onclick="addRowing()">Log</button></div>
-      <div id="rowingLog" class="mt"></div>
-    </div>
-    <div class="card"><div class="card-title"><span>Bodyweight Trend</span></div><div id="wtWrap"><div class="chartwrap"><canvas id="wtChart"></canvas></div></div></div>
-    <div class="card">
       <div class="card-title"><span>Physique Photos & AI Check</span></div>
       <div class="photostrip" id="photoStrip"></div>
       <label class="photodrop mt" style="display:block;cursor:pointer">+ Add a physique photo
@@ -850,7 +839,18 @@ function coachSystem(){
   const rowing=DB.rowing.map(r=>"  "+r.dist+": "+r.time).join("\n")||"  (none)";
   const mem=DB.memory? "\n\nWHO AMIR IS (his own words / ChatGPT memory — high-priority truth about his history, preferences, personality, how he likes to train):\n"+DB.memory+"\n":"";
   const sched=Object.keys(DB.schedule).map(k=>"  "+DOW[k]+": "+DB.schedule[k]).join("\n");
-  return "You are Amir's personal trainer — the ONLY coach he has. You know him deeply and remember everything. This app stores his data; you are the coaching brain."+mem+"\n\nPERSONALITY: Direct, funny, warm, encouraging. Never robotic or generic. Challenge him, explain WHY, celebrate wins. Text like a real PT. Keep it tight.\n\nPERMANENT RULES:\n- Goal: "+p.goal+". The physique he wants, NOT bodyweight targets.\n- Klinefelter syndrome — respect recovery/fatigue, patient strength curve; consistency + progressive overload win.\n- TFCC injury (right wrist) — avoid loaded wrist extension / straight-wrist heavy pressing; prefer neutral-grip. If wrist pain reported, swap immediately.\n- Technique beats weight. Never ego lift. Only add load after current weight is MASTERED with clean form.\n- He never chooses workouts — YOU decide and tell him exactly what to do.\n- Consistency beats intensity.\n\nLOCATION RULES:\n- DUBAI (home): full home gym AND plenty of time. Full proper sessions. Equipment: "+p.equipment+".\n- GREECE: NO gym, NO time, ON HOLIDAY eating & drinking. Give SHORT (~15 min) bodyweight sessions, maintenance mindset. Do NOT guilt him about food/drink — encourage enjoying it; any movement is a bonus.\n\nYOU CAN EDIT THE APP: To change today's planned workout, put on its OWN line a directive exactly like:\n[[SET_DAY: Legs & Core]]\nValid: Push Day, Pull Day, Legs & Core, Upper Body, Full Body, Rest. The app applies it and regenerates today's session. Use this whenever Amir asks to change/fix the day.\n\nCONTEXT NOW:\n- Location: "+(p.location==='greece'?'GREECE (bodyweight, short, holiday)':'HOME Dubai (full gym + time)')+"\n- Phase: "+p.phase+"\n- Today scheduled: "+pickSplit()+"\n- Custom rules: "+p.rules+"\n\nWEEKLY SCHEDULE:\n"+sched+"\n\nRECENT CHECK-INS:\n"+recentCk+"\n\nSTRENGTH HISTORY:\n"+strength+"\n\nCONCEPT2 ROWING PBs:\n"+rowing;
+  const libNames=Object.keys(EXDB).join(", ");
+  const curW = DB.workout&&Array.isArray(DB.workout.main)&&DB.workout.main.length ? DB.workout.main.map((e,i)=>(i+1)+". "+e.name).join("  ") : "(none generated yet — SET_WORKOUT to build one)";
+  const editBlock="YOU DIRECTLY CONTROL THE TRAIN SCREEN. When Amir asks you to change his workout in ANY way, actually change it by putting directives on their OWN line. The app applies them instantly and re-renders the Train tab. Also give a short spoken reply. Directives:\n"+
+    "[[SET_DAY: Legs & Core]]  — change the whole split (Push Day, Pull Day, Legs & Core, Upper Body, Full Body, Rest); regenerates the session.\n"+
+    "[[SET_WORKOUT: Bench Press, Barbell Row, Overhead Press, Plank]]  — replace today's entire exercise list.\n"+
+    "[[ADD_EX: Lateral Raise]]  — add one exercise to today.\n"+
+    "[[REMOVE_EX: Bulgarian Split Squat]]  — remove one exercise from today.\n"+
+    "[[SWAP_EX: Bench Press -> Incline DB Press]]  — replace one exercise with another.\n"+
+    "[[SET_SETS: 4]]  — change sets-per-exercise for today (1–8).\n"+
+    "You may use several at once, each on its own line. Use EXACT exercise names from this library where possible:\n  "+libNames+"\n"+
+    "Respect his TFCC wrist and Klinefelter recovery when choosing. TODAY'S CURRENT WORKOUT (Train tab right now):\n  "+curW;
+  return "You are Amir's personal trainer — the ONLY coach he has. You know him deeply and remember everything. This app stores his data; you are the coaching brain."+mem+"\n\nPERSONALITY: Direct, funny, warm, encouraging. Never robotic or generic. Challenge him, explain WHY, celebrate wins. Text like a real PT. Keep it tight.\n\nPERMANENT RULES:\n- Goal: "+p.goal+". The physique he wants, NOT bodyweight targets.\n- Klinefelter syndrome — respect recovery/fatigue, patient strength curve; consistency + progressive overload win.\n- TFCC injury (right wrist) — avoid loaded wrist extension / straight-wrist heavy pressing; prefer neutral-grip. If wrist pain reported, swap immediately.\n- Technique beats weight. Never ego lift. Only add load after current weight is MASTERED with clean form.\n- He never chooses workouts — YOU decide and tell him exactly what to do.\n- Consistency beats intensity.\n\nLOCATION RULES:\n- DUBAI (home): full home gym AND plenty of time. Full proper sessions. Equipment: "+p.equipment+".\n- GREECE: NO gym, NO time, ON HOLIDAY eating & drinking. Give SHORT (~15 min) bodyweight sessions, maintenance mindset. Do NOT guilt him about food/drink — encourage enjoying it; any movement is a bonus.\n\n"+editBlock+"\n\nCONTEXT NOW:\n- Location: "+(p.location==='greece'?'GREECE (bodyweight, short, holiday)':'HOME Dubai (full gym + time)')+"\n- Phase: "+p.phase+"\n- Today scheduled: "+pickSplit()+"\n- Custom rules: "+p.rules+"\n\nWEEKLY SCHEDULE:\n"+sched+"\n\nRECENT CHECK-INS:\n"+recentCk+"\n\nSTRENGTH HISTORY:\n"+strength+"\n\nCONCEPT2 ROWING PBs:\n"+rowing;
 }
 
 function aiIsReasoning(model){ return /^gpt-5/i.test(model)||/^o\d/i.test(model); }
@@ -889,9 +889,79 @@ function applyDayDirective(raw0){
   ensureWorkout(); renderItin(); updateStatus(); return match;
 }
 
+/* ===== COACH CAN EDIT THE TRAIN WORKOUT DIRECTLY ===== */
+function resolveExName(raw){
+  const t=String(raw||"").trim().replace(/^["']|["']$/g,""); if(!t) return null;
+  const exact=Object.keys(EXDB).find(k=>k.toLowerCase()===t.toLowerCase()); if(exact) return exact;
+  const lt=t.toLowerCase(); for(const [re,name] of ALIAS){ if(re.test(lt)) return name; }
+  return t.replace(/\b\w/g,c=>c.toUpperCase());        // custom exercise (generic fallback)
+}
+function resolveKnownEx(raw){ const n=resolveExName(raw); return (n&&EXDB[n])?n:null; }  // known-only (for offline NL parsing)
+function coachEnsureWorkout(){
+  if(!DB.workout || !Array.isArray(DB.workout.main) || DB.workout.sets===0){
+    const base=buildWorkout();
+    if(base.sets===0){ const travel=DB.profile.location==='greece';
+      DB.workout={title:"Custom Session",tag:travel?"Travel Mode · No Equipment":"Home · Dubai Gym",phase:DB.profile.phase,
+        note:"Session your coach built for you.",reps:travel?"AMRAP-ish · 2 in reserve":"8–12 reps",sets:3,travel,
+        warmup:[{t:"Arm circles ×15 each way",icon:"🔄"},{t:"Cat-cow ×8",icon:"🐈"},{t:"Light warm-up set on first lift",icon:"🏋️"}],
+        main:[],cooldown:[{t:"Child's pose 60s",icon:"🧘"},{t:"Box breathing 2 min",icon:"🌬️"}],recovery:"Hydrate, protein, sleep well."};
+    } else DB.workout=base;
+  }
+  return DB.workout;
+}
+function finalizeCoachEdit(){
+  save();
+  if(document.getElementById('workoutSheet')) renderWorkoutSheet(DB.workout);
+  const t=document.getElementById('heroTitle'); if(t)t.textContent=DB.workout.title;
+  const su=document.getElementById('heroSub'); if(su)su.textContent=DB.workout.note||"Your session's ready — tap to open.";
+  const hp=document.getElementById('heroPhase'); if(hp)hp.textContent="Today · "+DB.workout.tag;
+}
+function coachSetWorkout(listRaw){
+  coachEnsureWorkout();
+  const names=String(listRaw).split(/[,\n;]+/).map(resolveExName).filter(Boolean);
+  if(!names.length) return null;
+  DB.workout.main=names.map(exObject); DB.workout.title=DB.workout.title||"Custom Session"; finalizeCoachEdit(); return names;
+}
+function coachAddEx(raw){ coachEnsureWorkout(); const n=resolveExName(raw); if(!n) return null;
+  if(DB.workout.main.some(e=>e.name.toLowerCase()===n.toLowerCase())) return n;
+  DB.workout.main.push(exObject(n)); finalizeCoachEdit(); return n; }
+function coachRemoveEx(raw){ coachEnsureWorkout(); const n=resolveExName(raw); if(!n) return null;
+  const before=DB.workout.main.length; DB.workout.main=DB.workout.main.filter(e=>e.name.toLowerCase()!==n.toLowerCase());
+  if(DB.workout.main.length===before) return null; finalizeCoachEdit(); return n; }
+function coachSwapWorkoutEx(oldRaw,newRaw){ coachEnsureWorkout(); const o=resolveExName(oldRaw), nn=resolveExName(newRaw); if(!o||!nn) return null;
+  let idx=DB.workout.main.findIndex(e=>e.name.toLowerCase()===o.toLowerCase());
+  if(idx<0){ if(!DB.workout.main.length) return null; idx=0; }
+  DB.workout.main[idx]=exObject(nn); finalizeCoachEdit(); return {from:o,to:nn}; }
+function coachSetSets(n){ coachEnsureWorkout(); n=parseInt(n); if(isNaN(n)||n<1||n>8) return null;
+  DB.workout.sets=n; DB.workout.main=DB.workout.main.map(e=>exObject(e.name)); finalizeCoachEdit(); return n; }
+/* Parse [[...]] directives out of an AI reply, apply them, return cleaned text + change notes. */
+function applyCoachDirectives(reply){
+  let out=String(reply||""), notes=[];
+  out=out.replace(/\[\[\s*SET_DAY\s*:\s*([^\]]+)\]\]/ig,(m,a)=>{ const r=applyDayDirective(a); if(r) notes.push("🔁 Switched today → "+r); return ""; });
+  out=out.replace(/\[\[\s*SET_WORKOUT\s*:\s*([^\]]+)\]\]/ig,(m,a)=>{ const r=coachSetWorkout(a); if(r) notes.push("📝 New workout → "+r.join(", ")); return ""; });
+  out=out.replace(/\[\[\s*SWAP_EX\s*:\s*([^\]]+?)\s*(?:->|→|=>|\bto\b)\s*([^\]]+)\]\]/ig,(m,a,b)=>{ const r=coachSwapWorkoutEx(a,b); if(r) notes.push("⇄ Swapped "+r.from+" → "+r.to); return ""; });
+  out=out.replace(/\[\[\s*ADD_EX\s*:\s*([^\]]+)\]\]/ig,(m,a)=>{ const r=coachAddEx(a); if(r) notes.push("➕ Added "+r); return ""; });
+  out=out.replace(/\[\[\s*REMOVE_EX\s*:\s*([^\]]+)\]\]/ig,(m,a)=>{ const r=coachRemoveEx(a); if(r) notes.push("➖ Removed "+r); return ""; });
+  out=out.replace(/\[\[\s*SET_SETS\s*:\s*(\d+)\s*\]\]/ig,(m,a)=>{ const r=coachSetSets(a); if(r) notes.push("🎯 Sets → "+r); return ""; });
+  return {cleaned:out.replace(/\n{3,}/g,"\n\n").trim(), notes};
+}
+/* Offline fallback: understand plain-English edit commands (known exercises only). */
+function localWorkoutCommand(txt){
+  const s=" "+txt.toLowerCase().replace(/×/g,'x')+" "; let m;
+  m=s.match(/(?:swap|replace|change|sub(?:stitute)?)\s+(.+?)\s+(?:for|with|to|into|out for)\s+(.+?)\s*$/);
+  if(m){ const o=resolveKnownEx(m[1]), nn=resolveKnownEx(m[2]); if(o&&nn){ const r=coachSwapWorkoutEx(o,nn); if(r) return {notes:["⇄ Swapped "+r.from+" → "+r.to], reply:"Done — swapped <b>"+r.from+"</b> for <b>"+r.to+"</b>. It's live in the Train tab. 💪"}; } }
+  m=s.match(/(?:\badd\b|\binclude\b|throw in|put in|chuck in)\s+(.+?)\s*$/);
+  if(m){ const n=resolveKnownEx(m[1]); if(n){ coachAddEx(n); return {notes:["➕ Added "+n], reply:"Added <b>"+n+"</b> to today's session — check the Train tab. 💪"}; } }
+  m=s.match(/(?:remove|delete|drop|cut|take out|get rid of|lose)\s+(.+?)\s*$/);
+  if(m){ const n=resolveKnownEx(m[1]); if(n){ const r=coachRemoveEx(n); if(r) return {notes:["➖ Removed "+n], reply:"Removed <b>"+n+"</b> from today. Updated in Train."}; } }
+  m=s.match(/(?:make it|set it to|do|change to)\s+(\d)\s*sets?/) || s.match(/\b(\d)\s*sets?\b\s*(?:each|per|for everything|across|of everything)?\s*$/);
+  if(m){ const n=coachSetSets(m[1]); if(n) return {notes:["🎯 Sets → "+n], reply:"Set today to <b>"+n+" sets</b> per lift."}; }
+  return null;
+}
+
 function renderChat(){
   const w=document.getElementById('chatWrap');
-  if(!DB.chat.length){ DB.chat.push({role:"ai",text:"Morning Amir 👊 I've got your whole history — injuries, phase, lifts, the lot. Tell me how you're feeling and I'll sort your day. Log lifts here too — e.g. \"bench 40 x8 x8 x8\". And if the day's wrong (says Push but should be Legs), just tell me and I'll change it in the app."}); }
+  if(!DB.chat.length){ DB.chat.push({role:"ai",text:"Morning Amir 👊 I've got your whole history — injuries, phase, lifts, the lot. Tell me how you're feeling and I'll sort your day. I can also edit your Train session live — just say things like <b>\"swap bench for incline\"</b>, <b>\"add face pulls\"</b>, <b>\"drop the lunges\"</b>, <b>\"make it 4 sets\"</b>, or <b>\"give me a pull day\"</b> and it updates the Train tab instantly. Log lifts here too — e.g. \"bench 40 x8 x8 x8\"."}); }
   w.innerHTML=DB.chat.map(m=> m.role==='log' ? "<div class='logchip'>"+m.text+"</div>" : "<div class='msg "+(m.role==='me'?'me':'ai')+"'>"+m.text+"</div>").join('');
   setTimeout(()=>window.scrollTo(0,document.body.scrollHeight),50);
 }
@@ -906,20 +976,23 @@ async function sendChat(){
   const w=document.getElementById('chatWrap');
   w.insertAdjacentHTML('beforeend',"<div class='msg ai' id='typing'><span class='typing'><i></i><i></i><i></i></span></div>");
   setTimeout(()=>window.scrollTo(0,document.body.scrollHeight),50);
-  let reply;
+  let reply, aiUsed=false;
   if(DB.ai.provider==="openai"&&DB.ai.key){ const msgs=[{role:"system",content:coachSystem()}];
     DB.chat.slice(-10).filter(m=>m.role!=='log').forEach(m=>msgs.push({role:m.role==='me'?'user':'assistant',content:m.text.replace(/<[^>]+>/g,'')}));
-    if(logNote) msgs.push({role:"user",content:logNote}); reply=await callAI(msgs,400); }
+    if(logNote) msgs.push({role:"user",content:logNote}); reply=await callAI(msgs,400); if(reply) aiUsed=true; }
   if(!reply) reply=log?localLogReply(log):localCoachReply(txt);
   const ty=document.getElementById('typing'); if(ty) ty.remove();
-  const dir=reply.match(/\[\[\s*SET_DAY\s*:\s*([^\]]+)\]\]/i);
-  if(dir){ const applied=applyDayDirective(dir[1]); reply=reply.replace(/\[\[\s*SET_DAY\s*:[^\]]+\]\]/ig,'').trim(); if(applied) DB.chat.push({role:"log",text:"🔁 Coach changed today → "+applied}); }
+  const res=applyCoachDirectives(reply); reply=res.cleaned; let allNotes=res.notes.slice();
+  if(!allNotes.length){ const lc=localWorkoutCommand(txt); if(lc){ allNotes=lc.notes; if(!aiUsed) reply=lc.reply; } }
+  allNotes.forEach(n=>DB.chat.push({role:"log",text:n}));
   DB.chat.push({role:"ai",text:fmt(reply||"Done.")}); save(); renderChat(); updateStatus();
 }
 function localLogReply(log){ const rec=recommendLoad(log.exercise); return "Logged and saved 💾 "+log.exercise+" is in your history now. "+(rec?rec.text:'')+" Keep the reps crisp and we'll know where to push next week."; }
 function localCoachReply(t){
   const s=t.toLowerCase();
-  if(/change.*(leg|pull|push|upper|full|rest)|make.*(leg|pull|push).*day|should be (leg|pull|push)|switch.*(leg|pull|push)/.test(s)){
+  const dayReq = (/\bday\b/.test(s) && /(leg|pull|push|upper|full|rest)/.test(s))
+    || /should be.*(leg|pull|push|upper|full|rest)|switch.*(leg|pull|push|upper|full)|make (?:it|today).*(leg|pull|push|upper|full)/.test(s);
+  if(dayReq){
     let sp=/leg/.test(s)?"Legs & Core":/pull/.test(s)?"Pull Day":/push/.test(s)?"Push Day":/upper/.test(s)?"Upper Body":/full/.test(s)?"Full Body":/rest/.test(s)?"Rest":null;
     if(sp){ applyDayDirective(sp); return "Done — switched today to <b>"+sp+"</b>. Fresh session's ready in the Train tab. 💪"; } }
   if(/tired|exhaust|sore|rough|bad day/.test(s)) return "Heard. Some days the win is just turning up. Cut volume, keep quality high, protect recovery. Tomorrow we go again. 💪";
