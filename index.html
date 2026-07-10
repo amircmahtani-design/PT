@@ -137,6 +137,12 @@ textarea.txtin{min-height:88px;resize:vertical;line-height:1.45;}
 .rowcard .ic img{width:100%;height:100%;object-fit:contain;background:#fff;}
 .rowcard .big{font-weight:800;font-size:20px;color:#fff;}
 .rowcard .sm{font-size:13px;color:var(--muted);font-weight:600;margin-top:2px;}
+.exlog{margin-top:14px;padding-top:14px;border-top:1px dashed #241b12;}
+.exlog .target{color:var(--muted);font-size:12.5px;font-weight:600;margin-bottom:8px;}
+.exb.done{opacity:.94;}
+.exb.done .name::after{content:" ✓";color:var(--green);font-weight:800;}
+.wobar{height:9px;background:#0a0806;border-radius:5px;margin-top:9px;overflow:hidden;}
+.wobar span{display:block;height:100%;width:0%;border-radius:5px;background:linear-gradient(90deg,#ff7a1a,#f0b24a);transition:width .35s ease;}
 .live-ex{position:relative;background:var(--card);border:1px solid var(--line);border-radius:16px;padding:16px;margin-bottom:12px;transition:.25s;}
 .live-ex.done{border-color:#154d2c;}
 .live-ex .top{display:flex;justify-content:space-between;align-items:center;gap:8px;}
@@ -264,20 +270,8 @@ a{color:var(--orange);}
   <section class="screen" id="s-workout">
     <div class="head"><div><div class="greet">Today's Session</div><h1 class="display">Train</h1></div>
       <button class="btn sec" style="width:auto;padding:11px 14px;font-size:12px" onclick="generateWorkout()">↻ Regen</button></div>
-    <button class="btn green mb" id="startLiveBtn" onclick="startLive()" style="font-size:16px;padding:16px">▶ Start Live Workout</button>
     <div class="card rowcard" id="rowWarm"></div>
     <div id="workoutSheet"></div>
-  </section>
-
-  <!-- LIVE -->
-  <section class="screen" id="s-live">
-    <div class="head"><div><div class="greet">Texting your coach</div><h1 class="display">Live Mode</h1></div>
-      <button class="btn ghost" style="width:auto;padding:10px 14px;font-size:13px" onclick="finishLive()">Finish</button></div>
-    <div class="card" style="padding:14px 16px;margin-bottom:16px;">
-      <div class="row" style="padding:4px 0;border:none"><span class="k">Session progress</span><span class="v" id="liveProg" style="color:var(--orange)">0%</span></div>
-      <div class="metric bar" style="margin-top:4px"><span id="liveBar" style="width:0%"></span></div></div>
-    <div id="liveList"></div>
-    <button class="btn green mt" onclick="finishLive()">Finish & Get Recovery Plan</button>
   </section>
 
   <!-- COACH -->
@@ -491,8 +485,9 @@ function go(s){
   document.getElementById('s-'+s).classList.add('active');
   document.querySelectorAll('.tab').forEach(t=>t.classList.toggle('active',t.dataset.s===s));
   document.getElementById('chatBar').style.display = s==='coach'?'flex':'none';
-  if(s!=='live') stopRest();
+  if(s!=='workout') stopRest();
   window.scrollTo(0,0);
+  if(s==='workout' && !DB.workout) generateWorkout();
   if(s==='coach') renderChat();
   if(s==='progress'){ drawChart(); renderRowingLog(); }
   if(s==='history') renderHistory();
@@ -614,7 +609,6 @@ function exImgHTML(name,muscles){
 function generateWorkout(){
   const w=buildWorkout(); DB.workout=w; save();
   renderWorkoutSheet(w);
-  document.getElementById('startLiveBtn').style.display = w.sets>0?'block':'none';
   go('workout');
   document.getElementById('heroTitle').textContent=w.title;
   document.getElementById('heroSub').textContent=w.note;
@@ -627,26 +621,62 @@ function renderRowWarm(){
 }
 function renderWorkoutSheet(w){
   renderRowWarm();
+  const sheetEl=document.getElementById('workoutSheet');
   if(w.sets===0){
-    document.getElementById('workoutSheet').innerHTML="<div class='sheet'><div class='sheet-hd'><div class='tag'>"+w.tag+"</div><h2 class='display'>"+w.title+"</h2></div>"+
+    liveState=null;
+    sheetEl.innerHTML="<div class='sheet'><div class='sheet-hd'><div class='tag'>"+w.tag+"</div><h2 class='display'>"+w.title+"</h2></div>"+
       "<div class='sheet-sec'><div class='recovery'>"+w.note+"</div></div>"+
       "<div class='sheet-sec'><h3>◆ Mobility</h3>"+w.cooldown.map(mvHTML).join('')+"</div></div>";
     return;
   }
-  const exHTML=w.main.map(e=>{
-    const rec=e.rec?"<div class='cue'><b>Load:</b> "+e.rec.text+"</div>":"";
-    const wn=e.wristNote?"<div class='cue' style='color:var(--gold)'><b>⚠ TFCC swap:</b> "+e.wristNote+"</div>":"";
-    return "<div class='exb'>"+exImgHTML(e.name,e.muscles)+
-      "<div class='name'>"+e.name+"</div><div class='scheme'>"+e.scheme+" · rest "+e.rest+"</div>"+
-      "<div class='cue'><b>Cue:</b> "+e.cue+"</div>"+rec+wn+
-      "<div>"+e.muscles.map(m=>"<span class='mini'>"+m+"</span>").join('')+"</div></div>";}).join('');
-  document.getElementById('workoutSheet').innerHTML=
+  /* build the loggable session state, restoring any sets already logged today */
+  liveState=w.main.map(e=>{
+    const todaySets=(DB.strength[e.name]||[]).filter(s=>s.date===today()).flatMap(s=>(s.sets||[]));
+    return {name:e.name,muscles:e.muscles,cue:e.cue,rec:e.rec,rest:e.rest,scheme:e.scheme,
+      wristNote:e.wristNote,target:w.sets,sets:todaySets.map(s=>({w:s.w,r:s.r}))};
+  });
+  const exHTML=liveState.map((e,i)=>liveExHTML(e,i)).join('');
+  sheetEl.innerHTML=
   "<div class='sheet'><div class='sheet-hd'><div class='tag'>"+w.tag+"</div><h2 class='display'>"+w.title+"</h2>"+
-    "<div class='meta'><span class='pill orange'>"+w.sets+" sets</span><span class='pill'>"+w.reps+"</span><span class='pill purple'>"+w.phase+"</span></div></div>"+
+    "<div class='meta'><span class='pill orange'>"+w.sets+" sets</span><span class='pill'>"+w.reps+"</span><span class='pill purple'>"+w.phase+"</span></div>"+
+    "<div class='row' style='padding:12px 0 0;border:none'><span class='k'>Session progress</span><span class='v' id='woProg' style='color:var(--orange)'>0%</span></div>"+
+    "<div class='wobar'><span id='woBar'></span></div></div>"+
   "<div class='sheet-sec'><h3>◆ Warm-up</h3>"+w.warmup.map(mvHTML).join('')+"</div>"+
-  "<div class='sheet-sec'><h3>◆ Main Workout</h3>"+exHTML+"</div>"+
+  "<div class='sheet-sec'><h3>◆ Main Workout <span style='color:var(--dim);font-weight:600;text-transform:none;letter-spacing:0;font-size:11px'>· log each set as you go</span></h3>"+exHTML+"</div>"+
   "<div class='sheet-sec'><h3>◆ Cool-down</h3>"+w.cooldown.map(mvHTML).join('')+"</div>"+
-  "<div class='sheet-sec'><h3>◆ Recovery Notes</h3><div class='recovery'>"+w.recovery+"</div></div></div>";
+  "<div class='sheet-sec'><h3>◆ Recovery Notes</h3><div class='recovery'>"+w.recovery+"</div></div></div>"+
+  "<button class='btn green mt' id='finishBtn' style='display:none' onclick='finishWorkout()'>Finish &amp; Get Recovery Plan</button>"+
+  "<div id='finishOut'></div>";
+  updateWorkoutProgress();
+}
+/* one main-workout exercise block: GIF + coaching + inline set logging */
+function liveExHTML(e,i){
+  const rec=e.rec?"<div class='cue'><b>Load:</b> "+e.rec.text+"</div>":"";
+  const wn=e.wristNote?"<div class='cue' style='color:var(--gold)'><b>⚠ TFCC swap:</b> "+e.wristNote+"</div>":"";
+  const complete=e.sets.length>=e.target;
+  const chips=e.sets.map(s=>"<span class='setchip'>"+s.w+"kg × "+s.r+"</span>").join('');
+  const startLoad=e.rec?e.rec.w+"kg":"working weight";
+  return "<div class='exb"+(complete?' done':'')+"' id='ex"+i+"'>"+exImgHTML(e.name,e.muscles)+
+    "<div class='name'>"+e.name+"</div><div class='scheme'>"+e.scheme+" · rest "+e.rest+"</div>"+
+    "<div class='cue'><b>Cue:</b> "+e.cue+"</div>"+rec+wn+
+    "<div>"+e.muscles.map(m=>"<span class='mini'>"+m+"</span>").join('')+"</div>"+
+    "<div class='exlog'>"+
+      "<div class='target' id='tgt"+i+"'>"+e.sets.length+"/"+e.target+" sets logged · start "+startLoad+"</div>"+
+      "<div class='setlog' id='chips"+i+"'>"+chips+"</div>"+
+      "<div class='logrow' id='logrow"+i+"'"+(complete?" style='display:none'":"")+">"+
+        "<input id='w"+i+"' inputmode='decimal' placeholder='kg' value='"+(e.rec?e.rec.w:'')+"'/>"+
+        "<input id='r"+i+"' inputmode='numeric' placeholder='reps' onkeydown=\"if(event.key==='Enter')logSet("+i+")\"/>"+
+        "<button onclick='logSet("+i+")'>Log</button></div>"+
+      "<div id='cb"+i+"'></div>"+
+    "</div></div>";
+}
+function updateWorkoutProgress(){
+  if(!liveState) return;
+  const total=liveState.reduce((a,e)=>a+e.target,0), done=liveState.reduce((a,e)=>a+e.sets.length,0);
+  const pct=total?Math.round(done/total*100):0;
+  const p=document.getElementById('woProg'); if(p) p.textContent=pct+"%";
+  const b=document.getElementById('woBar'); if(b) b.style.width=pct+"%";
+  const fb=document.getElementById('finishBtn'); if(fb) fb.style.display=done>0?'block':'none';
 }
 
 /* rest timer + beep */
@@ -665,36 +695,30 @@ function restDue(){ const t=document.getElementById('restTimer'); t.classList.ad
 function stopRest(){ if(restInt){clearInterval(restInt);restInt=null;} const t=document.getElementById('restTimer'); if(t){t.classList.remove('show');t.classList.remove('due');} }
 
 let liveState=null;
-function startLive(){
-  if(!DB.workout || DB.workout.sets===0){ generateWorkout(); if(DB.workout.sets===0){ toast("Rest day — nothing to log"); return; } }
-  liveState=DB.workout.main.map(e=>({name:e.name,muscles:e.muscles,cue:e.cue,rec:e.rec,rest:e.rest,target:DB.workout.sets,sets:[]}));
-  renderLive(); go('live');
-}
-function renderLive(){
-  const total=liveState.reduce((a,e)=>a+e.target,0), done=liveState.reduce((a,e)=>a+e.sets.length,0);
-  const pct=total?Math.round(done/total*100):0;
-  document.getElementById('liveProg').textContent=pct+"%"; document.getElementById('liveBar').style.width=pct+"%";
-  document.getElementById('liveList').innerHTML=liveState.map((e,i)=>{
-    const complete=e.sets.length>=e.target;
-    const chips=e.sets.map(s=>"<span class='setchip'>"+s.w+"kg × "+s.r+"</span>").join('');
-    const targetLoad=e.rec?e.rec.w+"kg":"working weight";
-    return "<div class='live-ex "+(complete?'done':'')+"' id='le"+i+"'>"+
-      "<div class='top'><div><div class='name'>"+e.name+"</div>"+
-        "<div class='target'>Target "+e.target+" sets · "+e.sets.length+"/"+e.target+" logged · start "+targetLoad+"</div></div>"+
-        "<div class='badge'>"+(complete?'✓':'')+"</div></div><div class='setlog'>"+chips+"</div>"+
-      (complete?'':"<div class='logrow'><input id='w"+i+"' inputmode='decimal' placeholder='kg' value='"+(e.rec?e.rec.w:'')+"'/>"+
-        "<input id='r"+i+"' inputmode='numeric' placeholder='reps'/><button onclick='logSet("+i+")'>Log</button></div>")+
-      "<div id='cb"+i+"'></div></div>";}).join('');
+/* refresh a single exercise block in place — keeps the GIF from reloading */
+function refreshExercise(i){
+  const e=liveState[i]; if(!e) return;
+  const complete=e.sets.length>=e.target;
+  const block=document.getElementById('ex'+i); if(block) block.classList.toggle('done',complete);
+  const chips=document.getElementById('chips'+i);
+  if(chips) chips.innerHTML=e.sets.map(s=>"<span class='setchip'>"+s.w+"kg × "+s.r+"</span>").join('');
+  const startLoad=e.rec?e.rec.w+"kg":"working weight";
+  const tgt=document.getElementById('tgt'+i); if(tgt) tgt.textContent=e.sets.length+"/"+e.target+" sets logged · start "+startLoad;
+  const lr=document.getElementById('logrow'+i); if(lr) lr.style.display=complete?'none':'flex';
+  const rEl=document.getElementById('r'+i); if(rEl) rEl.value='';   /* clear reps, keep weight for next set */
+  updateWorkoutProgress();
 }
 async function logSet(i){
   const w=parseFloat(document.getElementById('w'+i).value), r=parseInt(document.getElementById('r'+i).value);
   if(isNaN(w)||isNaN(r)){ toast("Enter weight and reps"); return; }
   liveState[i].sets.push({w,r}); saveSet(liveState[i].name,{w,r});
+  refreshExercise(i);
   const last=liveState[i].sets.length>=liveState[i].target;
   if(!last) startRest(restSeconds(liveState[i].rest), liveState[i].name+" · next set in");
   else stopRest();
-  document.getElementById('cb'+i).innerHTML="<div class='coachbubble'><div class='who'>◆ Coach <span class='typing'><i></i><i></i><i></i></span></div></div>";
-  const reply=await coachSetReply(liveState[i],{w,r}); renderLive();
+  const cb0=document.getElementById('cb'+i);
+  if(cb0) cb0.innerHTML="<div class='coachbubble'><div class='who'>◆ Coach <span class='typing'><i></i><i></i><i></i></span></div></div>";
+  const reply=await coachSetReply(liveState[i],{w,r});
   const cb=document.getElementById('cb'+i);
   if(cb) cb.innerHTML="<div class='coachbubble'><div class='who'>◆ Coach</div>"+reply+"</div>";
 }
@@ -721,13 +745,16 @@ async function coachSetReply(ex,set){
   else { call="Stay at "+set.w+"kg. "+cue+"."; }
   return verdict+"<br>"+call+"<br><b>Rest 90s.</b> 💪";
 }
-function finishLive(){
+function finishWorkout(){
   stopRest();
   const done=liveState?liveState.reduce((a,e)=>a+e.sets.length,0):0;
   if(done>0){ DB.streak=(DB.streak||0)+1; save(); updateStreak(); }
   const rec=DB.workout?DB.workout.recovery:"Hydrate, protein, sleep.";
-  document.getElementById('liveList').innerHTML="<div class='card'><div class='card-title'><span>Session Complete</span></div>"+
+  const fb=document.getElementById('finishBtn'); if(fb) fb.style.display='none';
+  const out=document.getElementById('finishOut');
+  if(out){ out.innerHTML="<div class='card mt'><div class='card-title'><span>Session Complete</span></div>"+
     "<div class='coachnote'><div class='who'>◆ Coach</div>Another one in the bank, Amir. "+done+" sets logged, streak now 🔥 "+DB.streak+".<br><br><b>Recovery:</b><br>"+rec+"</div></div>";
+    out.scrollIntoView({behavior:'smooth',block:'center'}); }
   toast("Logged · streak "+DB.streak);
 }
 
@@ -1166,7 +1193,7 @@ function boot(){
   renderMetrics(); renderItin(); renderStrengthPBs(); renderRowing(); renderRowingLog(); renderPhotos(); renderIntegrations(); updateStreak(); renderRowWarm();
   if(typeof scheduleInApp==="function") scheduleInApp();
   const split=pickSplit();
-  if(DB.workout){ renderWorkoutSheet(DB.workout); document.getElementById('startLiveBtn').style.display=DB.workout.sets>0?'block':'none'; document.getElementById('heroTitle').textContent=DB.workout.title; document.getElementById('heroPhase').textContent="Today · "+DB.workout.tag; }
+  if(DB.workout){ renderWorkoutSheet(DB.workout); document.getElementById('heroTitle').textContent=DB.workout.title; document.getElementById('heroPhase').textContent="Today · "+DB.workout.tag; }
   else { document.getElementById('heroTitle').textContent = split==="Rest"?"Rest & Recover":split; document.getElementById('heroPhase').textContent="Today · "+(DB.profile.location==='greece'?'Greece':'Dubai'); }
 }
 boot();
