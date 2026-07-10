@@ -28,7 +28,7 @@ body{max-width:520px;margin:0 auto;position:relative;min-height:100vh;}
 button{font-family:inherit;cursor:pointer;border:none;background:none;color:inherit;}
 input,select,textarea{font-family:inherit;}
 ::-webkit-scrollbar{display:none;}
-#app{padding:calc(var(--safe-top) + 8px) 16px 132px 16px;}
+#app{padding:calc(var(--safe-top) + 8px) 16px 140px 16px;}
 .screen{display:none;}
 .screen.active{display:block;animation:zoom .34s cubic-bezier(.2,.9,.3,1);}
 @keyframes zoom{from{opacity:0;transform:translateY(8px);}to{opacity:1;transform:none;}}
@@ -44,7 +44,7 @@ h2.display{font-size:25px;font-weight:800;letter-spacing:-.4px;margin:6px 0;colo
 .card::before{content:"";position:absolute;top:0;left:18px;right:18px;height:2px;border-radius:2px;background:linear-gradient(90deg,transparent,#ff8a2b88,transparent);}
 .card.tap{transition:transform .14s ease;}
 .card.tap:active{transform:scale(.985);}
-.card-title{font-size:12px;letter-spacing:.6px;text-transform:uppercase;color:var(--gold);font-weight:700;margin-bottom:12px;display:flex;align-items:center;gap:7px;}
+.card-title{font-size:12px;letter-spacing:.6px;text-transform:uppercase;color:var(--gold);font-weight:700;margin-bottom:12px;display:flex;align-items:center;gap:7px;justify-content:space-between;}
 .hero{overflow:hidden;border:1px solid #5a3714;background:linear-gradient(150deg,#341c08 0%,#1a110a 58%,#120d09 100%);padding:22px;}
 .hero::before{background:linear-gradient(90deg,transparent,#ffb24a,#ff5a1a,transparent);height:3px;}
 .hero .glow{position:absolute;right:-50px;top:-60px;width:190px;height:190px;border-radius:50%;background:radial-gradient(circle,#ff8a2b44,transparent 66%);animation:pulse 3.5s ease-in-out infinite;}
@@ -60,7 +60,7 @@ h2.display{font-size:25px;font-weight:800;letter-spacing:-.4px;margin:6px 0;colo
 .metric .val small{font-size:13px;color:var(--dim);font-weight:600;}
 .metric .bar{height:6px;background:#0a0806;border-radius:4px;margin-top:10px;overflow:hidden;}
 .metric .bar span{display:block;height:100%;border-radius:4px;background:linear-gradient(90deg,#ff7a1a,#f0b24a);}
-.row{display:flex;justify-content:space-between;align-items:center;padding:13px 0;border-bottom:1px solid var(--line);}
+.row{display:flex;justify-content:space-between;align-items:center;padding:13px 0;border-bottom:1px solid var(--line);gap:8px;}
 .row:last-child{border-bottom:none;}
 .row .k{color:var(--muted);font-size:14px;font-weight:600;}
 .row .v{font-size:15px;font-weight:700;text-align:right;}
@@ -69,14 +69,23 @@ h2.display{font-size:25px;font-weight:800;letter-spacing:-.4px;margin:6px 0;colo
 .pill.blue{background:#0a2138;border-color:#12406e;color:#7cbcff;}
 .pill.orange{background:#331f0a;border-color:#5c3712;color:var(--gold);}
 .pill.purple{background:#221439;border-color:#3f2668;color:#cda9ff;}
+.pill.gray{background:var(--pill);color:var(--muted);}
 .coachnote{background:#0f1c2e;border:1px solid #1c3a5c;border-left:3px solid var(--cyan);border-radius:14px;padding:14px 16px;font-size:15px;line-height:1.55;color:#e7f1fb;}
 .coachnote .who,.coachbubble .who{font-size:12px;color:var(--cyan);font-weight:700;text-transform:uppercase;letter-spacing:.6px;margin-bottom:6px;display:flex;align-items:center;gap:6px;}
+.coachnote b{color:#bfe0ff;}
 .powerbox{display:flex;align-items:center;gap:16px;padding:2px 0;}
 .powerbox .num{font-weight:800;font-size:46px;line-height:1;color:var(--orange);letter-spacing:-2px;}
 .powerbox .lab{font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:.8px;color:var(--muted);}
-.tabbar{position:fixed;left:0;right:0;bottom:0;z-index:40;background:#12100dee;backdrop-filter:saturate(150%) blur(20px);-webkit-backdrop-filter:saturate(150%) blur(20px);border-top:1px solid var(--line);display:flex;justify-content:space-around;padding:9px 4px calc(9px + var(--safe-bot));max-width:520px;margin:0 auto;}
-.tab{display:flex;flex-direction:column;align-items:center;gap:3px;padding:4px 8px;color:var(--dim);font-size:10.5px;font-weight:600;flex:1;transition:.2s;}
-.tab svg{width:24px;height:24px;stroke:currentColor;fill:none;stroke-width:2;}
+.itin-row{display:flex;align-items:center;gap:10px;padding:11px 0;border-bottom:1px solid var(--line);cursor:pointer;}
+.itin-row:last-child{border-bottom:none;}
+.itin-row.today{background:linear-gradient(90deg,#ff8a2b14,transparent);margin:0 -8px;padding-left:8px;padding-right:8px;border-radius:8px;}
+.itin-day{width:44px;font-weight:800;font-size:13px;color:var(--gold);text-transform:uppercase;}
+.itin-split{flex:1;font-weight:700;font-size:15px;min-width:0;}
+.itin-row.today .itin-split{color:#fff;}
+.itin-edit{font-size:11px;color:var(--dim);font-weight:700;text-transform:none;letter-spacing:0;}
+.tabbar{position:fixed;left:0;right:0;bottom:0;z-index:40;background:#12100dee;backdrop-filter:saturate(150%) blur(20px);-webkit-backdrop-filter:saturate(150%) blur(20px);border-top:1px solid var(--line);display:flex;justify-content:space-around;padding:9px 2px calc(9px + var(--safe-bot));max-width:520px;margin:0 auto;}
+.tab{display:flex;flex-direction:column;align-items:center;gap:3px;padding:4px 3px;color:var(--dim);font-size:9.5px;font-weight:700;flex:1;transition:.2s;min-width:0;}
+.tab svg{width:22px;height:22px;stroke:currentColor;fill:none;stroke-width:2;}
 .tab.active{color:var(--orange);}
 .tab.active svg{transform:translateY(-2px);}
 .btn{display:block;width:100%;padding:15px;border-radius:14px;font-size:15.5px;font-weight:700;background:linear-gradient(100deg,#ff8a2b,#ff5a1a);color:#fff;box-shadow:0 6px 18px #ff5a1a44;transition:transform .12s,opacity .2s;}
@@ -107,58 +116,88 @@ textarea.txtin{min-height:88px;resize:vertical;line-height:1.45;}
 .sheet-hd .meta{display:flex;gap:8px;flex-wrap:wrap;}
 .sheet-sec{padding:18px 20px;border-bottom:1px solid var(--line);}
 .sheet-sec:last-child{border-bottom:none;}
-.sheet-sec h3{font-size:13px;letter-spacing:.5px;text-transform:uppercase;color:var(--orange);font-weight:700;margin:0 0 12px;display:flex;align-items:center;gap:7px;}
-.ex{display:flex;gap:12px;padding:14px 0;border-bottom:1px solid #1d1710;}
-.ex:last-child{border-bottom:none;}
-.ex .img{flex:0 0 60px;height:60px;border-radius:13px;overflow:hidden;border:1px solid var(--line);}
-.ex .img svg{width:100%;height:100%;display:block;}
-.ex .body{flex:1;min-width:0;}
-.ex .name{font-weight:800;font-size:17px;letter-spacing:-.2px;}
-.ex .scheme{color:var(--gold);font-size:13.5px;font-weight:600;margin-top:3px;}
-.ex .cue{color:var(--muted);font-size:13.5px;margin-top:5px;line-height:1.45;}
-.ex .cue b{color:#f3d3ac;font-weight:700;}
-.mini{display:inline-block;background:var(--pill);border:1px solid var(--line);border-radius:6px;padding:3px 8px;font-size:11.5px;font-weight:700;margin:5px 4px 0 0;color:#cbb69d;}
+.sheet-sec h3{font-size:13px;letter-spacing:.5px;text-transform:uppercase;color:var(--orange);font-weight:700;margin:0 0 14px;display:flex;align-items:center;gap:7px;}
+.exb{margin-bottom:20px;padding-bottom:18px;border-bottom:1px solid #1d1710;}
+.exb:last-child{border-bottom:none;margin-bottom:0;padding-bottom:0;}
+.exb .imgwrap{width:100%;height:190px;border-radius:16px;overflow:hidden;border:1px solid var(--line);background:#fff;position:relative;}
+.exb .imgwrap img{width:100%;height:100%;object-fit:contain;display:block;background:#fff;}
+.exb .name{font-weight:800;font-size:19px;letter-spacing:-.2px;margin-top:12px;}
+.exb .scheme{color:var(--gold);font-size:14px;font-weight:700;margin-top:4px;}
+.exb .cue{color:var(--muted);font-size:14px;margin-top:8px;line-height:1.5;}
+.exb .cue b{color:#f3d3ac;font-weight:700;}
+.mini{display:inline-block;background:var(--pill);border:1px solid var(--line);border-radius:6px;padding:3px 8px;font-size:11.5px;font-weight:700;margin:8px 5px 0 0;color:#cbb69d;}
 .recovery{background:#0c2716;border:1px solid #154d2c;color:#c7f3d8;border-radius:14px;padding:14px;font-size:14.5px;line-height:1.55;}
+.mv{display:flex;align-items:center;gap:12px;padding:9px 0;}
+.mv .ic{flex:0 0 54px;height:54px;border-radius:12px;overflow:hidden;border:1px solid var(--line);background:#fff;display:flex;align-items:center;justify-content:center;font-size:26px;}
+.mv .ic img{width:100%;height:100%;object-fit:contain;background:#fff;}
+.mv .ic.emo{background:#241b12;}
+.mv .t{flex:1;font-size:14.5px;color:#e7d9c8;font-weight:600;min-width:0;}
+.rowcard{display:flex;align-items:center;gap:14px;}
+.rowcard .ic{flex:0 0 66px;height:66px;border-radius:14px;overflow:hidden;border:1px solid var(--line);background:#fff;}
+.rowcard .ic img{width:100%;height:100%;object-fit:contain;background:#fff;}
+.rowcard .big{font-weight:800;font-size:20px;color:#fff;}
+.rowcard .sm{font-size:13px;color:var(--muted);font-weight:600;margin-top:2px;}
 .live-ex{position:relative;background:var(--card);border:1px solid var(--line);border-radius:16px;padding:16px;margin-bottom:12px;transition:.25s;}
 .live-ex.done{border-color:#154d2c;}
-.live-ex .top{display:flex;justify-content:space-between;align-items:center;}
-.live-ex .top .name{font-weight:800;font-size:18px;}
-.live-ex .top .badge{font-size:20px;font-weight:800;color:var(--green);}
+.live-ex .top{display:flex;justify-content:space-between;align-items:center;gap:8px;}
+.live-ex .top .name{font-weight:800;font-size:18px;min-width:0;}
+.live-ex .top .badge{font-size:20px;font-weight:800;color:var(--green);flex:0 0 auto;}
 .live-ex .target{color:var(--muted);font-size:13px;font-weight:600;margin-top:2px;}
 .setlog{display:flex;gap:8px;margin-top:12px;flex-wrap:wrap;}
 .setchip{background:#0d0a07;border:1px solid var(--line);border-radius:9px;padding:7px 11px;font-size:13.5px;font-weight:700;color:var(--gold);}
-.logrow{display:flex;gap:8px;margin-top:12px;}
-.logrow input{flex:1;text-align:center;padding:13px;font-size:16px;}
-.logrow button{flex:0 0 92px;background:linear-gradient(100deg,#ff8a2b,#ff5a1a);color:#fff;border-radius:12px;font-weight:700;}
+.logrow{display:flex;gap:8px;margin-top:12px;align-items:stretch;}
+.logrow input{flex:1 1 0;min-width:0;width:100%;text-align:center;padding:13px 6px;font-size:16px;}
+.logrow button{flex:0 0 82px;background:linear-gradient(100deg,#ff8a2b,#ff5a1a);color:#fff;border-radius:12px;font-weight:800;}
 .coachbubble{margin-top:12px;background:#0f1c2e;border:1px solid #1c3a5c;border-radius:14px;border-top-left-radius:4px;padding:13px 15px;font-size:15px;line-height:1.5;color:#e7f1fb;animation:pop .3s ease;}
+.coachbubble b{color:#bfe0ff;}
 @keyframes pop{from{opacity:0;transform:translateY(6px);}to{opacity:1;transform:none;}}
 .typing{display:inline-flex;gap:3px;}
 .typing i{width:6px;height:6px;border-radius:50%;background:var(--cyan);animation:tp 1s infinite;}
 .typing i:nth-child(2){animation-delay:.15s;}.typing i:nth-child(3){animation-delay:.3s;}
 @keyframes tp{0%,60%,100%{opacity:.25;transform:translateY(0);}30%{opacity:1;transform:translateY(-3px);}}
+.resttimer{position:fixed;left:0;right:0;bottom:calc(70px + var(--safe-bot));max-width:520px;margin:0 auto;z-index:36;
+  background:linear-gradient(100deg,#0a2138,#12100d);border-top:1px solid #12406e;padding:12px 16px;
+  display:none;align-items:center;justify-content:space-between;gap:12px;}
+.resttimer.show{display:flex;}
+.resttimer.due{background:linear-gradient(100deg,#0c2716,#12100d);border-top-color:#1fbf68;}
+.resttimer .lab{font-size:12px;font-weight:800;text-transform:uppercase;letter-spacing:.6px;color:var(--cyan);}
+.resttimer.due .lab{color:var(--green);}
+.resttimer .cd{font-weight:800;font-size:30px;color:#fff;letter-spacing:-1px;font-variant-numeric:tabular-nums;}
+.resttimer .x{background:var(--card2);border:1px solid var(--line);border-radius:10px;padding:8px 12px;font-weight:800;font-size:13px;color:var(--muted);}
 .chat{display:flex;flex-direction:column;gap:11px;padding-bottom:118px;}
 .msg{max-width:82%;padding:12px 15px;border-radius:18px;font-size:15px;line-height:1.5;}
 .msg.me{align-self:flex-end;background:linear-gradient(100deg,#ff8a2b,#ff5a1a);color:#fff;border-bottom-right-radius:5px;}
 .msg.ai{align-self:flex-start;background:var(--card2);border:1px solid #1c3a5c;border-bottom-left-radius:5px;}
-.logchip{align-self:center;background:#0c2716;border:1px solid #154d2c;color:var(--green);font-size:13px;font-weight:700;padding:8px 14px;border-radius:12px;text-align:center;max-width:90%;}
+.msg b{font-weight:800;}
+.logchip{align-self:center;background:#0c2716;border:1px solid #154d2c;color:var(--green);font-size:13px;font-weight:700;padding:8px 14px;border-radius:12px;text-align:center;max-width:92%;}
 .chatbar{position:fixed;left:0;right:0;bottom:calc(70px + var(--safe-bot));max-width:520px;margin:0 auto;padding:8px 14px;background:#12100dee;backdrop-filter:blur(18px);border-top:1px solid var(--line);display:flex;gap:8px;z-index:35;}
-.chatbar input{flex:1;background:#0d0a07;border:1px solid var(--line);border-radius:22px;padding:12px 16px;color:var(--txt);font-size:15px;}
+.chatbar input{flex:1;min-width:0;background:#0d0a07;border:1px solid var(--line);border-radius:22px;padding:12px 16px;color:var(--txt);font-size:15px;}
 .chatbar button{flex:0 0 46px;height:46px;border-radius:50%;background:linear-gradient(100deg,#ff8a2b,#ff5a1a);color:#fff;font-size:20px;font-weight:800;}
 .chartwrap{height:150px;margin-top:6px;}
-.pb{display:flex;justify-content:space-between;align-items:center;padding:11px 0;border-bottom:1px solid var(--line);}
+.pb{display:flex;justify-content:space-between;align-items:center;padding:11px 0;border-bottom:1px solid var(--line);gap:8px;}
 .pb:last-child{border-bottom:none;}
-.pb .n{font-weight:700;font-size:15px;}
+.pb .n{font-weight:700;font-size:15px;min-width:0;}
 .pb .p{font-weight:800;font-size:16px;color:var(--gold);}
+.del{flex:0 0 auto;background:#2a1512;border:1px solid #5c1c17;color:#ff8f84;border-radius:8px;padding:5px 10px;font-size:12px;font-weight:800;}
 .photodrop{border:1.5px dashed var(--line);border-radius:14px;padding:22px;text-align:center;color:var(--muted);font-weight:600;font-size:14px;}
 .photostrip{display:flex;gap:8px;overflow-x:auto;padding:4px 0;}
-.photostrip img{height:130px;border-radius:12px;border:1px solid var(--line);object-fit:cover;}
+.photocell{position:relative;flex:0 0 auto;}
+.photocell img{height:130px;border-radius:12px;border:1px solid var(--line);object-fit:cover;display:block;}
+.photocell .del{position:absolute;top:6px;right:6px;padding:3px 7px;}
+.hgroup{margin-bottom:6px;}
+.hgroup .hd{display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;}
+.hgroup .hd .dt{font-weight:800;font-size:15px;}
+.hline{display:flex;justify-content:space-between;padding:7px 0;border-bottom:1px solid #1d1710;font-size:14px;gap:8px;}
+.hline:last-child{border-bottom:none;}
+.hline .en{color:#e7d9c8;font-weight:600;min-width:0;}
+.hline .ev{color:var(--gold);font-weight:700;flex:0 0 auto;}
 .set-row{display:flex;justify-content:space-between;align-items:center;padding:15px 0;border-bottom:1px solid var(--line);gap:10px;}
 .set-row:last-child{border-bottom:none;}
 .switch{width:52px;height:30px;border-radius:15px;background:#0d0a07;border:1px solid var(--line);position:relative;transition:.2s;flex:0 0 52px;}
 .switch.on{background:linear-gradient(100deg,#3fe08a,#1fbf68);}
 .switch::after{content:"";position:absolute;top:3px;left:3px;width:22px;height:22px;border-radius:50%;background:#fff;transition:.2s;}
 .switch.on::after{transform:translateX(22px);}
-.toast{position:fixed;left:50%;bottom:calc(94px + var(--safe-bot));transform:translateX(-50%) translateY(20px);background:linear-gradient(100deg,#ff8a2b,#ff5a1a);color:#fff;padding:12px 20px;border-radius:12px;font-weight:700;font-size:14px;opacity:0;transition:.3s;z-index:60;box-shadow:0 8px 24px #ff5a1a55;pointer-events:none;max-width:90%;text-align:center;}
+.toast{position:fixed;left:50%;bottom:calc(96px + var(--safe-bot));transform:translateX(-50%) translateY(20px);background:linear-gradient(100deg,#ff8a2b,#ff5a1a);color:#fff;padding:12px 20px;border-radius:12px;font-weight:700;font-size:14px;opacity:0;transition:.3s;z-index:60;box-shadow:0 8px 24px #ff5a1a55;pointer-events:none;max-width:90%;text-align:center;}
 .toast.show{opacity:1;transform:translateX(-50%) translateY(0);}
 .section-h{font-size:12px;letter-spacing:.6px;text-transform:uppercase;color:var(--gold);font-weight:700;margin:22px 4px 10px;}
 .muted{color:var(--muted);}.center{text-align:center;}.mt{margin-top:14px;}.mb{margin-bottom:14px;}
@@ -171,38 +210,37 @@ a{color:var(--orange);}
 <body>
 <div id="app">
 
+  <!-- TODAY -->
   <section class="screen active" id="s-today">
     <div class="head">
       <div><div class="greet" id="greetLine">Good Morning</div><h1 class="display" id="greetName">Amir</h1><div class="date" id="todayDate"></div></div>
       <div class="avatar">A</div>
     </div>
+
+    <button class="btn green mb" onclick="go('checkin')" style="font-size:16px;padding:16px">✅ Start Daily Check-in</button>
+
     <div class="card hero tap" onclick="go('workout')">
       <div class="glow"></div>
-      <div class="eyebrow" id="heroPhase">Phase · Lean Recomp</div>
+      <div class="eyebrow" id="heroPhase">Today</div>
       <h2 class="display" id="heroTitle">Today's Workout</h2>
       <div class="sub" id="heroSub">Tap to build your session for today.</div>
       <button class="cta" onclick="event.stopPropagation();generateWorkout()">View Today's Workout</button>
     </div>
+
     <div class="grid" id="metricGrid"></div>
+
     <div class="card">
-      <div class="card-title">Coach's Notes</div>
-      <div class="coachnote"><div class="who">◆ Coach</div><div id="coachNote">Log your morning check-in and I'll tell you exactly what to do today. Consistency beats intensity — let's stack another day.</div></div>
+      <div class="card-title"><span>Weekly Itinerary</span><span class="itin-edit">tap a day to change</span></div>
+      <div id="itinList"></div>
     </div>
+
     <div class="card">
       <div class="powerbox"><div class="num" id="streakNum">0</div>
         <div><div class="lab">Day Streak</div><div style="font-size:13px;font-weight:600;color:var(--muted);margin-top:3px">Keep the flame alive 🔥</div></div></div>
     </div>
-    <div class="card">
-      <div class="card-title">Status</div>
-      <div class="row"><span class="k">Current Goal</span><span class="v" id="stGoal">Build physique</span></div>
-      <div class="row"><span class="k">Current Phase</span><span class="v" id="stPhase">Lean Recomp</span></div>
-      <div class="row"><span class="k">Current Cut</span><span class="v"><span class="pill orange" id="stCut">Wk 3 · −2.1kg</span></span></div>
-      <div class="row"><span class="k">Next Workout</span><span class="v" id="stNext">Push Day</span></div>
-      <div class="row"><span class="k">Location</span><span class="v"><span class="pill blue" id="stLoc">🏠 Dubai</span></span></div>
-    </div>
-    <button class="btn green" onclick="go('checkin')">Start Daily Check-in</button>
   </section>
 
+  <!-- CHECK-IN -->
   <section class="screen" id="s-checkin">
     <div class="head"><div><div class="greet">Every Morning</div><h1 class="display">Check-in</h1></div></div>
     <div class="card">
@@ -212,8 +250,6 @@ a{color:var(--orange);}
         <input type="range" min="1" max="10" value="7" id="ciSleep" oninput="ciSleepV.textContent=this.value" /></div>
       <div class="field"><label>Energy <span class="slideval"><span id="ciEnergyV">7</span>/10</span></label>
         <input type="range" min="1" max="10" value="7" id="ciEnergy" oninput="ciEnergyV.textContent=this.value" /></div>
-      <div class="field"><label>Hunger <span class="slideval"><span id="ciHungerV">5</span>/10</span></label>
-        <input type="range" min="1" max="10" value="5" id="ciHunger" oninput="ciHungerV.textContent=this.value" /></div>
       <div class="field"><label>Training today?</label>
         <div class="seg" id="ciPlanSeg"><button class="on" data-v="Yes" onclick="segPick(this)">Yes</button>
           <button data-v="Maybe" onclick="segPick(this)">Maybe</button><button data-v="Rest" onclick="segPick(this)">Rest</button></div></div>
@@ -224,13 +260,16 @@ a{color:var(--orange);}
     <div id="ciResult"></div>
   </section>
 
+  <!-- WORKOUT / TRAIN -->
   <section class="screen" id="s-workout">
-    <div class="head"><div><div class="greet">Today's Session</div><h1 class="display">Workout</h1></div>
-      <button class="btn sec" style="width:auto;padding:11px 15px;font-size:13px" onclick="generateWorkout()">↻ Regenerate</button></div>
+    <div class="head"><div><div class="greet">Today's Session</div><h1 class="display">Train</h1></div>
+      <button class="btn sec" style="width:auto;padding:11px 14px;font-size:12px" onclick="generateWorkout()">↻ Regen</button></div>
+    <button class="btn green mb" id="startLiveBtn" onclick="startLive()" style="font-size:16px;padding:16px">▶ Start Live Workout</button>
+    <div class="card rowcard" id="rowWarm"></div>
     <div id="workoutSheet"></div>
-    <button class="btn green mt" id="startLiveBtn" onclick="startLive()" style="display:none">▶ Start Live Workout</button>
   </section>
 
+  <!-- LIVE -->
   <section class="screen" id="s-live">
     <div class="head"><div><div class="greet">Texting your coach</div><h1 class="display">Live Mode</h1></div>
       <button class="btn ghost" style="width:auto;padding:10px 14px;font-size:13px" onclick="finishLive()">Finish</button></div>
@@ -241,39 +280,7 @@ a{color:var(--orange);}
     <button class="btn green mt" onclick="finishLive()">Finish & Get Recovery Plan</button>
   </section>
 
-  <section class="screen" id="s-progress">
-    <div class="head"><div><div class="greet">The long game</div><h1 class="display">Progress</h1></div></div>
-    <div class="grid">
-      <div class="metric"><div class="label">Weight</div><div class="val" id="pgWeight">84.2<small> kg</small></div><div class="muted" style="font-size:12px;margin-top:4px">▼ trending down</div></div>
-      <div class="metric"><div class="label">Waist</div><div class="val" id="pgWaist">87<small> cm</small></div><div class="muted" style="font-size:12px;margin-top:4px">▼ −2 cm / mo</div></div>
-      <div class="metric"><div class="label">Body Fat</div><div class="val" id="pgBf">18<small> %</small></div><div class="muted" style="font-size:12px;margin-top:4px">est. from photos</div></div>
-      <div class="metric"><div class="label">Lean Mass</div><div class="val">69<small> kg</small></div><div class="muted" style="font-size:12px;margin-top:4px">▲ holding</div></div>
-    </div>
-    <div class="card"><div class="card-title">Weight Trend · 8 Weeks</div><div class="chartwrap"><canvas id="wtChart"></canvas></div></div>
-    <div class="card"><div class="card-title">Strength PBs</div><div id="strengthPBs"></div></div>
-    <div class="card">
-      <div class="card-title">Concept2 Rowing · Manual Log</div>
-      <div id="rowingPBs"></div>
-      <div class="logrow mt">
-        <select class="txtin" id="rowDist" style="flex:0 0 116px;padding:12px;font-size:14px">
-          <option>500m</option><option>1000m</option><option selected>2000m</option><option>5000m</option><option>10000m</option></select>
-        <input class="txtin" id="rowTime" placeholder="mm:ss.s" style="text-align:center"/>
-        <button class="btn" style="flex:0 0 72px;padding:12px;font-size:13px" onclick="addRowing()">Log</button></div>
-      <div class="hint mt" style="font-size:13px">Type your time after each row — best per distance becomes your PB.</div>
-    </div>
-    <div class="card">
-      <div class="card-title">Physique Photos & AI Check</div>
-      <div class="photostrip" id="photoStrip"></div>
-      <label class="photodrop mt" style="display:block;cursor:pointer">+ Add a physique photo
-        <input type="file" accept="image/*" style="display:none" onchange="addPhoto(this)" /></label>
-      <button class="btn blue mt" onclick="analysePhysique()">🔍 Ask coach to analyse my physique</button>
-      <div class="hint mt" style="font-size:13px">Front / side / back in good light works best. The coach reads your latest photos and gives a read on body-fat, what's developing, and what to prioritise.</div>
-      <div id="physiqueOut"></div>
-    </div>
-    <button class="btn sec" onclick="weeklyReview()">📊 Run Weekly Review</button>
-    <div id="reviewOut"></div>
-  </section>
-
+  <!-- COACH -->
   <section class="screen" id="s-coach">
     <div class="head"><div><div class="greet">Always in your corner</div><h1 class="display">Coach</h1></div>
       <button class="btn ghost" style="width:auto;padding:10px 14px;font-size:13px" onclick="clearChat()">Clear</button></div>
@@ -284,6 +291,47 @@ a{color:var(--orange);}
     <button onclick="sendChat()">↑</button>
   </div>
 
+  <!-- PROGRESS -->
+  <section class="screen" id="s-progress">
+    <div class="head"><div><div class="greet">The long game</div><h1 class="display">Progress</h1></div></div>
+    <div class="grid">
+      <div class="metric"><div class="label">Weight</div><div class="val" id="pgWeight">84.2<small> kg</small></div><div class="muted" style="font-size:12px;margin-top:4px">▼ trending down</div></div>
+      <div class="metric"><div class="label">Waist</div><div class="val" id="pgWaist">87<small> cm</small></div><div class="muted" style="font-size:12px;margin-top:4px">▼ −2 cm / mo</div></div>
+      <div class="metric"><div class="label">Body Fat</div><div class="val" id="pgBf">18<small> %</small></div><div class="muted" style="font-size:12px;margin-top:4px">est. from photos</div></div>
+      <div class="metric"><div class="label">Lean Mass</div><div class="val">69<small> kg</small></div><div class="muted" style="font-size:12px;margin-top:4px">▲ holding</div></div>
+    </div>
+    <div class="card"><div class="card-title"><span>Weight Trend · 8 Weeks</span></div><div class="chartwrap"><canvas id="wtChart"></canvas></div></div>
+    <div class="card"><div class="card-title"><span>Strength PBs</span></div><div id="strengthPBs"></div></div>
+    <div class="card">
+      <div class="card-title"><span>Concept2 Rowing · Manual Log</span></div>
+      <div id="rowingPBs"></div>
+      <div class="logrow mt">
+        <select class="txtin" id="rowDist" style="flex:0 0 110px;padding:12px;font-size:14px">
+          <option>500m</option><option>1000m</option><option selected>2000m</option><option>5000m</option><option>10000m</option></select>
+        <input class="txtin" id="rowTime" placeholder="mm:ss.s" style="text-align:center"/>
+        <button class="btn" style="flex:0 0 66px;padding:12px;font-size:13px" onclick="addRowing()">Log</button></div>
+      <div id="rowingLog" class="mt"></div>
+    </div>
+    <div class="card">
+      <div class="card-title"><span>Physique Photos & AI Check</span></div>
+      <div class="photostrip" id="photoStrip"></div>
+      <label class="photodrop mt" style="display:block;cursor:pointer">+ Add a physique photo
+        <input type="file" accept="image/*" style="display:none" onchange="addPhoto(this)" /></label>
+      <button class="btn blue mt" onclick="analysePhysique()">🔍 Ask coach to analyse my physique</button>
+      <div id="physiqueOut"></div>
+    </div>
+    <button class="btn sec" onclick="weeklyReview()">📊 Run Weekly Review</button>
+    <div id="reviewOut"></div>
+  </section>
+
+  <!-- HISTORY -->
+  <section class="screen" id="s-history">
+    <div class="head"><div><div class="greet">What you actually did</div><h1 class="display">History</h1></div></div>
+    <div class="grid" id="histSummary"></div>
+    <div id="histBody"></div>
+  </section>
+
+  <!-- SETTINGS -->
   <section class="screen" id="s-settings">
     <div class="head"><div><div class="greet">Your coach's memory</div><h1 class="display">Settings</h1></div></div>
 
@@ -294,7 +342,7 @@ a{color:var(--orange);}
           <button data-v="demo" onclick="segPick(this,'prov')">Demo (offline)</button></div></div>
       <div class="field" style="margin-bottom:14px"><label>OpenAI API Key</label>
         <input class="txtin" id="setKey" type="password" placeholder="sk-..." />
-        <div class="hint mt">Stored only on this device. Get one at platform.openai.com. Needs a paid account (add billing) — gpt-5.5 and photo analysis don't work on the free tier.</div></div>
+        <div class="hint mt">Stored only on this device. Needs a paid account — gpt-5.5 & photo analysis don't work on the free tier.</div></div>
       <div class="field" style="margin-bottom:12px"><label>Model</label>
         <select class="txtin" id="setModel" onchange="onModelChange()">
           <option value="gpt-5.5">gpt-5.5 · newest (needs paid account)</option>
@@ -304,8 +352,7 @@ a{color:var(--orange);}
           <option value="__custom">Custom… (type exact model ID)</option>
         </select></div>
       <div class="field" id="customModelWrap" style="margin-bottom:12px;display:none"><label>Custom model ID</label>
-        <input class="txtin" id="setModelCustom" placeholder="e.g. gpt-5.5-2026-04-23" />
-        <div class="hint mt">Exact OpenAI model name. gpt-5.5's dated ID is gpt-5.5-2026-04-23.</div></div>
+        <input class="txtin" id="setModelCustom" placeholder="e.g. gpt-5.5-2026-04-23" /></div>
       <button class="btn mt" onclick="saveAI()">Save & Test Connection</button>
       <div id="aiTest" class="mt muted center" style="font-size:13px"></div>
     </div>
@@ -314,13 +361,12 @@ a{color:var(--orange);}
     <div class="card">
       <div class="field" style="margin-bottom:12px">
         <label>Everything the coach should know about me</label>
-        <textarea class="txtin" id="setMemory" style="min-height:210px" placeholder="Paste anything ChatGPT knows about you — training history, how you like to work out, past programs & PRs, what motivates you, how you like to be coached, food you eat, your personality. This is what makes the coach already know you."></textarea>
-        <div class="hint mt">Every coach reply — check-ins, live sets, chat, photo reads, weekly reviews — is built on top of this. Shorter & curated beats a giant raw dump. <span id="memCount"></span></div>
+        <textarea class="txtin" id="setMemory" style="min-height:200px" placeholder="Paste anything ChatGPT knows about you — training history, how you like to work out, past programs & PRs, what motivates you, your personality."></textarea>
+        <div class="hint mt">Injected into every coach reply. <span id="memCount"></span></div>
       </div>
       <label class="btn sec mb" style="cursor:pointer;display:block">Import from a file (.txt / .md / .json)
         <input type="file" accept=".txt,.md,.json,text/plain" style="display:none" onchange="importMemory(this)" /></label>
       <button class="btn green" onclick="saveMemory()">Save to Coach's Memory</button>
-      <div class="notebox mt">Tip: in ChatGPT, open Settings → Personalization → Memory (and your Custom Instructions), copy what's there, and paste it here. Or export your data and import the .json.</div>
     </div>
 
     <div class="section-h">Morning Reminder</div>
@@ -330,24 +376,23 @@ a{color:var(--orange);}
       <button class="btn green mb" onclick="addReminderICS()">📅 Add daily reminder to my calendar</button>
       <button class="btn sec" onclick="enableInAppReminder()">🔔 Enable in-app notification</button>
       <div id="remindMsg" class="hint mt" style="font-size:13px"></div>
-      <div class="notebox mt">iPhone won't let a web app fire a morning alert on its own while it's closed. The calendar button is the reliable route — tap it, add the repeating event, and iOS notifies you every morning. The in-app bell works while the app is open.</div>
     </div>
 
-    <div class="section-h">Profile & Rules — Remembered Forever</div>
+    <div class="section-h">Profile & Rules</div>
     <div class="card">
       <div class="field"><label>Name</label><input class="txtin" id="setName" value="Amir" /></div>
       <div class="field"><label>Location</label>
         <div class="seg" id="locSeg"><button class="on" data-v="home" onclick="segPick(this,'loc')">🏠 Dubai</button>
           <button data-v="greece" onclick="segPick(this,'loc')">✈️ Greece</button></div>
-        <div class="hint mt">Greece auto-switches to bodyweight. Home uses your gym.</div></div>
+        <div class="hint mt">Dubai = full home gym + time. Greece = no gym, no time, holiday — short bodyweight, maintenance.</div></div>
       <div class="field"><label>Goal</label><input class="txtin" id="setGoal" value="Build the physique I want — not chase bodyweight" /></div>
       <div class="field"><label>Current Phase</label><input class="txtin" id="setPhase" value="Lean Recomp / mini-cut" /></div>
       <div class="field"><label>Home gym equipment</label>
         <textarea class="txtin" id="setEquip">Adjustable dumbbells, barbell + plates, bench, pull-up bar, Concept2 rower, resistance bands</textarea></div>
       <div class="field"><label>Injuries & medical</label>
-        <textarea class="txtin" id="setInjuries">TFCC injury (right wrist) — avoid loaded wrist extension & heavy pressing on straight wrist. Klinefelter syndrome — manage recovery/fatigue, prioritise consistent progressive overload, be patient with strength curve.</textarea></div>
+        <textarea class="txtin" id="setInjuries">TFCC injury (right wrist) — avoid loaded wrist extension & heavy pressing on straight wrist. Klinefelter syndrome — manage recovery/fatigue, prioritise consistent progressive overload.</textarea></div>
       <div class="field"><label>Coaching rules</label>
-        <textarea class="txtin" id="setRules">Never make me choose workouts. Tell me exactly what to do. Technique beats weight. Never ego lift. Only increase load after previous weight is mastered with excellent form. Consistency beats intensity. One single workout image. Be direct, funny, encouraging — never robotic.</textarea></div>
+        <textarea class="txtin" id="setRules">Never make me choose workouts. Tell me exactly what to do. Technique beats weight. Never ego lift. Only increase load after previous weight mastered with excellent form. Consistency beats intensity. Be direct, funny, encouraging.</textarea></div>
       <button class="btn green mt" onclick="saveProfile()">Save Profile</button>
     </div>
 
@@ -364,26 +409,65 @@ a{color:var(--orange);}
 
 </div>
 
+<div class="resttimer" id="restTimer">
+  <div><div class="lab" id="restLab">Rest</div><div class="cd" id="restCd">1:30</div></div>
+  <button class="x" onclick="stopRest()">Skip</button>
+</div>
+
 <nav class="tabbar" id="tabbar">
   <button class="tab active" data-s="today" onclick="go('today')"><svg viewBox="0 0 24 24"><path d="M3 11.5 12 4l9 7.5"/><path d="M5 10v10h14V10"/></svg>Today</button>
   <button class="tab" data-s="workout" onclick="go('workout')"><svg viewBox="0 0 24 24"><path d="M6 7v10M18 7v10M3 9v6M21 9v6M6 12h12"/></svg>Train</button>
-  <button class="tab" data-s="progress" onclick="go('progress')"><svg viewBox="0 0 24 24"><path d="M4 19V5M4 19h16M8 16l3-4 3 3 5-7"/></svg>Progress</button>
   <button class="tab" data-s="coach" onclick="go('coach')"><svg viewBox="0 0 24 24"><path d="M4 5h16v11H8l-4 4z"/></svg>Coach</button>
+  <button class="tab" data-s="progress" onclick="go('progress')"><svg viewBox="0 0 24 24"><path d="M4 19V5M4 19h16M8 16l3-4 3 3 5-7"/></svg>Progress</button>
+  <button class="tab" data-s="history" onclick="go('history')"><svg viewBox="0 0 24 24"><path d="M3 12a9 9 0 1 0 3-6.7L3 8m0-5v5h5"/><path d="M12 8v4l3 2"/></svg>History</button>
   <button class="tab" data-s="settings" onclick="go('settings')"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M12 3v3M12 18v3M3 12h3M18 12h3M5.6 5.6l2.1 2.1M16.3 16.3l2.1 2.1M18.4 5.6l-2.1 2.1M7.7 16.3l-2.1 2.1"/></svg>Settings</button>
 </nav>
 <div class="toast" id="toast"></div>
 <script>
 
-/* ===== AMIR PT — the app is the memory, the LLM is the coach ===== */
+/* ===== AMIR PT ===== */
+const ROW_GIF="https://fitsmove.com/videos/2138-H1PESYI.gif";
+const EXIMG={
+ "Bench Press":"https://fitsmove.com/videos/0025-EIeI8Vf.gif",
+ "Incline DB Press":"https://fitsmove.com/videos/0314-ns0SIbU.gif",
+ "Overhead Press":"https://fitsmove.com/videos/0426-A6wtbuL.gif",
+ "Barbell Row":"https://fitsmove.com/videos/0027-eZyBC3j.gif",
+ "Lat Pulldown":"https://fitsmove.com/videos/0198-RVwzP10.gif",
+ "Pull-up":"https://fitsmove.com/videos/0652-lBDjFxJ.gif",
+ "Goblet Squat":"https://fitsmove.com/videos/1760-yn8yg1r.gif",
+ "Romanian Deadlift":"https://fitsmove.com/videos/0085-wQ2c4XD.gif",
+ "Bulgarian Split Squat":"https://fitsmove.com/videos/0410-qx4fgX7.gif",
+ "Lateral Raise":"https://fitsmove.com/videos/0334-DsgkuIt.gif",
+ "Face Pull":"https://fitsmove.com/videos/0203-wqNPGCg.gif",
+ "DB Curl":"https://fitsmove.com/videos/0294-NbVPDMW.gif",
+ "Triceps Pushdown":"https://fitsmove.com/videos/0201-3ZflifB.gif",
+ "Plank":"https://fitsmove.com/videos/2135-VBAWRPG.gif",
+ "Push-up":"https://fitsmove.com/videos/0662-I4hDWkc.gif",
+ "Pike Push-up":"https://fitsmove.com/videos/3662-XPUDTt7.gif",
+ "Bodyweight Squat":"https://fitsmove.com/videos/3119-75Bgtjy.gif",
+ "Walking Lunge":"https://fitsmove.com/videos/1460-IZVHb27.gif",
+ "Inverted Row":"https://fitsmove.com/videos/0499-bZGHsAZ.gif",
+ "Nordic Curl":"https://fitsmove.com/videos/0696-E4PwJqI.gif",
+ "Hollow Hold":"https://fitsmove.com/videos/3420-ZuXu4Eq.gif"
+};
+const SPLITS=["Push Day","Pull Day","Legs & Core","Upper Body","Full Body","Rest"];
+const DOW=["Sun","Mon","Tue","Wed","Thu","Fri","Sat"];
+const CAT={"Bench Press":"Push","Overhead Press":"Push","Incline DB Press":"Push","Lateral Raise":"Push","Triceps Pushdown":"Push","Push-up":"Push","Pike Push-up":"Push",
+ "Pull-up":"Pull","Barbell Row":"Pull","Lat Pulldown":"Pull","Face Pull":"Pull","DB Curl":"Pull","Inverted Row":"Pull",
+ "Goblet Squat":"Legs","Romanian Deadlift":"Legs","Bulgarian Split Squat":"Legs","Nordic Curl":"Legs","Bodyweight Squat":"Legs","Walking Lunge":"Legs",
+ "Plank":"Core","Hollow Hold":"Core"};
+
 const DEFAULTS = {
   profile:{name:"Amir", location:"home",
     goal:"Build the physique I want — not chase bodyweight",
     phase:"Lean Recomp / mini-cut",
     equipment:"Adjustable dumbbells, barbell + plates, bench, pull-up bar, Concept2 rower, resistance bands",
     injuries:"TFCC injury (right wrist) — avoid loaded wrist extension & heavy pressing on straight wrist. Klinefelter syndrome — manage recovery/fatigue, prioritise consistent progressive overload.",
-    rules:"Never make me choose workouts. Tell me exactly what to do. Technique beats weight. Never ego lift. Only increase load after previous weight mastered with excellent form. Consistency beats intensity. One single workout image. Be direct, funny, encouraging."},
+    rules:"Never make me choose workouts. Tell me exactly what to do. Technique beats weight. Never ego lift. Only increase load after previous weight mastered with excellent form. Consistency beats intensity. Be direct, funny, encouraging."},
   ai:{provider:"openai", key:"", model:"gpt-4o-mini"},
   memory:"", reminder:"07:00",
+  schedule:{0:"Rest",1:"Push Day",2:"Pull Day",3:"Legs & Core",4:"Push Day",5:"Pull Day",6:"Legs & Core"},
+  dayOverride:{date:null,split:null},
   checkins:[],
   strength:{
     "Bench Press":[{date:"prev", sets:[{w:40,r:8},{w:40,r:8},{w:40,r:8},{w:40,r:8}]}],
@@ -396,39 +480,39 @@ const DEFAULTS = {
   integrations:{"Apple Watch":true,"Concept2 (manual)":true,"Photos":true,"Camera":false,"Notifications":true}
 };
 let DB = load();
-function load(){ try{const s=localStorage.getItem("amirpt"); return s?{...structuredClone(DEFAULTS),...JSON.parse(s)}:structuredClone(DEFAULTS);}catch(e){return structuredClone(DEFAULTS);} }
-function save(){ localStorage.setItem("amirpt", JSON.stringify(DB)); }
+function load(){ try{const s=localStorage.getItem("amirpt"); const d=s?{...structuredClone(DEFAULTS),...JSON.parse(s)}:structuredClone(DEFAULTS);
+  if(!d.schedule) d.schedule=structuredClone(DEFAULTS.schedule); if(!d.dayOverride) d.dayOverride={date:null,split:null}; return d;}catch(e){return structuredClone(DEFAULTS);} }
+function save(){ try{localStorage.setItem("amirpt", JSON.stringify(DB));}catch(e){} }
+function today(){ return new Date().toISOString().slice(0,10); }
+function fmt(s){ return String(s).replace(/\*\*(.+?)\*\*/g,'<b>$1</b>').replace(/\n/g,'<br>'); }
 
 function go(s){
   document.querySelectorAll('.screen').forEach(x=>x.classList.remove('active'));
   document.getElementById('s-'+s).classList.add('active');
   document.querySelectorAll('.tab').forEach(t=>t.classList.toggle('active',t.dataset.s===s));
   document.getElementById('chatBar').style.display = s==='coach'?'flex':'none';
+  if(s!=='live') stopRest();
   window.scrollTo(0,0);
   if(s==='coach') renderChat();
-  if(s==='progress') drawChart();
+  if(s==='progress'){ drawChart(); renderRowingLog(); }
+  if(s==='history') renderHistory();
 }
 function toast(m){const t=document.getElementById('toast');t.textContent=m;t.classList.add('show');setTimeout(()=>t.classList.remove('show'),2600);}
 function segPick(btn,group){
   btn.parentElement.querySelectorAll('button').forEach(b=>b.classList.remove('on'));
   btn.classList.add('on');
-  if(group==='loc'){ DB.profile.location=btn.dataset.v; save(); }
+  if(group==='loc'){ DB.profile.location=btn.dataset.v; save(); updateStatus(); }
   if(group==='prov'){ DB.ai.provider=btn.dataset.v; }
 }
 
-const MUSCLE = {chest:"#ff8a2b",back:"#3fe08a",legs:"#f0b24a",shoulders:"#b98bff",arms:"#ff5a4d",core:"#3fd8f0"};
-function bodySVG(groups){
-  const on=g=>groups.includes(g)?MUSCLE[g]:"#2c2318";
-  return `<svg viewBox="0 0 60 60" xmlns="http://www.w3.org/2000/svg">
-    <rect width="60" height="60" fill="#0d0a07"/><circle cx="30" cy="12" r="6" fill="#3a2f20"/>
-    <rect x="24" y="19" width="12" height="4" rx="2" fill="${on('shoulders')}"/>
-    <rect x="21" y="23" width="18" height="12" rx="4" fill="${on('chest')}"/>
-    <rect x="24" y="34" width="12" height="8" rx="3" fill="${on('core')}"/>
-    <rect x="16" y="24" width="5" height="14" rx="2.5" fill="${on('arms')}"/>
-    <rect x="39" y="24" width="5" height="14" rx="2.5" fill="${on('arms')}"/>
-    <rect x="24" y="42" width="5" height="14" rx="2.5" fill="${on('legs')}"/>
-    <rect x="31" y="42" width="5" height="14" rx="2.5" fill="${on('legs')}"/></svg>`;
+/* muscle fallback svg as data uri */
+function bodySVGraw(groups){
+  const M={chest:"#ff8a2b",back:"#3fe08a",legs:"#f0b24a",shoulders:"#b98bff",arms:"#ff5a4d",core:"#3fd8f0"};
+  const on=g=>groups.includes(g)?M[g]:"#2c2318"; const q=String.fromCharCode(34);
+  return ("<svg xmlns=Qhttp://www.w3.org/2000/svgQ viewBox=Q0 0 60 60Q><rect width=Q60Q height=Q60Q fill=Q#0d0a07Q/><circle cx=Q30Q cy=Q12Q r=Q6Q fill=Q#3a2f20Q/><rect x=Q24Q y=Q19Q width=Q12Q height=Q4Q rx=Q2Q fill=Q"+on('shoulders')+"Q/><rect x=Q21Q y=Q23Q width=Q18Q height=Q12Q rx=Q4Q fill=Q"+on('chest')+"Q/><rect x=Q24Q y=Q34Q width=Q12Q height=Q8Q rx=Q3Q fill=Q"+on('core')+"Q/><rect x=Q16Q y=Q24Q width=Q5Q height=Q14Q rx=Q2.5Q fill=Q"+on('arms')+"Q/><rect x=Q39Q y=Q24Q width=Q5Q height=Q14Q rx=Q2.5Q fill=Q"+on('arms')+"Q/><rect x=Q24Q y=Q42Q width=Q5Q height=Q14Q rx=Q2.5Q fill=Q"+on('legs')+"Q/><rect x=Q31Q y=Q42Q width=Q5Q height=Q14Q rx=Q2.5Q fill=Q"+on('legs')+"Q/></svg>").split("Q").join(q);
 }
+function bodyURI(groups){ return "data:image/svg+xml,"+encodeURIComponent(bodySVGraw(groups)); }
+
 const EXDB = {
   "Bench Press":{m:["chest","shoulders","arms"],cue:"Touch chest, elbows 45°, drive through mid-foot.",wristAlt:"Neutral-grip DB Press (kinder on TFCC wrist)"},
   "Incline DB Press":{m:["chest","shoulders"],cue:"Slight arch, control the negative, don't clank the bells.",wristAlt:"Neutral-grip Incline Press"},
@@ -454,102 +538,165 @@ const EXDB = {
 };
 
 function latestCheckin(){ return DB.checkins[DB.checkins.length-1] || null; }
-function pickSplit(){ return ["Push Day","Pull Day","Legs & Core","Upper Body","Full Body"][(new Date().getDay())%5]; }
+function pickSplit(){
+  if(DB.dayOverride && DB.dayOverride.date===today() && DB.dayOverride.split) return DB.dayOverride.split;
+  return DB.schedule[new Date().getDay()] || "Full Body";
+}
 function buildWorkout(){
   const ci=latestCheckin(), loc=DB.profile.location;
   const energy=ci?ci.energy:7, sleep=ci?ci.sleep:7;
   const pain=(ci&&ci.pain?ci.pain:"").toLowerCase();
   const wrist=pain.includes("wrist")||/tfcc/.test(pain), knee=pain.includes("knee");
-  const lowEnergy=energy<=4||sleep<=4||(ci&&ci.plan==="Rest");
-  const split=pickSplit(), travel=loc==="greece";
+  const lowEnergy=energy<=4||sleep<=4;
+  const travel=loc==="greece";
+  let split=pickSplit();
+  const cooldown=[{t:"Doorway pec/chest stretch 45s/side",icon:"🧍"},{t:"Child's pose 60s",icon:"🧘"},{t:"Lat stretch 45s/side",icon:"🙆"},{t:"Box breathing 2 min (in-4 hold-4 out-4)",icon:"🌬️"}];
+
+  if(split==="Rest"){
+    return {title:travel?"Holiday · Rest":"Active Recovery",tag:travel?"Greece · Enjoy it":"Recovery Day",phase:DB.profile.phase,
+      note:travel?"Rest day on holiday — walk, swim, enjoy the food & drink guilt-free. Movement is a bonus, not a must.":"Rest day. Easy row or walk, hydrate, mobilise. Recovery is where the physique is built.",
+      reps:"—",sets:0,warmup:[],main:[],cooldown, recovery:"Sleep well, protein at meals, plenty of water."};
+  }
+
   let main;
   if(travel){ main=["Push-up","Pike Push-up","Bodyweight Squat","Walking Lunge","Inverted Row","Hollow Hold"]; }
   else if(/legs/i.test(split)){ main=["Goblet Squat","Romanian Deadlift","Bulgarian Split Squat","Nordic Curl","Plank"]; }
   else if(/pull/i.test(split)){ main=["Pull-up","Barbell Row","Lat Pulldown","Face Pull","DB Curl"]; }
   else if(/push/i.test(split)){ main=["Bench Press","Overhead Press","Incline DB Press","Lateral Raise","Triceps Pushdown"]; }
   else { main=["Bench Press","Barbell Row","Overhead Press","Lat Pulldown","DB Curl","Plank"]; }
+
   main=main.map(n=>{const e=EXDB[n]; if(!e) return n;
     if(wrist && e.wristAlt && /press|push|curl|pushdown|bench|pull-up/i.test(n) && e.wristAlt!=="Same") return "↔ "+n; return n;});
   if(knee){ main=main.map(n=>/squat|lunge|split/i.test(n)?"Romanian Deadlift":n); main=[...new Set(main)]; }
+
   let sets=3, note="";
-  if(lowEnergy){ sets=2; note="Energy/sleep is low — I cut volume ~30%. Show up, move well, bank the consistency. No heroics today."; }
-  else if(energy>=8&&sleep>=7){ sets=4; note="You're recovered and firing — full volume today. Still: technique first, never ego lift."; }
+  if(travel){ sets=2; main=main.slice(0,4);
+    note="Greece mode — no gym, no time, holiday. Quick ~15-min bodyweight circuit just to keep the engine on. Eat, drink, enjoy — showing up at all is the win."; }
+  else if(lowEnergy){ sets=2; note="Energy/sleep low — I cut volume ~30%. Show up, move well, bank the consistency."; }
+  else if(energy>=8&&sleep>=7){ sets=4; note="Recovered and firing — full volume, plenty of time. Technique first, never ego lift."; }
   else { note="Solid recovery. Standard volume. Own every rep."; }
-  const warmup=travel?["3 min brisk walk / skips","Arm circles ×15 each way","World's greatest stretch ×5/side","10 slow air squats"]
-    :["5 min Concept2 row, easy","Band pull-aparts ×20","Cat-cow ×8","Light warm-up set on first lift"];
-  const cooldown=["Doorway pec/chest stretch 45s/side","Child's pose 60s","Lat stretch 45s/side","Box breathing 2 min (in-4 hold-4 out-4)"];
-  return {title: travel? "Greece · Bodyweight "+(/legs/i.test(split)?"Lower":"Full Body") : split,
+
+  const warmup= travel
+    ? [{t:"3 min brisk walk / skips",icon:"🚶"},{t:"Arm circles ×15 each way",icon:"🔄"},{t:"World's greatest stretch ×5/side",icon:"🤸"},{t:"10 air squats",img:EXIMG["Bodyweight Squat"]}]
+    : [{t:"Concept2 row — 2,000m easy",img:ROW_GIF},{t:"Band pull-aparts ×20",img:EXIMG["Face Pull"]},{t:"Cat-cow ×8",icon:"🐈"},{t:"Light warm-up set on first lift",icon:"🏋️"}];
+
+  return {title: travel? "Greece · Bodyweight" : split,
     tag: travel? "Travel Mode · No Equipment" : "Home · Dubai Gym",
     phase: DB.profile.phase, note, reps: travel? "AMRAP-ish · 2 in reserve" : "8–12 reps", sets, warmup,
     main: main.map(n=>{const clean=n.replace("↔ ","");
       const e=EXDB[clean]||{m:["core"],cue:"Control the rep.",wristAlt:"Same"}; const flagged=n.startsWith("↔ ");
       return {name:clean, muscles:e.m, cue:e.cue, wristNote: flagged? e.wristAlt : null,
-        scheme: travel? `${sets} sets · ${e.m.includes('core')?'40–60s':'12–20 reps'}` : `${sets} sets · 8–12`,
+        scheme: travel? (sets+" sets · "+(e.m.includes('core')?"40–60s":"12–20 reps")) : (sets+" sets · 8–12"),
         rest: travel? "45–60s":"90s", rec: recommendLoad(clean)};}),
-    cooldown, recovery:"Hydrate (aim 3L today). 30–40g protein within the hour. Lights out by 11, phone out of the room. Recovery is where the physique is actually built."};
+    cooldown, recovery: travel?"Hydrate between drinks 😄. Grab some protein when you can. You're maintaining beautifully — don't stress the holiday.":"Hydrate (aim 3L). 30–40g protein within the hour. Lights out by 11. Recovery builds the physique."};
 }
 function recommendLoad(ex){
   const h=DB.strength[ex]; if(!h||!h.length) return null;
   const last=h[h.length-1], sets=last.sets||[]; if(!sets.length) return null;
   const topW=Math.max(...sets.map(s=>s.w)), allReps=sets.map(s=>s.r);
   const mastered=sets.filter(s=>s.w===topW).length>=Math.min(3,sets.length) && allReps.every(r=>r>=12);
-  if(mastered){ const bump=topW<20?1:2.5; return {text:`${topW+bump}kg — you mastered ${topW}kg with clean reps. Earned it.`,up:true,w:topW+bump}; }
-  return {text:`Stay at ${topW}kg. Master it with excellent form before we add load. No ego lifting.`,up:false,w:topW};
+  if(mastered){ const bump=topW<20?1:2.5; return {text:(topW+bump)+"kg — you mastered "+topW+"kg with clean reps. Earned it.",up:true,w:topW+bump}; }
+  return {text:"Stay at "+topW+"kg. Master it with excellent form before we add load. No ego lifting.",up:false,w:topW};
 }
+
+function mvHTML(item){
+  const ic = item.img
+    ? "<div class='ic'><img src='"+item.img+"' loading='lazy' onerror=\"this.parentElement.classList.add('emo');this.parentElement.textContent='🤸'\"></div>"
+    : "<div class='ic emo'>"+(item.icon||"•")+"</div>";
+  return "<div class='mv'>"+ic+"<div class='t'>"+item.t+"</div></div>";
+}
+function exImgHTML(name,muscles){
+  const src=EXIMG[name], fb=bodyURI(muscles);
+  if(src) return "<div class='imgwrap'><img src='"+src+"' alt='"+name+"' loading='lazy' onerror=\"this.onerror=null;this.src='"+fb+"';this.style.objectFit='cover'\"></div>";
+  return "<div class='imgwrap'><img src='"+fb+"' style='object-fit:cover'></div>";
+}
+
 function generateWorkout(){
   const w=buildWorkout(); DB.workout=w; save();
-  renderWorkoutSheet(w); document.getElementById('startLiveBtn').style.display='block'; go('workout');
+  renderWorkoutSheet(w);
+  document.getElementById('startLiveBtn').style.display = w.sets>0?'block':'none';
+  go('workout');
   document.getElementById('heroTitle').textContent=w.title;
   document.getElementById('heroSub').textContent=w.note;
-  document.getElementById('heroPhase').textContent="Phase · "+w.phase;
+  document.getElementById('heroPhase').textContent="Today · "+w.tag;
+}
+function renderRowWarm(){
+  const el=document.getElementById('rowWarm'); if(!el) return;
+  el.innerHTML="<div class='ic'><img src='"+ROW_GIF+"' loading='lazy' onerror=\"this.parentElement.textContent='🚣'\"></div>"+
+    "<div><div class='big'>Warm-up Row · 2,000m</div><div class='sm'>Easy pace ~2:10–2:20 /500m · ~9 min. Always start here.</div></div>";
 }
 function renderWorkoutSheet(w){
+  renderRowWarm();
+  if(w.sets===0){
+    document.getElementById('workoutSheet').innerHTML="<div class='sheet'><div class='sheet-hd'><div class='tag'>"+w.tag+"</div><h2 class='display'>"+w.title+"</h2></div>"+
+      "<div class='sheet-sec'><div class='recovery'>"+w.note+"</div></div>"+
+      "<div class='sheet-sec'><h3>◆ Mobility</h3>"+w.cooldown.map(mvHTML).join('')+"</div></div>";
+    return;
+  }
   const exHTML=w.main.map(e=>{
-    const rec=e.rec?`<div class="cue"><b>Load:</b> ${e.rec.text}</div>`:"";
-    const wn=e.wristNote?`<div class="cue" style="color:var(--gold)"><b>⚠ TFCC swap:</b> ${e.wristNote}</div>`:"";
-    return `<div class="ex"><div class="img">${bodySVG(e.muscles)}</div>
-      <div class="body"><div class="name">${e.name}</div><div class="scheme">${e.scheme} · rest ${e.rest}</div>
-        <div class="cue"><b>Cue:</b> ${e.cue}</div>${rec}${wn}
-        <div>${e.muscles.map(m=>`<span class="mini">${m}</span>`).join('')}</div></div></div>`;}).join('');
-  document.getElementById('workoutSheet').innerHTML=`
-  <div class="sheet"><div class="sheet-hd"><div class="tag">${w.tag}</div><h2 class="display">${w.title}</h2>
-      <div class="meta"><span class="pill orange">${w.sets} sets</span><span class="pill">${w.reps}</span><span class="pill purple">Phase · ${w.phase}</span></div></div>
-    <div class="sheet-sec"><h3>◆ Warm-up</h3>${w.warmup.map(x=>`<div class="cue" style="padding:4px 0">• ${x}</div>`).join('')}</div>
-    <div class="sheet-sec"><h3>◆ Main Workout</h3>${exHTML}</div>
-    <div class="sheet-sec"><h3>◆ Cool-down</h3>${w.cooldown.map(x=>`<div class="cue" style="padding:4px 0">• ${x}</div>`).join('')}</div>
-    <div class="sheet-sec"><h3>◆ Recovery Notes</h3><div class="recovery">${w.recovery}</div></div></div>`;
+    const rec=e.rec?"<div class='cue'><b>Load:</b> "+e.rec.text+"</div>":"";
+    const wn=e.wristNote?"<div class='cue' style='color:var(--gold)'><b>⚠ TFCC swap:</b> "+e.wristNote+"</div>":"";
+    return "<div class='exb'>"+exImgHTML(e.name,e.muscles)+
+      "<div class='name'>"+e.name+"</div><div class='scheme'>"+e.scheme+" · rest "+e.rest+"</div>"+
+      "<div class='cue'><b>Cue:</b> "+e.cue+"</div>"+rec+wn+
+      "<div>"+e.muscles.map(m=>"<span class='mini'>"+m+"</span>").join('')+"</div></div>";}).join('');
+  document.getElementById('workoutSheet').innerHTML=
+  "<div class='sheet'><div class='sheet-hd'><div class='tag'>"+w.tag+"</div><h2 class='display'>"+w.title+"</h2>"+
+    "<div class='meta'><span class='pill orange'>"+w.sets+" sets</span><span class='pill'>"+w.reps+"</span><span class='pill purple'>"+w.phase+"</span></div></div>"+
+  "<div class='sheet-sec'><h3>◆ Warm-up</h3>"+w.warmup.map(mvHTML).join('')+"</div>"+
+  "<div class='sheet-sec'><h3>◆ Main Workout</h3>"+exHTML+"</div>"+
+  "<div class='sheet-sec'><h3>◆ Cool-down</h3>"+w.cooldown.map(mvHTML).join('')+"</div>"+
+  "<div class='sheet-sec'><h3>◆ Recovery Notes</h3><div class='recovery'>"+w.recovery+"</div></div></div>";
 }
+
+/* rest timer + beep */
+let restInt=null, restLeft=0;
+function beep(){ try{ const C=window.AudioContext||window.webkitAudioContext; const c=new C(); const o=c.createOscillator(),g=c.createGain(); o.connect(g);g.connect(c.destination); o.type="sine"; o.frequency.value=880; g.gain.setValueAtTime(0.0001,c.currentTime); g.gain.exponentialRampToValueAtTime(0.35,c.currentTime+0.02); g.gain.exponentialRampToValueAtTime(0.0001,c.currentTime+0.5); o.start(); o.stop(c.currentTime+0.55);}catch(e){} }
+function restSeconds(str){ const m=String(str).match(/\d+/); return m?parseInt(m[0]):90; }
+function renderRest(){ const s=Math.max(restLeft,0); document.getElementById('restCd').textContent=Math.floor(s/60)+":"+String(s%60).padStart(2,'0'); }
+function startRest(sec,label){
+  const t=document.getElementById('restTimer'); t.classList.add('show'); t.classList.remove('due');
+  document.getElementById('restLab').textContent=label||"Rest · next set in";
+  restLeft=sec; renderRest();
+  if(restInt) clearInterval(restInt);
+  restInt=setInterval(()=>{ restLeft--; renderRest(); if(restLeft<=0){ clearInterval(restInt); restInt=null; restDue(); } },1000);
+}
+function restDue(){ const t=document.getElementById('restTimer'); t.classList.add('due'); document.getElementById('restLab').textContent="Next set — GO 💥"; document.getElementById('restCd').textContent="0:00"; beep(); setTimeout(beep,550); if(navigator.vibrate) try{navigator.vibrate([200,90,200]);}catch(e){} }
+function stopRest(){ if(restInt){clearInterval(restInt);restInt=null;} const t=document.getElementById('restTimer'); if(t){t.classList.remove('show');t.classList.remove('due');} }
 
 let liveState=null;
 function startLive(){
-  if(!DB.workout){ generateWorkout(); }
-  liveState=DB.workout.main.map(e=>({name:e.name,muscles:e.muscles,cue:e.cue,rec:e.rec,target:DB.workout.sets,sets:[]}));
+  if(!DB.workout || DB.workout.sets===0){ generateWorkout(); if(DB.workout.sets===0){ toast("Rest day — nothing to log"); return; } }
+  liveState=DB.workout.main.map(e=>({name:e.name,muscles:e.muscles,cue:e.cue,rec:e.rec,rest:e.rest,target:DB.workout.sets,sets:[]}));
   renderLive(); go('live');
 }
 function renderLive(){
   const total=liveState.reduce((a,e)=>a+e.target,0), done=liveState.reduce((a,e)=>a+e.sets.length,0);
-  const pct=Math.round(done/total*100);
+  const pct=total?Math.round(done/total*100):0;
   document.getElementById('liveProg').textContent=pct+"%"; document.getElementById('liveBar').style.width=pct+"%";
   document.getElementById('liveList').innerHTML=liveState.map((e,i)=>{
     const complete=e.sets.length>=e.target;
-    const chips=e.sets.map(s=>`<span class="setchip">${s.w}kg × ${s.r}</span>`).join('');
-    const targetLoad=e.rec?e.rec.w+"kg":"your working weight";
-    return `<div class="live-ex ${complete?'done':''}" id="le${i}">
-      <div class="top"><div><div class="name">${e.name}</div>
-        <div class="target">Target ${e.target} sets · ${e.sets.length}/${e.target} logged · start ${targetLoad}</div></div>
-        <div class="badge">${complete?'✓':''}</div></div><div class="setlog">${chips}</div>
-      ${complete?'':`<div class="logrow"><input id="w${i}" inputmode="decimal" placeholder="kg" value="${e.rec?e.rec.w:''}"/>
-        <input id="r${i}" inputmode="numeric" placeholder="reps"/><button onclick="logSet(${i})">Log</button></div>`}
-      <div id="cb${i}"></div></div>`;}).join('');
+    const chips=e.sets.map(s=>"<span class='setchip'>"+s.w+"kg × "+s.r+"</span>").join('');
+    const targetLoad=e.rec?e.rec.w+"kg":"working weight";
+    return "<div class='live-ex "+(complete?'done':'')+"' id='le"+i+"'>"+
+      "<div class='top'><div><div class='name'>"+e.name+"</div>"+
+        "<div class='target'>Target "+e.target+" sets · "+e.sets.length+"/"+e.target+" logged · start "+targetLoad+"</div></div>"+
+        "<div class='badge'>"+(complete?'✓':'')+"</div></div><div class='setlog'>"+chips+"</div>"+
+      (complete?'':"<div class='logrow'><input id='w"+i+"' inputmode='decimal' placeholder='kg' value='"+(e.rec?e.rec.w:'')+"'/>"+
+        "<input id='r"+i+"' inputmode='numeric' placeholder='reps'/><button onclick='logSet("+i+")'>Log</button></div>")+
+      "<div id='cb"+i+"'></div></div>";}).join('');
 }
 async function logSet(i){
   const w=parseFloat(document.getElementById('w'+i).value), r=parseInt(document.getElementById('r'+i).value);
   if(isNaN(w)||isNaN(r)){ toast("Enter weight and reps"); return; }
   liveState[i].sets.push({w,r}); saveSet(liveState[i].name,{w,r});
-  document.getElementById('cb'+i).innerHTML=`<div class="coachbubble"><div class="who">◆ Coach <span class="typing"><i></i><i></i><i></i></span></div></div>`;
+  const last=liveState[i].sets.length>=liveState[i].target;
+  if(!last) startRest(restSeconds(liveState[i].rest), liveState[i].name+" · next set in");
+  else stopRest();
+  document.getElementById('cb'+i).innerHTML="<div class='coachbubble'><div class='who'>◆ Coach <span class='typing'><i></i><i></i><i></i></span></div></div>";
   const reply=await coachSetReply(liveState[i],{w,r}); renderLive();
   const cb=document.getElementById('cb'+i);
-  if(cb) cb.innerHTML=`<div class="coachbubble"><div class="who">◆ Coach</div>${reply}</div>`;
+  if(cb) cb.innerHTML="<div class='coachbubble'><div class='who'>◆ Coach</div>"+reply+"</div>";
 }
 function saveSet(ex,set){
   if(!DB.strength[ex]) DB.strength[ex]=[];
@@ -561,103 +708,91 @@ async function coachSetReply(ex,set){
   const setNo=ex.sets.length,target=ex.target;
   if(DB.ai.provider==="openai"&&DB.ai.key){
     const sys=coachSystem()+"\nYou are mid-set in LIVE WORKOUT mode. Reply like texting — 1-3 short punchy lines. Give: verdict, load call for next set, ONE technique cue, and rest time. No fluff.";
-    const usr=`Exercise: ${ex.name}. Just logged set ${setNo}/${target}: ${set.w}kg × ${set.r}. History target start: ${ex.rec?ex.rec.text:'n/a'}. Cue on file: ${ex.cue}.`;
+    const usr="Exercise: "+ex.name+". Just logged set "+setNo+"/"+target+": "+set.w+"kg × "+set.r+". History start: "+(ex.rec?ex.rec.text:'n/a')+". Cue: "+ex.cue+".";
     const out=await callAI([{role:"system",content:sys},{role:"user",content:usr}],120);
-    if(out) return out.replace(/\n/g,"<br>");
+    if(out) return fmt(out);
   }
   const cue=ex.cue.split(",")[0];
   let verdict=set.r>=12?"Strong — top of the range.":set.r>=8?"Nice, clean reps.":"Tough set, respect.";
   let call;
-  if(setNo>=target){ call="Last set done. "+(ex.rec&&ex.rec.up?`Next session we try ${ex.rec.w}kg.`:`Lock in ${set.w}kg til it's easy.`); }
-  else if(set.r>=13){ call=`Stay at ${set.w}kg — another clean 12+ and we earn a bump soon.`; }
-  else if(set.r<6){ call=`Drop to ${(set.w-2.5>0?set.w-2.5:set.w)}kg next set — quality, not a grind.`; }
-  else { call=`Stay at ${set.w}kg. ${cue}.`; }
-  return `${verdict}<br>${call}<br><b>Rest 90s.</b> 💪`;
+  if(setNo>=target){ call="Last set done. "+(ex.rec&&ex.rec.up?"Next session we try "+ex.rec.w+"kg.":"Lock in "+set.w+"kg til it's easy."); }
+  else if(set.r>=13){ call="Stay at "+set.w+"kg — another clean 12+ and we earn a bump soon."; }
+  else if(set.r<6){ call="Drop to "+(set.w-2.5>0?set.w-2.5:set.w)+"kg next set — quality, not a grind."; }
+  else { call="Stay at "+set.w+"kg. "+cue+"."; }
+  return verdict+"<br>"+call+"<br><b>Rest 90s.</b> 💪";
 }
 function finishLive(){
+  stopRest();
   const done=liveState?liveState.reduce((a,e)=>a+e.sets.length,0):0;
   if(done>0){ DB.streak=(DB.streak||0)+1; save(); updateStreak(); }
   const rec=DB.workout?DB.workout.recovery:"Hydrate, protein, sleep.";
-  document.getElementById('liveList').innerHTML=`<div class="card"><div class="card-title">Session Complete</div>
-    <div class="coachnote"><div class="who">◆ Coach</div>Another one in the bank, Amir. ${done} sets logged, streak now 🔥 ${DB.streak}.<br><br>
-    <b>Recovery plan:</b><br>${rec}</div></div>`;
+  document.getElementById('liveList').innerHTML="<div class='card'><div class='card-title'><span>Session Complete</span></div>"+
+    "<div class='coachnote'><div class='who'>◆ Coach</div>Another one in the bank, Amir. "+done+" sets logged, streak now 🔥 "+DB.streak+".<br><br><b>Recovery:</b><br>"+rec+"</div></div>";
   toast("Logged · streak "+DB.streak);
 }
-function today(){ return new Date().toISOString().slice(0,10); }
 
+/* check-in */
 let planPick="Yes";
 document.addEventListener('click',e=>{ if(e.target.closest('#ciPlanSeg')) planPick=e.target.dataset.v||planPick; });
 async function submitCheckin(){
   const weight=parseFloat(document.getElementById('ciWeight').value);
   const ci={date:today(),weight:isNaN(weight)?null:weight,
     sleep:+document.getElementById('ciSleep').value,energy:+document.getElementById('ciEnergy').value,
-    hunger:+document.getElementById('ciHunger').value,plan:planPick,pain:document.getElementById('ciPain').value.trim()};
+    plan:planPick,pain:document.getElementById('ciPain').value.trim()};
   DB.checkins.push(ci);
   if(ci.weight){ DB.weights.push(ci.weight); if(DB.weights.length>8) DB.weights=DB.weights.slice(-8); }
+  if(ci.plan==="Rest"){ DB.dayOverride={date:today(),split:"Rest"}; }
   save();
-  const btn=document.getElementById('ciSubmit'); btn.disabled=true; btn.innerHTML='<span class="spin"></span> Analysing…';
+  const btn=document.getElementById('ciSubmit'); btn.disabled=true; btn.innerHTML="<span class='spin'></span> Analysing…";
   const analysis=await analyseCheckin(ci);
-  btn.disabled=false; btn.innerHTML='Analyse My Day';
-  document.getElementById('ciResult').innerHTML=`<div class="card mt"><div class="card-title">Coach's Read</div>
-      <div class="coachnote"><div class="who">◆ Coach</div>${analysis}</div>
-      <button class="btn green mt" onclick="generateWorkout()">Show me today's workout</button></div>`;
-  document.getElementById('coachNote').innerHTML=analysis;
-  renderMetrics(); updateStatus(); toast("Check-in saved");
+  btn.disabled=false; btn.innerHTML="Analyse My Day";
+  document.getElementById('ciResult').innerHTML="<div class='card mt'><div class='card-title'><span>Coach's Read</span></div>"+
+      "<div class='coachnote'><div class='who'>◆ Coach</div>"+analysis+"</div>"+
+      "<button class='btn green mt' onclick=\"generateWorkout()\">Show me today's workout</button></div>";
+  renderMetrics(); updateStatus(); renderItin(); toast("Check-in saved");
 }
 async function analyseCheckin(ci){
   if(DB.ai.provider==="openai"&&DB.ai.key){
-    const sys=coachSystem()+"\nThe user just did their morning check-in. Give a warm, direct 3-4 sentence read: comment on their numbers, what it means for today's training/volume, and what you're adjusting. Reference injuries/context if relevant.";
-    const usr=`Morning check-in: weight ${ci.weight||'—'}kg, sleep ${ci.sleep}/10, energy ${ci.energy}/10, hunger ${ci.hunger}/10, plan: ${ci.plan}, pain: ${ci.pain||'none'}. Location: ${DB.profile.location}.`;
+    const sys=coachSystem()+"\nThe user just did their morning check-in. Give a warm, direct 3-4 sentence read: comment on the numbers, what it means for today's training/volume, what you're adjusting. Reference injuries/context if relevant.";
+    const usr="Morning check-in: weight "+(ci.weight||'—')+"kg, sleep "+ci.sleep+"/10, energy "+ci.energy+"/10, plan: "+ci.plan+", pain: "+(ci.pain||'none')+". Location: "+DB.profile.location+". Today is scheduled: "+pickSplit()+".";
     const out=await callAI([{role:"system",content:sys},{role:"user",content:usr}],220);
-    if(out) return out.replace(/\n/g,"<br>");
+    if(out) return fmt(out);
   }
   let bits=[];
-  if(ci.sleep<=4) bits.push("Sleep's low — I'm trimming volume ~30% so we don't dig a recovery hole. With Klinefelter, protecting recovery is how we keep progressing.");
+  if(ci.sleep<=4) bits.push("Sleep's low — I'm trimming volume ~30% so we don't dig a recovery hole. Protecting recovery is how we keep progressing.");
   else if(ci.sleep>=7&&ci.energy>=8) bits.push("Slept well and high energy — green light for full volume today.");
   else bits.push("Recovery looks fine. Standard session today.");
-  if(ci.energy<=4) bits.push("Energy's flat — show up, move well. Consistency beats intensity, always.");
-  if(ci.hunger>=8) bits.push("Hunger's spiking on the cut — hit protein early and add volume-food. We hold the deficit but don't suffer.");
+  if(ci.energy<=4) bits.push("Energy's flat — show up, move well. Consistency beats intensity.");
   if(ci.pain){ const p=ci.pain.toLowerCase();
-    if(p.includes("wrist")||p.includes("tfcc")) bits.push("Wrist flagged — I've swapped straight-wrist pressing for neutral-grip to protect that TFCC. Non-negotiable.");
-    if(p.includes("knee")) bits.push("Knee flagged — pulling deep knee flexion, subbing hip-hinge work. We train around it, not through it.");}
-  if(ci.plan==="Rest") bits.push("Rest day logged — that's discipline. Walk, hydrate, stretch. See you tomorrow.");
+    if(p.includes("wrist")||p.includes("tfcc")) bits.push("Wrist flagged — swapped straight-wrist pressing for neutral-grip. Non-negotiable.");
+    if(p.includes("knee")) bits.push("Knee flagged — pulling deep knee flexion, subbing hip-hinge work.");}
+  if(ci.plan==="Rest") bits.push("Rest day logged — walk, hydrate, stretch. See you tomorrow.");
   bits.push("Goal stays the same: the physique, not the scale. 💪");
   return bits.join(" ");
 }
 
 function coachSystem(){
   const p=DB.profile;
-  const recentCk=DB.checkins.slice(-5).map(c=>`  ${c.date}: wt ${c.weight||'—'}kg, sleep ${c.sleep}, energy ${c.energy}, hunger ${c.hunger}, plan ${c.plan}, pain ${c.pain||'none'}`).join("\n")||"  (none yet)";
-  const strength=Object.entries(DB.strength).map(([k,v])=>{const last=v[v.length-1];const sets=(last.sets||[]).map(s=>`${s.w}×${s.r}`).join(", ");return `  ${k}: last → ${sets}`;}).join("\n");
-  const rowing=DB.rowing.map(r=>`  ${r.dist}: ${r.time}`).join("\n")||"  (none)";
-  const mem=DB.memory? `\n\nWHO AMIR IS (in his own words, imported from his ChatGPT memory — treat this as high-priority truth about his history, preferences, personality and how he likes to train):\n${DB.memory}\n` : "";
-  return `You are Amir's personal trainer — the ONLY coach he has. You know him deeply and remember everything. This app stores his data; you are the coaching brain.${mem}
-
-PERSONALITY: Direct, funny, warm, encouraging. Never robotic, never generic. You challenge him, explain WHY, celebrate wins. Talk like a real PT texting his client. Keep it tight.
-
-PERMANENT RULES (never forget):
-- Goal: ${p.goal}. It's about the physique he wants, NOT bodyweight targets.
-- He has Klinefelter syndrome — respect recovery/fatigue, be patient with the strength curve; consistency + progressive overload win.
-- Previous TFCC injury (right wrist) — avoid loaded wrist extension / straight-wrist heavy pressing; prefer neutral-grip. If wrist pain reported, swap exercises immediately.
-- Technique beats weight. Never ego lift. Only increase load after current weight is MASTERED with excellent form.
-- He never chooses workouts — YOU decide and tell him exactly what to do.
-- Consistency beats intensity.
-- Trains at home gym in Dubai; bodyweight only when in Greece.
-- Equipment (home): ${p.equipment}
-
-CONTEXT NOW:
-- Location: ${p.location==='greece'?'GREECE → bodyweight only':'HOME (Dubai) → full gym'}
-- Phase: ${p.phase}
-- Custom rules: ${p.rules}
-
-RECENT CHECK-INS:
-${recentCk}
-
-STRENGTH HISTORY (most recent):
-${strength}
-
-CONCEPT2 ROWING PBs:
-${rowing}`;
+  const recentCk=DB.checkins.slice(-5).map(c=>"  "+c.date+": wt "+(c.weight||'—')+"kg, sleep "+c.sleep+", energy "+c.energy+", plan "+c.plan+", pain "+(c.pain||'none')).join("\n")||"  (none yet)";
+  const strength=Object.entries(DB.strength).map(([k,v])=>{const last=v[v.length-1];const sets=(last.sets||[]).map(s=>s.w+"×"+s.r).join(", ");return "  "+k+": last → "+sets;}).join("\n");
+  const rowing=DB.rowing.map(r=>"  "+r.dist+": "+r.time).join("\n")||"  (none)";
+  const mem=DB.memory? "\n\nWHO AMIR IS (his own words / ChatGPT memory — high-priority truth about his history, preferences, personality, how he likes to train):\n"+DB.memory+"\n":"";
+  const sched=Object.keys(DB.schedule).map(k=>"  "+DOW[k]+": "+DB.schedule[k]).join("\n");
+  return "You are Amir's personal trainer — the ONLY coach he has. You know him deeply and remember everything. This app stores his data; you are the coaching brain."+mem+"\n\n"+
+"PERSONALITY: Direct, funny, warm, encouraging. Never robotic or generic. Challenge him, explain WHY, celebrate wins. Text like a real PT. Keep it tight.\n\n"+
+"PERMANENT RULES:\n"+
+"- Goal: "+p.goal+". The physique he wants, NOT bodyweight targets.\n"+
+"- Klinefelter syndrome — respect recovery/fatigue, patient strength curve; consistency + progressive overload win.\n"+
+"- TFCC injury (right wrist) — avoid loaded wrist extension / straight-wrist heavy pressing; prefer neutral-grip. If wrist pain reported, swap immediately.\n"+
+"- Technique beats weight. Never ego lift. Only add load after current weight is MASTERED with clean form.\n"+
+"- He never chooses workouts — YOU decide and tell him exactly what to do.\n"+
+"- Consistency beats intensity.\n\n"+
+"LOCATION RULES (important):\n"+
+"- DUBAI (home): full home gym AND plenty of time. Full proper sessions. Equipment: "+p.equipment+".\n"+
+"- GREECE: NO gym, NO time, he's ON HOLIDAY eating & drinking. Give SHORT (~15 min) bodyweight sessions, maintenance mindset. Do NOT guilt him about food/drink — encourage enjoying it; any movement is a bonus.\n\n"+
+"YOU CAN EDIT THE APP: To change today's planned workout, put on its OWN line a directive exactly like:\n[[SET_DAY: Legs & Core]]\nValid values: Push Day, Pull Day, Legs & Core, Upper Body, Full Body, Rest. The app applies it and regenerates today's session. Use this whenever Amir asks you to change or fix the day (e.g. it says Push but should be Legs).\n\n"+
+"CONTEXT NOW:\n- Location: "+(p.location==='greece'?'GREECE (bodyweight, short, holiday)':'HOME Dubai (full gym + time)')+"\n- Phase: "+p.phase+"\n- Today scheduled: "+pickSplit()+"\n- Custom rules: "+p.rules+"\n\n"+
+"WEEKLY SCHEDULE:\n"+sched+"\n\nRECENT CHECK-INS:\n"+recentCk+"\n\nSTRENGTH HISTORY:\n"+strength+"\n\nCONCEPT2 ROWING PBs:\n"+rowing;
 }
 
 function aiIsReasoning(model){ return /^gpt-5/i.test(model)||/^o\d/i.test(model); }
@@ -673,12 +808,13 @@ async function callAI(messages,maxTokens){
     const res=await fetch("https://api.openai.com/v1/chat/completions",{
       method:"POST",headers:{"Content-Type":"application/json","Authorization":"Bearer "+DB.ai.key},
       body:JSON.stringify(aiBody(messages,maxTokens))});
-    if(!res.ok){ let m=""; try{ m=((await res.json()).error||{}).message||""; }catch(_){} console.warn("AI error",res.status,m); toast("AI error "+res.status+(m?": "+m.slice(0,50):"")); return null; }
+    if(!res.ok){ let m=""; try{ m=((await res.json()).error||{}).message||""; }catch(_){} console.warn("AI",res.status,m); toast("AI error "+res.status+(m?": "+m.slice(0,50):"")); return null; }
     const j=await res.json();
     return (j.choices&&j.choices[0]&&j.choices[0].message&&j.choices[0].message.content||"").trim()||null;
   }catch(e){ console.warn(e); return null; }
 }
 
+/* natural-language lift logging */
 const ALIAS=[
   [/incline/,"Incline DB Press"],[/bench/,"Bench Press"],
   [/overhead|ohp|shoulder press/,"Overhead Press"],[/pike/,"Pike Push-up"],
@@ -714,11 +850,20 @@ function parseLog(text){
   if(attached.length===1) return {exercise:ex, sets:attached};
   return null;
 }
+function applyDayDirective(dow_split){
+  const raw=dow_split.trim().toLowerCase();
+  let match=SPLITS.find(s=>s.toLowerCase()===raw);
+  if(!match){ if(/leg/.test(raw))match="Legs & Core"; else if(/push/.test(raw))match="Push Day"; else if(/pull/.test(raw))match="Pull Day"; else if(/upper/.test(raw))match="Upper Body"; else if(/full/.test(raw))match="Full Body"; else if(/rest/.test(raw))match="Rest"; }
+  if(!match) return null;
+  DB.dayOverride={date:today(),split:match}; DB.schedule[new Date().getDay()]=match; save();
+  generateWorkout(); renderItin();
+  return match;
+}
 
 function renderChat(){
   const w=document.getElementById('chatWrap');
-  if(!DB.chat.length){ DB.chat.push({role:"ai",text:"Morning Amir 👊 I've got your whole history — injuries, phase, lifts, the lot. Tell me how you're feeling and I'll sort your day. And you can log lifts right here — just type e.g. \"bench 40 x8 x8 x8\" and I'll save it to your history."}); }
-  w.innerHTML=DB.chat.map(m=> m.role==='log' ? `<div class="logchip">${m.text}</div>` : `<div class="msg ${m.role==='me'?'me':'ai'}">${m.text}</div>`).join('');
+  if(!DB.chat.length){ DB.chat.push({role:"ai",text:"Morning Amir 👊 I've got your whole history — injuries, phase, lifts, the lot. Tell me how you're feeling and I'll sort your day. Log lifts here too — e.g. \"bench 40 x8 x8 x8\". And if the day's wrong (says Push but should be Legs), just tell me and I'll change it in the app."}); }
+  w.innerHTML=DB.chat.map(m=> m.role==='log' ? "<div class='logchip'>"+m.text+"</div>" : "<div class='msg "+(m.role==='me'?'me':'ai')+"'>"+m.text+"</div>").join('');
   setTimeout(()=>window.scrollTo(0,document.body.scrollHeight),50);
 }
 async function sendChat(){
@@ -727,12 +872,12 @@ async function sendChat(){
   const log=parseLog(txt); let logNote="";
   if(log){
     log.sets.forEach(s=>saveSet(log.exercise,s));
-    const summary=log.sets.map(s=>`${s.w}kg×${s.r}`).join(", ");
-    DB.chat.push({role:"log",text:`📌 Saved to history — ${log.exercise}: ${summary}`}); save(); renderChat();
-    logNote=`(SYSTEM: Amir just logged ${log.exercise} — ${summary} — and it is already saved to his strength history. Acknowledge it, compare briefly to his previous ${log.exercise} numbers, and per the progression rules tell him whether to hold or add load next time.)`;
+    const summary=log.sets.map(s=>s.w+"kg×"+s.r).join(", ");
+    DB.chat.push({role:"log",text:"📌 Saved to history — "+log.exercise+": "+summary}); save(); renderChat();
+    logNote="(SYSTEM: Amir just logged "+log.exercise+" — "+summary+" — already saved to his strength history. Acknowledge, compare to previous "+log.exercise+" numbers, and per the rules say hold or add load next time.)";
   }
   const w=document.getElementById('chatWrap');
-  w.insertAdjacentHTML('beforeend',`<div class="msg ai" id="typing"><span class="typing"><i></i><i></i><i></i></span></div>`);
+  w.insertAdjacentHTML('beforeend',"<div class='msg ai' id='typing'><span class='typing'><i></i><i></i><i></i></span></div>");
   setTimeout(()=>window.scrollTo(0,document.body.scrollHeight),50);
   let reply;
   if(DB.ai.provider==="openai"&&DB.ai.key){
@@ -743,72 +888,103 @@ async function sendChat(){
   }
   if(!reply) reply=log?localLogReply(log):localCoachReply(txt);
   const ty=document.getElementById('typing'); if(ty) ty.remove();
-  DB.chat.push({role:"ai",text:reply.replace(/\n/g,"<br>")}); save(); renderChat();
+  // handle SET_DAY directive
+  const dir=reply.match(/\[\[\s*SET_DAY\s*:\s*([^\]]+)\]\]/i);
+  if(dir){ const applied=applyDayDirective(dir[1]); reply=reply.replace(/\[\[\s*SET_DAY\s*:[^\]]+\]\]/ig,'').trim();
+    if(applied){ DB.chat.push({role:"log",text:"🔁 Coach changed today → "+applied}); } }
+  DB.chat.push({role:"ai",text:fmt(reply||"Done.")}); save(); renderChat();
+  updateStatus();
 }
 function localLogReply(log){
   const rec=recommendLoad(log.exercise);
-  return `Logged and saved 💾 ${log.exercise} is in your history now. ${rec?rec.text:''} Keep the reps crisp and we'll know exactly where to push next week.`;
+  return "Logged and saved 💾 "+log.exercise+" is in your history now. "+(rec?rec.text:'')+" Keep the reps crisp and we'll know exactly where to push next week.";
 }
 function localCoachReply(t){
   const s=t.toLowerCase();
-  if(/tired|exhaust|sore|rough|bad day/.test(s)) return "Heard. Some days the win is just turning up. Cut the volume, keep quality high, protect recovery. Tomorrow we go again. 💪";
-  if(/wrist|tfcc/.test(s)) return "Wrist first, always. Switch to neutral-grip DB work today — no straight-wrist pressing. We train around it. Ice + mobility tonight.";
-  if(/greece|travel|holiday/.test(s)) return "Travel mode on. Bodyweight sessions — push-ups, pike press, split squats, inverted rows. You'll hold everything you've built. ✈️";
-  if(/weight|scale|fat/.test(s)) return "Remember the deal — physique, not the number. The scale is one noisy data point. Waist, photos, and how your lifts look matter more.";
-  if(/increase|heavier|bump|progress/.test(s)) return "We only add load once the current weight is mastered with clean reps — no ego lifting. Master it, then earn the bump.";
-  return "Got it. Tell me how you slept, your energy, and any niggles, and I'll tell you exactly what to do today. And log any lifts here — I'll remember them.";
+  if(/change.*(leg|pull|push|upper|full|rest)|make.*(leg|pull|push).*day|should be (leg|pull|push)/.test(s)){
+    let sp=/leg/.test(s)?"Legs & Core":/pull/.test(s)?"Pull Day":/push/.test(s)?"Push Day":/upper/.test(s)?"Upper Body":/full/.test(s)?"Full Body":/rest/.test(s)?"Rest":null;
+    if(sp){ applyDayDirective(sp); return "Done — switched today to <b>"+sp+"</b>. Fresh session is ready in the Train tab. 💪"; }
+  }
+  if(/tired|exhaust|sore|rough|bad day/.test(s)) return "Heard. Some days the win is just turning up. Cut volume, keep quality high, protect recovery. Tomorrow we go again. 💪";
+  if(/wrist|tfcc/.test(s)) return "Wrist first, always. Neutral-grip DB work today — no straight-wrist pressing. We train around it.";
+  if(/greece|travel|holiday/.test(s)) return "Travel mode — short bodyweight circuits, maintenance. Eat, drink, enjoy the holiday. Showing up at all is the win. ✈️";
+  if(/weight|scale|fat/.test(s)) return "Physique, not the number. Waist, photos and how your lifts look matter more than the scale.";
+  if(/increase|heavier|bump|progress/.test(s)) return "We add load only once the current weight is mastered with clean reps. Master it, then earn the bump.";
+  return "Got it. Tell me how you slept, your energy, any niggles — and I'll set your day. Log lifts here, or tell me to change the day and I'll fix it.";
 }
 function clearChat(){ DB.chat=[]; save(); renderChat(); }
 
 async function analysePhysique(){
   const out=document.getElementById('physiqueOut');
   if(!DB.photos.length){ toast("Add a photo first"); return; }
-  if(DB.ai.provider!=="openai"||!DB.ai.key){
-    out.innerHTML=`<div class="card mt"><div class="coachnote"><div class="who">◆ Coach</div>To actually see your photos I need a live OpenAI key on a paid account (offline mode can't view images). Add one in Settings and I'll give you a real read — body-fat estimate, what's developing, and what to prioritise.</div></div>`;
-    return;
-  }
-  out.innerHTML=`<div class="card mt center muted"><span class="spin"></span> Coach is looking at your photos…</div>`;
+  if(DB.ai.provider!=="openai"||!DB.ai.key){ out.innerHTML="<div class='card mt'><div class='coachnote'><div class='who'>◆ Coach</div>To see your photos I need a live OpenAI key on a paid account. Add one in Settings and I'll give you a real read.</div></div>"; return; }
+  out.innerHTML="<div class='card mt center muted'><span class='spin'></span> Coach is looking at your photos…</div>";
   const recent=DB.photos.slice(-3);
-  const content=[{type:"text",text:"These are my latest physique photos. Give me an honest, encouraging read: estimate my body-fat %, tell me which muscle groups are developing well and which to prioritise for the physique I'm chasing, and how it fits my current phase ("+DB.profile.phase+"). 4-6 sentences, no fluff, coach tone."}];
+  const content=[{type:"text",text:"My latest physique photos. Honest, encouraging read: estimate body-fat %, which muscle groups are developing well and which to prioritise for the physique I want, and how it fits my phase ("+DB.profile.phase+"). 4-6 sentences, coach tone."}];
   recent.forEach(p=>content.push({type:"image_url",image_url:{url:p.src}}));
-  const sys=coachSystem()+"\nYou can see the attached photos. Be constructive and specific but never body-shaming; frame everything around his physique goal and phase.";
+  const sys=coachSystem()+"\nYou can see the attached photos. Constructive and specific, never body-shaming; frame around his physique goal and phase.";
   const reply=await callAI([{role:"system",content:sys},{role:"user",content}],450);
-  out.innerHTML=`<div class="card mt"><div class="card-title">Coach's Physique Read · ${today()}</div>
-    <div class="coachnote"><div class="who">◆ Coach</div>${reply?reply.replace(/\n/g,"<br>"):"Couldn't reach the AI — check your key/model/billing in Settings."}</div></div>`;
+  out.innerHTML="<div class='card mt'><div class='card-title'><span>Coach's Physique Read · "+today()+"</span></div><div class='coachnote'><div class='who'>◆ Coach</div>"+(reply?fmt(reply):"Couldn't reach the AI — check key/model/billing.")+"</div></div>";
 }
-
 async function weeklyReview(){
   const out=document.getElementById('reviewOut');
-  out.innerHTML=`<div class="card mt"><div class="card-title">Weekly Review</div><div class="center muted"><span class="spin"></span> Analysing your week…</div></div>`;
+  out.innerHTML="<div class='card mt'><div class='card-title'><span>Weekly Review</span></div><div class='center muted'><span class='spin'></span> Analysing…</div></div>";
   let text;
   if(DB.ai.provider==="openai"&&DB.ai.key){
-    const sys=coachSystem()+"\nIt's Saturday review day. Analyse the week: weight trend, waist, strength gains, adherence. Give 4-5 sentences + ONE concrete adjustment for next week.";
-    text=await callAI([{role:"system",content:sys},{role:"user",content:`Weights: ${DB.weights.join(", ")}kg. Strength: ${Object.entries(DB.strength).map(([k,v])=>k+" "+(v[v.length-1].sets||[]).map(s=>s.w+'x'+s.r).join('/')).join(' | ')}. Give my Saturday review.`}],400);
+    const sys=coachSystem()+"\nSaturday review. Analyse weight trend, strength gains, adherence. 4-5 sentences + ONE concrete adjustment for next week.";
+    text=await callAI([{role:"system",content:sys},{role:"user",content:"Weights: "+DB.weights.join(", ")+"kg. Strength: "+Object.entries(DB.strength).map(([k,v])=>k+" "+(v[v.length-1].sets||[]).map(s=>s.w+'x'+s.r).join('/')).join(' | ')+". Give my review."}],400);
   }
-  if(!text){
-    const dw=(DB.weights[0]-DB.weights[DB.weights.length-1]).toFixed(1);
-    text=`Weight's down ${dw}kg across the block — right pace for a lean recomp, muscle intact. Waist trending down while your lifts held or climbed = you're recomping, exactly the goal. Bench is knocking on the door of a bump; keep those reps crisp and it's yours. Adherence looked strong. <b>Next week's adjustment:</b> add one set to your first pull movement and keep protein high on high-hunger days. Stay boring, stay consistent.`;
-  }
-  out.innerHTML=`<div class="card mt"><div class="card-title">Weekly Review · ${today()}</div><div class="coachnote"><div class="who">◆ Coach</div>${text.replace(/\n/g,"<br>")}</div></div>`;
+  if(!text){ const dw=(DB.weights[0]-DB.weights[DB.weights.length-1]).toFixed(1);
+    text="Weight's down "+dw+"kg across the block — right pace for a lean recomp. Lifts holding or climbing while waist drops = recomping, exactly the goal. Bench is close to a bump; keep reps crisp. <b>Next week:</b> add one set to your first pull movement, protein high. Stay boring, stay consistent."; }
+  out.innerHTML="<div class='card mt'><div class='card-title'><span>Weekly Review · "+today()+"</span></div><div class='coachnote'><div class='who'>◆ Coach</div>"+fmt(text)+"</div></div>";
 }
 
 function renderMetrics(){
   const ci=latestCheckin(); const w=ci&&ci.weight?ci.weight:DB.weights[DB.weights.length-1];
-  const m=[{label:"⚖️ Weight",val:w?`${w}<small> kg</small>`:"—",bar:null},
-    {label:"😴 Sleep",val:ci?`${ci.sleep}<small>/10</small>`:"—",bar:ci?ci.sleep*10:0},
-    {label:"⚡ Energy",val:ci?`${ci.energy}<small>/10</small>`:"—",bar:ci?ci.energy*10:0},
-    {label:"🍽️ Hunger",val:ci?`${ci.hunger}<small>/10</small>`:"—",bar:ci?ci.hunger*10:0}];
-  document.getElementById('metricGrid').innerHTML=m.map(x=>`<div class="metric"><div class="label">${x.label}</div><div class="val">${x.val}</div>
-    ${x.bar!==null?`<div class="bar"><span style="width:${x.bar}%"></span></div>`:''}</div>`).join('');
+  const readiness = ci? Math.round((ci.sleep+ci.energy)/2*10) : null;
+  const m=[{label:"⚖️ Weight",val:w?(w+"<small> kg</small>"):"—",bar:null},
+    {label:"😴 Sleep",val:ci?(ci.sleep+"<small>/10</small>"):"—",bar:ci?ci.sleep*10:0},
+    {label:"⚡ Energy",val:ci?(ci.energy+"<small>/10</small>"):"—",bar:ci?ci.energy*10:0},
+    {label:"🔋 Readiness",val:readiness!=null?(readiness+"<small>%</small>"):"—",bar:readiness}];
+  document.getElementById('metricGrid').innerHTML=m.map(x=>"<div class='metric'><div class='label'>"+x.label+"</div><div class='val'>"+x.val+"</div>"+
+    (x.bar!=null?"<div class='bar'><span style='width:"+x.bar+"%'></span></div>":'')+"</div>").join('');
 }
 function updateStatus(){
-  document.getElementById('stGoal').textContent=DB.profile.goal.length>24?"Build physique":DB.profile.goal;
-  document.getElementById('stPhase').textContent=DB.profile.phase;
-  document.getElementById('stNext').textContent=pickSplit();
-  document.getElementById('stLoc').textContent=DB.profile.location==='greece'?"✈️ Greece":"🏠 Dubai";
-  updateStreak();
+  const w=DB.workout;
+  const split=pickSplit();
+  const t=document.getElementById('heroTitle'); if(t && !w) t.textContent = split==="Rest"?"Rest & Recover":split;
+  const hp=document.getElementById('heroPhase'); if(hp && !w) hp.textContent="Today · "+(DB.profile.location==='greece'?'Greece':'Dubai');
+  updateStreak(); renderItin();
 }
 function updateStreak(){ const el=document.getElementById('streakNum'); if(el) el.textContent=DB.streak||0; }
+
+function renderItin(){
+  const el=document.getElementById('itinList'); if(!el) return;
+  const todayDow=new Date().getDay();
+  let html="";
+  const order=[1,2,3,4,5,6,0];
+  order.forEach(dow=>{
+    const isToday=dow===todayDow;
+    let split=DB.schedule[dow];
+    if(isToday && DB.dayOverride && DB.dayOverride.date===today() && DB.dayOverride.split) split=DB.dayOverride.split;
+    const pill = split==="Rest"?"gray": /push/i.test(split)?"orange":/pull/i.test(split)?"blue":/leg/i.test(split)?"purple":"green";
+    html+="<div class='itin-row "+(isToday?'today':'')+"' onclick='cycleDay("+dow+")'>"+
+      "<div class='itin-day'>"+DOW[dow]+(isToday?" •":"")+"</div>"+
+      "<div class='itin-split'><span class='pill "+pill+"'>"+split+"</span></div>"+
+      "<div class='itin-edit'>✎</div></div>";
+  });
+  el.innerHTML=html;
+}
+function cycleDay(dow){
+  let idx=SPLITS.indexOf(DB.schedule[dow]); idx=(idx+1)%SPLITS.length;
+  DB.schedule[dow]=SPLITS[idx];
+  if(dow===new Date().getDay()) DB.dayOverride={date:today(),split:SPLITS[idx]};
+  save(); renderItin();
+  if(dow===new Date().getDay()){ if(DB.workout){ DB.workout=null; } document.getElementById('heroTitle').textContent=SPLITS[idx]; }
+  toast(DOW[dow]+" → "+SPLITS[idx]);
+}
+
+/* progress + history */
 function drawChart(){
   const c=document.getElementById('wtChart'); if(!c)return;
   const dpr=window.devicePixelRatio||1, W=c.clientWidth,H=150;
@@ -825,102 +1001,106 @@ function drawChart(){
   data.forEach((v,i)=>{x.beginPath();x.arc(px(i),py(v),3.5,0,7);x.fillStyle="#ffd9a3";x.fill();});
   x.fillStyle="#71614e"; x.font="600 11px -apple-system";
   x.fillText(max.toFixed(1)+"kg",22,16); x.fillText(min.toFixed(1)+"kg",22,H-24);
-  document.getElementById('pgWeight').innerHTML=data[data.length-1]+'<small> kg</small>';
+  const pg=document.getElementById('pgWeight'); if(pg) pg.innerHTML=data[data.length-1]+'<small> kg</small>';
 }
 function renderStrengthPBs(){
   const el=document.getElementById('strengthPBs'); if(!el) return;
   el.innerHTML=Object.entries(DB.strength).map(([k,v])=>{
     const top=Math.max(...v.flatMap(s=>(s.sets||[]).map(x=>x.w)));
-    const last=v[v.length-1]; const reps=(last.sets||[]).map(s=>`${s.w}×${s.r}`).join("  ");
-    return `<div class="pb"><div><div class="n">${k}</div><div class="muted" style="font-size:12px">${reps}</div></div><span class="p">${top}kg</span></div>`;}).join('');
+    const last=v[v.length-1]; const reps=(last.sets||[]).map(s=>s.w+"×"+s.r).join("  ");
+    return "<div class='pb'><div class='n'>"+k+"<div class='muted' style='font-size:12px;font-weight:600'>"+reps+"</div></div><span class='p'>"+top+"kg</span></div>";}).join('') || "<div class='muted' style='font-size:14px'>No lifts yet.</div>";
 }
 function timeToSec(t){ const m=t.split(":"); if(m.length!==2) return NaN; return parseInt(m[0])*60+parseFloat(m[1]); }
 function renderRowing(){
   const best={};
   DB.rowing.forEach(r=>{ const s=timeToSec(r.time); if(isNaN(s))return; if(!(r.dist in best)||s<best[r.dist].s) best[r.dist]={time:r.time,s}; });
   const order=["500m","1000m","2000m","5000m","10000m"];
-  const rows=order.filter(d=>best[d]).map(d=>`<div class="pb"><span class="n">${d}</span><span class="p">${best[d].time}</span></div>`).join('');
-  document.getElementById('rowingPBs').innerHTML=rows||`<div class="muted" style="font-size:14px">No rows logged yet — add your first time below.</div>`;
+  const rows=order.filter(d=>best[d]).map(d=>"<div class='pb'><span class='n'>"+d+"</span><span class='p'>"+best[d].time+"</span></div>").join('');
+  const el=document.getElementById('rowingPBs'); if(el) el.innerHTML=rows||"<div class='muted' style='font-size:14px'>No rows logged yet.</div>";
+}
+function renderRowingLog(){
+  const el=document.getElementById('rowingLog'); if(!el) return;
+  if(!DB.rowing.length){ el.innerHTML=""; return; }
+  el.innerHTML="<div class='muted' style='font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;margin-bottom:4px'>All entries</div>"+
+   DB.rowing.map((r,i)=>"<div class='pb'><span class='n'>"+r.dist+" · "+r.time+"<span class='muted' style='font-weight:600;font-size:12px'> "+(r.date||'')+"</span></span><button class='del' onclick='delRow("+i+")'>✕</button></div>").join('');
 }
 function addRowing(){
   const dist=document.getElementById('rowDist').value, time=document.getElementById('rowTime').value.trim();
   if(isNaN(timeToSec(time))){ toast("Use mm:ss.s  e.g. 7:42.3"); return; }
-  DB.rowing.push({dist,time,date:today()}); save(); renderRowing();
+  DB.rowing.push({dist,time,date:today()}); save(); renderRowing(); renderRowingLog();
   document.getElementById('rowTime').value=""; toast("Row logged 🚣");
 }
+function delRow(i){ DB.rowing.splice(i,1); save(); renderRowing(); renderRowingLog(); toast("Deleted"); }
+function delStrength(ex,date){ if(!DB.strength[ex])return; DB.strength[ex]=DB.strength[ex].filter(s=>s.date!==date); if(!DB.strength[ex].length) delete DB.strength[ex]; save(); renderStrengthPBs(); renderHistory(); toast("Deleted"); }
 function addPhoto(inp){
   const f=inp.files[0]; if(!f)return;
   const rd=new FileReader(); rd.onload=e=>{ DB.photos.push({d:today(),src:e.target.result}); save(); renderPhotos(); toast("Photo added"); };
   rd.readAsDataURL(f);
 }
+function delPhoto(i){ DB.photos.splice(i,1); save(); renderPhotos(); toast("Photo deleted"); }
 function renderPhotos(){
-  const s=document.getElementById('photoStrip');
-  s.innerHTML=DB.photos.length? DB.photos.map(p=>`<img src="${p.src}" title="${p.d}"/>`).join('') : `<span class="muted" style="font-size:14px">No photos yet — add front / side / back to track your physique.</span>`;
+  const s=document.getElementById('photoStrip'); if(!s) return;
+  s.innerHTML=DB.photos.length? DB.photos.map((p,i)=>"<div class='photocell'><img src='"+p.src+"' title='"+p.d+"'/><button class='del' onclick='delPhoto("+i+")'>✕</button></div>").join('') : "<span class='muted' style='font-size:14px'>No photos yet — add front / side / back.</span>";
 }
+function renderHistory(){
+  const byDate={};
+  Object.entries(DB.strength).forEach(([ex,arr])=>arr.forEach(s=>{ if(s.date==='prev'||!s.date)return; (byDate[s.date]=byDate[s.date]||{lifts:[],rows:[]}); byDate[s.date].lifts.push({ex,sets:s.sets}); }));
+  DB.rowing.forEach(r=>{ if(!r.date)return; (byDate[r.date]=byDate[r.date]||{lifts:[],rows:[]}); byDate[r.date].rows.push(r); });
+  const dates=Object.keys(byDate).sort().reverse();
+  // summary last 7 days
+  const wk=Date.now()-7*864e5; const cnt={Push:0,Pull:0,Legs:0,Row:0};
+  dates.forEach(d=>{ if(new Date(d).getTime()<wk) return; const g=byDate[d];
+    const cats=g.lifts.map(l=>CAT[l.ex]||"Other"); if(cats.includes("Push"))cnt.Push++; if(cats.includes("Pull"))cnt.Pull++; if(cats.includes("Legs"))cnt.Legs++; if(g.rows.length)cnt.Row++; });
+  const sm=document.getElementById('histSummary');
+  if(sm) sm.innerHTML=[["💪 Push",cnt.Push],["🎣 Pull",cnt.Pull],["🦵 Legs",cnt.Legs],["🚣 Row",cnt.Row]].map(x=>
+    "<div class='metric'><div class='label'>"+x[0]+" · 7d</div><div class='val'>"+x[1]+"<small> sessions</small></div></div>").join('');
+  const body=document.getElementById('histBody');
+  if(!dates.length){ body.innerHTML="<div class='card'><div class='muted' style='font-size:14px'>Nothing logged yet. Do a live workout or tell your coach what you lifted.</div></div>"; return; }
+  body.innerHTML=dates.slice(0,21).map(d=>{
+    const g=byDate[d];
+    const cats=g.lifts.map(l=>CAT[l.ex]||"");
+    let label = cats.includes("Push")&&"Push" || cats.includes("Pull")&&"Pull" || cats.includes("Legs")&&"Legs" || (g.rows.length?"Row / Cardio":"Session");
+    const pill = label==="Push"?"orange":label==="Pull"?"blue":label==="Legs"?"purple":"green";
+    const liftLines=g.lifts.map(l=>{ const top=Math.max(...l.sets.map(s=>s.w)); const reps=l.sets.map(s=>s.w+"×"+s.r).join(" ");
+      return "<div class='hline'><span class='en'>"+l.ex+" <span class='muted' style='font-weight:600;font-size:12px'>"+reps+"</span></span><span class='ev'>"+top+"kg <button class='del' onclick=\"delStrength('"+l.ex.replace(/'/g,"\\'")+"','"+d+"')\">✕</button></span></div>"; }).join('');
+    const rowLines=g.rows.map(r=>"<div class='hline'><span class='en'>🚣 Row "+r.dist+"</span><span class='ev'>"+r.time+"</span></div>").join('');
+    const dd=new Date(d).toLocaleDateString('en-GB',{weekday:'short',day:'numeric',month:'short'});
+    return "<div class='card'><div class='hgroup'><div class='hd'><div class='dt'>"+dd+"</div><span class='pill "+pill+"'>"+label+"</span></div>"+liftLines+rowLines+"</div></div>";
+  }).join('');
+}
+
+/* settings */
 function renderIntegrations(){
-  document.getElementById('integList').innerHTML=Object.entries(DB.integrations).map(([k,v])=>`
-    <div class="set-row"><span class="k" style="color:var(--txt);font-weight:600">${k}</span>
-    <div class="switch ${v?'on':''}" onclick="toggleInteg('${k}',this)"></div></div>`).join('');
+  const el=document.getElementById('integList'); if(!el)return;
+  el.innerHTML=Object.entries(DB.integrations).map(([k,v])=>"<div class='set-row'><span class='k' style='color:var(--txt);font-weight:600'>"+k+"</span><div class='switch "+(v?'on':'')+"' onclick=\"toggleInteg('"+k+"',this)\"></div></div>").join('');
 }
 function toggleInteg(k,el){ DB.integrations[k]=!DB.integrations[k]; el.classList.toggle('on'); save(); }
-
-function memInfo(){ const el=document.getElementById('memCount'); if(el) el.textContent=DB.memory?`${DB.memory.length.toLocaleString()} characters saved.`:"Nothing saved yet."; }
-function saveMemory(){
-  DB.memory=document.getElementById('setMemory').value.trim();
-  try{ save(); toast(DB.memory?"Saved to coach's memory":"Memory cleared"); }
-  catch(e){ toast("Too much to store — trim it down a bit"); }
-  memInfo();
-}
-function importMemory(inp){
-  const fl=inp.files[0]; if(!fl)return; const rd=new FileReader();
-  rd.onload=e=>{ let txt=e.target.result;
-    if(fl.name.toLowerCase().endsWith('.json')){ try{ txt=extractChatGPT(txt); }catch(_){} }
-    const cur=document.getElementById('setMemory');
-    cur.value=(cur.value?cur.value.trim()+"\n\n":"")+String(txt).slice(0,120000);
-    toast("Imported — review it, then tap Save"); memInfo();
-  };
-  rd.readAsText(fl);
-}
-function extractChatGPT(json){
-  const data=JSON.parse(json);
-  if(Array.isArray(data)){
-    const out=[];
-    data.forEach(conv=>{ const map=conv.mapping||{};
-      Object.values(map).forEach(nd=>{ const m=nd&&nd.message;
-        if(m&&m.content&&Array.isArray(m.content.parts)){
-          const t=m.content.parts.filter(x=>typeof x==='string').join(" ").trim();
-          if(t) out.push(((m.author&&m.author.role)||"")+": "+t);
-        }});});
-    return out.join("\n");
-  }
-  if(data&&typeof data==='object') return JSON.stringify(data,null,2);
-  return json;
-}
-
+function memInfo(){ const el=document.getElementById('memCount'); if(el) el.textContent=DB.memory?(DB.memory.length.toLocaleString()+" characters saved."):"Nothing saved yet."; }
+function saveMemory(){ DB.memory=document.getElementById('setMemory').value.trim(); try{ save(); toast(DB.memory?"Saved to coach's memory":"Memory cleared"); }catch(e){ toast("Too much to store — trim it"); } memInfo(); }
+function importMemory(inp){ const fl=inp.files[0]; if(!fl)return; const rd=new FileReader();
+  rd.onload=e=>{ let txt=e.target.result; if(fl.name.toLowerCase().endsWith('.json')){ try{ txt=extractChatGPT(txt); }catch(_){} }
+    const cur=document.getElementById('setMemory'); cur.value=(cur.value?cur.value.trim()+"\n\n":"")+String(txt).slice(0,120000); toast("Imported — review, then Save"); memInfo(); };
+  rd.readAsText(fl); }
+function extractChatGPT(json){ const data=JSON.parse(json);
+  if(Array.isArray(data)){ const out=[]; data.forEach(conv=>{ const map=conv.mapping||{}; Object.values(map).forEach(nd=>{ const m=nd&&nd.message; if(m&&m.content&&Array.isArray(m.content.parts)){ const t=m.content.parts.filter(x=>typeof x==='string').join(" ").trim(); if(t) out.push(((m.author&&m.author.role)||"")+": "+t);}});}); return out.join("\n"); }
+  if(data&&typeof data==='object') return JSON.stringify(data,null,2); return json; }
 const KNOWN_MODELS=["gpt-5.5","gpt-4o","gpt-4o-mini","gpt-4.1-mini"];
-function onModelChange(){
-  const sel=document.getElementById('setModel').value;
-  document.getElementById('customModelWrap').style.display = sel==='__custom' ? 'block':'none';
-}
+function onModelChange(){ const sel=document.getElementById('setModel').value; document.getElementById('customModelWrap').style.display = sel==='__custom'?'block':'none'; }
 function saveAI(){
   DB.ai.key=document.getElementById('setKey').value.trim();
-  const sel=document.getElementById('setModel').value;
-  const custom=document.getElementById('setModelCustom').value.trim();
-  DB.ai.model = sel==='__custom' ? (custom||'gpt-5.5') : sel;
-  save();
+  const sel=document.getElementById('setModel').value; const custom=document.getElementById('setModelCustom').value.trim();
+  DB.ai.model = sel==='__custom' ? (custom||'gpt-5.5') : sel; save();
   const out=document.getElementById('aiTest');
-  if(DB.ai.provider==="demo"||!DB.ai.key){ out.textContent="Demo mode — offline coach active. Add a key for live AI + photo analysis."; return; }
-  out.innerHTML='<span class="spin"></span> Testing '+DB.ai.model+'…';
+  if(DB.ai.provider==="demo"||!DB.ai.key){ out.textContent="Demo mode — offline coach active. Add a key for live AI + photos."; return; }
+  out.innerHTML="<span class='spin'></span> Testing "+DB.ai.model+"…";
   fetch("https://api.openai.com/v1/chat/completions",{method:"POST",headers:{"Content-Type":"application/json","Authorization":"Bearer "+DB.ai.key},body:JSON.stringify(aiBody([{role:"user",content:"Reply with the single word: connected"}],50))})
-   .then(async res=>{
-     if(res.ok){ out.textContent="✓ Connected — live coach on ("+DB.ai.model+")."; return; }
-     let msg=""; try{ msg=((await res.json()).error||{}).message||""; }catch(_){ }
-     if(res.status===401) out.innerHTML="✗ <b>Key rejected (401).</b> Re-copy your full key from platform.openai.com.";
-     else if(res.status===429||/quota|billing|insufficient/i.test(msg)) out.innerHTML="✗ <b>No credit / billing not set up.</b> Add funds at platform.openai.com → Billing, then retry. gpt-5.5 needs a paid (Tier 1+) account.";
-     else if(res.status===404||/model|does not exist|do not have access|not available/i.test(msg)) out.innerHTML="✗ <b>Your account can't use '"+DB.ai.model+"' yet.</b> gpt-5.5 needs a paid account (add billing) — or pick gpt-4o for now. ("+msg.slice(0,90)+")";
-     else out.textContent="✗ "+res.status+": "+(msg||"unknown error");
-   })
-   .catch(e=>{ out.innerHTML="✗ <b>Network blocked.</b> If you opened the file directly (file://), browsers block API calls — deploy to Netlify (https) first."; });
+   .then(async res=>{ if(res.ok){ out.textContent="✓ Connected — live coach on ("+DB.ai.model+")."; return; }
+     let msg=""; try{ msg=((await res.json()).error||{}).message||""; }catch(_){}
+     if(res.status===401) out.innerHTML="✗ <b>Key rejected (401).</b> Re-copy your full key.";
+     else if(res.status===429||/quota|billing|insufficient/i.test(msg)) out.innerHTML="✗ <b>No credit / billing not set up.</b> Add funds at platform.openai.com → Billing. gpt-5.5 needs a paid account.";
+     else if(res.status===404||/model|does not exist|do not have access|not available/i.test(msg)) out.innerHTML="✗ <b>Your account can't use '"+DB.ai.model+"' yet.</b> Add billing, or pick gpt-4o. ("+msg.slice(0,80)+")";
+     else out.textContent="✗ "+res.status+": "+(msg||"unknown"); })
+   .catch(e=>{ out.innerHTML="✗ <b>Network blocked.</b> If opened as a local file, deploy to Netlify (https) first."; });
 }
 function saveProfile(){
   DB.profile.name=document.getElementById('setName').value;
@@ -932,10 +1112,7 @@ function saveProfile(){
   save(); updateStatus();
   document.getElementById('greetName').textContent=DB.profile.name; toast("Profile saved — coach updated");
 }
-function exportData(){
-  const blob=new Blob([JSON.stringify(DB,null,2)],{type:"application/json"});
-  const a=document.createElement('a'); a.href=URL.createObjectURL(blob); a.download="amirpt-data.json"; a.click();
-}
+function exportData(){ const blob=new Blob([JSON.stringify(DB,null,2)],{type:"application/json"}); const a=document.createElement('a'); a.href=URL.createObjectURL(blob); a.download="amirpt-data.json"; a.click(); }
 function resetAll(){ if(confirm("Reset all data? This can't be undone.")){ localStorage.removeItem("amirpt"); DB=structuredClone(DEFAULTS); location.reload(); } }
 function escapeHtml(s){return s.replace(/[&<>]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;'}[c]));}
 
@@ -945,27 +1122,17 @@ function addReminderICS(){
   const p=t.split(':').map(Number), h=p[0], m=p[1];
   const now=new Date(); const dt=new Date(now.getFullYear(),now.getMonth(),now.getDate(),h,m,0);
   if(dt<now) dt.setDate(dt.getDate()+1);
-  const fmt=d=>`${d.getFullYear()}${pad2(d.getMonth()+1)}${pad2(d.getDate())}T${pad2(d.getHours())}${pad2(d.getMinutes())}00`;
-  const u=new Date();
-  const stampU=`${u.getUTCFullYear()}${pad2(u.getUTCMonth()+1)}${pad2(u.getUTCDate())}T${pad2(u.getUTCHours())}${pad2(u.getUTCMinutes())}${pad2(u.getUTCSeconds())}Z`;
-  const ics=["BEGIN:VCALENDAR","VERSION:2.0","PRODID:-//Amir PT//EN","CALSCALE:GREGORIAN","BEGIN:VEVENT",
-    "UID:amirpt-checkin-"+Date.now()+"@amirpt","DTSTAMP:"+stampU,"DTSTART:"+fmt(dt),"RRULE:FREQ=DAILY",
-    "SUMMARY:Amir PT - Morning Check-in","DESCRIPTION:Open Amir PT and log your morning check-in.",
-    "BEGIN:VALARM","ACTION:DISPLAY","DESCRIPTION:Amir PT - Morning Check-in","TRIGGER:PT0M","END:VALARM",
-    "END:VEVENT","END:VCALENDAR"].join("\r\n");
-  const blob=new Blob([ics],{type:"text/calendar"});
-  const a=document.createElement('a'); a.href=URL.createObjectURL(blob); a.download="amir-pt-checkin.ics"; a.click();
-  document.getElementById('remindMsg').textContent="Calendar file created — open it and tap Add to get a daily "+t+" reminder.";
-  toast("Daily reminder ready");
+  const f=d=>d.getFullYear()+pad2(d.getMonth()+1)+pad2(d.getDate())+"T"+pad2(d.getHours())+pad2(d.getMinutes())+"00";
+  const u=new Date(); const stampU=u.getUTCFullYear()+pad2(u.getUTCMonth()+1)+pad2(u.getUTCDate())+"T"+pad2(u.getUTCHours())+pad2(u.getUTCMinutes())+pad2(u.getUTCSeconds())+"Z";
+  const ics=["BEGIN:VCALENDAR","VERSION:2.0","PRODID:-//Amir PT//EN","CALSCALE:GREGORIAN","BEGIN:VEVENT","UID:amirpt-"+Date.now()+"@amirpt","DTSTAMP:"+stampU,"DTSTART:"+f(dt),"RRULE:FREQ=DAILY","SUMMARY:Amir PT - Morning Check-in","DESCRIPTION:Open Amir PT and log your morning check-in.","BEGIN:VALARM","ACTION:DISPLAY","DESCRIPTION:Amir PT - Morning Check-in","TRIGGER:PT0M","END:VALARM","END:VEVENT","END:VCALENDAR"].join("\r\n");
+  const blob=new Blob([ics],{type:"text/calendar"}); const a=document.createElement('a'); a.href=URL.createObjectURL(blob); a.download="amir-pt-checkin.ics"; a.click();
+  document.getElementById('remindMsg').textContent="Calendar file created — open it and tap Add for a daily "+t+" reminder."; toast("Daily reminder ready");
 }
 function enableInAppReminder(){
   const t=(document.getElementById('setRemindTime').value)||"07:00"; DB.reminder=t; save();
   const msg=document.getElementById('remindMsg');
   if(!("Notification" in window)){ msg.textContent="This browser can't show notifications — use the calendar button."; return; }
-  Notification.requestPermission().then(p=>{
-    if(p==="granted"){ scheduleInApp(); msg.textContent="In-app reminder on for "+t+" (works while the app is open). Add the calendar reminder too for a guaranteed alert."; toast("Reminder enabled"); }
-    else msg.textContent="Notifications blocked — use the calendar button for a reliable morning reminder.";
-  });
+  Notification.requestPermission().then(p=>{ if(p==="granted"){ scheduleInApp(); msg.textContent="In-app reminder on for "+t+" (works while the app is open). Add the calendar reminder too for a guaranteed alert."; toast("Reminder enabled"); } else msg.textContent="Notifications blocked — use the calendar button."; });
 }
 let reminderTimer=null;
 function scheduleInApp(){
@@ -974,7 +1141,7 @@ function scheduleInApp(){
   const p=DB.reminder.split(':').map(Number), h=p[0], m=p[1];
   const now=new Date(); const next=new Date(now.getFullYear(),now.getMonth(),now.getDate(),h,m,0,0);
   if(next<=now) next.setDate(next.getDate()+1);
-  reminderTimer=setTimeout(()=>{ try{ new Notification("Amir PT - Morning Check-in",{body:"Tap in and log how you slept. Let's stack another day."}); }catch(e){} scheduleInApp(); }, next-now);
+  reminderTimer=setTimeout(()=>{ try{ new Notification("Amir PT - Morning Check-in",{body:"Tap in and log how you slept."}); }catch(e){} scheduleInApp(); }, next-now);
 }
 
 function boot(){
@@ -996,11 +1163,11 @@ function boot(){
   document.getElementById('setRules').value=DB.profile.rules;
   document.querySelectorAll('#locSeg button').forEach(b=>b.classList.toggle('on',b.dataset.v===DB.profile.location));
   document.querySelectorAll('#provSeg button').forEach(b=>b.classList.toggle('on',b.dataset.v===DB.ai.provider));
-  renderMetrics(); updateStatus(); renderStrengthPBs(); renderRowing(); renderPhotos(); renderIntegrations();
+  renderMetrics(); renderItin(); renderStrengthPBs(); renderRowing(); renderRowingLog(); renderPhotos(); renderIntegrations(); updateStreak(); renderRowWarm();
   if(typeof scheduleInApp==="function") scheduleInApp();
-  document.getElementById('heroPhase').textContent="Phase · "+DB.profile.phase;
-  if(DB.workout){ renderWorkoutSheet(DB.workout); document.getElementById('startLiveBtn').style.display='block';
-    document.getElementById('heroTitle').textContent=DB.workout.title; }
+  const split=pickSplit();
+  if(DB.workout){ renderWorkoutSheet(DB.workout); document.getElementById('startLiveBtn').style.display=DB.workout.sets>0?'block':'none'; document.getElementById('heroTitle').textContent=DB.workout.title; document.getElementById('heroPhase').textContent="Today · "+DB.workout.tag; }
+  else { document.getElementById('heroTitle').textContent = split==="Rest"?"Rest & Recover":split; document.getElementById('heroPhase').textContent="Today · "+(DB.profile.location==='greece'?'Greece':'Dubai'); }
 }
 boot();
 
