@@ -666,8 +666,9 @@ function renderWorkoutSheet(w){
   });
   const exHTML=liveState.map((e,i)=>liveExHTML(e,i)).join('');
   /* the prescribed warm-up row gets its own loggable section; keep other warm-ups in the warm-up list */
-  const hasRow=w.warmup.some(x=>x.img===ROW_GIF);
-  const warmList=w.warmup.filter(x=>x.img!==ROW_GIF);
+  const isRowWarm=x=>x&&(x.img===ROW_GIF||/\brow\b/i.test(x.t||""));
+  const hasRow=w.warmup.some(isRowWarm);
+  const warmList=w.warmup.filter(x=>!isRowWarm(x));
   sheetEl.innerHTML=
   "<div class='sheet'><div class='sheet-hd'><div class='tag'>"+w.tag+"</div><h2 class='display'>"+w.title+"</h2>"+
     "<div class='meta'><span class='pill orange'>"+w.sets+" sets</span><span class='pill'>"+w.reps+"</span><span class='pill purple'>"+w.phase+"</span></div>"+
@@ -1082,21 +1083,30 @@ function cycleDay(dow){
 /* progress + history */
 function drawChart(){
   const c=document.getElementById('wtChart'); if(!c)return;
-  const dpr=window.devicePixelRatio||1, W=c.clientWidth,H=150;
-  c.width=W*dpr; c.height=H*dpr; const x=c.getContext('2d'); x.scale(dpr,dpr);
-  const data=DB.weights.slice(-8), min=Math.min(...data)-.5,max=Math.max(...data)+.5;
-  const px=i=>20+i*((W-40)/(data.length-1)), py=v=>10+(1-(v-min)/(max-min))*(H-40);
-  x.clearRect(0,0,W,H); x.strokeStyle="#2c2318"; x.lineWidth=1;
-  for(let g=0;g<4;g++){const yy=10+g*((H-40)/3);x.beginPath();x.moveTo(20,yy);x.lineTo(W-20,yy);x.stroke();}
-  const grad=x.createLinearGradient(0,0,0,H); grad.addColorStop(0,"#ff8a2b55"); grad.addColorStop(1,"#ff8a2b00");
-  x.beginPath(); x.moveTo(px(0),py(data[0])); data.forEach((v,i)=>x.lineTo(px(i),py(v)));
-  x.lineTo(px(data.length-1),H-20); x.lineTo(px(0),H-20); x.closePath(); x.fillStyle=grad; x.fill();
-  x.beginPath(); x.moveTo(px(0),py(data[0])); data.forEach((v,i)=>x.lineTo(px(i),py(v)));
-  x.strokeStyle="#ffa54a"; x.lineWidth=3; x.lineJoin="round"; x.stroke();
-  data.forEach((v,i)=>{x.beginPath();x.arc(px(i),py(v),3.5,0,7);x.fillStyle="#ffd9a3";x.fill();});
-  x.fillStyle="#71614e"; x.font="600 11px -apple-system";
-  x.fillText(max.toFixed(1)+"kg",22,16); x.fillText(min.toFixed(1)+"kg",22,H-24);
-  const pg=document.getElementById('pgWeight'); if(pg) pg.innerHTML=data[data.length-1]+'<small> kg</small>';
+  requestAnimationFrame(()=>{
+    const wrap=c.parentElement;
+    const W=Math.max((wrap&&wrap.clientWidth)||300,200), H=150, dpr=window.devicePixelRatio||1;
+    c.style.width=W+'px'; c.style.height=H+'px'; c.style.display='block';       /* lock display size so Retina can't balloon it */
+    c.width=Math.round(W*dpr); c.height=Math.round(H*dpr);
+    const x=c.getContext('2d'); x.setTransform(dpr,0,0,dpr,0,0);
+    let data=(DB.weights||[]).slice(-8).filter(v=>typeof v==='number'&&!isNaN(v));
+    x.clearRect(0,0,W,H);
+    if(!data.length){ x.fillStyle="#71614e"; x.font="600 13px -apple-system"; x.fillText("Log a check-in to see your trend",22,H/2); return; }
+    if(data.length===1) data=[data[0],data[0]];
+    let min=Math.min(...data)-.5, max=Math.max(...data)+.5; if(max-min<1){const mid=(max+min)/2;min=mid-.5;max=mid+.5;}
+    const px=i=>20+i*((W-40)/(data.length-1)), py=v=>10+(1-(v-min)/(max-min))*(H-40);
+    x.strokeStyle="#2c2318"; x.lineWidth=1;
+    for(let g=0;g<4;g++){const yy=10+g*((H-40)/3);x.beginPath();x.moveTo(20,yy);x.lineTo(W-20,yy);x.stroke();}
+    const grad=x.createLinearGradient(0,0,0,H); grad.addColorStop(0,"#ff8a2b55"); grad.addColorStop(1,"#ff8a2b00");
+    x.beginPath(); x.moveTo(px(0),py(data[0])); data.forEach((v,i)=>x.lineTo(px(i),py(v)));
+    x.lineTo(px(data.length-1),H-20); x.lineTo(px(0),H-20); x.closePath(); x.fillStyle=grad; x.fill();
+    x.beginPath(); x.moveTo(px(0),py(data[0])); data.forEach((v,i)=>x.lineTo(px(i),py(v)));
+    x.strokeStyle="#ffa54a"; x.lineWidth=3; x.lineJoin="round"; x.stroke();
+    data.forEach((v,i)=>{x.beginPath();x.arc(px(i),py(v),3.5,0,Math.PI*2);x.fillStyle="#ffd9a3";x.fill();});
+    x.fillStyle="#71614e"; x.font="600 11px -apple-system";
+    x.fillText(max.toFixed(1)+"kg",22,16); x.fillText(min.toFixed(1)+"kg",22,H-24);
+    const pg=document.getElementById('pgWeight'); if(pg) pg.innerHTML=data[data.length-1]+'<small> kg</small>';
+  });
 }
 function renderStrengthPBs(){
   const el=document.getElementById('strengthPBs'); if(!el) return;
