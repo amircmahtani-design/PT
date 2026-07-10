@@ -498,19 +498,23 @@ const DEFAULTS = {
   schedule:{0:"Rest",1:"Push Day",2:"Pull Day",3:"Legs & Core",4:"Push Day",5:"Pull Day",6:"Legs & Core"},
   dayOverride:{date:null,split:null},
   checkins:[],
-  strength:{
-    "Bench Press":[{date:"prev", sets:[{w:40,r:8},{w:40,r:8},{w:40,r:8},{w:40,r:8}]}],
-    "Incline DB Press":[{date:"prev", sets:[{w:18,r:10},{w:18,r:10},{w:18,r:9}]}],
-    "Barbell Row":[{date:"prev", sets:[{w:45,r:8},{w:45,r:8},{w:45,r:8}]}]},
+  strength:{},
   weights:[86.3,86.0,85.7,85.5,85.1,84.9,84.5,84.2],
   photos:[],
-  rowing:[{dist:"2000m",time:"7:42.3"},{dist:"500m",time:"1:38.1"},{dist:"5000m",time:"20:15.6"}],
+  rowing:[],
   chat:[], streak:0, workout:null, rowWarmLog:[],
   integrations:{"Apple Watch":true,"Concept2 (manual)":true,"Photos":true,"Camera":false,"Notifications":true}
 };
 let DB = load();
 function load(){ try{const s=localStorage.getItem("amirpt"); const d=s?{...structuredClone(DEFAULTS),...JSON.parse(s)}:structuredClone(DEFAULTS);
-  if(!d.schedule) d.schedule=structuredClone(DEFAULTS.schedule); if(!d.dayOverride) d.dayOverride={date:null,split:null}; return d;}catch(e){return structuredClone(DEFAULTS);} }
+  if(!d.schedule) d.schedule=structuredClone(DEFAULTS.schedule); if(!d.dayOverride) d.dayOverride={date:null,split:null};
+  /* strip shipped demo/seed data (never the user's own logs) */
+  if(d.strength&&typeof d.strength==="object"){ Object.keys(d.strength).forEach(k=>{
+    const arr=(d.strength[k]||[]).filter(se=>se&&se.date&&se.date!=="prev");
+    if(arr.length) d.strength[k]=arr; else delete d.strength[k]; }); }
+  if(Array.isArray(d.rowing)) d.rowing=d.rowing.filter(r=>r&&r.date);
+  return d;}catch(e){return structuredClone(DEFAULTS);} }
+save();
 function save(){ try{localStorage.setItem("amirpt", JSON.stringify(DB));}catch(e){} }
 function today(){ return new Date().toISOString().slice(0,10); }
 function fmt(s){ return String(s).replace(/\*\*(.+?)\*\*/g,'<b>$1</b>').replace(/\n/g,'<br>'); }
