@@ -203,6 +203,18 @@ textarea.txtin{min-height:88px;resize:vertical;line-height:1.45;}
 @keyframes sp{to{transform:rotate(360deg);}}
 a{color:var(--orange);}
 .notebox{background:#0d0a07;border:1px dashed var(--line);border-radius:12px;padding:12px;font-size:13px;color:var(--muted);line-height:1.55;}
+.altpick{margin-top:10px;background:#0a1826;border:1px solid #12406e;border-radius:14px;padding:12px;}
+.altchip{display:flex;flex-direction:column;align-items:flex-start;gap:2px;width:100%;text-align:left;background:#0d0a07;border:1px solid var(--line);border-radius:11px;padding:11px 13px;margin-top:8px;color:var(--txt);transition:.15s;}
+.altchip:first-of-type{margin-top:0;}
+.altchip:active{transform:scale(.98);border-color:var(--cyan);}
+.altchip b{font-size:15px;font-weight:700;}
+.altchip span{font-size:12px;color:var(--muted);font-weight:600;text-transform:capitalize;}
+.grouprest{display:block;width:100%;margin-top:12px;padding:12px;border-radius:12px;font-size:14px;font-weight:700;background:#0a2138;border:1px solid #12406e;color:#7cbcff;transition:transform .12s;}
+.grouprest:active{transform:scale(.98);}
+.rowbanner{width:100%;height:150px;border-radius:16px;overflow:hidden;border:1px solid var(--line);background:#0d0a07;}
+.rowbanner img{width:100%;height:100%;object-fit:contain;display:block;}
+.sm{font-size:13px;color:var(--muted);font-weight:600;line-height:1.5;}
+.rowcard .big{font-size:19px;}
 </style>
 </head>
 <body>
@@ -254,7 +266,6 @@ a{color:var(--orange);}
   <section class="screen" id="s-workout">
     <div class="head"><div><div class="greet">Log as you go</div><h1 class="display">Train</h1></div>
       <button class="btn sec" style="width:auto;padding:11px 14px;font-size:12px" onclick="generateWorkout()">↻ Regen</button></div>
-    <div class="card rowcard" id="rowWarm"></div>
     <div id="workoutSheet"></div>
   </section>
 
@@ -270,24 +281,18 @@ a{color:var(--orange);}
 
   <section class="screen" id="s-progress">
     <div class="head"><div><div class="greet">The long game</div><h1 class="display">Progress</h1></div></div>
-    <div class="grid">
-      <div class="metric"><div class="label">Weight</div><div class="val" id="pgWeight">84.2<small> kg</small></div><div class="muted" style="font-size:12px;margin-top:4px">▼ trending down</div></div>
-      <div class="metric"><div class="label">Waist</div><div class="val" id="pgWaist">87<small> cm</small></div><div class="muted" style="font-size:12px;margin-top:4px">▼ −2 cm / mo</div></div>
-      <div class="metric"><div class="label">Body Fat</div><div class="val" id="pgBf">18<small> %</small></div><div class="muted" style="font-size:12px;margin-top:4px">est. from photos</div></div>
-      <div class="metric"><div class="label">Lean Mass</div><div class="val">69<small> kg</small></div><div class="muted" style="font-size:12px;margin-top:4px">▲ holding</div></div>
-    </div>
-    <div class="card"><div class="card-title"><span>Weight Trend · 8 Weeks</span></div><div class="chartwrap"><canvas id="wtChart"></canvas></div></div>
-    <div class="card"><div class="card-title"><span>Strength PBs</span></div><div id="strengthPBs"></div></div>
+    <div class="card"><div class="card-title"><span>Strength PBs · your lifts</span></div><div id="strengthPBs"></div></div>
     <div class="card">
-      <div class="card-title"><span>Concept2 Rowing · Manual Log</span></div>
+      <div class="card-title"><span>Concept2 Rowing · your times</span></div>
       <div id="rowingPBs"></div>
       <div class="logrow mt">
-        <select class="txtin" id="rowDist" style="flex:0 0 110px;padding:12px;font-size:14px">
+        <select class="txtin" id="rowDist" style="flex:0 0 104px;padding:13px 8px;font-size:14px">
           <option>500m</option><option>1000m</option><option selected>2000m</option><option>5000m</option><option>10000m</option></select>
         <input class="txtin" id="rowTime" placeholder="mm:ss.s" style="text-align:center"/>
-        <button class="btn" style="flex:0 0 66px;padding:12px;font-size:13px" onclick="addRowing()">Log</button></div>
+        <button class="btn" style="flex:0 0 64px;padding:13px 0;font-size:13px" onclick="addRowing()">Log</button></div>
       <div id="rowingLog" class="mt"></div>
     </div>
+    <div class="card"><div class="card-title"><span>Bodyweight Trend</span></div><div id="wtWrap"><div class="chartwrap"><canvas id="wtChart"></canvas></div></div></div>
     <div class="card">
       <div class="card-title"><span>Physique Photos & AI Check</span></div>
       <div class="photostrip" id="photoStrip"></div>
@@ -367,9 +372,12 @@ a{color:var(--orange);}
     </div>
     <div class="section-h">Integrations</div>
     <div class="card" id="integList"></div>
-    <div class="section-h">Data</div>
+    <div class="section-h">Data & Backup</div>
     <div class="card">
-      <button class="btn sec mb" onclick="exportData()">Export my data (JSON)</button>
+      <div class="notebox mb">Your data is saved on this device and mirrored to a backup, so redeploying a new version won't wipe it. For total safety, export a backup file now and then — you can restore it on any device.</div>
+      <button class="btn sec mb" onclick="exportData()">⬇ Export a backup (JSON)</button>
+      <label class="btn sec mb" style="cursor:pointer;display:block">⬆ Restore from a backup file
+        <input type="file" accept=".json,application/json" style="display:none" onchange="importData(this)" /></label>
       <button class="btn ghost" onclick="resetAll()" style="color:var(--red);border-color:#5c1c17">Reset everything</button>
     </div>
     <div style="height:20px"></div>
@@ -395,6 +403,23 @@ a{color:var(--orange);}
 
 /* ===== AMIR PT ===== */
 const ROW_GIF="https://fitsmove.com/videos/2138-H1PESYI.gif";
+/* Inline animated rower (someone rowing on a Concept2) — never breaks, no network needed. */
+const ROW_SVG_RAW=`<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 220 130'>
+<rect width='220' height='130' rx='14' fill='#0d0a07'/>
+<rect x='44' y='100' width='168' height='7' rx='3' fill='#3a2f20'/>
+<circle cx='30' cy='72' r='24' fill='#1e1811' stroke='#5a3714' stroke-width='2'/>
+<g><g stroke='#ff8a2b' stroke-width='2'><line x1='30' y1='51' x2='30' y2='93'/><line x1='9' y1='72' x2='51' y2='72'/><line x1='15' y1='57' x2='45' y2='87'/><line x1='15' y1='87' x2='45' y2='57'/></g>
+<animateTransform attributeName='transform' type='rotate' from='0 30 72' to='360 30 72' dur='0.7s' repeatCount='indefinite'/></g>
+<circle cx='30' cy='72' r='4' fill='#ffd9a3'/>
+<rect x='40' y='84' width='9' height='20' rx='2' fill='#5a3714'/>
+<rect y='94' width='24' height='7' rx='3' fill='#f0b24a'><animate attributeName='x' dur='2.6s' repeatCount='indefinite' keyTimes='0;0.42;1' values='60;134;60'/></rect>
+<polyline fill='none' stroke='#8a7355' stroke-width='2' points='30,72 56,66'><animate attributeName='points' dur='2.6s' repeatCount='indefinite' keyTimes='0;0.42;1' values='30,72 56,66; 30,72 150,70; 30,72 56,66'/></polyline>
+<polyline fill='none' stroke='#ff8a2b' stroke-width='6' stroke-linecap='round' stroke-linejoin='round' points='45,94 60,74 78,86'><animate attributeName='points' dur='2.6s' repeatCount='indefinite' keyTimes='0;0.42;1' values='45,94 60,74 78,86; 45,94 104,90 150,86; 45,94 60,74 78,86'/></polyline>
+<polyline fill='none' stroke='#ff8a2b' stroke-width='7' stroke-linecap='round' points='78,86 86,54'><animate attributeName='points' dur='2.6s' repeatCount='indefinite' keyTimes='0;0.42;1' values='78,86 86,54; 150,86 168,60; 78,86 86,54'/></polyline>
+<polyline fill='none' stroke='#ffd9a3' stroke-width='5' stroke-linecap='round' points='86,54 56,66'><animate attributeName='points' dur='2.6s' repeatCount='indefinite' keyTimes='0;0.42;1' values='86,54 56,66; 168,60 150,70; 86,54 56,66'/></polyline>
+<circle r='8' fill='#f4ede2' cx='88' cy='48'><animate attributeName='cx' dur='2.6s' repeatCount='indefinite' keyTimes='0;0.42;1' values='88;172;88'/><animate attributeName='cy' dur='2.6s' repeatCount='indefinite' keyTimes='0;0.42;1' values='48;54;48'/></circle>
+</svg>`;
+const ROW_SVG="data:image/svg+xml,"+encodeURIComponent(ROW_SVG_RAW).replace(/'/g,"%27");
 const EXIMG={
  "Bench Press":"https://fitsmove.com/videos/0025-EIeI8Vf.gif","Incline DB Press":"https://fitsmove.com/videos/0314-ns0SIbU.gif",
  "Overhead Press":"https://fitsmove.com/videos/0426-A6wtbuL.gif","Barbell Row":"https://fitsmove.com/videos/0027-eZyBC3j.gif",
@@ -423,16 +448,48 @@ const DEFAULTS = {
   schedule:{0:"Rest",1:"Push Day",2:"Pull Day",3:"Legs & Core",4:"Push Day",5:"Pull Day",6:"Legs & Core"},
   dayOverride:{date:null,split:null},
   checkins:[],
-  strength:{"Bench Press":[{date:"prev", sets:[{w:40,r:8},{w:40,r:8},{w:40,r:8},{w:40,r:8}]}],"Incline DB Press":[{date:"prev", sets:[{w:18,r:10},{w:18,r:10},{w:18,r:9}]}],"Barbell Row":[{date:"prev", sets:[{w:45,r:8},{w:45,r:8},{w:45,r:8}]}]},
-  weights:[86.3,86.0,85.7,85.5,85.1,84.9,84.5,84.2],
-  photos:[], rowing:[{dist:"2000m",time:"7:42.3"},{dist:"500m",time:"1:38.1"},{dist:"5000m",time:"20:15.6"}],
+  strength:{},
+  weights:[],
+  photos:[], rowing:[],
   chat:[], streak:0, lastSessionDate:null, workout:null,
   integrations:{"Apple Watch":true,"Concept2 (manual)":true,"Photos":true,"Camera":false,"Notifications":true}
 };
+
+/* ===== DURABLE STORAGE (#7 — never wipe data on redeploy) =====
+   Data lives in localStorage AND is mirrored to IndexedDB + a backup key.
+   A fresh index.html at the same origin already keeps localStorage.
+   If the browser ever evicts localStorage (iOS does this for non-installed
+   sites), we transparently restore from the IndexedDB mirror on boot. */
+const STORE_KEY="amirpt", BACKUP_KEY="amirpt_backup", IDB_NAME="amirpt_db", IDB_STORE="kv";
+let _idb=null;
+function idbOpen(){ return new Promise(res=>{ try{
+  const rq=indexedDB.open(IDB_NAME,1);
+  rq.onupgradeneeded=()=>{ try{rq.result.createObjectStore(IDB_STORE);}catch(e){} };
+  rq.onsuccess=()=>res(rq.result); rq.onerror=()=>res(null);
+}catch(e){res(null);} }); }
+async function idbSet(v){ try{ if(!_idb)_idb=await idbOpen(); if(!_idb)return; const tx=_idb.transaction(IDB_STORE,"readwrite"); tx.objectStore(IDB_STORE).put(v,STORE_KEY); }catch(e){} }
+async function idbGet(){ try{ if(!_idb)_idb=await idbOpen(); if(!_idb)return null; return await new Promise(res=>{ const rq=_idb.transaction(IDB_STORE,"readonly").objectStore(IDB_STORE).get(STORE_KEY); rq.onsuccess=()=>res(rq.result||null); rq.onerror=()=>res(null); }); }catch(e){return null;} }
+function mergeDefaults(parsed){ const d={...structuredClone(DEFAULTS),...parsed};
+  if(!d.schedule) d.schedule=structuredClone(DEFAULTS.schedule); if(!d.dayOverride) d.dayOverride={date:null,split:null}; return d; }
+function load(){ try{
+  let s=localStorage.getItem(STORE_KEY) || localStorage.getItem(BACKUP_KEY);
+  return s? mergeDefaults(JSON.parse(s)) : structuredClone(DEFAULTS);
+}catch(e){ return structuredClone(DEFAULTS); } }
+function save(){ try{
+  const json=JSON.stringify(DB);
+  localStorage.setItem(STORE_KEY,json);
+  try{ localStorage.setItem(BACKUP_KEY,json); }catch(e){}
+  idbSet(json);
+}catch(e){} }
+/* If localStorage was wiped but IndexedDB survived, restore silently on boot. */
+async function restoreIfWiped(){ try{
+  if(localStorage.getItem(STORE_KEY)) return;
+  const backup=await idbGet();
+  if(backup){ const parsed=JSON.parse(backup); DB=mergeDefaults(parsed); localStorage.setItem(STORE_KEY,backup); boot(); toast("Restored your data from backup ✅"); }
+}catch(e){} }
+/* Ask the browser to keep our storage durable (auto-granted for installed PWAs). */
+try{ if(navigator.storage&&navigator.storage.persist) navigator.storage.persist(); }catch(e){}
 let DB = load();
-function load(){ try{const s=localStorage.getItem("amirpt"); const d=s?{...structuredClone(DEFAULTS),...JSON.parse(s)}:structuredClone(DEFAULTS);
-  if(!d.schedule) d.schedule=structuredClone(DEFAULTS.schedule); if(!d.dayOverride) d.dayOverride={date:null,split:null}; return d;}catch(e){return structuredClone(DEFAULTS);} }
-function save(){ try{localStorage.setItem("amirpt", JSON.stringify(DB));}catch(e){} }
 function today(){ return new Date().toISOString().slice(0,10); }
 function fmt(s){ return String(s).replace(/\*\*(.+?)\*\*/g,'<b>$1</b>').replace(/\n/g,'<br>'); }
 function val(id){ const e=document.getElementById(id); return e?e.value:''; }
@@ -519,7 +576,7 @@ function buildWorkout(){
   else { note="Solid recovery. Standard volume. Own every rep."; }
   const warmup= travel
     ? [{t:"3 min brisk walk / skips",icon:"🚶"},{t:"Arm circles ×15 each way",icon:"🔄"},{t:"World's greatest stretch ×5/side",icon:"🤸"},{t:"10 air squats",img:EXIMG["Bodyweight Squat"]}]
-    : [{t:"Concept2 row — 2,000m easy",img:ROW_GIF},{t:"Band pull-aparts ×20",img:EXIMG["Face Pull"]},{t:"Cat-cow ×8",icon:"🐈"},{t:"Light warm-up set on first lift",icon:"🏋️"}];
+    : [{t:"Band pull-aparts ×20",img:EXIMG["Face Pull"]},{t:"Arm circles ×15 each way",icon:"🔄"},{t:"Cat-cow ×8",icon:"🐈"},{t:"Light warm-up set on first lift",icon:"🏋️"}];
   return {title: travel? "Greece · Bodyweight" : split, tag: travel? "Travel Mode · No Equipment" : "Home · Dubai Gym",
     phase: DB.profile.phase, note, reps: travel? "AMRAP-ish · 2 in reserve" : "8–12 reps", sets, warmup, travel,
     main: main.map(n=>{const clean=n.replace("↔ ","");
@@ -562,12 +619,27 @@ function generateWorkout(){
   document.getElementById('heroSub').textContent=DB.workout.note;
   document.getElementById('heroPhase').textContent="Today · "+DB.workout.tag;
 }
-function renderRowWarm(){
-  const el=document.getElementById('rowWarm'); if(!el) return;
-  el.innerHTML="<div class='ic'><img src='"+ROW_GIF+"' loading='lazy' onerror=\"this.parentElement.textContent='🚣'\"></div><div><div class='big'>Warm-up Row · 2,000m</div><div class='sm'>Easy pace ~2:10–2:20 /500m · ~9 min. Always start here.</div></div>";
+function rowBlockHTML(travel){
+  const dist=travel?"1,000m":"2,000m";
+  const pace=travel?"Quick easy row to warm up.":"Easy pace ~2:10–2:20 /500m · ~9 min.";
+  return "<div class='sheet-sec'><h3>◆ Warm-up Row</h3>"+
+    "<div class='rowbanner'><img src='"+ROW_SVG+"' alt='someone rowing'></div>"+
+    "<div class='name' style='margin-top:12px'>Row · "+dist+"</div>"+
+    "<div class='sm' style='margin-top:4px'>"+pace+" Log how long it took you below.</div>"+
+    "<div class='logrow mt'>"+
+      "<input id='warmRowTime' inputmode='text' placeholder='mm:ss  (time it took you)' style='text-align:center'>"+
+      "<button onclick='addWarmupRow("+(travel?1:0)+")'>Log</button></div>"+
+    "<div id='warmRowMsg' class='sm' style='margin-top:8px'></div></div>";
+}
+function addWarmupRow(travel){
+  const dist=travel?"1000m":"2000m"; const time=(val('warmRowTime')||"").trim();
+  if(isNaN(timeToSec(time))){ toast("Use mm:ss  e.g. 9:20"); return; }
+  DB.rowing.push({dist,time,date:today()}); markSession(); save(); renderRowing(); renderRowingLog();
+  const m=document.getElementById('warmRowMsg'); if(m) m.innerHTML="✅ Logged <b>"+dist+" · "+time+"</b> — saved to your rowing history.";
+  const inp=document.getElementById('warmRowTime'); if(inp) inp.value="";
+  toast("Row logged 🚣");
 }
 function renderWorkoutSheet(w){
-  renderRowWarm();
   if(!w){ document.getElementById('workoutSheet').innerHTML=""; return; }
   if(w.sets===0){
     document.getElementById('workoutSheet').innerHTML="<div class='sheet'><div class='sheet-hd'><div class='tag'>"+w.tag+"</div><h2 class='display'>"+w.title+"</h2></div><div class='sheet-sec'><div class='recovery'>"+w.note+"</div></div><div class='sheet-sec'><h3>◆ Mobility</h3>"+w.cooldown.map(mvHTML).join('')+"</div></div>";
@@ -578,6 +650,7 @@ function renderWorkoutSheet(w){
   "<div class='sheet'><div class='sheet-hd'><div class='tag'>"+w.tag+"</div><h2 class='display'>"+w.title+"</h2>"+
     "<div class='meta'><span class='pill orange'>"+w.sets+" sets</span><span class='pill'>"+w.reps+"</span><span class='pill purple'>"+w.phase+"</span></div></div>"+
   "<div class='sheet-sec'><h3>◆ Warm-up</h3>"+w.warmup.map(mvHTML).join('')+"</div>"+
+  rowBlockHTML(w.travel)+
   "<div class='sheet-sec'><h3>◆ Main Workout · log each set</h3>"+exHTML+"</div>"+
   "<div class='sheet-sec'><h3>◆ Cool-down</h3>"+w.cooldown.map(mvHTML).join('')+"</div>"+
   "<div class='sheet-sec'><h3>◆ Recovery Notes</h3><div class='recovery'>"+w.recovery+"</div></div></div>";
@@ -589,9 +662,13 @@ function beep(){ try{ unlockAudio(); const c=audioCtx; if(!c) return; const o=c.
 function beeps(){ beep(); setTimeout(beep,300); setTimeout(beep,600); }
 function fmtTime(sec){ sec=Math.max(0,Math.round(sec)); return Math.floor(sec/60)+":"+String(sec%60).padStart(2,'0'); }
 function restSeconds(str){ const m=String(str).match(/\d+/); return m?parseInt(m[0]):90; }
-let restInt=null, restEnd=0, restActive=false;
+let restInt=null, restEnd=0, restActive=false, restBeeped=false;
+/* Keep the screen awake during a timer so mobile browsers don't suspend us. */
+let wakeLock=null;
+async function requestWake(){ try{ if('wakeLock' in navigator && !wakeLock){ wakeLock=await navigator.wakeLock.request('screen'); wakeLock.addEventListener('release',()=>{wakeLock=null;}); } }catch(e){} }
+function releaseWake(){ try{ if(wakeLock && !restActive && holdIdx<0){ wakeLock.release(); wakeLock=null; } }catch(e){} }
 function startRest(sec,label){
-  unlockAudio(); restEnd=Date.now()+sec*1000; restActive=true;
+  unlockAudio(); requestWake(); restEnd=Date.now()+sec*1000; restActive=true; restBeeped=false;
   const t=document.getElementById('restTimer'); t.classList.add('show'); t.classList.remove('due');
   document.getElementById('restLab').textContent=label||"Rest · next set in";
   restTick(); if(restInt) clearInterval(restInt); restInt=setInterval(restTick,250);
@@ -602,26 +679,22 @@ function restTick(){
   const el=document.getElementById('restCd'); if(el) el.textContent=fmtTime(left);
   if(left<=0){ restActive=false; if(restInt){clearInterval(restInt);restInt=null;} restDue(); }
 }
-function restDue(){ const t=document.getElementById('restTimer'); t.classList.add('due'); const l=document.getElementById('restLab'); if(l)l.textContent="Next up — GO 💥"; const cd=document.getElementById('restCd'); if(cd)cd.textContent="0:00"; beeps(); if(navigator.vibrate) try{navigator.vibrate([200,90,200,90,200]);}catch(e){} }
-function stopRest(){ restActive=false; if(restInt){clearInterval(restInt);restInt=null;} const t=document.getElementById('restTimer'); if(t){t.classList.remove('show');t.classList.remove('due');} }
-document.addEventListener('visibilitychange',function(){ if(!document.hidden && restActive) restTick(); });
-window.addEventListener('focus',function(){ if(restActive) restTick(); });
+function restDue(){ const t=document.getElementById('restTimer'); t.classList.add('due'); const l=document.getElementById('restLab'); if(l)l.textContent="Next up — GO 💥"; const cd=document.getElementById('restCd'); if(cd)cd.textContent="0:00"; if(!restBeeped){ restBeeped=true; beeps(); if(navigator.vibrate) try{navigator.vibrate([200,90,200,90,200]);}catch(e){} } releaseWake(); }
+function stopRest(){ restActive=false; if(restInt){clearInterval(restInt);restInt=null;} const t=document.getElementById('restTimer'); if(t){t.classList.remove('show');t.classList.remove('due');} releaseWake(); }
+/* On returning to the app, re-sync BOTH the rest countdown and the hold stopwatch
+   from wall-clock time so nothing froze while we were away (#4). */
+function resyncTimers(){
+  if(restActive) restTick();
+  if(holdIdx>=0 && holdInt){ const s=Math.round((Date.now()-holdStart)/1000); const c=document.getElementById('hcd'+holdIdx); if(c)c.textContent=fmtTime(s); }
+  if(wakeLock===null && (restActive||holdIdx>=0)) requestWake();
+}
+document.addEventListener('visibilitychange',function(){ if(!document.hidden) resyncTimers(); });
+window.addEventListener('focus',resyncTimers);
 function afterLog(i){
   const ex=DB.workout.main[i]; const done=todaySets(ex.name).length; const target=DB.workout.sets;
-  if(done>=target){ const next=DB.workout.main[i+1]; const exRest=DB.workout.travel?75:150; startRest(exRest, next? ("Rest — next: "+next.name) : "Last exercise done — nice work"); }
+  if(done>=target){ const next=DB.workout.main[i+1]; const exRest=DB.workout.travel?90:150; startRest(exRest, next? ("Rest before "+next.name) : "Last exercise done — nice work"); }
   else { startRest(restSeconds(ex.rest), ex.name+" · next set in"); }
 }
-const ALTS={
- "Bench Press":["Incline DB Press","Push-up"],"Incline DB Press":["Bench Press","Push-up","Pike Push-up"],
- "Overhead Press":["Pike Push-up","Lateral Raise"],"Lateral Raise":["Overhead Press","Face Pull"],
- "Triceps Pushdown":["Push-up","Bench Press"],"Barbell Row":["Lat Pulldown","Inverted Row","Pull-up"],
- "Lat Pulldown":["Pull-up","Inverted Row","Barbell Row"],"Pull-up":["Lat Pulldown","Inverted Row"],
- "Inverted Row":["Barbell Row","Lat Pulldown"],"Face Pull":["Lateral Raise"],"DB Curl":["Inverted Row","Pull-up"],
- "Goblet Squat":["Bulgarian Split Squat","Bodyweight Squat","Walking Lunge"],"Romanian Deadlift":["Nordic Curl","Bulgarian Split Squat"],
- "Bulgarian Split Squat":["Walking Lunge","Goblet Squat","Bodyweight Squat"],"Nordic Curl":["Romanian Deadlift"],
- "Walking Lunge":["Bulgarian Split Squat","Bodyweight Squat"],"Bodyweight Squat":["Goblet Squat","Walking Lunge"],
- "Plank":["Hollow Hold"],"Hollow Hold":["Plank"],"Push-up":["Bench Press","Incline DB Press"],"Pike Push-up":["Overhead Press"]
-};
 function exObject(name){
   const e=EXDB[name]||{m:["core"],cue:"Control the rep.",wristAlt:"Same"};
   const travel=DB.workout&&DB.workout.travel; const sets=DB.workout?DB.workout.sets:3; const timed=!!e.timed;
@@ -629,13 +702,37 @@ function exObject(name){
     scheme: travel? (sets+" sets · "+(e.m.includes('core')?"40–60s hold":"12–20 reps")) : (sets+" sets · "+(timed?"30–60s hold":"8–12")),
     rest: travel? "45–60s":"90s", rec: timed?null:recommendLoad(name)};
 }
+function doneTodayNames(){ const out=[]; Object.entries(DB.strength).forEach(([k,v])=>{ if(v.some(s=>s.date===today())) out.push(k); }); return out; }
+/* Same-muscle alternatives, excluding anything already done today or still planned today (#2 & #8). */
+function muscleAlts(name){
+  const cur=EXDB[name]; if(!cur) return [];
+  const present=DB.workout?DB.workout.main.map(e=>e.name):[];
+  const exclude=new Set([name,...present,...doneTodayNames()]);
+  const curM=cur.m;
+  return Object.keys(EXDB).filter(n=>!exclude.has(n))
+    .map(n=>{ const m=EXDB[n].m; const overlap=m.filter(x=>curM.includes(x)).length; const primary=m[0]===curM[0]?1:0; return {n,overlap,primary,timed:!!EXDB[n].timed}; })
+    .filter(o=>o.overlap>0 && o.timed===!!cur.timed)
+    .sort((a,b)=>(b.overlap-a.overlap)||(b.primary-a.primary))
+    .map(o=>o.n);
+}
 function swapEx(i){
-  if(!DB.workout) return; const cur=DB.workout.main[i].name; const alts=ALTS[cur]||[];
-  if(!alts.length){ toast("No alternative for this one"); return; }
-  const present=DB.workout.main.map(e=>e.name); let next=alts.find(a=>!present.includes(a))||alts[0];
-  DB.workout.main[i]=exObject(next); save();
+  if(!DB.workout) return; const cur=DB.workout.main[i]; const box=document.getElementById('swap'+i); if(!box) return;
+  if(box.dataset.open==="1"){ box.innerHTML=""; box.dataset.open="0"; return; }
+  const alts=muscleAlts(cur.name);
+  if(!alts.length){ box.innerHTML="<div class='sm' style='color:var(--muted);margin-top:8px'>No spare same-muscle option — every similar move is already in today's workout.</div>"; box.dataset.open="1"; return; }
+  const chips=alts.slice(0,5).map(n=>"<button class='altchip' onclick=\"chooseSwap("+i+",'"+n.replace(/'/g,"\\'")+"')\"><b>"+n+"</b><span>"+EXDB[n].m.join(' · ')+"</span></button>").join('');
+  box.innerHTML="<div class='altpick'><div class='sm' style='margin-bottom:8px'>Same muscles ("+cur.muscles.join(', ')+") — no equipment needed:</div>"+chips+"</div>";
+  box.dataset.open="1";
+}
+function chooseSwap(i,name){
+  DB.workout.main[i]=exObject(name); save();
   const el=document.getElementById('exb'+i); if(el) el.outerHTML=exBlockHTML(DB.workout.main[i],i);
-  toast("Swapped → "+next);
+  toast("Swapped → "+name);
+}
+/* Manual rest between exercise groups (#1) — longer than the between-set rest. */
+function groupRest(i){
+  const travel=DB.workout&&DB.workout.travel; const next=DB.workout&&DB.workout.main[i+1];
+  startRest(travel?90:150, next? ("Rest before "+next.name) : "Rest — last exercise");
 }
 function setChip(sset){ return sset.timed? "<span class='setchip'>"+sset.r+"s hold</span>" : "<span class='setchip'>"+sset.w+"kg × "+sset.r+"</span>"; }
 function exBlockHTML(e,i){
@@ -648,9 +745,12 @@ function exBlockHTML(e,i){
   return "<div class='exb' id='exb"+i+"'>"+exImgHTML(e.name,e.muscles)+
     "<div class='name'>"+e.name+"</div><div class='scheme'>"+e.scheme+" · rest "+e.rest+"</div>"+
     "<button class='swapbtn' onclick='swapEx("+i+")'>⇄ Swap — no equipment?</button>"+
+    "<div id='swap"+i+"' data-open='0'></div>"+
     "<div class='cue'><b>Cue:</b> "+e.cue+"</div>"+rec+wn+
     "<div>"+e.muscles.map(m=>"<span class='mini'>"+m+"</span>").join('')+"</div>"+
-    "<div class='setlog' id='sl"+i+"'>"+chips+"</div>"+input+"<div id='cb"+i+"'></div></div>";
+    "<div class='setlog' id='sl"+i+"'>"+chips+"</div>"+input+
+    "<button class='grouprest' onclick='groupRest("+i+")'>⏱ Rest before next exercise</button>"+
+    "<div id='cb"+i+"'></div></div>";
 }
 let holdInt=null, holdStart=0, holdIdx=-1;
 function toggleHold(i){
@@ -659,12 +759,13 @@ function toggleHold(i){
   if(holdIdx===i && holdInt){
     const sec=Math.round((Date.now()-holdStart)/1000);
     clearInterval(holdInt); holdInt=null; holdIdx=-1; if(btn)btn.textContent="▶ Start hold"; if(cd)cd.textContent=fmtTime(sec);
+    releaseWake();
     saveSet(ex.name,{w:0,r:sec,timed:true}); markSession();
     const sl=document.getElementById('sl'+i); if(sl) sl.insertAdjacentHTML('beforeend',setChip({w:0,r:sec,timed:true}));
     afterLog(i);
     const cb=document.getElementById('cb'+i); if(cb) cb.innerHTML="<div class='coachbubble'><div class='who'>◆ Coach</div>"+holdReply(sec)+"</div>";
   } else {
-    unlockAudio(); if(holdInt) clearInterval(holdInt); holdIdx=i; holdStart=Date.now(); if(btn)btn.textContent="■ Stop & log";
+    unlockAudio(); requestWake(); if(holdInt) clearInterval(holdInt); holdIdx=i; holdStart=Date.now(); if(btn)btn.textContent="■ Stop & log";
     holdInt=setInterval(function(){ const s=Math.round((Date.now()-holdStart)/1000); const c=document.getElementById('hcd'+i); if(c)c.textContent=fmtTime(s); },250);
   }
 }
@@ -881,9 +982,13 @@ function cycleDay(dow){
 }
 
 function drawChart(){
+  const wrap=document.getElementById('wtWrap');
+  const data0=(DB.weights||[]).slice(-10);
+  if(wrap && data0.length<2){ wrap.innerHTML="<div class='muted' style='font-size:14px'>Log your bodyweight in the daily check-in and your trend builds here.</div>"; return; }
+  if(wrap && !document.getElementById('wtChart')){ wrap.innerHTML="<div class='chartwrap'><canvas id='wtChart'></canvas></div>"; }
   const c=document.getElementById('wtChart'); if(!c)return;
   const dpr=window.devicePixelRatio||1, W=c.clientWidth,H=150; c.width=W*dpr; c.height=H*dpr; const x=c.getContext('2d'); x.scale(dpr,dpr);
-  const data=DB.weights.slice(-8), min=Math.min(...data)-.5,max=Math.max(...data)+.5;
+  const data=data0, min=Math.min(...data)-.5,max=Math.max(...data)+.5;
   const px=i=>20+i*((W-40)/(data.length-1)), py=v=>10+(1-(v-min)/(max-min))*(H-40);
   x.clearRect(0,0,W,H); x.strokeStyle="#2c2318"; x.lineWidth=1;
   for(let g=0;g<4;g++){const yy=10+g*((H-40)/3);x.beginPath();x.moveTo(20,yy);x.lineTo(W-20,yy);x.stroke();}
@@ -892,7 +997,6 @@ function drawChart(){
   x.beginPath(); x.moveTo(px(0),py(data[0])); data.forEach((v,i)=>x.lineTo(px(i),py(v))); x.strokeStyle="#ffa54a"; x.lineWidth=3; x.lineJoin="round"; x.stroke();
   data.forEach((v,i)=>{x.beginPath();x.arc(px(i),py(v),3.5,0,7);x.fillStyle="#ffd9a3";x.fill();});
   x.fillStyle="#71614e"; x.font="600 11px -apple-system"; x.fillText(max.toFixed(1)+"kg",22,16); x.fillText(min.toFixed(1)+"kg",22,H-24);
-  const pg=document.getElementById('pgWeight'); if(pg) pg.innerHTML=data[data.length-1]+'<small> kg</small>';
 }
 function renderStrengthPBs(){
   const el=document.getElementById('strengthPBs'); if(!el) return;
@@ -972,8 +1076,19 @@ function saveProfile(){
   DB.profile.equipment=val('setEquip'); DB.profile.injuries=val('setInjuries'); DB.profile.rules=val('setRules');
   DB.workout=null; save(); updateStatus(); document.getElementById('greetName').textContent=DB.profile.name; toast("Profile saved — coach updated");
 }
-function exportData(){ const blob=new Blob([JSON.stringify(DB,null,2)],{type:"application/json"}); const a=document.createElement('a'); a.href=URL.createObjectURL(blob); a.download="amirpt-data.json"; a.click(); }
-function resetAll(){ if(confirm("Reset all data? This can't be undone.")){ localStorage.removeItem("amirpt"); DB=structuredClone(DEFAULTS); location.reload(); } }
+function exportData(){ const blob=new Blob([JSON.stringify(DB,null,2)],{type:"application/json"}); const a=document.createElement('a'); a.href=URL.createObjectURL(blob); a.download="amirpt-backup-"+today()+".json"; a.click(); toast("Backup downloaded"); }
+function importData(inp){ const f=inp.files[0]; if(!f) return; const rd=new FileReader();
+  rd.onload=e=>{ try{ const parsed=JSON.parse(e.target.result);
+    if(!parsed||typeof parsed!=='object'||!('profile' in parsed||'strength' in parsed)){ toast("That doesn't look like an Amir PT backup"); return; }
+    if(!confirm("Restore this backup? It replaces the data currently on this device.")) return;
+    DB=mergeDefaults(parsed); DB.workout=null; save(); boot(); go('settings'); toast("Backup restored ✅");
+  }catch(err){ toast("Couldn't read that file"); } };
+  rd.readAsText(f); inp.value=""; }
+function resetAll(){ if(confirm("Reset all data? This can't be undone.")){
+  localStorage.removeItem(STORE_KEY); localStorage.removeItem(BACKUP_KEY);
+  try{ if(_idb){ _idb.transaction(IDB_STORE,"readwrite").objectStore(IDB_STORE).delete(STORE_KEY); } else { indexedDB.deleteDatabase(IDB_NAME); } }catch(e){}
+  DB=structuredClone(DEFAULTS); setTimeout(()=>location.reload(),120);
+} }
 function escapeHtml(s){return s.replace(/[&<>]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;'}[c]));}
 
 function pad2(n){return String(n).padStart(2,'0');}
@@ -1014,13 +1129,14 @@ function boot(){
   document.getElementById('setEquip').value=DB.profile.equipment; document.getElementById('setInjuries').value=DB.profile.injuries; document.getElementById('setRules').value=DB.profile.rules;
   document.querySelectorAll('#locSeg button').forEach(b=>b.classList.toggle('on',b.dataset.v===DB.profile.location));
   document.querySelectorAll('#provSeg button').forEach(b=>b.classList.toggle('on',b.dataset.v===DB.ai.provider));
-  renderMetrics(); renderItin(); renderStrengthPBs(); renderRowing(); renderRowingLog(); renderPhotos(); renderIntegrations(); updateStreak(); renderRowWarm();
+  renderMetrics(); renderItin(); renderStrengthPBs(); renderRowing(); renderRowingLog(); renderPhotos(); renderIntegrations(); updateStreak();
   if(typeof scheduleInApp==="function") scheduleInApp();
   const split=pickSplit();
   if(DB.workout){ renderWorkoutSheet(DB.workout); document.getElementById('heroTitle').textContent=DB.workout.title; document.getElementById('heroPhase').textContent="Today · "+DB.workout.tag; }
   else { document.getElementById('heroTitle').textContent = split==="Rest"?"Rest & Recover":split; document.getElementById('heroPhase').textContent="Today · "+(DB.profile.location==='greece'?'Greece':'Dubai'); }
 }
 boot();
+restoreIfWiped();
 
 </script>
 </body>
