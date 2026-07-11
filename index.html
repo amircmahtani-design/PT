@@ -70,6 +70,15 @@ h2.display{font-size:25px;font-weight:800;letter-spacing:-.4px;margin:6px 0;colo
 .pill.orange{background:#331f0a;border-color:#5c3712;color:var(--gold);}
 .pill.purple{background:#221439;border-color:#3f2668;color:#cda9ff;}
 .pill.gray{background:var(--pill);color:var(--muted);}
+.pill.cyan{background:#06222b;border-color:#0e4a5c;color:#5fd0e6;}
+.pill.teal{background:#04231f;border-color:#0d5148;color:#5fe0cb;}
+.imgwrap.nomedia,.ic.nomedia-sm{display:flex;align-items:center;justify-content:center;background:#161009;color:var(--muted);text-align:center;}
+.imgwrap.nomedia{height:200px;border:1px dashed var(--line);border-radius:16px;}
+.imgwrap.nomedia b{display:block;font-size:15px;color:var(--gold);margin-bottom:4px;}
+.imgwrap.nomedia span{font-size:12.5px;}
+.ic.nomedia-sm{font-size:18px;}
+.nutri{display:flex;flex-wrap:wrap;gap:6px 4px;font-size:16px;color:var(--txt);align-items:center;}
+.nutri b{color:var(--gold);}
 .coachnote{background:#0f1c2e;border:1px solid #1c3a5c;border-left:3px solid var(--cyan);border-radius:14px;padding:14px 16px;font-size:15px;line-height:1.55;color:#e7f1fb;}
 .coachnote .who,.coachbubble .who{font-size:12px;color:var(--cyan);font-weight:700;text-transform:uppercase;letter-spacing:.6px;margin-bottom:6px;display:flex;align-items:center;gap:6px;}
 .coachnote b{color:#bfe0ff;}
@@ -234,6 +243,7 @@ a{color:var(--orange);}
       <button class="cta" onclick="event.stopPropagation();generateWorkout()">Open Today's Workout</button>
     </div>
     <div class="grid" id="metricGrid"></div>
+    <div id="nutriLine" style="display:none"></div>
     <div class="card">
       <div class="card-title"><span>Weekly Itinerary</span><span class="itin-edit">tap a day to change</span></div>
       <div id="itinList"></div>
@@ -441,7 +451,11 @@ const DEFAULTS = {
   weights:[],
   photos:[], rowing:[],
   chat:[], streak:0, lastSessionDate:null, workout:null,
-  integrations:{"Apple Watch":true,"Concept2 (manual)":true,"Photos":true,"Camera":false,"Notifications":true}
+  integrations:{"Apple Watch":true,"Concept2 (manual)":true,"Photos":true,"Camera":false,"Notifications":true},
+  lib:{}, dayTypes:{}, media:{}, progression:{},
+  nutrition:{calorieTarget:null, proteinTarget:null, phase:"", log:[]},
+  cardio:null, readiness:null,
+  prefs:{visualMode:"auto", showIcons:true, exerciseGifs:true, workoutFormat:"list", coachStyle:"direct funny concise"}
 };
 
 /* ===== DURABLE STORAGE (#7 — never wipe data on redeploy) =====
@@ -493,6 +507,7 @@ function go(s){
   if(s==='progress'){ drawChart(); renderRowingLog(); }
   if(s==='history') renderHistory();
   if(s==='workout') ensureWorkout();
+  if(s==='today') renderNutrition();
 }
 function toast(m){const t=document.getElementById('toast');t.textContent=m;t.classList.add('show');setTimeout(()=>t.classList.remove('show'),2600);}
 function segPick(btn,group){
@@ -533,6 +548,13 @@ const EXDB = {
 };
 
 function latestCheckin(){ return DB.checkins[DB.checkins.length-1] || null; }
+/* ===== Accessors: built-in data + anything the AI has added at runtime ===== */
+function EX(name){ if(!name) return null; return (DB.lib&&DB.lib[name]) || EXDB[name] || null; }
+function allExNames(){ return [...new Set([...Object.keys(EXDB), ...Object.keys(DB.lib||{})])]; }
+function mediaFor(name){ return (DB.media&&DB.media[name]) || EXIMG[name] || null; }
+function allSplits(){ const base=SPLITS.filter(s=>s!=="Rest"); const custom=Object.keys(DB.dayTypes||{}); return [...base, ...custom, "Rest"]; }
+function realMediaOnly(){ return DB.prefs && DB.prefs.visualMode==="real"; }
+function catOf(name){ const e=EX(name); return (e&&e.cat) || CAT[name] || "Other"; }
 function pickSplit(){ if(DB.dayOverride && DB.dayOverride.date===today() && DB.dayOverride.split) return DB.dayOverride.split; return DB.schedule[new Date().getDay()] || "Full Body"; }
 function todaySets(ex){ const a=DB.strength[ex]; if(!a) return []; const x=a.find(o=>o.date===today()); return x?x.sets:[]; }
 function markSession(){ if(DB.lastSessionDate!==today()){ DB.lastSessionDate=today(); DB.streak=(DB.streak||0)+1; save(); updateStreak(); toast("Session started · streak "+DB.streak+" 🔥"); } }
@@ -545,6 +567,7 @@ function buildWorkout(){
   const lowEnergy=energy<=4||sleep<=4; const travel=loc==="greece";
   let split=pickSplit();
   const cooldown=[{t:"Doorway pec/chest stretch 45s/side"},{t:"Child's pose 60s"},{t:"Lat stretch 45s/side"},{t:"Box breathing 2 min (in-4 hold-4 out-4)"}];
+  if(DB.dayTypes && DB.dayTypes[split]) return buildCustomDay(split,{travel,wrist,knee,lowEnergy,energy,sleep,cooldown});
   if(split==="Rest"){
     return {title:travel?"Holiday · Rest":"Active Recovery",tag:travel?"Greece · Enjoy it":"Recovery Day",phase:DB.profile.phase,
       note:travel?"Rest day on holiday — walk, swim, enjoy the food & drink guilt-free. Movement is a bonus, not a must.":"Rest day. Easy row or walk, hydrate, mobilise. Recovery is where the physique is built.",
@@ -575,8 +598,51 @@ function buildWorkout(){
         rest: travel? "45–60s":"90s", rec: e.timed?null:recommendLoad(clean)};}),
     cooldown, recovery: travel?"Hydrate between drinks 😄. Grab some protein when you can. You're maintaining beautifully — don't stress the holiday.":"Hydrate (aim 3L). 30–40g protein within the hour. Lights out by 11. Recovery builds the physique."};
 }
+function buildCustomDay(name,ctx){
+  const dt=DB.dayTypes[name]||{}; const travel=ctx.travel; const kind=(dt.kind||inferDayKind(name)).toLowerCase();
+  const baseWarm = travel? [{t:"3 min brisk walk / skips"},{t:"Arm circles ×15 each way"},{t:"World's greatest stretch ×5/side"}]
+                         : [{t:"5 min easy Concept2 row or walk"},{t:"Arm circles ×15 each way"},{t:"Cat-cow ×8"}];
+  if(kind==="cardio"||kind==="row"){
+    const cardio = dt.cardio || DB.cardio || {name:"Concept2 Row",duration:"30 min",zone:"Zone 2"};
+    return {title:name, tag: travel?"Travel · Cardio":"Cardio Day", phase:DB.profile.phase, kind:"cardio",
+      note: dt.note || "Steady conversational cardio. Nasal-breathing pace — you should be able to talk.",
+      reps:"—", sets:0, warmup:baseWarm, main:[], cooldown:ctx.cooldown, cardio,
+      recovery:"Hydrate well, refuel with protein + carbs. Great for recovery and the engine."};
+  }
+  if(kind==="mobility"||kind==="recovery"||kind==="yoga"){
+    const flow = (dt.main&&dt.main.length? dt.main : ["Cat-cow ×10","World's greatest stretch ×5/side","90/90 hip switches ×10","Thoracic openers ×10/side","Couch stretch 60s/side","Child's pose 90s","Box breathing 3 min"]).map(t=>({t}));
+    return {title:name, tag:"Recovery · Mobility", phase:DB.profile.phase, kind:"mobility",
+      note: dt.note || "Easy mobility & recovery. Move slow, breathe, no straining. This is how the physique gets built.",
+      reps:"—", sets:0, warmup:[], main:[], cooldown:flow, recovery:"Sleep, water, protein. Rest is training too."};
+  }
+  // custom strength template
+  const names=(dt.main&&dt.main.length? dt.main : ["Bench Press","Barbell Row","Overhead Press","Plank"]).map(resolveExName).filter(Boolean);
+  let sets = dt.sets || (travel?2: ctx.lowEnergy?2 : (ctx.energy>=8&&ctx.sleep>=7?4:3));
+  const warmup = travel? baseWarm : [{t:"Band pull-aparts ×20"},{t:"Arm circles ×15 each way"},{t:"Cat-cow ×8"},{t:"Light warm-up set on first lift"}];
+  const savedWorkoutSets = sets;
+  const w={title:name, tag: travel?"Travel Mode":"Home · Dubai Gym", phase:DB.profile.phase, kind:"strength",
+    note: dt.note || "Custom day your coach built.", reps: travel?"AMRAP-ish · 2 in reserve":"8–12 reps", sets, warmup, travel,
+    main:[], cooldown:ctx.cooldown, cardio: dt.cardio||DB.cardio||null,
+    recovery: travel?"Hydrate, protein when you can, enjoy the day.":"Hydrate (aim 3L). 30–40g protein within the hour. Recovery builds the physique."};
+  const prev=DB.workout; DB.workout=w; w.main=names.map(exObject); DB.workout=prev; // exObject reads DB.workout.sets/travel
+  w.sets=savedWorkoutSets;
+  return w;
+}
+function inferDayKind(name){ const s=String(name).toLowerCase();
+  if(/cardio|row|erg|run|jog|bike|cycle|zone ?2|conditioning|hiit|interval/.test(s)) return "cardio";
+  if(/mobility|recovery|yoga|stretch|flexib/.test(s)) return "mobility";
+  if(/holiday|maintenance|travel|bodyweight/.test(s)) return "strength";
+  return "strength"; }
 function recommendLoad(ex){
-  const h=DB.strength[ex]; if(!h||!h.length) return null;
+  const pr=DB.progression&&DB.progression[ex];
+  const h=DB.strength[ex];
+  const topPrev = (h&&h.length)? Math.max(...(h[h.length-1].sets||[]).map(s=>s.w).concat([0])) : null;
+  if(pr){
+    if(pr.next) return {text:"Next target: "+pr.next+" (set by coach).",up:true,w:topPrev};
+    if(pr.keep && topPrev!=null) return {text:"Stay at "+topPrev+"kg this session — coach wants it kept. Own the reps.",up:false,w:topPrev};
+    if(pr.delta && topPrev!=null){ const w=Math.max(0,topPrev+pr.delta); return {text:w+"kg — coach added "+(pr.delta>0?"+":"")+pr.delta+"kg vs last time.",up:pr.delta>0,w}; }
+  }
+  if(!h||!h.length) return null;
   const last=h[h.length-1], sets=last.sets||[]; if(!sets.length) return null;
   const topW=Math.max(...sets.map(s=>s.w)), allReps=sets.map(s=>s.r);
   const mastered=sets.filter(s=>s.w===topW).length>=Math.min(3,sets.length) && allReps.every(r=>r>=12);
@@ -604,13 +670,22 @@ const ICON_MAP=[
 ];
 function iconFor(t){ const s=String(t||"").toLowerCase(); for(const [re,e] of ICON_MAP){ if(re.test(s)) return e; } return "🤸"; }
 function mvHTML(item){
-  const ic = item.img ? "<div class='ic'><img src='"+item.img+"' loading='lazy' onerror=\"this.parentElement.classList.add('emo');this.parentElement.textContent='"+iconFor(item.t)+"'\"></div>"
-    : "<div class='ic emo'>"+(item.icon||iconFor(item.t))+"</div>";
+  const media = item.img || (DB.media&&DB.media[item.t]);
+  const showIcons = !DB.prefs || DB.prefs.showIcons!==false;
+  let ic;
+  if(media){ ic="<div class='ic'><img src='"+media+"' loading='lazy' onerror=\"this.parentElement.classList.add('emo');this.parentElement.textContent='"+iconFor(item.t)+"'\"></div>"; }
+  else if(realMediaOnly()){ ic="<div class='ic nomedia-sm'>📷</div>"; }
+  else if(showIcons){ ic="<div class='ic emo'>"+(item.icon||iconFor(item.t))+"</div>"; }
+  else { ic="<div class='ic emo' style='opacity:.35'>·</div>"; }
   return "<div class='mv'>"+ic+"<div class='t'>"+item.t+"</div></div>";
 }
 function exImgHTML(name,muscles){
-  const src=EXIMG[name], fb=bodyURI(muscles);
-  if(src) return "<div class='imgwrap'><img src='"+src+"' alt='"+name+"' loading='lazy' onerror=\"this.onerror=null;this.src='"+fb+"';this.style.objectFit='cover'\"></div>";
+  const src=mediaFor(name), fb=bodyURI(muscles);
+  const missing="<div class='imgwrap nomedia'><div><b>📷 demo needed</b><span>ask coach to add a real GIF</span></div></div>";
+  if(src){ const err = realMediaOnly() ? "this.onerror=null;this.closest('.imgwrap').outerHTML=\"<div class='imgwrap nomedia'><div><b>📷 demo needed</b><span>ask coach to add a real GIF</span></div></div>\""
+      : "this.onerror=null;this.src='"+fb+"';this.style.objectFit='cover'";
+    return "<div class='imgwrap'><img src='"+src+"' alt='"+name+"' loading='lazy' onerror=\""+err+"\"></div>"; }
+  if(realMediaOnly()) return missing;
   return "<div class='imgwrap'><img src='"+fb+"' style='object-fit:cover'></div>";
 }
 
@@ -650,8 +725,19 @@ function addWarmupRow(travel){
 }
 function renderWorkoutSheet(w){
   if(!w){ document.getElementById('workoutSheet').innerHTML=""; return; }
+  const cardio = w.cardio || (w.kind==='cardio'? DB.cardio : null);
+  if(w.kind==='cardio'){
+    document.getElementById('workoutSheet').innerHTML=
+    "<div class='sheet'><div class='sheet-hd'><div class='tag'>"+w.tag+"</div><h2 class='display'>"+w.title+"</h2></div>"+
+    "<div class='sheet-sec'><div class='recovery'>"+w.note+"</div></div>"+
+    (w.warmup&&w.warmup.length?("<div class='sheet-sec'><h3>◆ Warm-up</h3>"+w.warmup.map(mvHTML).join('')+"</div>"):"")+
+    cardioBlockHTML(cardio||{name:"Concept2 Row",duration:"30 min",zone:"Zone 2"})+
+    "<div class='sheet-sec'><h3>◆ Cool-down</h3>"+w.cooldown.map(mvHTML).join('')+"</div>"+
+    "<div class='sheet-sec'><h3>◆ Recovery Notes</h3><div class='recovery'>"+w.recovery+"</div></div></div>";
+    return;
+  }
   if(w.sets===0){
-    document.getElementById('workoutSheet').innerHTML="<div class='sheet'><div class='sheet-hd'><div class='tag'>"+w.tag+"</div><h2 class='display'>"+w.title+"</h2></div><div class='sheet-sec'><div class='recovery'>"+w.note+"</div></div><div class='sheet-sec'><h3>◆ Mobility</h3>"+w.cooldown.map(mvHTML).join('')+"</div></div>";
+    document.getElementById('workoutSheet').innerHTML="<div class='sheet'><div class='sheet-hd'><div class='tag'>"+w.tag+"</div><h2 class='display'>"+w.title+"</h2></div><div class='sheet-sec'><div class='recovery'>"+w.note+"</div></div>"+(cardio?cardioBlockHTML(cardio):"")+"<div class='sheet-sec'><h3>◆ "+(w.kind==='mobility'?'Mobility Flow':'Mobility')+"</h3>"+w.cooldown.map(mvHTML).join('')+"</div></div>";
     return;
   }
   const exHTML=w.main.map((e,i)=>exBlockHTML(e,i)).join('');
@@ -661,6 +747,7 @@ function renderWorkoutSheet(w){
   "<div class='sheet-sec'><h3>◆ Warm-up</h3>"+w.warmup.map(mvHTML).join('')+"</div>"+
   rowBlockHTML(w.travel)+
   "<div class='sheet-sec'><h3>◆ Main Workout · log each set</h3>"+exHTML+"</div>"+
+  (cardio?cardioBlockHTML(cardio):"")+
   "<div class='sheet-sec'><h3>◆ Cool-down</h3>"+w.cooldown.map(mvHTML).join('')+"</div>"+
   "<div class='sheet-sec'><h3>◆ Recovery Notes</h3><div class='recovery'>"+w.recovery+"</div></div></div>";
 }
@@ -705,21 +792,23 @@ function afterLog(i){
   else { startRest(restSeconds(ex.rest), ex.name+" · next set in"); }
 }
 function exObject(name){
-  const e=EXDB[name]||{m:["core"],cue:"Control the rep.",wristAlt:"Same"};
+  const e=EX(name)||{m:["core"],cue:"Control the rep."};
   const travel=DB.workout&&DB.workout.travel; const sets=DB.workout?DB.workout.sets:3; const timed=!!e.timed;
-  return {name, muscles:e.m, cue:e.cue, wristNote:null, timed,
-    scheme: travel? (sets+" sets · "+(e.m.includes('core')?"40–60s hold":"12–20 reps")) : (sets+" sets · "+(timed?"30–60s hold":"8–12")),
+  const detail = e.scheme ? e.scheme : (e.time? ("40–60s") : (e.reps||null));
+  const schemeTail = detail ? detail : (travel? (e.m.includes('core')?"40–60s hold":"12–20 reps") : (timed?"30–60s hold":"8–12"));
+  return {name, muscles:e.m, cue:e.cue, wristNote:e.wristAlt&&e.wristAlt!=="Same"&&(DB.profile.location!=='greece')&&false?null:null, timed,
+    scheme: sets+" sets · "+schemeTail,
     rest: travel? "45–60s":"90s", rec: timed?null:recommendLoad(name)};
 }
 function doneTodayNames(){ const out=[]; Object.entries(DB.strength).forEach(([k,v])=>{ if(v.some(s=>s.date===today())) out.push(k); }); return out; }
 /* Same-muscle alternatives, excluding anything already done today or still planned today (#2 & #8). */
 function muscleAlts(name){
-  const cur=EXDB[name]; if(!cur) return [];
+  const cur=EX(name); if(!cur) return [];
   const present=DB.workout?DB.workout.main.map(e=>e.name):[];
   const exclude=new Set([name,...present,...doneTodayNames()]);
   const curM=cur.m;
-  return Object.keys(EXDB).filter(n=>!exclude.has(n))
-    .map(n=>{ const m=EXDB[n].m; const overlap=m.filter(x=>curM.includes(x)).length; const primary=m[0]===curM[0]?1:0; return {n,overlap,primary,timed:!!EXDB[n].timed}; })
+  return allExNames().filter(n=>!exclude.has(n))
+    .map(n=>{ const ex=EX(n); const m=ex.m||[]; const overlap=m.filter(x=>curM.includes(x)).length; const primary=m[0]===curM[0]?1:0; return {n,overlap,primary,timed:!!ex.timed}; })
     .filter(o=>o.overlap>0 && o.timed===!!cur.timed)
     .sort((a,b)=>(b.overlap-a.overlap)||(b.primary-a.primary))
     .map(o=>o.n);
@@ -854,28 +943,53 @@ async function analyseCheckin(ci){
 
 function coachSystem(){
   const p=DB.profile;
-  const recentCk=DB.checkins.slice(-5).map(c=>"  "+c.date+": wt "+(c.weight||'—')+"kg, sleep "+c.sleep+", energy "+c.energy+", plan "+c.plan+", pain "+(c.pain||'none')).join("\n")||"  (none yet)";
-  const strength=Object.entries(DB.strength).map(([k,v])=>{const last=v[v.length-1];const sets=(last.sets||[]).map(s=>s.w+"×"+s.r).join(", ");return "  "+k+": last → "+sets;}).join("\n");
-  const rowing=DB.rowing.map(r=>"  "+r.dist+": "+r.time).join("\n")||"  (none)";
-  const mem=DB.memory? "\n\nWHO AMIR IS (his own words / ChatGPT memory — high-priority truth about his history, preferences, personality, how he likes to train):\n"+DB.memory+"\n":"";
+  const recentCk=DB.checkins.slice(-5).map(c=>"  "+c.date+": wt "+(c.weight||'—')+"kg, sleep "+c.sleep+", energy "+c.energy+", pain "+(c.pain||'none')).join("\n")||"  (none yet)";
+  const strength=Object.entries(DB.strength).map(([k,v])=>{const last=v[v.length-1];const sets=(last.sets||[]).map(s=>s.w+"×"+s.r).join(", ");return "  "+k+": last → "+sets;}).join("\n")||"  (none yet)";
+  const rowing=DB.rowing.slice(-6).map(r=>"  "+(r.name?r.name+" ":"")+(r.dist||"")+": "+r.time).join("\n")||"  (none)";
+  const mem=DB.memory? "\n\nWHO AMIR IS (his own words / ChatGPT memory — high-priority truth):\n"+DB.memory+"\n":"";
   const sched=Object.keys(DB.schedule).map(k=>"  "+DOW[k]+": "+DB.schedule[k]).join("\n");
-  const libNames=Object.keys(EXDB).join(", ");
-  const curW = DB.workout&&Array.isArray(DB.workout.main)&&DB.workout.main.length ? DB.workout.main.map((e,i)=>(i+1)+". "+e.name).join("  ") : "(none generated yet — SET_WORKOUT to build one)";
-  const editBlock="YOU DIRECTLY CONTROL THE TRAIN SCREEN. When Amir asks you to change his workout in ANY way, actually change it by putting directives on their OWN line. The app applies them instantly and re-renders the Train tab. Also give a short spoken reply. Directives:\n"+
-    "[[SET_DAY: Legs & Core]]  — change the whole split (Push Day, Pull Day, Legs & Core, Upper Body, Full Body, Rest); regenerates the session.\n"+
-    "[[SET_WORKOUT: Bench Press, Barbell Row, Overhead Press, Plank]]  — replace today's entire exercise list.\n"+
-    "[[ADD_EX: Lateral Raise]]  — add one exercise to today.\n"+
-    "[[REMOVE_EX: Bulgarian Split Squat]]  — remove one exercise from today.\n"+
-    "[[SWAP_EX: Bench Press -> Incline DB Press]]  — replace one exercise with another.\n"+
-    "[[SET_SETS: 4]]  — change sets-per-exercise for today (1–8).\n"+
-    "[[SET_ICON: warmup | Cat-cow | 🐈]]  — set the emoji for one warm-up (or cooldown) item; match by text or number.\n"+
-    "[[SET_WARMUP: Cat-cow ×8 | 🐈 ; Arm circles ×15 | 🔄 ; Band pull-aparts ×20 | 🎗️]]  — replace the whole warm-up list (emoji after | is optional; omit it and the app auto-picks a fitting icon).\n"+
-    "[[SET_COOLDOWN: Child's pose 60s | 🧘 ; Box breathing 2 min | 🌬️]]  — replace the whole cool-down list.\n"+
-    "[[FIX_ICONS]]  — auto-match every warm-up/cool-down icon to its movement.\n"+
-    "The warm-up and cool-down icons should always visually represent the movement — pick a fitting emoji whenever you edit them.\n"+
-    "You may use several at once, each on its own line. Use EXACT exercise names from this library where possible:\n  "+libNames+"\n"+
-    "Respect his TFCC wrist and Klinefelter recovery when choosing. TODAY'S CURRENT WORKOUT (Train tab right now):\n  "+curW;
-  return "You are Amir's personal trainer — the ONLY coach he has. You know him deeply and remember everything. This app stores his data; you are the coaching brain."+mem+"\n\nPERSONALITY: Direct, funny, warm, encouraging. Never robotic or generic. Challenge him, explain WHY, celebrate wins. Text like a real PT. Keep it tight.\n\nPERMANENT RULES:\n- Goal: "+p.goal+". The physique he wants, NOT bodyweight targets.\n- Klinefelter syndrome — respect recovery/fatigue, patient strength curve; consistency + progressive overload win.\n- TFCC injury (right wrist) — avoid loaded wrist extension / straight-wrist heavy pressing; prefer neutral-grip. If wrist pain reported, swap immediately.\n- Technique beats weight. Never ego lift. Only add load after current weight is MASTERED with clean form.\n- He never chooses workouts — YOU decide and tell him exactly what to do.\n- Consistency beats intensity.\n\nLOCATION RULES:\n- DUBAI (home): full home gym AND plenty of time. Full proper sessions. Equipment: "+p.equipment+".\n- GREECE: NO gym, NO time, ON HOLIDAY eating & drinking. Give SHORT (~15 min) bodyweight sessions, maintenance mindset. Do NOT guilt him about food/drink — encourage enjoying it; any movement is a bonus.\n\n"+editBlock+"\n\nCONTEXT NOW:\n- Location: "+(p.location==='greece'?'GREECE (bodyweight, short, holiday)':'HOME Dubai (full gym + time)')+"\n- Phase: "+p.phase+"\n- Today scheduled: "+pickSplit()+"\n- Custom rules: "+p.rules+"\n\nWEEKLY SCHEDULE:\n"+sched+"\n\nRECENT CHECK-INS:\n"+recentCk+"\n\nSTRENGTH HISTORY:\n"+strength+"\n\nCONCEPT2 ROWING PBs:\n"+rowing;
+  const libNames=allExNames().join(", ");
+  const dayTypes=Object.keys(DB.dayTypes||{}); const dayTypesStr=dayTypes.length?dayTypes.join(", "):"(none custom yet)";
+  const curW = DB.workout&&Array.isArray(DB.workout.main)&&DB.workout.main.length ? DB.workout.main.map((e,i)=>(i+1)+". "+e.name).join("  ") : (DB.workout&&DB.workout.kind==='cardio'?"(cardio day)":(DB.workout&&DB.workout.sets===0?"(rest/mobility day)":"(none yet — SET_WORKOUT to build one)"));
+  const nut=DB.nutrition||{}; const nutStr=(nut.calorieTarget||nut.proteinTarget||nut.phase)? ("cal target "+(nut.calorieTarget||'—')+", protein target "+(nut.proteinTarget||'—')+"g, phase "+(nut.phase||'—')) : "(no targets set)";
+  const cardioStr=DB.cardio? (DB.cardio.name+(DB.cardio.duration?" · "+DB.cardio.duration:"")+(DB.cardio.zone?" · "+DB.cardio.zone:"")+(DB.cardio.intervals?" · intervals: "+DB.cardio.intervals:"")) : "(none set)";
+  const prefs=DB.prefs||{};
+  const editBlock=
+"YOU HAVE FULL CONTROL OF THIS APP. When Amir asks for ANYTHING, actually do it by emitting directives — each on its OWN line — then give a short spoken reply. The app applies them instantly and re-renders. Never say you can't change something; use the right directive. Combine as many as needed.\n\n"+
+"TODAY'S WORKOUT (Train tab):\n"+
+"[[SET_DAY: Legs & Core]] · [[SET_WORKOUT: Bench Press, Barbell Row, Plank]] · [[ADD_EX: Lateral Raise]] · [[REMOVE_EX: Walking Lunge]] · [[SWAP_EX: Bench Press -> Incline DB Press]] · [[SET_SETS: 4]]\n\n"+
+"WARM-UP / COOL-DOWN & ICONS:\n"+
+"[[SET_WARMUP: Cat-cow ×8 | 🐈 ; Arm circles ×15 | 🔄]] · [[SET_COOLDOWN: Child's pose 60s | 🧘]] · [[SET_ICON: warmup | Cat-cow | 🐈]] · [[FIX_ICONS]]\n\n"+
+"WEEKLY SCHEDULE & DAY TYPES:\n"+
+"[[SET_WEEKDAY: Monday | Cardio Day]] · [[SET_WEEKLY_SCHEDULE: Sun Upper Body; Mon Cardio Day; Tue Pull Day; Wed Full Body; Thu Push Day; Fri Legs & Core; Sat Rest]] · [[CREATE_DAY_TYPE: Mobility Day]] · [[CREATE_DAY_TYPE: Cardio Day | kind:cardio | note:Zone 2 engine work]] · [[REMOVE_SCHEDULE_DAY_TYPE: Rest]]\n"+
+"(CREATE_DAY_TYPE options after the name, pipe-separated: kind:cardio|mobility|strength, main:Ex1,Ex2, sets:4, note:...)\n\n"+
+"EXERCISE LIBRARY (add anything not built-in):\n"+
+"[[ADD_LIBRARY_EXERCISE: Seated Cable Row | muscles:back,arms | cue:Drive elbows to hips | category:Pull | equipment:cable | sets:3 | reps:10 | wrist:neutral grip | media:https://...gif]]  (only name is required)\n\n"+
+"CARDIO PRESCRIPTION:\n"+
+"[[SET_CARDIO: Concept2 Row | 30 min | Zone 2]] · [[SET_CARDIO_INTERVALS: Concept2 Row | 5 min warmup; 8x1min hard/1min easy; 5min cooldown]] · [[SET_CARDIO_TARGET: HR Zone 2]] · [[SET_CARDIO_PACE: Easy]]\n\n"+
+"REAL DEMO MEDIA (image/GIF/video only — NEVER fake stick-figures):\n"+
+"[[SET_EXERCISE_MEDIA: Romanian Deadlift | https://...gif]] · [[SET_WARMUP_MEDIA: Band Pull-Apart | https://...]] · [[SET_COOLDOWN_MEDIA: Child's Pose | https://...]] · [[MARK_MEDIA_MISSING: Wrist CARs]]\n\n"+
+"HISTORY & PROGRESSION:\n"+
+"[[LOG_SET: Romanian Deadlift | 40kg | 12 reps | RPE 8]] · [[LOG_WORKOUT_COMPLETE]] · [[SET_EXERCISE_NEXT_TARGET: Romanian Deadlift | 40kg x 12,12,12,12]] · [[INCREASE_LOAD_NEXT_TIME: Goblet Squat | +2kg]] · [[KEEP_LOAD_NEXT_TIME: Bulgarian Split Squat]]\n\n"+
+"CHECK-INS:\n"+
+"[[LOG_CHECKIN: weight 84.8 | sleep 10 | energy 10 | soreness none | pain none]] · [[LOG_PAIN: right wrist | mild | pressing aggravates]] · [[SET_READINESS: high]]\n\n"+
+"NUTRITION:\n"+
+"[[LOG_NUTRITION: calories 1550 | protein 170g]] · [[SET_CALORIE_TARGET: 1500]] · [[SET_PROTEIN_TARGET: 170g]] · [[SET_DIET_PHASE: Lean Recomp]]\n\n"+
+"LOCATION / MODE / EQUIPMENT:\n"+
+"[[SET_LOCATION: Dubai]] · [[SET_LOCATION: Greece]] · [[SET_MODE: Holiday Maintenance]] · [[SET_EQUIPMENT_AVAILABLE: bodyweight only]]\n\n"+
+"APP PREFERENCES:\n"+
+"[[SET_VISUAL_MODE: real media only]] · [[DISABLE_ICONS]] · [[ENABLE_EXERCISE_GIFS]] · [[SET_WORKOUT_FORMAT: single visual]] · [[SET_COACH_STYLE: direct funny concise]]\n\n"+
+"GENERAL (anything else): [[APP_ACTION: set_weekday | Monday | Cardio Day]] etc.\n\n"+
+"So \"make Monday cardio forever\" = [[CREATE_DAY_TYPE: Cardio Day]] + [[SET_WEEKDAY: Monday | Cardio Day]] + [[SET_CARDIO: Concept2 Row | 30 min | Zone 2]]. Prefer EXACT exercise names from the library; respect his TFCC wrist + Klinefelter recovery. For media, use only real demonstration URLs.";
+  const state=
+"\n\nLIVE APP STATE:\n- Location: "+(p.location==='greece'?'GREECE (bodyweight, short, holiday)':'HOME Dubai (full gym + time)')+
+"\n- Phase: "+p.phase+"\n- Mode: "+(p.mode||"—")+"\n- Equipment: "+p.equipment+
+"\n- Today scheduled: "+pickSplit()+"\n- Today's exercises: "+curW+
+"\n- Custom day types: "+dayTypesStr+"\n- Cardio: "+cardioStr+"\n- Nutrition: "+nutStr+
+"\n- Prefs: visual="+(prefs.visualMode||'auto')+", icons="+(prefs.showIcons!==false)+", format="+(prefs.workoutFormat||'list')+
+"\n- Exercise library: "+libNames+
+"\n\nWEEKLY SCHEDULE:\n"+sched+"\n\nRECENT CHECK-INS:\n"+recentCk+"\n\nSTRENGTH HISTORY:\n"+strength+"\n\nCONCEPT2 / CARDIO LOG:\n"+rowing;
+  return "You are Amir's personal trainer — the ONLY coach he has. You know him deeply and remember everything. This app stores his data; you are the coaching brain."+mem+"\n\nPERSONALITY: "+(prefs.coachStyle||"Direct, funny, warm, encouraging")+". Never robotic or generic. Challenge him, explain WHY, celebrate wins. Text like a real PT. Keep it tight.\n\nPERMANENT RULES:\n- Goal: "+p.goal+". The physique he wants, NOT bodyweight targets.\n- Klinefelter syndrome — respect recovery/fatigue, patient strength curve.\n- TFCC injury (right wrist) — avoid loaded wrist extension / straight-wrist heavy pressing; prefer neutral-grip. If wrist pain reported, swap immediately.\n- Technique beats weight. Never ego lift. Only add load after current weight is MASTERED with clean form.\n- He never chooses workouts — YOU decide and tell him exactly what to do.\n\nLOCATION RULES:\n- DUBAI (home): full home gym + time. Full sessions. Equipment: "+p.equipment+".\n- GREECE: NO gym/time, holiday. SHORT (~15 min) bodyweight, maintenance. Don't guilt food/drink.\n\n"+editBlock+state;
 }
 
 function aiIsReasoning(model){ return /^gpt-5/i.test(model)||/^o\d/i.test(model); }
@@ -917,11 +1031,14 @@ function applyDayDirective(raw0){
 /* ===== COACH CAN EDIT THE TRAIN WORKOUT DIRECTLY ===== */
 function resolveExName(raw){
   const t=String(raw||"").trim().replace(/^["']|["']$/g,""); if(!t) return null;
-  const exact=Object.keys(EXDB).find(k=>k.toLowerCase()===t.toLowerCase()); if(exact) return exact;
-  const lt=t.toLowerCase(); for(const [re,name] of ALIAS){ if(re.test(lt)) return name; }
+  const exact=allExNames().find(k=>k.toLowerCase()===t.toLowerCase()); if(exact) return exact;
+  const lt=t.toLowerCase();
+  const words=lt.split(/\s+/).filter(w=>w.length>2);
+  if(words.length){ const cand=allExNames().filter(n=>{const nl=n.toLowerCase(); return words.every(w=>nl.includes(w));}); if(cand.length) return cand.sort((a,b)=>a.length-b.length)[0]; }
+  for(const [re,name] of ALIAS){ if(re.test(lt)) return name; }
   return t.replace(/\b\w/g,c=>c.toUpperCase());        // custom exercise (generic fallback)
 }
-function resolveKnownEx(raw){ const n=resolveExName(raw); return (n&&EXDB[n])?n:null; }  // known-only (for offline NL parsing)
+function resolveKnownEx(raw){ const n=resolveExName(raw); return (n&&EX(n))?n:null; }  // known-only (for offline NL parsing)
 function coachEnsureWorkout(){
   if(!DB.workout || !Array.isArray(DB.workout.main) || DB.workout.sets===0){
     const base=buildWorkout();
@@ -980,6 +1097,100 @@ function coachFixIcons(){
   coachEnsureWorkout(); let n=0;
   ['warmup','cooldown'].forEach(k=>{ (DB.workout[k]||[]).forEach(it=>{ it.icon=iconFor(it.t); delete it.img; n++; }); });
   finalizeCoachEdit(); return n; }
+/* ===== FULL APP CONTROL HANDLERS (AI has access to everything) ===== */
+const DOWMAP={sun:0,sunday:0,mon:1,monday:1,tue:2,tues:2,tuesday:2,wed:3,weds:3,wednesday:3,thu:4,thur:4,thurs:4,thursday:4,fri:5,friday:5,sat:6,saturday:6};
+function dowIndex(raw){ const k=String(raw||"").trim().toLowerCase(); if(DOWMAP[k]!=null) return DOWMAP[k]; const i=DOW.findIndex(d=>d.toLowerCase()===k.slice(0,3)); return i; }
+function resolveSplit(raw){ const t=String(raw||"").trim(); if(!t) return null; const all=allSplits(); const hit=all.find(s=>s.toLowerCase()===t.toLowerCase()); if(hit) return hit;
+  const lt=t.toLowerCase(); if(/^leg/.test(lt))return"Legs & Core"; if(/^pull/.test(lt))return"Pull Day"; if(/^push/.test(lt))return"Push Day"; if(/^upper/.test(lt))return"Upper Body"; if(/^full/.test(lt))return"Full Body"; if(/^rest/.test(lt))return"Rest";
+  return t.replace(/\b\w/g,c=>c.toUpperCase()); }
+function ensureDayType(name){ const n=String(name||"").trim(); if(!n) return null; if(SPLITS.includes(n)) return n; if(!DB.dayTypes[n]) DB.dayTypes[n]={kind:inferDayKind(n),main:[],note:""}; return n; }
+function coachCreateDayType(name,opts){ const n=String(name||"").trim(); if(!n) return null; DB.dayTypes[n]=Object.assign({kind:inferDayKind(n),main:[],note:""},DB.dayTypes[n]||{},opts||{}); save(); return n; }
+function coachRemoveDayType(name){ const n=String(name||"").trim(); if(SPLITS.includes(n)) return null; if(DB.dayTypes[n]){ delete DB.dayTypes[n]; Object.keys(DB.schedule).forEach(k=>{ if(DB.schedule[k]===n) DB.schedule[k]="Rest"; }); if(DB.dayOverride&&DB.dayOverride.split===n){ DB.dayOverride={date:null,split:null}; DB.workout=null; } save(); ensureWorkout&&ensureWorkout(); renderItin(); return n; } return null; }
+function coachSetWeekday(dayRaw,splitRaw){ const d=dowIndex(dayRaw); if(d==null||d<0||isNaN(d)) return null; const sp=resolveSplit(splitRaw); if(!sp) return null; ensureDayType(sp); DB.schedule[d]=sp;
+  if(d===new Date().getDay()){ DB.dayOverride={date:today(),split:sp}; DB.workout=null; } save(); if(d===new Date().getDay()) ensureWorkout(); renderItin(); updateStatus(); return {day:DOW[d],split:sp}; }
+function coachSetWeeklySchedule(raw){ const parts=String(raw||"").split(/\s*;\s*/).map(x=>x.trim()).filter(Boolean); let n=0;
+  parts.forEach(p=>{ const m=p.match(/^(\S+)\s+(.+)$/); if(m){ const d=dowIndex(m[1]); if(d>=0){ const sp=resolveSplit(m[2]); if(sp){ ensureDayType(sp); DB.schedule[d]=sp; n++; } } } });
+  if(!n) return null; DB.dayOverride={date:null,split:null}; DB.workout=null; save(); ensureWorkout(); renderItin(); updateStatus(); return n; }
+/* Library */
+function coachAddLibraryExercise(raw){ const parts=String(raw||"").split('|').map(x=>x.trim()); const name=parts[0]; if(!name) return null;
+  const e=DB.lib[name]||{m:["core"],cue:"Control the rep."}; const kv={};
+  parts.slice(1).forEach(seg=>{ const mm=seg.match(/^([a-z ]+?)\s*:\s*(.+)$/i); if(mm) kv[mm[1].trim().toLowerCase()]=mm[2].trim(); });
+  if(parts[1]&&!/:/.test(parts[1])) e.m=parts[1].split(/[,\/]+/).map(x=>x.trim().toLowerCase()).filter(Boolean);
+  if(parts[2]&&!/:/.test(parts[2])) e.cue=parts[2];
+  if(parts[3]&&!/:/.test(parts[3])) e.cat=parts[3];
+  if(parts[4]&&!/:/.test(parts[4])) e.equipment=parts[4];
+  if(parts[5]&&!/:/.test(parts[5])) e.scheme=parts[5];
+  if(kv.muscles) e.m=kv.muscles.split(/[,\/]+/).map(x=>x.trim().toLowerCase()).filter(Boolean);
+  if(kv.cue) e.cue=kv.cue; if(kv.category||kv.cat) e.cat=kv.category||kv.cat; if(kv.equipment) e.equipment=kv.equipment;
+  if(kv.scheme||kv.sets||kv.reps||kv.time) e.scheme=kv.scheme || [kv.sets&&(kv.sets.replace(/sets?/i,'').trim()+" sets"),kv.reps&&(kv.reps.replace(/reps?/i,'').trim()+" reps"),kv.time].filter(Boolean).join(" · ");
+  if((kv.time||/hold|plank|iso|carry/i.test(name+(e.scheme||"")))) e.timed=/hold|plank|iso|time|carry/i.test((kv.time||"")+name+(e.scheme||""))?true:e.timed;
+  if(kv.wrist||kv["wrist safety"]||kv.safety) e.wristAlt=kv.wrist||kv["wrist safety"]||kv.safety;
+  const media=kv.media||kv.url||kv.demo||kv["demo media url"]; if(media) DB.media[name]=media;
+  DB.lib[name]=e; save(); return name; }
+function coachRemoveLibraryExercise(raw){ const n=Object.keys(DB.lib||{}).find(k=>k.toLowerCase()===String(raw).trim().toLowerCase()); if(!n) return null; delete DB.lib[n]; save(); return n; }
+/* Cardio */
+function coachSetCardio(raw){ const p=String(raw||"").split('|').map(x=>x.trim()); DB.cardio=Object.assign({},DB.cardio,{name:p[0]||(DB.cardio&&DB.cardio.name)||"Concept2 Row",duration:p[1]||(DB.cardio&&DB.cardio.duration)||"",zone:p[2]||(DB.cardio&&DB.cardio.zone)||""}); save(); if(DB.workout)finalizeCoachEdit(); return DB.cardio; }
+function coachSetCardioIntervals(raw){ const p=String(raw||"").split('|').map(x=>x.trim()); const name=p.length>1?p[0]:((DB.cardio&&DB.cardio.name)||"Concept2 Row"); const intervals=p.length>1?p.slice(1).join('; '):p[0]; DB.cardio=Object.assign({},DB.cardio,{name,intervals}); save(); if(DB.workout)finalizeCoachEdit(); return {name,intervals}; }
+function coachSetCardioField(field,val){ DB.cardio=Object.assign({name:"Concept2 Row"},DB.cardio); DB.cardio[field]=String(val||"").trim(); save(); if(DB.workout)finalizeCoachEdit(); return DB.cardio[field]; }
+/* Media */
+function coachSetExerciseMedia(nameRaw,url){ const n=resolveExName(nameRaw)||String(nameRaw).trim(); if(!n||!url) return null; DB.media[n]=String(url).trim(); if(DB._mediaMissing) DB._mediaMissing=DB._mediaMissing.filter(x=>x!==n); save(); if(DB.workout)finalizeCoachEdit(); return n; }
+function coachSetSectionMedia(match,url){ if(!match||!url) return null; DB.media[String(match).trim()]=String(url).trim(); save(); if(DB.workout)finalizeCoachEdit(); return String(match).trim(); }
+function coachMarkMediaMissing(nameRaw){ const n=(resolveExName(nameRaw)||nameRaw||"").trim(); if(!n) return null; if(DB.media) delete DB.media[n]; DB._mediaMissing=DB._mediaMissing||[]; if(!DB._mediaMissing.includes(n)) DB._mediaMissing.push(n); save(); if(DB.workout)finalizeCoachEdit(); return n; }
+/* History + progression */
+function coachLogSet(raw){ const p=String(raw||"").split('|').map(x=>x.trim()); const name=resolveExName(p[0]); if(!name) return null;
+  const w=parseFloat((p[1]||"").replace(/[^0-9.]/g,''))||0; const r=parseInt((p[2]||"").replace(/[^0-9]/g,''))||0; if(!r) return null;
+  saveSet(name,{w,r}); markSession(); save(); if(document.getElementById('strengthPBs'))renderStrengthPBs(); return {name,w,r}; }
+function coachWorkoutComplete(){ DB.lastSessionDate=today(); if(DB.streak==null)DB.streak=0; markSession(); save(); updateStreak(); return true; }
+function coachSetNextTarget(raw){ const p=String(raw||"").split('|').map(x=>x.trim()); const n=resolveExName(p[0]); if(!n) return null; DB.progression[n]=Object.assign({},DB.progression[n],{next:p[1]||"",keep:false,delta:0}); save(); if(DB.workout)finalizeCoachEdit(); return {n,t:p[1]}; }
+function coachIncreaseLoad(raw){ const p=String(raw||"").split('|').map(x=>x.trim()); const n=resolveExName(p[0]); if(!n) return null; const d=parseFloat((p[1]||"").replace(/[^0-9.\-]/g,''))||0; DB.progression[n]=Object.assign({},DB.progression[n],{delta:d,keep:false,next:""}); save(); if(DB.workout)finalizeCoachEdit(); return {n,d}; }
+function coachKeepLoad(raw){ const n=resolveExName(raw); if(!n) return null; DB.progression[n]=Object.assign({},DB.progression[n],{keep:true,delta:0,next:""}); save(); if(DB.workout)finalizeCoachEdit(); return n; }
+/* Check-ins */
+function coachLogCheckin(raw){ const s=String(raw||""); const c={date:today(),plan:"Coach"};
+  const gw=s.match(/weight\s*([0-9.]+)/i); if(gw) c.weight=parseFloat(gw[1]);
+  const gs=s.match(/sleep\s*([0-9.]+)/i); c.sleep=gs?parseFloat(gs[1]):7;
+  const ge=s.match(/energy\s*([0-9.]+)/i); c.energy=ge?parseFloat(ge[1]):7;
+  const gso=s.match(/sore(?:ness)?\s*([a-z ]+?)(?:\s*\||$)/i); if(gso) c.soreness=gso[1].trim();
+  const gp=s.match(/pain\s*([a-z ,]+?)(?:\s*\||$)/i); if(gp) c.pain=gp[1].trim();
+  DB.checkins.push(c); if(c.weight) DB.weights.push(c.weight); DB.workout=null; save(); ensureWorkout(); renderMetrics(); updateStatus(); return c; }
+function coachLogPain(raw){ const painStr=String(raw||"").split('|').map(x=>x.trim()).filter(Boolean).join(' · '); const ci=latestCheckin();
+  if(ci&&ci.date===today()) ci.pain=painStr; else DB.checkins.push({date:today(),sleep:7,energy:7,plan:"Coach",pain:painStr});
+  DB.workout=null; save(); ensureWorkout(); updateStatus(); return painStr; }
+function coachSetReadiness(v){ DB.readiness=String(v||"").trim(); const ci=latestCheckin(); if(ci&&ci.date===today())ci.readiness=DB.readiness; save(); return DB.readiness; }
+/* Nutrition */
+function coachLogNutrition(raw){ const s=String(raw||""); const gc=s.match(/cal(?:orie)?s?\s*([0-9]+)/i); const gp=s.match(/protein\s*([0-9]+)/i);
+  const e={date:today(),calories:gc?+gc[1]:null,protein:gp?+gp[1]:null}; DB.nutrition.log.push(e); save(); renderNutrition(); return e; }
+function coachSetCalorieTarget(v){ DB.nutrition.calorieTarget=parseInt(String(v||"").replace(/[^0-9]/g,''))||null; save(); renderNutrition(); return DB.nutrition.calorieTarget; }
+function coachSetProteinTarget(v){ DB.nutrition.proteinTarget=parseInt(String(v||"").replace(/[^0-9]/g,''))||null; save(); renderNutrition(); return DB.nutrition.proteinTarget; }
+function coachSetDietPhase(v){ DB.nutrition.phase=String(v||"").trim(); DB.profile.phase=DB.nutrition.phase; save(); renderNutrition(); if(DB.workout)finalizeCoachEdit(); return DB.nutrition.phase; }
+/* Location / mode / equipment */
+function coachSetLocation(v){ const s=String(v||"").toLowerCase(); DB.profile.location=/greece|greek|saronida|athens|europe/.test(s)?"greece":"home"; DB.workout=null; save(); ensureWorkout(); updateStatus(); return DB.profile.location==="greece"?"Greece":"Dubai"; }
+function coachSetMode(v){ DB.profile.mode=String(v||"").trim(); if(/holiday|maintenance|travel|bodyweight/i.test(v)) DB.profile.location="greece"; DB.workout=null; save(); ensureWorkout(); updateStatus(); return DB.profile.mode; }
+function coachSetEquipment(v){ DB.profile.equipment=String(v||"").trim(); DB.workout=null; save(); ensureWorkout(); return DB.profile.equipment; }
+/* Preferences */
+function coachSetVisualMode(v){ const s=String(v||"").toLowerCase(); DB.prefs.visualMode=/real/.test(s)?"real":/icon/.test(s)?"icon":"auto"; save(); if(DB.workout)finalizeCoachEdit(); return DB.prefs.visualMode; }
+function coachSetPref(k,v){ DB.prefs[k]=v; save(); if(DB.workout)finalizeCoachEdit(); return v; }
+function coachSetCoachStyle(v){ DB.prefs.coachStyle=String(v||"").trim(); save(); return DB.prefs.coachStyle; }
+/* Nutrition render (Today) */
+function renderNutrition(){ const el=document.getElementById('nutriLine'); if(!el) return; const n=DB.nutrition;
+  const todayLog=(n&&n.log?n.log:[]).filter(x=>x.date===today()); const cal=todayLog.reduce((a,b)=>a+(b.calories||0),0); const pro=todayLog.reduce((a,b)=>a+(b.protein||0),0);
+  if(!n || (!n.calorieTarget&&!n.proteinTarget&&!cal&&!pro&&!n.phase)){ el.style.display="none"; el.innerHTML=""; return; }
+  el.style.display=""; const parts=[];
+  if(n.calorieTarget||cal) parts.push("<b>🍽️ "+(cal||0)+(n.calorieTarget?" / "+n.calorieTarget:"")+"</b> kcal");
+  if(n.proteinTarget||pro) parts.push("<b>🥩 "+(pro||0)+(n.proteinTarget?" / "+n.proteinTarget:"")+"g</b> protein");
+  el.innerHTML="<div class='card'><div class='card-title'><span>Nutrition today"+(n.phase?" · "+n.phase:"")+"</span></div><div class='nutri'>"+parts.join(" &nbsp;·&nbsp; ")+"</div></div>"; }
+/* Cardio session logging (Train) */
+function addCardioLog(){ const c=DB.cardio||{name:"Cardio"}; const t=(val('cardioTime')||"").trim(); if(!t){ toast("Enter a time e.g. 30:00"); return; }
+  DB.rowing.push({dist:(c.duration||""),time:t,name:c.name,date:today()}); markSession(); save();
+  const m=document.getElementById('cardioMsg'); if(m) m.innerHTML="✅ Logged <b>"+c.name+" · "+t+"</b>."; const inp=document.getElementById('cardioTime'); if(inp)inp.value=""; toast("Cardio logged 🚣"); }
+function cardioBlockHTML(c){ if(!c) return "";
+  return "<div class='sheet-sec'><h3>◆ Cardio · "+(c.name||"Session")+"</h3>"+
+    "<div class='rowbanner'><img src='"+(DB.media&&DB.media[c.name]?DB.media[c.name]:ROW_SVG)+"' alt='cardio'></div>"+
+    "<div class='name' style='margin-top:12px'>"+(c.name||"Cardio")+(c.duration?" · "+c.duration:"")+"</div>"+
+    "<div class='sm' style='margin-top:4px'>"+[c.zone&&("Target "+c.zone),c.pace&&("Pace: "+c.pace),c.target&&("HR: "+c.target)].filter(Boolean).join(" · ")+"</div>"+
+    (c.intervals? "<div class='cue' style='margin-top:8px'><b>Intervals:</b> "+c.intervals+"</div>":"")+
+    "<div class='logrow mt'><input id='cardioTime' inputmode='text' placeholder='time / distance e.g. 30:00' style='text-align:center'><button onclick='addCardioLog()'>Log</button></div>"+
+    "<div id='cardioMsg' class='sm' style='margin-top:8px'></div></div>"; }
+
 /* Parse [[...]] directives out of an AI reply, apply them, return cleaned text + change notes. */
 function applyCoachDirectives(reply){
   let out=String(reply||""), notes=[];
@@ -993,7 +1204,76 @@ function applyCoachDirectives(reply){
   out=out.replace(/\[\[\s*SET_WARMUP\s*:\s*([^\]]+)\]\]/ig,(m,a)=>{ const r=coachSetSection('warmup',a); if(r) notes.push("🔥 Warm-up updated → "+r.names.join(", ")); return ""; });
   out=out.replace(/\[\[\s*SET_COOLDOWN\s*:\s*([^\]]+)\]\]/ig,(m,a)=>{ const r=coachSetSection('cooldown',a); if(r) notes.push("❄️ Cool-down updated → "+r.names.join(", ")); return ""; });
   out=out.replace(/\[\[\s*FIX_ICONS\s*\]\]/ig,()=>{ const n=coachFixIcons(); if(n) notes.push("🎨 Re-matched "+n+" warm-up/cool-down icons"); return ""; });
+  /* ---- Schedule ---- */
+  out=out.replace(/\[\[\s*SET_WEEKDAY\s*:\s*([^|\]]+?)\s*\|\s*([^\]]+?)\s*\]\]/ig,(m,d,sp)=>{ const r=coachSetWeekday(d,sp); if(r) notes.push("📅 "+r.day+" → "+r.split); return ""; });
+  out=out.replace(/\[\[\s*SET_WEEKLY_SCHEDULE\s*:\s*([^\]]+)\]\]/ig,(m,a)=>{ const r=coachSetWeeklySchedule(a); if(r) notes.push("📅 Weekly schedule updated ("+r+" days)"); return ""; });
+  out=out.replace(/\[\[\s*(?:ADD_SCHEDULE_DAY_TYPE|CREATE_DAY_TYPE)\s*:\s*([^|\]]+)(?:\|\s*([^\]]+))?\]\]/ig,(m,a,opt)=>{ let o=null; if(opt){ o={}; opt.split(/\s*\|\s*/).forEach(seg=>{ const mm=seg.match(/^([a-z]+)\s*:\s*(.+)$/i); if(mm){ const k=mm[1].toLowerCase(); if(k==='main')o.main=mm[2].split(/\s*,\s*/); else if(k==='sets')o.sets=parseInt(mm[2]); else o[k]=mm[2]; } }); } const r=coachCreateDayType(a,o); if(r) notes.push("🆕 Day type created → "+r); return ""; });
+  out=out.replace(/\[\[\s*REMOVE_SCHEDULE_DAY_TYPE\s*:\s*([^\]]+)\]\]/ig,(m,a)=>{ const r=coachRemoveDayType(a); if(r) notes.push("🗑️ Removed day type → "+r); return ""; });
+  /* ---- Library ---- */
+  out=out.replace(/\[\[\s*ADD_LIBRARY_EXERCISE\s*:\s*([^\]]+)\]\]/ig,(m,a)=>{ const r=coachAddLibraryExercise(a); if(r) notes.push("📚 Added to library → "+r); return ""; });
+  out=out.replace(/\[\[\s*REMOVE_LIBRARY_EXERCISE\s*:\s*([^\]]+)\]\]/ig,(m,a)=>{ const r=coachRemoveLibraryExercise(a); if(r) notes.push("📚 Removed from library → "+r); return ""; });
+  /* ---- Cardio ---- */
+  out=out.replace(/\[\[\s*SET_CARDIO_INTERVALS\s*:\s*([^\]]+)\]\]/ig,(m,a)=>{ const r=coachSetCardioIntervals(a); if(r) notes.push("🚣 Cardio intervals set"); return ""; });
+  out=out.replace(/\[\[\s*SET_CARDIO_TARGET\s*:\s*([^\]]+)\]\]/ig,(m,a)=>{ const r=coachSetCardioField('target',a); if(r) notes.push("🎯 Cardio HR target → "+r); return ""; });
+  out=out.replace(/\[\[\s*SET_CARDIO_PACE\s*:\s*([^\]]+)\]\]/ig,(m,a)=>{ const r=coachSetCardioField('pace',a); if(r) notes.push("🏃 Cardio pace → "+r); return ""; });
+  out=out.replace(/\[\[\s*SET_CARDIO\s*:\s*([^\]]+)\]\]/ig,(m,a)=>{ const r=coachSetCardio(a); if(r) notes.push("🚣 Cardio → "+r.name+(r.duration?" · "+r.duration:"")+(r.zone?" · "+r.zone:"")); return ""; });
+  /* ---- Media ---- */
+  out=out.replace(/\[\[\s*SET_EXERCISE_MEDIA\s*:\s*([^|\]]+?)\s*\|\s*(https?:\/\/[^\]]+?)\s*\]\]/ig,(m,n,u)=>{ const r=coachSetExerciseMedia(n,u); if(r) notes.push("🎬 Media set → "+r); return ""; });
+  out=out.replace(/\[\[\s*SET_(?:WARMUP|COOLDOWN)_MEDIA\s*:\s*([^|\]]+?)\s*\|\s*(https?:\/\/[^\]]+?)\s*\]\]/ig,(m,n,u)=>{ const r=coachSetSectionMedia(n,u); if(r) notes.push("🎬 Media set → "+r); return ""; });
+  out=out.replace(/\[\[\s*MARK_MEDIA_MISSING\s*:\s*([^\]]+)\]\]/ig,(m,a)=>{ const r=coachMarkMediaMissing(a); if(r) notes.push("📷 Flagged missing media → "+r); return ""; });
+  /* ---- History / progression ---- */
+  out=out.replace(/\[\[\s*LOG_SET\s*:\s*([^\]]+)\]\]/ig,(m,a)=>{ const r=coachLogSet(a); if(r) notes.push("📌 Logged "+r.name+" "+r.w+"kg×"+r.r); return ""; });
+  out=out.replace(/\[\[\s*LOG_WORKOUT_COMPLETE\s*\]\]/ig,()=>{ coachWorkoutComplete(); notes.push("✅ Workout marked complete — streak "+(DB.streak||0)); return ""; });
+  out=out.replace(/\[\[\s*SET_EXERCISE_NEXT_TARGET\s*:\s*([^\]]+)\]\]/ig,(m,a)=>{ const r=coachSetNextTarget(a); if(r) notes.push("🎯 Next target · "+r.n+" → "+r.t); return ""; });
+  out=out.replace(/\[\[\s*INCREASE_LOAD_NEXT_TIME\s*:\s*([^\]]+)\]\]/ig,(m,a)=>{ const r=coachIncreaseLoad(a); if(r) notes.push("⬆ "+r.n+" +"+r.d+"kg next time"); return ""; });
+  out=out.replace(/\[\[\s*KEEP_LOAD_NEXT_TIME\s*:\s*([^\]]+)\]\]/ig,(m,a)=>{ const r=coachKeepLoad(a); if(r) notes.push("⏸ Keep load · "+r); return ""; });
+  /* ---- Check-ins ---- */
+  out=out.replace(/\[\[\s*LOG_CHECKIN\s*:\s*([^\]]+)\]\]/ig,(m,a)=>{ const r=coachLogCheckin(a); if(r) notes.push("📝 Check-in saved"+(r.weight?" · "+r.weight+"kg":"")); return ""; });
+  out=out.replace(/\[\[\s*LOG_PAIN\s*:\s*([^\]]+)\]\]/ig,(m,a)=>{ const r=coachLogPain(a); if(r) notes.push("🩹 Pain noted · "+r); return ""; });
+  out=out.replace(/\[\[\s*SET_READINESS\s*:\s*([^\]]+)\]\]/ig,(m,a)=>{ const r=coachSetReadiness(a); if(r) notes.push("🔋 Readiness → "+r); return ""; });
+  /* ---- Nutrition ---- */
+  out=out.replace(/\[\[\s*LOG_NUTRITION\s*:\s*([^\]]+)\]\]/ig,(m,a)=>{ const r=coachLogNutrition(a); if(r) notes.push("🍽️ Nutrition logged"+(r.calories?" · "+r.calories+"kcal":"")+(r.protein?" · "+r.protein+"g":"")); return ""; });
+  out=out.replace(/\[\[\s*SET_CALORIE_TARGET\s*:\s*([^\]]+)\]\]/ig,(m,a)=>{ const r=coachSetCalorieTarget(a); if(r) notes.push("🎯 Calorie target → "+r); return ""; });
+  out=out.replace(/\[\[\s*SET_PROTEIN_TARGET\s*:\s*([^\]]+)\]\]/ig,(m,a)=>{ const r=coachSetProteinTarget(a); if(r) notes.push("🎯 Protein target → "+r+"g"); return ""; });
+  out=out.replace(/\[\[\s*SET_DIET_PHASE\s*:\s*([^\]]+)\]\]/ig,(m,a)=>{ const r=coachSetDietPhase(a); if(r) notes.push("🥗 Diet phase → "+r); return ""; });
+  /* ---- Location / mode ---- */
+  out=out.replace(/\[\[\s*SET_LOCATION\s*:\s*([^\]]+)\]\]/ig,(m,a)=>{ const r=coachSetLocation(a); if(r) notes.push("📍 Location → "+r); return ""; });
+  out=out.replace(/\[\[\s*SET_MODE\s*:\s*([^\]]+)\]\]/ig,(m,a)=>{ const r=coachSetMode(a); if(r) notes.push("🧭 Mode → "+r); return ""; });
+  out=out.replace(/\[\[\s*SET_EQUIPMENT_AVAILABLE\s*:\s*([^\]]+)\]\]/ig,(m,a)=>{ const r=coachSetEquipment(a); if(r) notes.push("🏋️ Equipment → "+r); return ""; });
+  /* ---- Preferences ---- */
+  out=out.replace(/\[\[\s*SET_VISUAL_MODE\s*:\s*([^\]]+)\]\]/ig,(m,a)=>{ const r=coachSetVisualMode(a); if(r) notes.push("👁️ Visual mode → "+r); return ""; });
+  out=out.replace(/\[\[\s*DISABLE_ICONS\s*\]\]/ig,()=>{ coachSetPref('showIcons',false); notes.push("👁️ Icons disabled"); return ""; });
+  out=out.replace(/\[\[\s*ENABLE_ICONS\s*\]\]/ig,()=>{ coachSetPref('showIcons',true); notes.push("👁️ Icons enabled"); return ""; });
+  out=out.replace(/\[\[\s*ENABLE_EXERCISE_GIFS\s*\]\]/ig,()=>{ coachSetPref('exerciseGifs',true); coachSetVisualMode('auto'); notes.push("🎬 Exercise GIFs enabled"); return ""; });
+  out=out.replace(/\[\[\s*SET_WORKOUT_FORMAT\s*:\s*([^\]]+)\]\]/ig,(m,a)=>{ const r=coachSetPref('workoutFormat',String(a).trim()); notes.push("🧩 Workout format → "+r); return ""; });
+  out=out.replace(/\[\[\s*SET_COACH_STYLE\s*:\s*([^\]]+)\]\]/ig,(m,a)=>{ const r=coachSetCoachStyle(a); if(r) notes.push("🗣️ Coach style → "+r); return ""; });
+  /* ---- General passthrough ---- */
+  out=out.replace(/\[\[\s*APP_ACTION\s*:\s*([^\]]+)\]\]/ig,(m,a)=>{ const r=appAction(a); if(r) notes.push("⚙️ "+r); return ""; });
   return {cleaned:out.replace(/\n{3,}/g,"\n\n").trim(), notes};
+}
+/* General action router — lets the AI drive anything via one command: [[APP_ACTION: domain | args]] */
+function appAction(raw){
+  const parts=String(raw||"").split('|').map(x=>x.trim()); const a=(parts[0]||"").toLowerCase(); const rest=parts.slice(1).join(' | ');
+  const map={
+    set_day:()=>{const r=applyDayDirective(rest);return r&&"Today → "+r;},
+    set_weekday:()=>{const r=coachSetWeekday(parts[1],parts.slice(2).join(' '));return r&&(r.day+" → "+r.split);},
+    weekly_schedule:()=>{const r=coachSetWeeklySchedule(rest);return r&&("Schedule updated ("+r+")");},
+    create_day_type:()=>{const r=coachCreateDayType(parts[1]);return r&&("Day type → "+r);},
+    add_exercise:()=>{const r=coachAddEx(rest);return r&&("Added "+r);},
+    remove_exercise:()=>{const r=coachRemoveEx(rest);return r&&("Removed "+r);},
+    set_workout:()=>{const r=coachSetWorkout(rest);return r&&("Workout → "+r.join(", "));},
+    add_library:()=>{const r=coachAddLibraryExercise(rest);return r&&("Library +"+r);},
+    set_cardio:()=>{const r=coachSetCardio(rest);return r&&("Cardio → "+r.name);},
+    set_media:()=>{const r=coachSetExerciseMedia(parts[1],parts[2]);return r&&("Media → "+r);},
+    log_set:()=>{const r=coachLogSet(rest);return r&&("Logged "+r.name);},
+    log_checkin:()=>{const r=coachLogCheckin(rest);return r&&"Check-in saved";},
+    log_nutrition:()=>{const r=coachLogNutrition(rest);return r&&"Nutrition logged";},
+    set_location:()=>{const r=coachSetLocation(rest);return r&&("Location → "+r);},
+    set_pref:()=>{coachSetPref(parts[1],parts[2]);return "Pref "+parts[1]+" → "+parts[2];},
+    visual_mode:()=>{const r=coachSetVisualMode(rest);return "Visual → "+r;}
+  };
+  const fn=map[a]||map[a.replace(/\s+/g,'_')]; if(fn){ try{ return fn()||null; }catch(e){ return null; } }
+  return null;
 }
 /* Offline fallback: understand plain-English edit commands (known exercises only). */
 function localWorkoutCommand(txt){
@@ -1001,6 +1281,10 @@ function localWorkoutCommand(txt){
   if(/\b(icon|emoji|picture|image|symbol)s?\b/.test(s) && /(fix|correct|update|change|represent|match|proper|right|wrong|better|sort)/.test(s)){
     const n=coachFixIcons(); if(n) return {notes:["🎨 Re-matched "+n+" warm-up/cool-down icons"], reply:"Sorted — every warm-up and cool-down icon now matches the movement it represents. Take a look in the Train tab. 💪"};
   }
+  m=s.match(/\b(?:make|set|change|turn)?\s*(sun|mon|tue|tues|wed|weds|thu|thur|thurs|fri|sat)[a-z]*\s*(?:to|=|as|into|is)?\s*(?:a |an )?(cardio|mobility|recovery|yoga|rest|push|pull|legs?|leg|upper|full)[a-z &]*?\s*(?:day)?\s*$/);
+  if(m){ const sp=resolveSplit(/^leg$/.test(m[2])?"legs":m[2]); if(sp){ ensureDayType(sp); const r=coachSetWeekday(m[1],sp); if(r) return {notes:["📅 "+r.day+" → "+r.split], reply:"Done — <b>"+r.day+"</b> is now <b>"+r.split+"</b> every week. It's in your schedule."}; } }
+  m=s.match(/\b(?:i'?m |im |now |back |go(?:ing)? )?(?:in|at|to|home in|over in)\s+(greece|dubai|uae|athens|saronida)\b/) || s.match(/\bswitch to (greece|dubai)\b/);
+  if(m){ const r=coachSetLocation(m[1]); return {notes:["📍 Location → "+r], reply:"Switched to <b>"+r+"</b> mode — plan adjusted. "+(r==="Greece"?"Short bodyweight sessions, enjoy the holiday. ✈️":"Full gym sessions back on. 💪")}; }
   m=s.match(/(?:swap|replace|change|sub(?:stitute)?)\s+(.+?)\s+(?:for|with|to|into|out for)\s+(.+?)\s*$/);
   if(m){ const o=resolveKnownEx(m[1]), nn=resolveKnownEx(m[2]); if(o&&nn){ const r=coachSwapWorkoutEx(o,nn); if(r) return {notes:["⇄ Swapped "+r.from+" → "+r.to], reply:"Done — swapped <b>"+r.from+"</b> for <b>"+r.to+"</b>. It's live in the Train tab. 💪"}; } }
   m=s.match(/(?:\badd\b|\binclude\b|throw in|put in|chuck in)\s+(.+?)\s*$/);
@@ -1014,7 +1298,7 @@ function localWorkoutCommand(txt){
 
 function renderChat(){
   const w=document.getElementById('chatWrap');
-  if(!DB.chat.length){ DB.chat.push({role:"ai",text:"Morning Amir 👊 I've got your whole history — injuries, phase, lifts, the lot. Tell me how you're feeling and I'll sort your day. I can also edit your Train session live — just say things like <b>\"swap bench for incline\"</b>, <b>\"add face pulls\"</b>, <b>\"drop the lunges\"</b>, <b>\"make it 4 sets\"</b>, <b>\"give me a pull day\"</b>, or <b>\"fix the warm-up icons\"</b> and it updates the Train tab instantly. Log lifts here too — e.g. \"bench 40 x8 x8 x8\"."}); }
+  if(!DB.chat.length){ DB.chat.push({role:"ai",text:"Morning Amir 👊 I've got your whole history and I can run the whole app for you now. Tell me anything — <b>\"make Monday cardio forever\"</b>, <b>\"add seated cable row to my library\"</b>, <b>\"swap bench for incline\"</b>, <b>\"I'm in Greece\"</b>, <b>\"log my check-in: weight 84.8, sleep 9\"</b>, <b>\"set protein target 170g\"</b> — and I'll change your schedule, workout, library, cardio, media, check-ins, nutrition or settings on the spot. Log lifts too — e.g. \"bench 40 x8 x8 x8\"."}); }
   w.innerHTML=DB.chat.map(m=> m.role==='log' ? "<div class='logchip'>"+m.text+"</div>" : "<div class='msg "+(m.role==='me'?'me':'ai')+"'>"+m.text+"</div>").join('');
   setTimeout(()=>window.scrollTo(0,document.body.scrollHeight),50);
 }
@@ -1097,15 +1381,17 @@ function renderItin(){
   const todayDow=new Date().getDay(); let html=""; const order=[1,2,3,4,5,6,0];
   order.forEach(dow=>{ const isToday=dow===todayDow; let split=DB.schedule[dow];
     if(isToday && DB.dayOverride && DB.dayOverride.date===today() && DB.dayOverride.split) split=DB.dayOverride.split;
-    const pill= split==="Rest"?"gray": /push/i.test(split)?"orange":/pull/i.test(split)?"blue":/leg/i.test(split)?"purple":"green";
+    const pill= splitPill(split);
     html+="<div class='itin-row "+(isToday?'today':'')+"' onclick='cycleDay("+dow+")'><div class='itin-day'>"+DOW[dow]+(isToday?" •":"")+"</div><div class='itin-split'><span class='pill "+pill+"'>"+split+"</span></div><div class='itin-edit'>✎</div></div>"; });
   el.innerHTML=html;
 }
 function cycleDay(dow){
-  let idx=SPLITS.indexOf(DB.schedule[dow]); idx=(idx+1)%SPLITS.length; DB.schedule[dow]=SPLITS[idx];
-  if(dow===new Date().getDay()){ DB.dayOverride={date:today(),split:SPLITS[idx]}; DB.workout=null; const t=document.getElementById('heroTitle'); if(t)t.textContent=SPLITS[idx]; }
-  save(); renderItin(); toast(DOW[dow]+" → "+SPLITS[idx]);
+  const SP=allSplits();
+  let idx=SP.indexOf(DB.schedule[dow]); idx=(idx+1)%SP.length; DB.schedule[dow]=SP[idx];
+  if(dow===new Date().getDay()){ DB.dayOverride={date:today(),split:SP[idx]}; DB.workout=null; const t=document.getElementById('heroTitle'); if(t)t.textContent=SP[idx]; }
+  save(); renderItin(); toast(DOW[dow]+" → "+SP[idx]);
 }
+function splitPill(split){ return split==="Rest"?"gray": /push/i.test(split)?"orange":/pull/i.test(split)?"blue":/leg/i.test(split)?"purple":/cardio|row|run|bike/i.test(split)?"cyan":/mobility|recovery|yoga|stretch/i.test(split)?"teal":"green"; }
 
 function drawChart(){
   const wrap=document.getElementById('wtWrap');
@@ -1255,7 +1541,7 @@ function boot(){
   document.getElementById('setEquip').value=DB.profile.equipment; document.getElementById('setInjuries').value=DB.profile.injuries; document.getElementById('setRules').value=DB.profile.rules;
   document.querySelectorAll('#locSeg button').forEach(b=>b.classList.toggle('on',b.dataset.v===DB.profile.location));
   document.querySelectorAll('#provSeg button').forEach(b=>b.classList.toggle('on',b.dataset.v===DB.ai.provider));
-  renderMetrics(); renderItin(); renderStrengthPBs(); renderRowing(); renderRowingLog(); renderPhotos(); renderIntegrations(); updateStreak();
+  renderMetrics(); renderItin(); renderStrengthPBs(); renderRowing(); renderRowingLog(); renderPhotos(); renderIntegrations(); updateStreak(); renderNutrition();
   if(typeof scheduleInApp==="function") scheduleInApp();
   const split=pickSplit();
   if(DB.workout){ renderWorkoutSheet(DB.workout); document.getElementById('heroTitle').textContent=DB.workout.title; document.getElementById('heroPhase').textContent="Today · "+DB.workout.tag; }
