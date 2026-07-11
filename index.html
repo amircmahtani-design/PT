@@ -544,7 +544,7 @@ function buildWorkout(){
   const wrist=pain.includes("wrist")||/tfcc/.test(pain), knee=pain.includes("knee");
   const lowEnergy=energy<=4||sleep<=4; const travel=loc==="greece";
   let split=pickSplit();
-  const cooldown=[{t:"Doorway pec/chest stretch 45s/side",icon:"🧍"},{t:"Child's pose 60s",icon:"🧘"},{t:"Lat stretch 45s/side",icon:"🙆"},{t:"Box breathing 2 min (in-4 hold-4 out-4)",icon:"🌬️"}];
+  const cooldown=[{t:"Doorway pec/chest stretch 45s/side"},{t:"Child's pose 60s"},{t:"Lat stretch 45s/side"},{t:"Box breathing 2 min (in-4 hold-4 out-4)"}];
   if(split==="Rest"){
     return {title:travel?"Holiday · Rest":"Active Recovery",tag:travel?"Greece · Enjoy it":"Recovery Day",phase:DB.profile.phase,
       note:travel?"Rest day on holiday — walk, swim, enjoy the food & drink guilt-free. Movement is a bonus, not a must.":"Rest day. Easy row or walk, hydrate, mobilise. Recovery is where the physique is built.",
@@ -564,8 +564,8 @@ function buildWorkout(){
   else if(energy>=8&&sleep>=7){ sets=4; note="Recovered and firing — full volume, plenty of time. Technique first, never ego lift."; }
   else { note="Solid recovery. Standard volume. Own every rep."; }
   const warmup= travel
-    ? [{t:"3 min brisk walk / skips",icon:"🚶"},{t:"Arm circles ×15 each way",icon:"🔄"},{t:"World's greatest stretch ×5/side",icon:"🤸"},{t:"10 air squats",img:EXIMG["Bodyweight Squat"]}]
-    : [{t:"Band pull-aparts ×20",img:EXIMG["Face Pull"]},{t:"Arm circles ×15 each way",icon:"🔄"},{t:"Cat-cow ×8",icon:"🐈"},{t:"Light warm-up set on first lift",icon:"🏋️"}];
+    ? [{t:"3 min brisk walk / skips"},{t:"Arm circles ×15 each way"},{t:"World's greatest stretch ×5/side"},{t:"10 air squats"}]
+    : [{t:"Band pull-aparts ×20"},{t:"Arm circles ×15 each way"},{t:"Cat-cow ×8"},{t:"Light warm-up set on first lift"}];
   return {title: travel? "Greece · Bodyweight" : split, tag: travel? "Travel Mode · No Equipment" : "Home · Dubai Gym",
     phase: DB.profile.phase, note, reps: travel? "AMRAP-ish · 2 in reserve" : "8–12 reps", sets, warmup, travel,
     main: main.map(n=>{const clean=n.replace("↔ ","");
@@ -584,8 +584,28 @@ function recommendLoad(ex){
   return {text:"Stay at "+topW+"kg. Master it with excellent form before we add load. No ego lifting.",up:false,w:topW};
 }
 
+/* Map a warm-up / cool-down movement to an emoji that actually represents it. */
+const ICON_MAP=[
+  [/cat[\s-]?cow/,"🐈"],[/child'?s? pose/,"🧘"],[/box breathing|breathe|breathing/,"🌬️"],
+  [/downward dog|down dog/,"🐕"],[/cobra|upward dog/,"🐍"],[/pigeon/,"🕊️"],[/butterfly/,"🦋"],
+  [/arm circle/,"🔄"],[/shoulder (?:roll|dislocat|circle|opener)|scapul/,"💪"],[/wrist/,"✋"],[/ankle/,"🦶"],
+  [/neck/,"🙆"],[/thoracic|t[\s-]?spine|spine|rotation|twist|rotat/,"🌀"],
+  [/brisk walk|walk\b/,"🚶"],[/jog|run\b/,"🏃"],[/skip|jump rope|jump[\s-]?rope|jumping jack|jacks/,"🤸"],
+  [/(?:air )?squat/,"🏋️"],[/lunge/,"🦵"],[/hip flexor|hip opener|hip circle|hip\b/,"🕺"],
+  [/hamstring|toe touch|forward fold/,"🦵"],[/glute|bridge/,"🍑"],[/calf|calves/,"🦵"],[/quad/,"🦵"],
+  [/band pull|pull[\s-]?apart|band\b/,"🎗️"],[/face pull/,"🎗️"],
+  [/world'?s greatest|dynamic stretch/,"🤸"],[/pec|chest stretch|doorway/,"🧍"],[/lat stretch|lat\b/,"🙆"],
+  [/tricep stretch|overhead stretch/,"🙆"],[/foam roll|roll out|self[\s-]?massage/,"💆"],
+  [/plank/,"🧎"],[/dead hang|hang\b/,"🧗"],[/hollow/,"🛶"],
+  [/row|erg|concept ?2/,"🚣"],[/bike|cycle|cycling/,"🚴"],[/treadmill/,"🏃"],[/elliptical/,"🏃"],
+  [/warm[\s-]?up set|warm[\s-]?up/,"🔥"],[/cool[\s-]?down|mobility/,"❄️"],[/stretch/,"🤸"],
+  [/hold|isometric|iso\b/,"⏱️"],[/pull[\s-]?up|chin[\s-]?up/,"🏋️"],[/push[\s-]?up/,"🤸"],
+  [/hydrate|water|drink/,"💧"],[/protein|eat|meal|nutrition/,"🍽️"],[/sleep|rest\b/,"😴"]
+];
+function iconFor(t){ const s=String(t||"").toLowerCase(); for(const [re,e] of ICON_MAP){ if(re.test(s)) return e; } return "🤸"; }
 function mvHTML(item){
-  const ic = item.img ? "<div class='ic'><img src='"+item.img+"' loading='lazy' onerror=\"this.parentElement.classList.add('emo');this.parentElement.textContent='🤸'\"></div>" : "<div class='ic emo'>"+(item.icon||"•")+"</div>";
+  const ic = item.img ? "<div class='ic'><img src='"+item.img+"' loading='lazy' onerror=\"this.parentElement.classList.add('emo');this.parentElement.textContent='"+iconFor(item.t)+"'\"></div>"
+    : "<div class='ic emo'>"+(item.icon||iconFor(item.t))+"</div>";
   return "<div class='mv'>"+ic+"<div class='t'>"+item.t+"</div></div>";
 }
 function exImgHTML(name,muscles){
@@ -848,6 +868,11 @@ function coachSystem(){
     "[[REMOVE_EX: Bulgarian Split Squat]]  — remove one exercise from today.\n"+
     "[[SWAP_EX: Bench Press -> Incline DB Press]]  — replace one exercise with another.\n"+
     "[[SET_SETS: 4]]  — change sets-per-exercise for today (1–8).\n"+
+    "[[SET_ICON: warmup | Cat-cow | 🐈]]  — set the emoji for one warm-up (or cooldown) item; match by text or number.\n"+
+    "[[SET_WARMUP: Cat-cow ×8 | 🐈 ; Arm circles ×15 | 🔄 ; Band pull-aparts ×20 | 🎗️]]  — replace the whole warm-up list (emoji after | is optional; omit it and the app auto-picks a fitting icon).\n"+
+    "[[SET_COOLDOWN: Child's pose 60s | 🧘 ; Box breathing 2 min | 🌬️]]  — replace the whole cool-down list.\n"+
+    "[[FIX_ICONS]]  — auto-match every warm-up/cool-down icon to its movement.\n"+
+    "The warm-up and cool-down icons should always visually represent the movement — pick a fitting emoji whenever you edit them.\n"+
     "You may use several at once, each on its own line. Use EXACT exercise names from this library where possible:\n  "+libNames+"\n"+
     "Respect his TFCC wrist and Klinefelter recovery when choosing. TODAY'S CURRENT WORKOUT (Train tab right now):\n  "+curW;
   return "You are Amir's personal trainer — the ONLY coach he has. You know him deeply and remember everything. This app stores his data; you are the coaching brain."+mem+"\n\nPERSONALITY: Direct, funny, warm, encouraging. Never robotic or generic. Challenge him, explain WHY, celebrate wins. Text like a real PT. Keep it tight.\n\nPERMANENT RULES:\n- Goal: "+p.goal+". The physique he wants, NOT bodyweight targets.\n- Klinefelter syndrome — respect recovery/fatigue, patient strength curve; consistency + progressive overload win.\n- TFCC injury (right wrist) — avoid loaded wrist extension / straight-wrist heavy pressing; prefer neutral-grip. If wrist pain reported, swap immediately.\n- Technique beats weight. Never ego lift. Only add load after current weight is MASTERED with clean form.\n- He never chooses workouts — YOU decide and tell him exactly what to do.\n- Consistency beats intensity.\n\nLOCATION RULES:\n- DUBAI (home): full home gym AND plenty of time. Full proper sessions. Equipment: "+p.equipment+".\n- GREECE: NO gym, NO time, ON HOLIDAY eating & drinking. Give SHORT (~15 min) bodyweight sessions, maintenance mindset. Do NOT guilt him about food/drink — encourage enjoying it; any movement is a bonus.\n\n"+editBlock+"\n\nCONTEXT NOW:\n- Location: "+(p.location==='greece'?'GREECE (bodyweight, short, holiday)':'HOME Dubai (full gym + time)')+"\n- Phase: "+p.phase+"\n- Today scheduled: "+pickSplit()+"\n- Custom rules: "+p.rules+"\n\nWEEKLY SCHEDULE:\n"+sched+"\n\nRECENT CHECK-INS:\n"+recentCk+"\n\nSTRENGTH HISTORY:\n"+strength+"\n\nCONCEPT2 ROWING PBs:\n"+rowing;
@@ -903,8 +928,8 @@ function coachEnsureWorkout(){
     if(base.sets===0){ const travel=DB.profile.location==='greece';
       DB.workout={title:"Custom Session",tag:travel?"Travel Mode · No Equipment":"Home · Dubai Gym",phase:DB.profile.phase,
         note:"Session your coach built for you.",reps:travel?"AMRAP-ish · 2 in reserve":"8–12 reps",sets:3,travel,
-        warmup:[{t:"Arm circles ×15 each way",icon:"🔄"},{t:"Cat-cow ×8",icon:"🐈"},{t:"Light warm-up set on first lift",icon:"🏋️"}],
-        main:[],cooldown:[{t:"Child's pose 60s",icon:"🧘"},{t:"Box breathing 2 min",icon:"🌬️"}],recovery:"Hydrate, protein, sleep well."};
+        warmup:[{t:"Arm circles ×15 each way"},{t:"Cat-cow ×8"},{t:"Light warm-up set on first lift"}],
+        main:[],cooldown:[{t:"Child's pose 60s"},{t:"Box breathing 2 min"}],recovery:"Hydrate, protein, sleep well."};
     } else DB.workout=base;
   }
   return DB.workout;
@@ -934,6 +959,27 @@ function coachSwapWorkoutEx(oldRaw,newRaw){ coachEnsureWorkout(); const o=resolv
   DB.workout.main[idx]=exObject(nn); finalizeCoachEdit(); return {from:o,to:nn}; }
 function coachSetSets(n){ coachEnsureWorkout(); n=parseInt(n); if(isNaN(n)||n<1||n>8) return null;
   DB.workout.sets=n; DB.workout.main=DB.workout.main.map(e=>exObject(e.name)); finalizeCoachEdit(); return n; }
+function coachSectionArr(sec){ const s=/warm/i.test(sec)?'warmup':'cooldown'; return {key:s, arr: s==='warmup'?DB.workout.warmup:DB.workout.cooldown}; }
+/* Set a single warm-up/cool-down item's icon (match by text substring or 1-based index). */
+function coachSetSectionIcon(sec,match,emoji){
+  coachEnsureWorkout(); const {key,arr}=coachSectionArr(sec); if(!Array.isArray(arr)||!arr.length) return null;
+  const m=String(match).trim(); let idx=-1;
+  if(/^\d+$/.test(m)) idx=parseInt(m)-1; else idx=arr.findIndex(it=>it.t.toLowerCase().includes(m.toLowerCase()));
+  if(idx<0||idx>=arr.length) return null;
+  arr[idx].icon=emoji.trim(); delete arr[idx].img; finalizeCoachEdit(); return {sec:key,text:arr[idx].t}; }
+/* Replace an entire warm-up/cool-down list. Items separated by ';', optional 'text | emoji'. */
+function coachSetSection(sec,listRaw){
+  coachEnsureWorkout(); const key=/warm/i.test(sec)?'warmup':'cooldown';
+  const items=String(listRaw).split(/\s*;\s*/).map(s=>s.trim()).filter(Boolean).map(chunk=>{
+    const parts=chunk.split('|').map(x=>x.trim()); const o={t:parts[0]}; if(parts[1]) o.icon=parts[1]; return o; }).filter(o=>o.t);
+  if(!items.length) return null;
+  if(key==='warmup') DB.workout.warmup=items; else DB.workout.cooldown=items;
+  finalizeCoachEdit(); return {sec:key, names:items.map(i=>i.t)}; }
+/* Re-derive every warm-up/cool-down icon from the movement name. */
+function coachFixIcons(){
+  coachEnsureWorkout(); let n=0;
+  ['warmup','cooldown'].forEach(k=>{ (DB.workout[k]||[]).forEach(it=>{ it.icon=iconFor(it.t); delete it.img; n++; }); });
+  finalizeCoachEdit(); return n; }
 /* Parse [[...]] directives out of an AI reply, apply them, return cleaned text + change notes. */
 function applyCoachDirectives(reply){
   let out=String(reply||""), notes=[];
@@ -943,11 +989,18 @@ function applyCoachDirectives(reply){
   out=out.replace(/\[\[\s*ADD_EX\s*:\s*([^\]]+)\]\]/ig,(m,a)=>{ const r=coachAddEx(a); if(r) notes.push("➕ Added "+r); return ""; });
   out=out.replace(/\[\[\s*REMOVE_EX\s*:\s*([^\]]+)\]\]/ig,(m,a)=>{ const r=coachRemoveEx(a); if(r) notes.push("➖ Removed "+r); return ""; });
   out=out.replace(/\[\[\s*SET_SETS\s*:\s*(\d+)\s*\]\]/ig,(m,a)=>{ const r=coachSetSets(a); if(r) notes.push("🎯 Sets → "+r); return ""; });
+  out=out.replace(/\[\[\s*SET_ICON\s*:\s*([^|\]]+?)\s*\|\s*([^|\]]+?)\s*\|\s*([^\]]+?)\s*\]\]/ig,(m,sec,match,emo)=>{ const r=coachSetSectionIcon(sec,match,emo); if(r) notes.push("🎨 "+(r.sec==='warmup'?'Warm-up':'Cool-down')+" icon → "+emo.trim()+" "+r.text); return ""; });
+  out=out.replace(/\[\[\s*SET_WARMUP\s*:\s*([^\]]+)\]\]/ig,(m,a)=>{ const r=coachSetSection('warmup',a); if(r) notes.push("🔥 Warm-up updated → "+r.names.join(", ")); return ""; });
+  out=out.replace(/\[\[\s*SET_COOLDOWN\s*:\s*([^\]]+)\]\]/ig,(m,a)=>{ const r=coachSetSection('cooldown',a); if(r) notes.push("❄️ Cool-down updated → "+r.names.join(", ")); return ""; });
+  out=out.replace(/\[\[\s*FIX_ICONS\s*\]\]/ig,()=>{ const n=coachFixIcons(); if(n) notes.push("🎨 Re-matched "+n+" warm-up/cool-down icons"); return ""; });
   return {cleaned:out.replace(/\n{3,}/g,"\n\n").trim(), notes};
 }
 /* Offline fallback: understand plain-English edit commands (known exercises only). */
 function localWorkoutCommand(txt){
   const s=" "+txt.toLowerCase().replace(/×/g,'x')+" "; let m;
+  if(/\b(icon|emoji|picture|image|symbol)s?\b/.test(s) && /(fix|correct|update|change|represent|match|proper|right|wrong|better|sort)/.test(s)){
+    const n=coachFixIcons(); if(n) return {notes:["🎨 Re-matched "+n+" warm-up/cool-down icons"], reply:"Sorted — every warm-up and cool-down icon now matches the movement it represents. Take a look in the Train tab. 💪"};
+  }
   m=s.match(/(?:swap|replace|change|sub(?:stitute)?)\s+(.+?)\s+(?:for|with|to|into|out for)\s+(.+?)\s*$/);
   if(m){ const o=resolveKnownEx(m[1]), nn=resolveKnownEx(m[2]); if(o&&nn){ const r=coachSwapWorkoutEx(o,nn); if(r) return {notes:["⇄ Swapped "+r.from+" → "+r.to], reply:"Done — swapped <b>"+r.from+"</b> for <b>"+r.to+"</b>. It's live in the Train tab. 💪"}; } }
   m=s.match(/(?:\badd\b|\binclude\b|throw in|put in|chuck in)\s+(.+?)\s*$/);
@@ -961,7 +1014,7 @@ function localWorkoutCommand(txt){
 
 function renderChat(){
   const w=document.getElementById('chatWrap');
-  if(!DB.chat.length){ DB.chat.push({role:"ai",text:"Morning Amir 👊 I've got your whole history — injuries, phase, lifts, the lot. Tell me how you're feeling and I'll sort your day. I can also edit your Train session live — just say things like <b>\"swap bench for incline\"</b>, <b>\"add face pulls\"</b>, <b>\"drop the lunges\"</b>, <b>\"make it 4 sets\"</b>, or <b>\"give me a pull day\"</b> and it updates the Train tab instantly. Log lifts here too — e.g. \"bench 40 x8 x8 x8\"."}); }
+  if(!DB.chat.length){ DB.chat.push({role:"ai",text:"Morning Amir 👊 I've got your whole history — injuries, phase, lifts, the lot. Tell me how you're feeling and I'll sort your day. I can also edit your Train session live — just say things like <b>\"swap bench for incline\"</b>, <b>\"add face pulls\"</b>, <b>\"drop the lunges\"</b>, <b>\"make it 4 sets\"</b>, <b>\"give me a pull day\"</b>, or <b>\"fix the warm-up icons\"</b> and it updates the Train tab instantly. Log lifts here too — e.g. \"bench 40 x8 x8 x8\"."}); }
   w.innerHTML=DB.chat.map(m=> m.role==='log' ? "<div class='logchip'>"+m.text+"</div>" : "<div class='msg "+(m.role==='me'?'me':'ai')+"'>"+m.text+"</div>").join('');
   setTimeout(()=>window.scrollTo(0,document.body.scrollHeight),50);
 }
