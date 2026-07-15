@@ -177,6 +177,8 @@ textarea.txtin{min-height:88px;resize:vertical;line-height:1.45;}
 .msg.ai{align-self:flex-start;background:var(--card2);border:1px solid #1c3a5c;border-bottom-left-radius:5px;}
 .msg b{font-weight:800;}
 .logchip{align-self:center;background:#0c2716;border:1px solid #154d2c;color:var(--green);font-size:13px;font-weight:700;padding:8px 14px;border-radius:12px;text-align:center;max-width:92%;}
+.undoBtn{background:transparent;border:1px solid #154d2c;color:var(--green);font:inherit;font-weight:700;padding:4px 12px;border-radius:10px;cursor:pointer;}
+.undoBtn:active{transform:scale(.96);}
 .chatbar{position:fixed;left:0;right:0;bottom:calc(70px + var(--safe-bot));max-width:520px;margin:0 auto;padding:8px 14px;background:#12100dee;backdrop-filter:blur(18px);border-top:1px solid var(--line);display:flex;gap:8px;z-index:35;}
 .chatbar input{flex:1;min-width:0;background:#0d0a07;border:1px solid var(--line);border-radius:22px;padding:12px 16px;color:var(--txt);font-size:15px;}
 .chatbar button{flex:0 0 46px;height:46px;border-radius:50%;background:linear-gradient(100deg,#ff8a2b,#ff5a1a);color:#fff;font-size:20px;font-weight:800;}
@@ -330,6 +332,9 @@ a{color:var(--orange);}
         </select></div>
       <div class="field" id="customModelWrap" style="margin-bottom:12px;display:none"><label>Custom model ID</label>
         <input class="txtin" id="setModelCustom" placeholder="e.g. gpt-5.5-2026-04-23" /></div>
+      <div class="field" style="margin-bottom:12px"><label>Exercise Demo Finder — Giphy key (free)</label>
+        <input class="txtin" id="setGiphy" type="password" placeholder="paste free Giphy API key" />
+        <div class="hint mt">Lets the coach pull a real demo GIF off the web for ANY move it programs — Pilates, HIIT, boxing, anything — so you never guess the form. Grab one free in 2 min at developers.giphy.com → Create an App (API key). Optional: without it, the ~30 built-in lifts still show demos.</div></div>
       <button class="btn mt" onclick="saveAI()">Save & Test Connection</button>
       <div id="aiTest" class="mt muted center" style="font-size:13px"></div>
     </div>
@@ -442,7 +447,7 @@ const DEFAULTS = {
     equipment:"Adjustable dumbbells, barbell + plates, bench, pull-up bar, Concept2 rower, resistance bands",
     injuries:"TFCC injury (right wrist) — avoid loaded wrist extension & heavy pressing on straight wrist. Klinefelter syndrome — manage recovery/fatigue, prioritise consistent progressive overload.",
     rules:"Never make me choose workouts. Tell me exactly what to do. Technique beats weight. Never ego lift. Only increase load after previous weight mastered with excellent form. Consistency beats intensity. Be direct, funny, encouraging."},
-  ai:{provider:"openai", key:"", model:"gpt-4o-mini"},
+  ai:{provider:"openai", key:"", model:"gpt-4o-mini", giphyKey:""},
   memory:"", reminder:"07:00",
   schedule:{0:"Rest",1:"Push Day",2:"Pull Day",3:"Legs & Core",4:"Push Day",5:"Pull Day",6:"Legs & Core"},
   dayOverride:{date:null,split:null},
@@ -510,6 +515,29 @@ function go(s){
   if(s==='today') renderNutrition();
 }
 function toast(m){const t=document.getElementById('toast');t.textContent=m;t.classList.add('show');setTimeout(()=>t.classList.remove('show'),2600);}
+
+/* ===== GOD MODE: the coach runs real app code, and every change is undoable ===== */
+const SNAP_KEY="amirpt_snaps"; let SNAPS={};
+function loadSnaps(){ try{ SNAPS=JSON.parse(localStorage.getItem(SNAP_KEY)||"{}")||{}; }catch(e){ SNAPS={}; } }
+function persistSnaps(){ try{ const ids=Object.keys(SNAPS).sort(); while(ids.length>15) delete SNAPS[ids.shift()]; localStorage.setItem(SNAP_KEY,JSON.stringify(SNAPS)); }catch(e){} }
+function snapId(){ return String(Date.now())+"_"+Math.random().toString(36).slice(2,6); }
+function restoreDB(obj){ Object.keys(DB).forEach(k=>{ if(!(k in obj)) delete DB[k]; }); Object.assign(DB,obj); }
+function rerenderEverything(){ try{ ensureWorkout(); }catch(e){} try{ boot(); }catch(e){} try{ renderChat(); }catch(e){} }
+/* Direct eval in app scope → the coach can touch DB, ANY function, the DOM, styles, tabs — anything. */
+function coachRun(code){ return eval(code); }
+/* Compact live map of DB for the coach's system prompt, so it knows exactly what it can edit. */
+function dbShape(){ try{ const o={}; for(const k in DB){ const v=DB[k];
+  o[k]=Array.isArray(v)?("array["+v.length+"]"):(v&&typeof v==="object"?("{"+Object.keys(v).slice(0,10).join(",")+"}"):typeof v); }
+  return JSON.stringify(o); }catch(e){ return "{}"; } }
+function undoChange(id){
+  const s=SNAPS[id];
+  if(!s){ toast("That change is no longer undoable"); return; }
+  try{ restoreDB(JSON.parse(s.before)); save(); }catch(e){ toast("Undo failed"); return; }
+  delete SNAPS[id]; persistSnaps();
+  DB.chat.push({role:"log",text:"↩ Reverted: "+(s.label||"change")}); save();
+  rerenderEverything(); toast("Reverted ✅");
+}
+loadSnaps();
 function segPick(btn,group){
   btn.parentElement.querySelectorAll('button').forEach(b=>b.classList.remove('on')); btn.classList.add('on');
   if(group==='loc'){ DB.profile.location=btn.dataset.v; save(); DB.workout=null; updateStatus(); }
@@ -554,6 +582,42 @@ function allExNames(){ return [...new Set([...Object.keys(EXDB), ...Object.keys(
 function mediaFor(name){ return (DB.media&&DB.media[name]) || EXIMG[name] || null; }
 function allSplits(){ const base=SPLITS.filter(s=>s!=="Rest"); const custom=Object.keys(DB.dayTypes||{}); return [...base, ...custom, "Rest"]; }
 function realMediaOnly(){ return DB.prefs && DB.prefs.visualMode==="real"; }
+/* ===== WEB DEMO FINDER: pull a real GIF for ANY movement so Amir never has to guess the form ===== */
+function mediaKey(){ return (DB.ai&&DB.ai.giphyKey)||""; }
+function attrEsc(s){ return String(s||"").replace(/&/g,"&amp;").replace(/"/g,"&quot;").replace(/</g,"&lt;"); }
+let _mediaInFlight={};
+async function giphyFind(query){
+  const k=mediaKey(); if(!k||!query) return null;
+  try{
+    const u="https://api.giphy.com/v1/gifs/search?api_key="+encodeURIComponent(k)+"&limit=1&rating=pg&lang=en&q="+encodeURIComponent(query);
+    const r=await fetch(u); if(!r.ok) return null; const j=await r.json();
+    const g=j&&j.data&&j.data[0]; if(!g||!g.images) return null;
+    const im=g.images; return (im.downsized_medium||im.fixed_height||im.original||{}).url||null;
+  }catch(e){ return null; }
+}
+/* Resolve a real demo for an exercise: cached → built-in → web search. Persists what it finds. */
+async function resolveExerciseMedia(name,query){
+  if(!name) return null;
+  if(DB.media&&DB.media[name]) return DB.media[name];
+  if(EXIMG[name]) return EXIMG[name];
+  const url=await giphyFind(query||(name+" exercise proper form"));
+  if(url){ DB.media=DB.media||{}; DB.media[name]=url; save(); }
+  return url;
+}
+/* After a sheet renders, fill any missing exercise demos from the web (throttled, cached). */
+async function hydrateMedia(){
+  if(!mediaKey()) return;
+  const nodes=[...document.querySelectorAll('[data-exmedia]')];
+  for(const el of nodes){
+    const name=el.getAttribute('data-exmedia'); const q=el.getAttribute('data-exq')||"";
+    if(!name) continue;
+    if(DB.media&&DB.media[name]){ swapMedia(el,DB.media[name],name); continue; }
+    if(_mediaInFlight[name]) continue; _mediaInFlight[name]=1;
+    const url=await resolveExerciseMedia(name,q); delete _mediaInFlight[name];
+    if(url){ const live=document.querySelector('[data-exmedia="'+CSS.escape(name)+'"]'); if(live) swapMedia(live,url,name); }
+  }
+}
+function swapMedia(el,url,name){ if(!el) return; el.outerHTML="<div class='imgwrap'><img src='"+attrEsc(url)+"' alt='"+attrEsc(name)+"' loading='lazy' onerror=\"this.closest('.imgwrap').classList.add('nomedia');this.remove()\"></div>"; }
 function catOf(name){ const e=EX(name); return (e&&e.cat) || CAT[name] || "Other"; }
 function pickSplit(){ if(DB.dayOverride && DB.dayOverride.date===today() && DB.dayOverride.split) return DB.dayOverride.split; return DB.schedule[new Date().getDay()] || "Full Body"; }
 function todaySets(ex){ const a=DB.strength[ex]; if(!a) return []; const x=a.find(o=>o.date===today()); return x?x.sets:[]; }
@@ -603,7 +667,8 @@ function buildCustomDay(name,ctx){
   const baseWarm = travel? [{t:"3 min brisk walk / skips"},{t:"Arm circles ×15 each way"},{t:"World's greatest stretch ×5/side"}]
                          : [{t:"5 min easy Concept2 row or walk"},{t:"Arm circles ×15 each way"},{t:"Cat-cow ×8"}];
   if(kind==="cardio"||kind==="row"){
-    const cardio = dt.cardio || DB.cardio || {name:"Concept2 Row",duration:"30 min",zone:"Zone 2"};
+    let cardio = dt.cardio || DB.cardio || {name:"Concept2 Row",duration:"30 min",zone:"Zone 2"};
+    if(travel && /row|erg|concept/i.test(cardio.name||"")) cardio={name:"Brisk walk / run",duration:"25–30 min",zone:"Zone 2"};
     return {title:name, tag: travel?"Travel · Cardio":"Cardio Day", phase:DB.profile.phase, kind:"cardio",
       note: dt.note || "Steady conversational cardio. Nasal-breathing pace — you should be able to talk.",
       reps:"—", sets:0, warmup:baseWarm, main:[], cooldown:ctx.cooldown, cardio,
@@ -629,9 +694,8 @@ function buildCustomDay(name,ctx){
   return w;
 }
 function inferDayKind(name){ const s=String(name).toLowerCase();
-  if(/cardio|row|erg|run|jog|bike|cycle|zone ?2|conditioning|hiit|interval/.test(s)) return "cardio";
   if(/mobility|recovery|yoga|stretch|flexib/.test(s)) return "mobility";
-  if(/holiday|maintenance|travel|bodyweight/.test(s)) return "strength";
+  if(/\brow\b|erg|\brun\b|jog|bike|cycle|spin|zone ?2|steady state|liss/.test(s)) return "cardio";
   return "strength"; }
 function recommendLoad(ex){
   const pr=DB.progression&&DB.progression[ex];
@@ -681,10 +745,13 @@ function mvHTML(item){
 }
 function exImgHTML(name,muscles){
   const src=mediaFor(name), fb=bodyURI(muscles);
+  const q=attrEsc(name+" exercise proper form");
   const missing="<div class='imgwrap nomedia'><div><b>📷 demo needed</b><span>ask coach to add a real GIF</span></div></div>";
   if(src){ const err = realMediaOnly() ? "this.onerror=null;this.closest('.imgwrap').outerHTML=\"<div class='imgwrap nomedia'><div><b>📷 demo needed</b><span>ask coach to add a real GIF</span></div></div>\""
       : "this.onerror=null;this.src='"+fb+"';this.style.objectFit='cover'";
-    return "<div class='imgwrap'><img src='"+src+"' alt='"+name+"' loading='lazy' onerror=\""+err+"\"></div>"; }
+    return "<div class='imgwrap'><img src='"+src+"' alt='"+attrEsc(name)+"' loading='lazy' onerror=\""+err+"\"></div>"; }
+  /* No demo yet — if the web finder is on, show a loading tile that hydrateMedia() will fill from the web. */
+  if(mediaKey()) return "<div class='imgwrap nomedia' data-exmedia='"+attrEsc(name)+"' data-exq='"+q+"'><div><b>🔎 finding demo…</b><span>pulling a real clip from the web</span></div></div>";
   if(realMediaOnly()) return missing;
   return "<div class='imgwrap'><img src='"+fb+"' style='object-fit:cover'></div>";
 }
@@ -703,6 +770,14 @@ function generateWorkout(){
   document.getElementById('heroSub').textContent=DB.workout.note;
   document.getElementById('heroPhase').textContent="Today · "+DB.workout.tag;
 }
+/* Greece / travel has NO rowing machine. Only show the warm-up row where a rower actually exists. */
+function hasRower(){
+  if(DB.profile.location==='greece') return false;
+  const eq=(DB.profile.equipment||"").toLowerCase();
+  if(/bodyweight only/.test(eq) || /no\s*(row|erg|concept)/.test(eq)) return false;
+  return true;
+}
+function showRowWarmup(w){ return !w.travel && hasRower(); }
 function rowBlockHTML(travel){
   const dist=travel?"1,000m":"2,000m";
   const pace=travel?"Quick easy row to warm up.":"Easy pace ~2:10–2:20 /500m · ~9 min.";
@@ -745,11 +820,12 @@ function renderWorkoutSheet(w){
   "<div class='sheet'><div class='sheet-hd'><div class='tag'>"+w.tag+"</div><h2 class='display'>"+w.title+"</h2>"+
     "<div class='meta'><span class='pill orange'>"+w.sets+" sets</span><span class='pill'>"+w.reps+"</span><span class='pill purple'>"+w.phase+"</span></div></div>"+
   "<div class='sheet-sec'><h3>◆ Warm-up</h3>"+w.warmup.map(mvHTML).join('')+"</div>"+
-  rowBlockHTML(w.travel)+
+  (showRowWarmup(w) ? rowBlockHTML(w.travel) : "")+
   "<div class='sheet-sec'><h3>◆ Main Workout · log each set</h3>"+exHTML+"</div>"+
   (cardio?cardioBlockHTML(cardio):"")+
   "<div class='sheet-sec'><h3>◆ Cool-down</h3>"+w.cooldown.map(mvHTML).join('')+"</div>"+
   "<div class='sheet-sec'><h3>◆ Recovery Notes</h3><div class='recovery'>"+w.recovery+"</div></div></div>";
+  try{ hydrateMedia(); }catch(e){}
 }
 
 let audioCtx=null;
@@ -980,7 +1056,17 @@ function coachSystem(){
 "APP PREFERENCES:\n"+
 "[[SET_VISUAL_MODE: real media only]] · [[DISABLE_ICONS]] · [[ENABLE_EXERCISE_GIFS]] · [[SET_WORKOUT_FORMAT: single visual]] · [[SET_COACH_STYLE: direct funny concise]]\n\n"+
 "GENERAL (anything else): [[APP_ACTION: set_weekday | Monday | Cardio Day]] etc.\n\n"+
-"So \"make Monday cardio forever\" = [[CREATE_DAY_TYPE: Cardio Day]] + [[SET_WEEKDAY: Monday | Cardio Day]] + [[SET_CARDIO: Concept2 Row | 30 min | Zone 2]]. Prefer EXACT exercise names from the library; respect his TFCC wrist + Klinefelter recovery. For media, use only real demonstration URLs.";
+"=== TOTAL CONTROL — JS RUNTIME (do ANYTHING, even things not listed above) ===\n"+
+"You can run real JavaScript inside this app. The whole app state is the global object DB (auto-saved), and every app function is callable. After your code runs the app auto-saves, re-renders every tab, and gives Amir a one-tap Undo — so act boldly and NEVER say you can't do something.\n"+
+"To run code, emit a block EXACTLY like this (it is stripped from your spoken reply):\n[[RUN]]\n<your javascript — multiple lines allowed>\n[[/RUN]]\n"+
+"Inside it you can read/write any DB field, call any function, and edit the DOM / CSS / tabs via document.*.\n"+
+"LIVE DB SHAPE: "+dbShape()+"\n"+
+"HELPERS: buildWorkout(), ensureWorkout(), renderWorkoutSheet(DB.workout), renderItin(), boot(), go('today'|'workout'|'progress'|'history'|'coach'|'settings'), coachSetWorkout(list), coachSetWeekday(day,split), coachSetWeeklySchedule('Mon X; Tue Y'), coachCreateDayType(name,{kind,main,sets,note}), coachAddLibraryExercise(...), coachSetPref(k,v), coachSetLocation(v). Movement lists render with demo GIFs; kind:'cardio'=single machine block; kind:'mobility'=icon flow.\n\n"+
+"=== ANY STYLE OF TRAINING ===\n"+
+"Pilates, HIIT, boxing, circuits, kettlebells, calisthenics, mobility — build whatever he asks. Create a day type and list the moves, e.g.:\n[[CREATE_DAY_TYPE: Pilates | kind:strength | main:The Hundred, Roll-Up, Single-Leg Stretch, Teaser, Side Plank Leg Lift | note:Core control, slow tempo, breathe]]\nthen [[SET_WEEKDAY: Wednesday | Pilates]] (or [[SET_DAY: Pilates]] for today). Each move auto-loads a real demo.\n\n"+
+"=== REAL DEMOS FROM THE WEB (never guess) ===\n"+
+"NEVER invent or recall image/GIF URLs — they break. Every exercise auto-loads a real demo GIF fetched live from the web. To fetch or refresh one yourself:\n[[FIND_MEDIA: Exercise Name | short web search phrase]]  e.g. [[FIND_MEDIA: Teaser | pilates teaser exercise]]\nJust naming the exercise is usually enough. "+(mediaKey()? "(Web finder is ON.)" : "(Web finder is OFF — tell Amir to add a free Giphy key in Settings so demos load automatically.)")+"\n\n"+
+"So \"make Monday cardio forever\" = [[CREATE_DAY_TYPE: Cardio Day]] + [[SET_WEEKDAY: Monday | Cardio Day]] + [[SET_CARDIO: Concept2 Row | 30 min | Zone 2]]. Prefer EXACT library names where they fit; respect his TFCC wrist + Klinefelter recovery. Use [[FIND_MEDIA]] for demos, never raw URLs.";
   const state=
 "\n\nLIVE APP STATE:\n- Location: "+(p.location==='greece'?'GREECE (bodyweight, short, holiday)':'HOME Dubai (full gym + time)')+
 "\n- Phase: "+p.phase+"\n- Mode: "+(p.mode||"—")+"\n- Equipment: "+p.equipment+
@@ -989,7 +1075,7 @@ function coachSystem(){
 "\n- Prefs: visual="+(prefs.visualMode||'auto')+", icons="+(prefs.showIcons!==false)+", format="+(prefs.workoutFormat||'list')+
 "\n- Exercise library: "+libNames+
 "\n\nWEEKLY SCHEDULE:\n"+sched+"\n\nRECENT CHECK-INS:\n"+recentCk+"\n\nSTRENGTH HISTORY:\n"+strength+"\n\nCONCEPT2 / CARDIO LOG:\n"+rowing;
-  return "You are Amir's personal trainer — the ONLY coach he has. You know him deeply and remember everything. This app stores his data; you are the coaching brain."+mem+"\n\nPERSONALITY: "+(prefs.coachStyle||"Direct, funny, warm, encouraging")+". Never robotic or generic. Challenge him, explain WHY, celebrate wins. Text like a real PT. Keep it tight.\n\nPERMANENT RULES:\n- Goal: "+p.goal+". The physique he wants, NOT bodyweight targets.\n- Klinefelter syndrome — respect recovery/fatigue, patient strength curve.\n- TFCC injury (right wrist) — avoid loaded wrist extension / straight-wrist heavy pressing; prefer neutral-grip. If wrist pain reported, swap immediately.\n- Technique beats weight. Never ego lift. Only add load after current weight is MASTERED with clean form.\n- He never chooses workouts — YOU decide and tell him exactly what to do.\n\nLOCATION RULES:\n- DUBAI (home): full home gym + time. Full sessions. Equipment: "+p.equipment+".\n- GREECE: NO gym/time, holiday. SHORT (~15 min) bodyweight, maintenance. Don't guilt food/drink.\n\n"+editBlock+state;
+  return "You are Amir's personal trainer — the ONLY coach he has. You know him deeply and remember everything. This app stores his data; you are the coaching brain."+mem+"\n\nPERSONALITY: "+(prefs.coachStyle||"Direct, funny, warm, encouraging")+". Never robotic or generic. Challenge him, explain WHY, celebrate wins. Text like a real PT. Keep it tight.\n\nPERMANENT RULES:\n- Goal: "+p.goal+". The physique he wants, NOT bodyweight targets.\n- Klinefelter syndrome — respect recovery/fatigue, patient strength curve.\n- TFCC injury (right wrist) — avoid loaded wrist extension / straight-wrist heavy pressing; prefer neutral-grip. If wrist pain reported, swap immediately.\n- Technique beats weight. Never ego lift. Only add load after current weight is MASTERED with clean form.\n- He never chooses workouts — YOU decide and tell him exactly what to do.\n\nLOCATION RULES:\n- DUBAI (home): full home gym + time. Full sessions. Equipment: "+p.equipment+".\n- GREECE: NO gym/time, holiday. SHORT (~15 min) bodyweight, maintenance. Don't guilt food/drink. There is NO rowing machine/erg in Greece — NEVER program Concept2/row/erg there (the app hides it automatically); use walk/run for cardio.\n- GIFs: library moves already show demos automatically. If Amir asks to 'add gifs', the app enables them — just confirm briefly, no need to attach URLs unless adding a brand-new exercise.\n\n"+editBlock+state;
 }
 
 function aiIsReasoning(model){ return /^gpt-5/i.test(model)||/^o\d/i.test(model); }
@@ -1194,6 +1280,12 @@ function cardioBlockHTML(c){ if(!c) return "";
 /* Parse [[...]] directives out of an AI reply, apply them, return cleaned text + change notes. */
 function applyCoachDirectives(reply){
   let out=String(reply||""), notes=[];
+  /* GOD MODE first: run any arbitrary code blocks before bracket directives (code may contain brackets). */
+  out=out.replace(/\[\[\s*RUN\s*\]\]([\s\S]*?)\[\[\s*\/\s*RUN\s*\]\]/ig,(m,code)=>{
+    try{ coachRun(code); save(); try{ ensureWorkout(); }catch(e){} try{ boot(); }catch(e){} notes.push("⚡ Applied your command"); }
+    catch(e){ notes.push("⚠️ Command error: "+(e&&e.message?e.message:e)+" — nothing saved from that block; use Undo if needed."); }
+    return "";
+  });
   out=out.replace(/\[\[\s*SET_DAY\s*:\s*([^\]]+)\]\]/ig,(m,a)=>{ const r=applyDayDirective(a); if(r) notes.push("🔁 Switched today → "+r); return ""; });
   out=out.replace(/\[\[\s*SET_WORKOUT\s*:\s*([^\]]+)\]\]/ig,(m,a)=>{ const r=coachSetWorkout(a); if(r) notes.push("📝 New workout → "+r.join(", ")); return ""; });
   out=out.replace(/\[\[\s*SWAP_EX\s*:\s*([^\]]+?)\s*(?:->|→|=>|\bto\b)\s*([^\]]+)\]\]/ig,(m,a,b)=>{ const r=coachSwapWorkoutEx(a,b); if(r) notes.push("⇄ Swapped "+r.from+" → "+r.to); return ""; });
@@ -1218,6 +1310,15 @@ function applyCoachDirectives(reply){
   out=out.replace(/\[\[\s*SET_CARDIO_PACE\s*:\s*([^\]]+)\]\]/ig,(m,a)=>{ const r=coachSetCardioField('pace',a); if(r) notes.push("🏃 Cardio pace → "+r); return ""; });
   out=out.replace(/\[\[\s*SET_CARDIO\s*:\s*([^\]]+)\]\]/ig,(m,a)=>{ const r=coachSetCardio(a); if(r) notes.push("🚣 Cardio → "+r.name+(r.duration?" · "+r.duration:"")+(r.zone?" · "+r.zone:"")); return ""; });
   /* ---- Media ---- */
+  out=out.replace(/\[\[\s*FIND_MEDIA\s*:\s*([^|\]]+?)(?:\s*\|\s*([^\]]+?))?\s*\]\]/ig,(m,name,q)=>{
+    const nm=String(name).trim(); if(!nm) return "";
+    notes.push("🔎 Finding a web demo for "+nm+"…");
+    resolveExerciseMedia(nm,(q||nm+" exercise proper form").trim()).then(url=>{
+      if(url){ try{ if(DB.workout) renderWorkoutSheet(DB.workout); }catch(e){} toast("Demo added · "+nm); }
+      else toast("No clip found for "+nm+(mediaKey()?"":" — add a free Giphy key in Settings"));
+    });
+    return "";
+  });
   out=out.replace(/\[\[\s*SET_EXERCISE_MEDIA\s*:\s*([^|\]]+?)\s*\|\s*(https?:\/\/[^\]]+?)\s*\]\]/ig,(m,n,u)=>{ const r=coachSetExerciseMedia(n,u); if(r) notes.push("🎬 Media set → "+r); return ""; });
   out=out.replace(/\[\[\s*SET_(?:WARMUP|COOLDOWN)_MEDIA\s*:\s*([^|\]]+?)\s*\|\s*(https?:\/\/[^\]]+?)\s*\]\]/ig,(m,n,u)=>{ const r=coachSetSectionMedia(n,u); if(r) notes.push("🎬 Media set → "+r); return ""; });
   out=out.replace(/\[\[\s*MARK_MEDIA_MISSING\s*:\s*([^\]]+)\]\]/ig,(m,a)=>{ const r=coachMarkMediaMissing(a); if(r) notes.push("📷 Flagged missing media → "+r); return ""; });
@@ -1296,6 +1397,43 @@ function localWorkoutCommand(txt){
   return null;
 }
 
+/* Set up a full weekly split from plain English — works with or without the AI. */
+function localScheduleCommand(txt){
+  const s=" "+txt.toLowerCase().replace(/[\/&]/g,' ')+" ";
+  const intent=/(split|schedule|week|program|programme|routine|plan|make|set|do|switch|change|give|turn|put)/.test(s);
+  if(!intent) return null;
+  let sched=null,label=null;
+  if(/\bppl\b/.test(s) || /push\s*,?\s*pull\s*,?\s*legs?/.test(s)){
+    sched="Sun Rest; Mon Push Day; Tue Pull Day; Wed Legs & Core; Thu Push Day; Fri Pull Day; Sat Legs & Core"; label="Push / Pull / Legs (6-day)";
+  } else if(/upper\s*,?\s*lower/.test(s)){
+    sched="Sun Rest; Mon Upper Body; Tue Legs & Core; Wed Rest; Thu Upper Body; Fri Legs & Core; Sat Rest"; label="Upper / Lower (4-day)";
+  } else if(/full body/.test(s)){
+    sched="Sun Rest; Mon Full Body; Tue Rest; Wed Full Body; Thu Rest; Fri Full Body; Sat Rest"; label="Full Body (3-day)";
+  } else if(/bro split|body ?part/.test(s)){
+    sched="Sun Rest; Mon Push Day; Tue Pull Day; Wed Legs & Core; Thu Push Day; Fri Pull Day; Sat Rest"; label="Body-part split (5-day)";
+  } else if(/\bsplit\b/.test(s)){
+    // generic "split my workouts" with no style named → sensible PPL default
+    sched="Sun Rest; Mon Push Day; Tue Pull Day; Wed Legs & Core; Thu Push Day; Fri Pull Day; Sat Legs & Core"; label="Push / Pull / Legs (6-day)";
+  }
+  if(!sched) return null;
+  const n=coachSetWeeklySchedule(sched); if(!n) return null;
+  return {notes:["📅 Weekly split set → "+label], reply:"Done — locked in a <b>"+label+"</b> split across your week. It's in the Itinerary tab and today's session is already rebuilt. 💪"};
+}
+/* "add gifs / show demos / use real gifs" — deterministically toggle exercise GIFs. */
+function localMediaCommand(txt){
+  const s=" "+txt.toLowerCase()+" ";
+  if(!/(gif|demo|animation|animated|video|visual)s?\b/.test(s)) return null;
+  const off=/(remove|hide|turn off|disable|no more|stop|without|get rid)/.test(s);
+  const on=/(add|show|turn on|enable|put|use|want|need|display|adapt|give)/.test(s);
+  if(off && !on){ coachSetPref('exerciseGifs',false); coachSetVisualMode('icon'); return {notes:["🚫 Exercise GIFs off"], reply:"Turned exercise GIFs off — clean icon view now."}; }
+  coachSetPref('exerciseGifs',true); coachSetVisualMode('auto');
+  return {notes:["🎬 Exercise GIFs on"], reply:"Done — real exercise GIFs are on across every session. Any lift with a demo shows it in the Train tab. 💪"};
+}
+/* Honesty guard: does the user's message look like a change request, and does the coach's reply CLAIM it acted? */
+function looksLikeEditRequest(t){ return /\b(split|schedule|week|day|workout|routine|program|programme|swap|change|replace|add|remove|drop|cut|set|make|switch|gif|demo|media|cardio|rest|push|pull|legs?|upper|full body|location|greece|dubai|sets?|protein|calorie|nutrition|icon)\b/i.test(t); }
+function claimsAction(t){ const x=String(t||"").replace(/<[^>]+>/g,"").toLowerCase();
+  return /\b(done|sorted|all set|locked in|updated|switched)\b|\bi'?ve (?:set|updated|changed|added|removed|swapped|split|switched|made|locked|built)\b|\bi have (?:set|updated|changed|added|removed|swapped)\b|\byour (?:week|schedule|split|workout|plan) is now\b/.test(x); }
+
 function renderChat(){
   const w=document.getElementById('chatWrap');
   if(!DB.chat.length){ DB.chat.push({role:"ai",text:"Morning Amir 👊 I've got your whole history and I can run the whole app for you now. Tell me anything — <b>\"make Monday cardio forever\"</b>, <b>\"add seated cable row to my library\"</b>, <b>\"swap bench for incline\"</b>, <b>\"I'm in Greece\"</b>, <b>\"log my check-in: weight 84.8, sleep 9\"</b>, <b>\"set protein target 170g\"</b> — and I'll change your schedule, workout, library, cardio, media, check-ins, nutrition or settings on the spot. Log lifts too — e.g. \"bench 40 x8 x8 x8\"."}); }
@@ -1319,8 +1457,19 @@ async function sendChat(){
     if(logNote) msgs.push({role:"user",content:logNote}); reply=await callAI(msgs,400); if(reply) aiUsed=true; }
   if(!reply) reply=log?localLogReply(log):localCoachReply(txt);
   const ty=document.getElementById('typing'); if(ty) ty.remove();
+  const _before=JSON.stringify(DB);
   const res=applyCoachDirectives(reply); reply=res.cleaned; let allNotes=res.notes.slice();
-  if(!allNotes.length){ const lc=localWorkoutCommand(txt); if(lc){ allNotes=lc.notes; if(!aiUsed) reply=lc.reply; } }
+  if(!allNotes.length){
+    const lc=localWorkoutCommand(txt)||localScheduleCommand(txt)||localMediaCommand(txt);
+    if(lc){ allNotes=lc.notes; if(!aiUsed||!reply) reply=lc.reply; }
+  }
+  /* If the coach's words claim it changed something but nothing actually did, be honest instead of faking it. */
+  if(!allNotes.length && aiUsed && looksLikeEditRequest(txt) && claimsAction(reply)){
+    reply="I couldn't actually apply that from here, so I won't pretend I did. Say it plainly and I'll lock it in for real:<br>• <b>\"set my week to push pull legs\"</b><br>• <b>\"make Wednesday pilates\"</b><br>• <b>\"swap bench for incline\"</b><br>• <b>\"give me a 20-min HIIT session\"</b><br>• <b>\"I'm in Greece\"</b>";
+  }
+  /* Register an Undo for whatever just changed. */
+  if(JSON.stringify(DB)!==_before){ const id=snapId(); SNAPS[id]={before:_before,label:txt.slice(0,70)}; persistSnaps();
+    allNotes.push("↩ <button class='undoBtn' onclick=\"undoChange('"+id+"')\">Undo that change</button>"); }
   allNotes.forEach(n=>DB.chat.push({role:"log",text:n}));
   DB.chat.push({role:"ai",text:fmt(reply||"Done.")}); save(); renderChat(); updateStatus();
 }
@@ -1469,7 +1618,7 @@ function extractChatGPT(json){ const data=JSON.parse(json); if(Array.isArray(dat
 const KNOWN_MODELS=["gpt-5.5","gpt-4o","gpt-4o-mini","gpt-4.1-mini"];
 function onModelChange(){ const sel=val('setModel'); document.getElementById('customModelWrap').style.display = sel==='__custom'?'block':'none'; }
 function saveAI(){
-  DB.ai.key=val('setKey').trim(); const sel=val('setModel'); const custom=val('setModelCustom').trim();
+  DB.ai.key=val('setKey').trim(); DB.ai.giphyKey=val('setGiphy').trim(); const sel=val('setModel'); const custom=val('setModelCustom').trim();
   DB.ai.model = sel==='__custom' ? (custom||'gpt-5.5') : sel; save();
   const out=document.getElementById('aiTest');
   if(DB.ai.provider==="demo"||!DB.ai.key){ out.textContent="Demo mode — offline coach active. Add a key for live AI + photos."; return; }
@@ -1533,6 +1682,7 @@ function boot(){
   document.getElementById('todayDate').textContent=d.toLocaleDateString('en-GB',{weekday:'long',day:'numeric',month:'long'});
   document.getElementById('greetName').textContent=DB.profile.name||"Amir";
   document.getElementById('setKey').value=DB.ai.key||"";
+  { const g=document.getElementById('setGiphy'); if(g) g.value=DB.ai.giphyKey||""; }
   if(KNOWN_MODELS.includes(DB.ai.model)){ document.getElementById('setModel').value=DB.ai.model; } else if(DB.ai.model){ document.getElementById('setModel').value='__custom'; document.getElementById('setModelCustom').value=DB.ai.model; }
   onModelChange();
   document.getElementById('setMemory').value=DB.memory||""; memInfo();
