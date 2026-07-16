@@ -130,6 +130,12 @@ textarea.txtin{min-height:88px;resize:vertical;line-height:1.45;}
 .exb:last-child{border-bottom:none;margin-bottom:0;padding-bottom:0;}
 .exb .imgwrap{width:100%;height:200px;border-radius:16px;overflow:hidden;border:1px solid var(--line);background:#fff;position:relative;}
 .exb .imgwrap img{width:100%;height:100%;object-fit:contain;display:block;background:#fff;}
+.imgwrap.watch{background:#141019;border:1px solid #2a2333;text-decoration:none;cursor:pointer;display:flex;align-items:center;justify-content:center;}
+.imgwrap.watch:active{transform:scale(.99);}
+.watchlink{display:flex;flex-direction:column;align-items:center;justify-content:center;width:100%;height:100%;text-decoration:none;text-align:center;padding:12px;}
+.watchlink b{display:block;font-size:17px;color:var(--gold);}
+.watchlink span{display:block;font-size:12.5px;color:var(--muted);margin-top:5px;}
+.demoover{position:absolute;right:8px;bottom:8px;background:rgba(0,0,0,.62);color:#fff;font-size:12px;font-weight:700;padding:4px 9px;border-radius:9px;text-decoration:none;backdrop-filter:blur(2px);}
 .exb .name{font-weight:800;font-size:19px;letter-spacing:-.2px;margin-top:12px;}
 .exb .scheme{color:var(--gold);font-size:14px;font-weight:700;margin-top:4px;}
 .exb .cue{color:var(--muted);font-size:14px;margin-top:8px;line-height:1.5;}
@@ -617,7 +623,7 @@ async function hydrateMedia(){
     if(url){ const live=document.querySelector('[data-exmedia="'+CSS.escape(name)+'"]'); if(live) swapMedia(live,url,name); }
   }
 }
-function swapMedia(el,url,name){ if(!el) return; el.outerHTML="<div class='imgwrap'><img src='"+attrEsc(url)+"' alt='"+attrEsc(name)+"' loading='lazy' onerror=\"this.closest('.imgwrap').classList.add('nomedia');this.remove()\"></div>"; }
+function swapMedia(el,url,name){ if(!el) return; el.outerHTML="<div class='imgwrap' data-ex='"+attrEsc(name)+"'><img src='"+attrEsc(url)+"' alt='"+attrEsc(name)+"' loading='lazy' onerror=\"mediaFail(this,'"+jsAttr(name)+"')\"><a class='demoover' href='"+demoSearchURL(name)+"' target='_blank' rel='noopener'>▶ demo</a></div>"; }
 function catOf(name){ const e=EX(name); return (e&&e.cat) || CAT[name] || "Other"; }
 function pickSplit(){ if(DB.dayOverride && DB.dayOverride.date===today() && DB.dayOverride.split) return DB.dayOverride.split; return DB.schedule[new Date().getDay()] || "Full Body"; }
 function todaySets(ex){ const a=DB.strength[ex]; if(!a) return []; const x=a.find(o=>o.date===today()); return x?x.sets:[]; }
@@ -743,17 +749,24 @@ function mvHTML(item){
   else { ic="<div class='ic emo' style='opacity:.35'>·</div>"; }
   return "<div class='mv'>"+ic+"<div class='t'>"+item.t+"</div></div>";
 }
+/* Reliable demos: a real inline clip when we have one, otherwise a one-tap "Watch demo" that always works. */
+function demoSearchURL(name){ return "https://www.google.com/search?tbm=isch&q="+encodeURIComponent(name+" exercise form"); }
+function jsAttr(s){ return String(s||"").replace(/\\/g,"\\\\").replace(/'/g,"\\'").replace(/"/g,"&quot;"); }
+function watchInner(name){ return "<b>▶ Watch demo</b><span>tap to see "+attrEsc(name)+"</span>"; }
+function watchTileHTML(name,dataAttrs){ return "<a class='imgwrap watch'"+(dataAttrs||"")+" href='"+demoSearchURL(name)+"' target='_blank' rel='noopener'><div class='watchlink'>"+watchInner(name)+"</div></a>"; }
+function mediaFail(img,name){ try{ const w=img&&img.closest('.imgwrap'); if(!w) return;
+  w.classList.add('watch');
+  w.innerHTML="<a class='watchlink' href='"+demoSearchURL(name)+"' target='_blank' rel='noopener'>"+watchInner(name)+"</a>"; }catch(e){} }
 function exImgHTML(name,muscles){
-  const src=mediaFor(name), fb=bodyURI(muscles);
-  const q=attrEsc(name+" exercise proper form");
-  const missing="<div class='imgwrap nomedia'><div><b>📷 demo needed</b><span>ask coach to add a real GIF</span></div></div>";
-  if(src){ const err = realMediaOnly() ? "this.onerror=null;this.closest('.imgwrap').outerHTML=\"<div class='imgwrap nomedia'><div><b>📷 demo needed</b><span>ask coach to add a real GIF</span></div></div>\""
-      : "this.onerror=null;this.src='"+fb+"';this.style.objectFit='cover'";
-    return "<div class='imgwrap'><img src='"+src+"' alt='"+attrEsc(name)+"' loading='lazy' onerror=\""+err+"\"></div>"; }
-  /* No demo yet — if the web finder is on, show a loading tile that hydrateMedia() will fill from the web. */
-  if(mediaKey()) return "<div class='imgwrap nomedia' data-exmedia='"+attrEsc(name)+"' data-exq='"+q+"'><div><b>🔎 finding demo…</b><span>pulling a real clip from the web</span></div></div>";
-  if(realMediaOnly()) return missing;
-  return "<div class='imgwrap'><img src='"+fb+"' style='object-fit:cover'></div>";
+  const src=mediaFor(name), nEsc=attrEsc(name), js=jsAttr(name);
+  if(src){
+    return "<div class='imgwrap' data-ex='"+nEsc+"'>"+
+      "<img src='"+attrEsc(src)+"' alt='"+nEsc+"' loading='lazy' onerror=\"mediaFail(this,'"+js+"')\">"+
+      "<a class='demoover' href='"+demoSearchURL(name)+"' target='_blank' rel='noopener'>▶ demo</a></div>";
+  }
+  /* No built-in/cached clip. If a web-finder key is set, try to auto-fill inline; either way, always a tappable Watch demo. */
+  const dataAttrs = mediaKey() ? (" data-exmedia='"+nEsc+"' data-exq='"+attrEsc(name+" exercise")+"'") : "";
+  return watchTileHTML(name,dataAttrs);
 }
 
 function ensureWorkout(){
