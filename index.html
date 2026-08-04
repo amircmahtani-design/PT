@@ -436,7 +436,7 @@ a{color:var(--orange);}
 
   <section class="screen" id="s-settings">
     <div class="head"><div><div class="greet">Your coach's memory</div><h1 class="display">Settings</h1></div></div>
-    <div class="section-h">AI Coach — Live Connection</div>
+    <div class="section-h">AI coach</div>
     <div class="card">
       <div class="field" style="margin-bottom:14px"><label>Provider</label>
         <div class="seg" id="provSeg"><button class="on" data-v="openai" onclick="segPick(this,'prov')">OpenAI</button>
@@ -454,13 +454,25 @@ a{color:var(--orange);}
         </select></div>
       <div class="field" id="customModelWrap" style="margin-bottom:12px;display:none"><label>Custom model ID</label>
         <input class="txtin" id="setModelCustom" placeholder="e.g. gpt-5.5-2026-04-23" /></div>
-      <div class="field" style="margin-bottom:12px"><label>Exercise Demo Finder — Giphy key (free)</label>
-        <input class="txtin" id="setGiphy" type="password" placeholder="paste free Giphy API key" />
-        <div class="hint mt">Lets the coach pull a real demo GIF off the web for ANY move it programs — Pilates, HIIT, boxing, anything — so you never guess the form. Grab one free in 2 min at developers.giphy.com → Create an App (API key). Optional: without it, the ~30 built-in lifts still show demos.</div></div>
+
       <button class="btn mt" onclick="saveAI()">Save & Test Connection</button>
       <div id="aiTest" class="mt muted center" style="font-size:13px"></div>
     </div>
-    <div class="section-h">Coach's Memory of Me</div>
+    <div class="section-h">Exercise catalogue</div>
+    <div class="card">
+      <div class="notebox mb">WorkoutX gives the coach <b>1,400+ exercises</b> with animated demos, difficulty and equipment tags — so it can program far beyond the built-in list and still respect what you have in Madrid or Greece. Synced <b>once</b> onto this device, then it works offline forever with no per-workout API calls.</div>
+      <div class="field" style="margin-bottom:12px"><label>WorkoutX API key</label>
+        <input class="txtin" id="setWxKey" type="password" placeholder="wx_..." />
+        <div class="hint mt">Free plan: 500 requests a month. A full sync uses about 120 of them, once. Get a key at workoutxapp.com.</div></div>
+      <button class="btn" onclick="saveWxKey()">Save key</button>
+      <button class="btn sec mt" onclick="startWxSync()">Download exercise catalogue</button>
+      <div id="wxMsg" class="hint mt" style="font-size:13px"></div>
+      <div class="field mt" style="margin-bottom:0;border-top:1px solid var(--hair);padding-top:14px">
+        <label>Giphy key <span class="hint" style="float:right;font-weight:600">optional fallback</span></label>
+        <input class="txtin" id="setGiphy" type="password" placeholder="only needed if WorkoutX misses something" />
+        <div class="hint mt">Only used for a move the catalogue doesn't have. Giphy is a meme library, so results are hit and miss — leave this empty unless you find a gap.</div></div>
+    </div>
+    <div class="section-h">Coach's memory</div>
     <div class="card">
       <div class="field" style="margin-bottom:12px">
         <label>Everything the coach should know about me</label>
@@ -471,7 +483,7 @@ a{color:var(--orange);}
         <input type="file" accept=".txt,.md,.json,text/plain" style="display:none" onchange="importMemory(this)" /></label>
       <button class="btn green" onclick="saveMemory()">Save to Coach's Memory</button>
     </div>
-    <div class="section-h">Morning Reminder</div>
+    <div class="section-h">Morning reminder</div>
     <div class="card">
       <div class="field" style="margin-bottom:12px"><label>Remind me to check in at</label>
         <input class="txtin" id="setRemindTime" type="time" value="07:00" /></div>
@@ -479,7 +491,7 @@ a{color:var(--orange);}
       <button class="btn sec" onclick="enableInAppReminder()">🔔 Enable in-app notification</button>
       <div id="remindMsg" class="hint mt" style="font-size:13px"></div>
     </div>
-    <div class="section-h">Profile & Rules</div>
+    <div class="section-h">Profile and rules</div>
     <div class="card">
       <div class="field"><label>Name</label><input class="txtin" id="setName" value="Amir" /></div>
       <div class="field"><label>Location</label>
@@ -503,16 +515,6 @@ a{color:var(--orange);}
     </div>
     <div class="section-h">Integrations</div>
     <div class="card" id="integList"></div>
-    <div class="section-h">Exercise catalogue</div>
-    <div class="card">
-      <div class="notebox mb">WorkoutX gives the coach 1,400+ exercises with animated demos, difficulty and equipment tags. Synced <b>once</b> into this device, then it works offline forever — no per-workout API calls.</div>
-      <div class="field" style="margin-bottom:12px"><label>WorkoutX API key</label>
-        <input class="txtin" id="setWxKey" type="password" placeholder="wx_..." />
-        <div class="hint mt">Free plan: 500 requests a month. A full sync uses about 120 of them, once.</div></div>
-      <button class="btn" onclick="saveWxKey()">Save key</button>
-      <button class="btn sec mt" onclick="startWxSync()">Download exercise catalogue</button>
-      <div id="wxMsg" class="hint mt" style="font-size:13px"></div>
-    </div>
     <div class="section-h">App and storage</div>
     <div class="card">
       <div id="storeStatus" class="hint" style="font-size:13px;line-height:1.7"></div>
@@ -1723,7 +1725,7 @@ function coachSystem(){
 "=== ANY STYLE OF TRAINING ===\n"+
 "Pilates, HIIT, boxing, circuits, kettlebells, calisthenics, mobility — build whatever he asks. Create a day type and list the moves, e.g.:\n[[CREATE_DAY_TYPE: Pilates | kind:strength | main:The Hundred, Roll-Up, Single-Leg Stretch, Teaser, Side Plank Leg Lift | note:Core control, slow tempo, breathe]]\nthen [[SET_WEEKDAY: Wednesday | Pilates]] (or [[SET_DAY: Pilates]] for today). Each move auto-loads a real demo.\n\n"+
 "=== REAL DEMOS FROM THE WEB (never guess) ===\n"+
-"NEVER invent or recall image/GIF URLs — they break. Every exercise auto-loads a real demo GIF fetched live from the web. To fetch or refresh one yourself:\n[[FIND_MEDIA: Exercise Name | short web search phrase]]  e.g. [[FIND_MEDIA: Teaser | pilates teaser exercise]]\nJust naming the exercise is usually enough. "+(mediaKey()? "(Web finder is ON.)" : "(Web finder is OFF — tell Amir to add a free Giphy key in Settings so demos load automatically.)")+"\n\n"+
+"NEVER invent or recall image/GIF URLs — they break. Every exercise auto-loads a real demo GIF fetched live from the web. To fetch or refresh one yourself:\n[[FIND_MEDIA: Exercise Name | short web search phrase]]  e.g. [[FIND_MEDIA: Teaser | pilates teaser exercise]]\nJust naming the exercise is usually enough. "+(wxHas()? "(He has the WorkoutX catalogue downloaded — "+wxCount()+" exercises with demos, so name any of them freely.)" : mediaKey()? "(Web finder is ON.)" : "(No exercise catalogue yet — tell Amir to download the WorkoutX catalogue in Settings so demos load automatically.)")+"\n\n"+
 "So \"make Monday cardio forever\" = [[CREATE_DAY_TYPE: Cardio Day]] + [[SET_WEEKDAY: Monday | Cardio Day]] + [[SET_CARDIO: Concept2 Row | 30 min | Zone 2]]. Prefer EXACT library names where they fit; respect his TFCC wrist + Klinefelter recovery. Use [[FIND_MEDIA]] for demos, never raw URLs.";
   const state=
 "\n\nLIVE APP STATE:\n- TIME TODAY: "+timeBudget().mins+" minutes"+(timeBudget().row?" (including a "+(timeBudget().rowMins||10)+" min rowing warm-up)":"")+
@@ -2164,7 +2166,7 @@ function applyCoachDirectivesInner(reply){
     notes.push("🔎 Finding a web demo for "+nm+"…");
     resolveExerciseMedia(nm,(q||nm+" exercise proper form").trim()).then(url=>{
       if(url){ try{ if(DB.workout) renderWorkoutSheet(DB.workout); }catch(e){} toast("Demo added · "+nm); }
-      else toast("No clip found for "+nm+(mediaKey()?"":" — add a free Giphy key in Settings"));
+      else toast("No clip found for "+nm+(wxHas()||mediaKey()?"":" — download the exercise catalogue in Settings"));
     });
     return "";
   });
@@ -2603,7 +2605,7 @@ function scheduleInApp(){
    v18 ADDITIONS — draggable rest timer · weekly training memory · AI planner
    · Firestore sync
    ========================================================================== */
-const APP_VERSION="v28 · 2026-08-04";
+const APP_VERSION="v29 · 2026-08-04";
 
 /* ===== 1. REST TIMER — drag it anywhere so it never blocks the chat box ===== */
 let _rtDrag=null;
