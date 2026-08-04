@@ -1,12 +1,70 @@
-AMIR PT — v54 · 04/08/2026
+AMIR PT — v55 · 04/08/2026
 ==========================
 
 Deploy exactly as before: index.html, sw.js, manifest.json and the two icons
 in the same folder, at the repo root. Filenames are case-sensitive —
 index.html, never Index.html.
 
-Check it landed: Settings → bottom → "Amir PT · v54 · 04/08/2026".
+Check it landed: Settings → bottom → "Amir PT · v55 · 04/08/2026".
 Nothing in this update touches your data. Every logged set survives.
+
+
+WHAT'S NEW IN v55
+=================
+
+NEW APP ICON — THE PT MARK
+---------------------------
+Your orange PT icon is in. Two things were done to it first:
+
+  MADE FULL-BLEED. iOS applies its OWN rounded mask to a home-screen icon. The
+  artwork already had rounded corners with transparency around them, so it would
+  have been rounded twice, with dark corners showing through. It's been cropped
+  19% past its own border so the square is edge-to-edge orange and iOS's mask is
+  the only rounding.
+
+  MADE OPAQUE. Transparency in an apple-touch-icon composites against black on
+  some iOS versions. There is none left.
+
+Supplied at 1024x1024 and 180x180. The browser-tab favicon is a matching PT
+mark drawn inline, so it needs no network.
+
+FILES CHANGED: index.html, apple-touch-icon.png, apple-touch-icon-180.png.
+UPLOAD ALL THREE. The old index.html pointed at an inline barbell drawing
+rather than at the PNGs, so replacing only the images would change nothing.
+
+
+CHANGING THE ICON MEANS DELETING AND RE-ADDING — DO THIS FIRST
+---------------------------------------------------------------
+iOS snapshots the icon when the shortcut is created. An existing home-screen
+icon will NOT update, however many times you redeploy. You have to remove it
+and add it again — and removing a home-screen web app on iOS DELETES ITS
+STORAGE, which is every set you have logged on that device.
+
+Do these three, in this order, BEFORE you delete anything:
+
+  1. Settings -> Cloud sync -> WRITE DOWN YOUR SYNC ID.
+     This is the step people skip. A fresh install starts with the DEFAULT id
+     (amir-9k3xq7). If you ever changed yours, the new copy cannot find your
+     data — and you cannot look the old id up, because you just deleted the
+     app that was holding it.
+
+  2. Settings -> Cloud sync -> "Check my cloud backup".
+     "In the cloud" must match "On this device". If it is behind, tap Sync now
+     and check again.
+
+  3. Settings -> Export a backup (JSON).
+     A file on your phone that nothing can evict. Thirty seconds, belt and
+     braces.
+
+THEN:
+  4. Deploy v55 (index.html + both PNGs).
+  5. Delete the home-screen icon.
+  6. Safari -> your site -> Share -> Add to Home Screen. New icon appears.
+  7. Open it. The "Nothing logged on this device" card appears: type your Sync
+     ID, tap "Restore my history". Everything comes back.
+
+Deploy v55 and delete/re-add in one go — that way you pay the cost once and
+pick up everything from v48 to v55 at the same time.
 
 
 WHAT'S NEW IN v54
