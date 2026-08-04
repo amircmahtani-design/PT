@@ -1,4 +1,4 @@
-AMIR PT — v38 · 2026-08-04
+AMIR PT — v39 · 2026-08-04
 ==========================
 
 WHAT TO UPLOAD
@@ -21,7 +21,7 @@ FILENAMES ARE CASE-SENSITIVE. It must be index.html, not Index.html.
 AFTER DEPLOYING
 ---------------
 1. Open the site, go to Settings, scroll to the bottom.
-   The line should read: Amir PT · v38 · 2026-08-04
+   The line should read: Amir PT · v39 · 2026-08-04
    If it says anything else, the old file is still being served — hard refresh.
 
 2. Settings → App & Storage tells you the truth about your install:
@@ -217,7 +217,7 @@ default personality line, so write it as instructions:
   "Blunt. No cheerleading. Short sentences. Tell me when I'm being soft,
    but never make light of the Klinefelter or the wrist."
 
-FIXED IN v38: the "Coaching rules" and "Injuries and medical" boxes were
+FIXED IN v39: the "Coaching rules" and "Injuries and medical" boxes were
 saved and redisplayed but never actually sent to the coach. Everything you
 had typed there had been ignored. All three now reach the prompt.
 
@@ -240,7 +240,7 @@ the home-screen app from then on, not Safari - two copies with the same
 Sync ID will merge, but it's simpler to use one.
 
 
-HOW DEMOS GET RESOLVED (v38)
+HOW DEMOS GET RESOLVED (v39)
 ----------------------------
 Your exercise names and WorkoutX's names rarely match exactly
 ("Barbell Back Squat" vs "barbell full squat"). Resolution order:
@@ -260,3 +260,23 @@ resolved. A NONE is cached too - it won't keep asking about the same one.
 If a demo looks wrong, tap "Wrong demo?" on the exercise. It clears the
 mapping, re-matches, and if the string matcher can't do it, asks the coach.
 The toast tells you which catalogue record it landed on.
+
+
+WHERE THE EXERCISE CATALOGUE IS (v39)
+-------------------------------------
+Two places, both obvious now:
+
+  Settings -> "Exercise catalogue" (now the FIRST section)
+      key, download button, and a search box listing what you have
+  Train tab -> "Browse all exercises"
+      full screen: search, filter by muscle, "doable here" vs everything,
+      demo thumbnails, tap Add to drop one into today's session
+
+SETTINGS NOW COLLAPSES
+----------------------
+Every section is closed by default - tap a heading to open it. Which ones
+you leave open is remembered.
+
+GIPHY IS GONE
+-------------
+Removed from Settings entirely. Demos come from WorkoutX now.

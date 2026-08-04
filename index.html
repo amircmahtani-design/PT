@@ -247,6 +247,27 @@ textarea.txtin{min-height:88px;resize:vertical;line-height:1.45;}
 .st{width:38px;height:38px;flex:0 0 auto;border-radius:11px;background:#0d0a07;border:1px solid var(--line);
   color:var(--txt);font-size:19px;font-weight:800;line-height:1;}
 .st:active{transform:scale(.94);}
+details.sec{margin:10px 0;}
+.secsum{list-style:none;cursor:pointer;display:flex;align-items:center;justify-content:space-between;
+  padding:14px 16px;background:var(--card);border:1px solid var(--hair);border-radius:var(--radius);
+  font-size:13px;font-weight:700;color:var(--txt);}
+.secsum::-webkit-details-marker{display:none;}
+.secsum:after{content:"+";font-size:19px;font-weight:800;color:var(--label);line-height:1;}
+details.sec[open] .secsum{border-radius:var(--radius) var(--radius) 0 0;border-bottom:none;color:var(--orange);}
+details.sec[open] .secsum:after{content:"\2212";}
+details.sec[open] > .card{border-radius:0 0 var(--radius) var(--radius);border-top:none;margin-bottom:0;}
+details.sec > .card{margin-bottom:0;}
+.brrow{display:flex;align-items:center;gap:11px;padding:9px 0;border-bottom:1px solid var(--hair);}
+.brrow:last-child{border-bottom:none;}
+.brrow img,.brrow .ph{width:54px;height:54px;flex:0 0 auto;border-radius:11px;object-fit:cover;background:#0d0a07;border:1px solid var(--line);}
+.brrow .meta{flex:1 1 auto;min-width:0;}
+.brrow .n{font-size:13.5px;font-weight:700;color:var(--txt);}
+.brrow .s{font-size:11.5px;color:var(--label);margin-top:2px;text-transform:capitalize;}
+.addbtn{flex:0 0 auto;background:var(--card2);border:1px solid var(--line);color:var(--txt);border-radius:10px;padding:8px 13px;font-size:12.5px;font-weight:700;}
+.catlist{margin-top:10px;max-height:none;}
+.brfilters{display:flex;flex-wrap:wrap;gap:6px;margin-top:10px;}
+.mchip{background:#0d0a07;border:1px solid var(--line);color:var(--muted);border-radius:9px;padding:7px 11px;font-size:12px;font-weight:700;text-transform:capitalize;}
+.mchip.on{background:var(--orange);color:#2a1405;border-color:transparent;}
 .steps{margin-top:9px;}
 .steps summary{font-size:12px;font-weight:700;color:var(--orange);cursor:pointer;list-style:none;}
 .steps summary::-webkit-details-marker{display:none;}
@@ -419,6 +440,7 @@ a{color:var(--orange);}
     <div class="head"><div><div class="greet">Log as you go</div><h1 class="display">Train</h1></div>
       <button class="btn sec" style="width:auto;padding:11px 14px;font-size:12px" onclick="generateWorkout()">Regenerate</button></div>
     <div id="readyTrain"></div>
+    <button class="btn sec mb" onclick="go('browse')">Browse all exercises</button>
     <button class="btn blue mb" id="planBtn" onclick="aiPlanToday(true)">Build today’s session</button>
     <div id="planOut"></div>
     <div id="workoutSheet"></div>
@@ -456,8 +478,41 @@ a{color:var(--orange);}
     <div id="histBody"></div>
   </section>
 
+  <section class="screen" id="s-browse">
+    <div class="head"><div><div class="greet">Every exercise you have</div><h1 class="display">Exercises</h1></div>
+      <button class="btn sec" style="width:auto;padding:11px 14px;font-size:12px" onclick="go('workout')">Done</button></div>
+    <div class="card">
+      <input class="txtin" id="brQ" placeholder="Search: squat, chest, dumbbell…" oninput="renderBrowse()" />
+      <div class="seg three mt" id="brLoc">
+        <button class="on" data-v="here" onclick="brPick(this)">Doable here</button>
+        <button data-v="all" onclick="brPick(this)">Everything</button>
+      </div>
+      <div class="brfilters" id="brMuscles"></div>
+    </div>
+    <div id="brCount" class="hint" style="margin:0 4px 10px"></div>
+    <div id="brList"></div>
+  </section>
   <section class="screen" id="s-settings">
     <div class="head"><div><div class="greet">Your coach's memory</div><h1 class="display">Settings</h1></div></div>
+    <div class="section-h">Exercise catalogue</div>
+    <div class="card">
+      <div class="notebox mb">WorkoutX gives the coach <b>1,400+ exercises</b> with animated demos, difficulty and equipment tags — so it can program far beyond the built-in list and still respect what you have in Madrid or Greece. Synced <b>once</b> onto this device, then it works offline forever with no per-workout API calls.</div>
+      <div class="field" style="margin-bottom:12px"><label>WorkoutX API key</label>
+        <input class="txtin" id="setWxKey" type="password" placeholder="wx_..." />
+        <div class="hint mt">Free plan: 500 requests a month. A full sync uses about 120 of them, once. Get a key at workoutxapp.com.</div></div>
+      <button class="btn" onclick="saveWxKey()">Save key</button>
+      <button class="btn sec mt" onclick="startWxSync()">Download exercise catalogue</button>
+      <div id="wxMsg" class="hint mt" style="font-size:13px"></div>
+      <div class="field mt" style="margin-bottom:0;border-top:1px solid var(--hair);padding-top:14px">
+        <label>Browse what you've downloaded</label>
+        <input class="txtin" id="setBrQ" placeholder="Search: squat, chest, dumbbell…" oninput="renderCatList()" />
+        <div id="setBrCount" class="hint mt"></div>
+        <div id="setBrList" class="catlist"></div>
+        <button class="btn sec mt" onclick="go('browse')">Open the full browser</button>
+      </div>
+
+    </div>
+
     <div class="section-h">AI coach</div>
     <div class="card">
       <div class="field" style="margin-bottom:14px"><label>Provider</label>
@@ -479,20 +534,6 @@ a{color:var(--orange);}
 
       <button class="btn mt" onclick="saveAI()">Save & Test Connection</button>
       <div id="aiTest" class="mt muted center" style="font-size:13px"></div>
-    </div>
-    <div class="section-h">Exercise catalogue</div>
-    <div class="card">
-      <div class="notebox mb">WorkoutX gives the coach <b>1,400+ exercises</b> with animated demos, difficulty and equipment tags — so it can program far beyond the built-in list and still respect what you have in Madrid or Greece. Synced <b>once</b> onto this device, then it works offline forever with no per-workout API calls.</div>
-      <div class="field" style="margin-bottom:12px"><label>WorkoutX API key</label>
-        <input class="txtin" id="setWxKey" type="password" placeholder="wx_..." />
-        <div class="hint mt">Free plan: 500 requests a month. A full sync uses about 120 of them, once. Get a key at workoutxapp.com.</div></div>
-      <button class="btn" onclick="saveWxKey()">Save key</button>
-      <button class="btn sec mt" onclick="startWxSync()">Download exercise catalogue</button>
-      <div id="wxMsg" class="hint mt" style="font-size:13px"></div>
-      <div class="field mt" style="margin-bottom:0;border-top:1px solid var(--hair);padding-top:14px">
-        <label>Giphy key <span class="hint" style="float:right;font-weight:600">optional fallback</span></label>
-        <input class="txtin" id="setGiphy" type="password" placeholder="only needed if WorkoutX misses something" />
-        <div class="hint mt">Only used for a move the catalogue doesn't have. Giphy is a meme library, so results are hit and miss — leave this empty unless you find a gap.</div></div>
     </div>
     <div class="section-h">Coach's memory</div>
     <div class="card">
@@ -758,6 +799,8 @@ function go(s){
   document.getElementById('chatBar').style.display = s==='coach'?'flex':'none';
   window.scrollTo(0,0);
   const rt=document.getElementById('restTimer'); if(rt) rt.classList.toggle('overchat', s==='coach');
+  if(s==='browse') renderBrowse();
+  if(s==='settings'){ collapsibleSettings(); renderCatList(); }
   if(s==='checkin') syncCheckinLoc();
   if(s==='coach') renderChat();
   if(s==='progress'){ drawChart(); renderRowingLog(); }
@@ -2812,7 +2855,7 @@ function extractChatGPT(json){ const data=JSON.parse(json); if(Array.isArray(dat
 const KNOWN_MODELS=["gpt-5.5","gpt-4o","gpt-4o-mini","gpt-4.1-mini"];
 function onModelChange(){ const sel=val('setModel'); document.getElementById('customModelWrap').style.display = sel==='__custom'?'block':'none'; }
 function saveAI(){
-  DB.ai.key=val('setKey').trim(); DB.ai.giphyKey=val('setGiphy').trim(); const sel=val('setModel'); const custom=val('setModelCustom').trim();
+  DB.ai.key=val('setKey').trim(); const sel=val('setModel'); const custom=val('setModelCustom').trim();
   DB.ai.model = sel==='__custom' ? (custom||'gpt-5.5') : sel; save();
   const out=document.getElementById('aiTest');
   if(DB.ai.provider==="demo"||!DB.ai.key){ out.textContent="Demo mode — offline coach active. Add a key for live AI + photos."; return; }
@@ -2888,7 +2931,7 @@ function scheduleInApp(){
    v18 ADDITIONS — draggable rest timer · weekly training memory · AI planner
    · Firestore sync
    ========================================================================== */
-const APP_VERSION="v38 · 2026-08-04";
+const APP_VERSION="v39 · 2026-08-04";
 
 /* ===== 1. REST TIMER — drag it anywhere so it never blocks the chat box ===== */
 let _rtDrag=null;
@@ -4087,6 +4130,101 @@ async function wxGifAuthed(name){
   }catch(err){ return null; }
 }
 
+/* ===== EXERCISE BROWSER =====
+   Everything the app knows about \u2014 built-ins plus whatever WorkoutX gave us. */
+let brState={q:"",loc:"here",m:null};
+function brPick(btn){
+  btn.parentElement.querySelectorAll('button').forEach(b=>b.classList.remove('on'));
+  btn.classList.add('on'); brState.loc=btn.dataset.v; renderBrowse();
+}
+function brMuscle(m){ brState.m=(brState.m===m)?null:m; renderBrowse(); }
+function browseMatches(q,locMode,muscle){
+  const term=String(q||"").toLowerCase().trim();
+  const words=term.split(/\s+/).filter(Boolean);
+  return allExNames().filter(n=>{
+    if(locMode!=="all" && !canDoHere(n)) return false;
+    const e=EX(n)||{};
+    if(muscle && ((e.m||[])[0]!==muscle)) return false;
+    if(!words.length) return true;
+    const hay=(n+" "+((e.m||[]).join(" "))+" "+(e.eq||"")+" "+
+      ({bw:"bodyweight",db:"dumbbell",bb:"barbell",mach:"machine cable",band:"band",bar:"pull-up bar",kb:"kettlebell"}[e.eq]||"")).toLowerCase();
+    return words.every(w=>hay.indexOf(w)>=0);
+  }).sort((a,b)=>(gearRank(a)-gearRank(b))||a.localeCompare(b));
+}
+const EQLABEL={bw:"bodyweight",db:"dumbbell",bb:"barbell",mach:"machine",band:"band",bar:"pull-up bar",kb:"kettlebell",other:"other kit"};
+function browseRowHTML(n,withAdd){
+  const e=EX(n)||{}, img=mediaFor(n);
+  return "<div class='brrow'>"+
+    (img? "<img loading='lazy' src='"+attrEsc(img)+"' alt=''/>" : "<div class='ph'></div>")+
+    "<div class='meta'><div class='n'>"+escapeHtml(n)+"</div>"+
+      "<div class='s'>"+((e.m||[]).join(" \u00b7 ")||"\u2014")+"  \u2014  "+(EQLABEL[e.eq]||"bodyweight")+"</div></div>"+
+    (withAdd? "<button class='addbtn' onclick=\"browseAdd('"+jsAttr(n)+"')\">Add</button>" : "")+
+  "</div>";
+}
+function renderBrowse(){
+  const list=document.getElementById('brList'); if(!list) return;
+  brState.q=(document.getElementById('brQ')||{}).value||"";
+  const mus=document.getElementById('brMuscles');
+  if(mus) mus.innerHTML=MGROUPS.map(m=>
+    "<button class='mchip"+(brState.m===m?" on":"")+"' onclick=\"brMuscle('"+m+"')\">"+m+"</button>").join('');
+  const res=browseMatches(brState.q,brState.loc,brState.m);
+  const c=document.getElementById('brCount');
+  if(c) c.textContent=res.length+" exercise"+(res.length===1?"":"s")+
+    (brState.loc==="here"? " you can do in "+LOC().label : " in total")+
+    (wxHas()? "" : " \u2014 download the catalogue in Settings for 1,400 more");
+  list.innerHTML=res.length? res.slice(0,300).map(n=>browseRowHTML(n,true)).join('')
+    : "<div class='card'><div class='muted' style='font-size:14px'>Nothing matches that. Try a muscle, a piece of kit, or part of the name.</div></div>";
+}
+function browseAdd(name){
+  coachEnsureWorkout();
+  if((DB.workout.main||[]).some(e=>e.name===name)){ toast("Already in today's session"); return; }
+  DB.workout.main.push(exObject(name)); finalizeCoachEdit();
+  toast("Added \u00b7 "+name);
+}
+/* Compact version for the Settings card. */
+function renderCatList(){
+  const list=document.getElementById('setBrList'); if(!list) return;
+  const q=(document.getElementById('setBrQ')||{}).value||"";
+  const res=browseMatches(q,"all",null);
+  const c=document.getElementById('setBrCount');
+  if(c) c.textContent=res.length+" exercise"+(res.length===1?"":"s")+" available"+(q?" for \u201c"+q+"\u201d":"");
+  list.innerHTML=res.slice(0,60).map(n=>browseRowHTML(n,false)).join('')+
+    (res.length>60? "<div class='sm' style='padding:8px 2px'>\u2026 and "+(res.length-60)+" more. Search to narrow it down.</div>" : "");
+}
+
+/* ===== COLLAPSIBLE SETTINGS =====
+   Wrap every section header and its cards into a details block, once. */
+function collapsibleSettings(){
+  const root=document.getElementById('s-settings'); if(!root||root.dataset.collapsed==="1") return;
+  const kids=[...root.children];
+  const open=(DB.prefs&&DB.prefs.openSec)||{};
+  let current=null, bucket=[];
+  const flush=()=>{
+    if(!current) return;
+    const title=current.textContent.trim();
+    const d=document.createElement('details');
+    d.className='sec';
+    if(open[title]) d.open=true;
+    const sum=document.createElement('summary');
+    sum.className='secsum'; sum.textContent=title;
+    d.appendChild(sum);
+    bucket.forEach(n=>d.appendChild(n));
+    current.replaceWith(d);
+    d.addEventListener('toggle',()=>{
+      DB.prefs=DB.prefs||{}; DB.prefs.openSec=DB.prefs.openSec||{};
+      DB.prefs.openSec[title]=d.open; save();
+      if(d.open && title==="Exercise catalogue") renderCatList();
+    });
+    current=null; bucket=[];
+  };
+  kids.forEach(el=>{
+    if(el.classList&&el.classList.contains('section-h')){ flush(); current=el; }
+    else if(current) bucket.push(el);
+  });
+  flush();
+  root.dataset.collapsed="1";
+}
+
 /* ===== 10. FIRESTORE — history that outlives this phone ===== */
 let _fbReady=false,_fs=null,_cloudTimer=null;
 const CLOUD_SKIP=["photos","chat","cloud","ai","wx","workout","_rev"];
@@ -4337,7 +4475,7 @@ function boot(){
   document.getElementById('todayDate').textContent=d.toLocaleDateString('en-GB',{weekday:'long',day:'numeric',month:'long'});
   document.getElementById('greetName').textContent=DB.profile.name||"Amir";
   document.getElementById('setKey').value=DB.ai.key||"";
-  { const g=document.getElementById('setGiphy'); if(g) g.value=DB.ai.giphyKey||""; }
+
   if(KNOWN_MODELS.includes(DB.ai.model)){ document.getElementById('setModel').value=DB.ai.model; } else if(DB.ai.model){ document.getElementById('setModel').value='__custom'; document.getElementById('setModelCustom').value=DB.ai.model; }
   onModelChange();
   document.getElementById('setMemory').value=DB.memory||""; memInfo();
@@ -4359,6 +4497,7 @@ function boot(){
   { const v=document.getElementById('verLine'); if(v) v.textContent="Amir PT · "+APP_VERSION; }
 }
 boot();
+try{ collapsibleSettings(); }catch(e){}
 initRestDrag();
 registerSW();
 loadPhotos();
