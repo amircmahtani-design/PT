@@ -515,6 +515,9 @@ a{color:var(--orange);}
       <div class="hint mt">Restores from your cloud backup if there is one (free), otherwise downloads from WorkoutX.</div>
       <button class="btn sec mt" onclick="saveWxKey()">Save key only</button>
       <button class="btn sec mt" onclick="backupCatalogueNow()">Save my exercises to the cloud</button>
+      <button class="btn sec mt" onclick="exportCatalogue()">Save my exercises to a file</button>
+      <label class="btn ghost mt" style="text-align:center;cursor:pointer">Load exercises from a file
+        <input type="file" accept="application/json" onchange="importCatalogue(this)" style="display:none"></label>
       <button class="btn sec mt" onclick="matchAllExercises()">Match demos to my exercises</button>
       <button class="btn ghost mt" onclick="startWxSync(true)">Force a fresh download</button>
       <div id="wxStatus" class="hint mt" style="font-size:12.5px"></div>
@@ -600,6 +603,7 @@ a{color:var(--orange);}
     <div class="section-h">App and storage</div>
     <div class="card">
       <div id="storeStatus" class="hint" style="font-size:13px;line-height:1.7"></div>
+      <button class="btn sec mt" onclick="makeStoragePermanent()">Make storage permanent</button>
       <button class="btn sec mt" onclick="renderStorageStatus()">Check again</button>
       <button class="btn ghost mt" onclick="purgePhotos()">Clear physique photos</button>
     </div>
@@ -2943,13 +2947,21 @@ function saveProfile(){
 }
 function exportData(){
   const out=Object.assign({},DB,{photos:(DB.photos||[]).map(p=>Object.assign({},p,{src:photoSrc(p)}))});
+  /* The catalogue lives in IndexedDB, so it was never in these files. It is now. */
+  try{ if(typeof WXIDX!=="undefined" && Object.keys(WXIDX).length) out._catalogue=WXIDX; }catch(e){}
   const blob=new Blob([JSON.stringify(out,null,2)],{type:"application/json"}); const a=document.createElement('a'); a.href=URL.createObjectURL(blob); a.download="amirpt-backup-"+today()+".json"; a.click(); toast("Backup downloaded"); }
 function importData(inp){ const f=inp.files[0]; if(!f) return; const rd=new FileReader();
   rd.onload=e=>{ try{ const parsed=JSON.parse(e.target.result);
     if(!parsed||typeof parsed!=='object'||!('profile' in parsed||'strength' in parsed)){ toast("That doesn't look like an Amir PT backup"); return; }
     if(!confirm("Restore this backup? It replaces the data currently on this device.")) return;
+    const cat=parsed._catalogue; delete parsed._catalogue;
     DB=mergeDefaults(parsed); DB.workout=null; save();
-    loadPhotos().then(()=>{ boot(); go('settings'); toast("Backup restored ✅"); });
+    const after=()=>{ boot(); go('settings'); toast("Backup restored ✅"+(cat?" · "+Object.keys(cat).length+" exercises":"")); };
+    if(cat && typeof cat==="object"){
+      WXIDX=cat; catInvalidate();
+      DB.wx=DB.wx||{}; DB.wx.count=wxCount();
+      wxSaveCatalogue().then(()=>loadPhotos()).then(after);
+    } else loadPhotos().then(after);
   }catch(err){ toast("Couldn't read that file"); } };
   rd.readAsText(f); inp.value=""; }
 function resetAll(){ if(confirm("Reset all data? This can't be undone.")){
@@ -2987,7 +2999,7 @@ function scheduleInApp(){
    v18 ADDITIONS — draggable rest timer · weekly training memory · AI planner
    · Firestore sync
    ========================================================================== */
-const APP_VERSION="v43 · 2026-08-04";
+const APP_VERSION="v45 · 2026-08-04";
 
 /* ===== 1. REST TIMER — drag it anywhere so it never blocks the chat box ===== */
 let _rtDrag=null;
@@ -3627,6 +3639,23 @@ function weightSeries(){
 function isInstalled(){
   try{ return (window.matchMedia && window.matchMedia('(display-mode: standalone)').matches) || navigator.standalone===true; }
   catch(e){ return false; }
+}
+/* Browsers evict storage from sites they think you don't care about.
+   This asks for an exemption and reports the honest answer. */
+async function makeStoragePermanent(){
+  const el=document.getElementById('storeStatus');
+  if(!navigator.storage||!navigator.storage.persist){
+    if(el) el.innerHTML="\u2717 This browser doesn't support persistent storage. Keep a file backup instead.";
+    return;
+  }
+  try{
+    const already=await navigator.storage.persisted();
+    const ok=already || await navigator.storage.persist();
+    if(el) el.innerHTML= ok
+      ? "\u2705 <b>Persistent storage granted.</b> This browser won't clear your data to reclaim space."
+      : "\u26a0\ufe0f The browser declined. It usually grants this once the site is bookmarked or installed \u2014 in Chrome, use the install icon in the address bar. Until then, keep a file backup and cloud sync on.";
+    setTimeout(renderStorageStatus,2500);
+  }catch(e){ if(el) el.innerHTML="\u2717 Couldn't ask: "+(e&&e.message||e); }
 }
 async function renderStorageStatus(){
   const el=document.getElementById('storeStatus'); if(!el) return;
@@ -4319,6 +4348,44 @@ async function matchAllExercises(){
 }
 
 /* Explicit, so he never has to wonder whether it happened. */
+/* A file on disk is the one copy no browser can throw away. */
+function exportCatalogue(){
+  if(!wxCount()){ wxMsg("\u2717 Nothing downloaded on this device to save."); return; }
+  const blob=new Blob([JSON.stringify({kind:"amirpt-exercises",at:new Date().toISOString(),
+    count:wxCount(),items:WXIDX,exMap:DB.exMap||{}},null,0)],{type:"application/json"});
+  const a=document.createElement('a'); a.href=URL.createObjectURL(blob);
+  a.download="amirpt-exercises-"+today()+".json"; a.click();
+  wxMsg("\u2705 Saved <b>"+wxCount()+" exercises</b> to your downloads folder. Keep that file \u2014 loading it back costs nothing and works with no internet.");
+}
+function importCatalogue(inp){
+  const fl=inp.files[0]; if(!fl) return; inp.value="";
+  const rd=new FileReader();
+  rd.onload=async e=>{
+    try{
+      const o=JSON.parse(e.target.result);
+      const raw=o.items||o._catalogue||o;
+      /* Only accept things that actually look like exercise records. */
+      const items={};
+      if(raw && typeof raw==="object"){
+        Object.keys(raw).forEach(k=>{
+          const r=raw[k];
+          if(r && typeof r==="object" && (r.name||r.m||r.eq)) items[r.name||k]=r;
+        });
+      }
+      if(!Object.keys(items).length){ wxMsg("\u2717 That file has no exercises in it."); return; }
+      WXIDX=Object.assign({},WXIDX,items);
+      if(o.exMap) DB.exMap=Object.assign({},o.exMap,DB.exMap||{});
+      catInvalidate();
+      const stored=await wxSaveCatalogue();
+      DB.wx=DB.wx||{}; DB.wx.count=wxCount(); save();
+      wxMsg("\u2705 Loaded <b>"+wxCount()+" exercises</b>"+
+        (stored===true?" and saved them on this device.":stored==="local"?" (fallback store).":" \u2014 \u26a0\ufe0f but this browser refused to save them."));
+      try{ renderCatList(); if(DB.workout) renderWorkoutSheet(DB.workout); }catch(err){}
+    }catch(err){ wxMsg("\u2717 Couldn't read that file."); }
+    finally{ renderWxFields(); }
+  };
+  rd.readAsText(fl);
+}
 let _backingUp=false;
 async function backupCatalogueNow(){
   if(_backingUp) return;
@@ -4348,7 +4415,9 @@ function fatRecord(o){
   return {name:o.n,eq:o.e,m:o.m||["core"],gif:o.g||null,timed:!!o.t,pop:o.p||null,
           cue:o.c||"Control every rep.",steps:o.s||[],wristAlt:"Neutral grip if the wrist complains"};
 }
-function catDocRef(i){ return _fs.collection("amirpt_cat").doc(String((DB.cloud.syncId||"amir-pt")).trim()+"_"+i); }
+/* Same collection as everything else, so the rules he already published cover
+   it. A separate collection would need another console change for no benefit. */
+function catDocRef(i){ return _fs.collection("amirpt").doc(String((DB.cloud.syncId||"amir-pt")).trim()+"__cat"+i); }
 async function catBackup(onProgress){
   if(!(await cloudInit())) return false;
   const keys=Object.keys(WXIDX);
@@ -4546,7 +4615,8 @@ function cloudErrHelp(e,verb){
   if(/permission|insufficient/i.test(m))
     return "\u2717 Firestore refused to "+verb+" it.<br><b>Two things to check in the Firebase console:</b><br>"+
       "1. Authentication \u2192 Sign-in method \u2192 <b>Anonymous</b> must be Enabled.<br>"+
-      "2. Firestore \u2192 Rules \u2192 must allow /amirpt/{docId} for signed-in users, and you must click <b>Publish</b>.";
+      "2. Firestore \u2192 Rules \u2192 must contain <code>match /amirpt/{docId} { allow read, write: if request.auth != null; }</code> \u2014 and you must press <b>Publish</b> after pasting it.<br>"+
+      "The rules text is in <b>firestore-rules.txt</b> in the zip.";
   if(/not-found|NOT_FOUND|database/i.test(m))
     return "\u2717 No Firestore database in that project yet.<br>Firebase console \u2192 <b>Firestore Database</b> \u2192 Create database \u2192 production mode.";
   if(/api-key|invalid|app-deleted|configuration/i.test(m))

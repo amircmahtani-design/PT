@@ -1,4 +1,4 @@
-AMIR PT — v43 · 2026-08-04
+AMIR PT — v45 · 2026-08-04
 ==========================
 
 WHAT TO UPLOAD
@@ -21,7 +21,7 @@ FILENAMES ARE CASE-SENSITIVE. It must be index.html, not Index.html.
 AFTER DEPLOYING
 ---------------
 1. Open the site, go to Settings, scroll to the bottom.
-   The line should read: Amir PT · v43 · 2026-08-04
+   The line should read: Amir PT · v45 · 2026-08-04
    If it says anything else, the old file is still being served — hard refresh.
 
 2. Settings → App & Storage tells you the truth about your install:
@@ -217,7 +217,7 @@ default personality line, so write it as instructions:
   "Blunt. No cheerleading. Short sentences. Tell me when I'm being soft,
    but never make light of the Klinefelter or the wrist."
 
-FIXED IN v43: the "Coaching rules" and "Injuries and medical" boxes were
+FIXED IN v45: the "Coaching rules" and "Injuries and medical" boxes were
 saved and redisplayed but never actually sent to the coach. Everything you
 had typed there had been ignored. All three now reach the prompt.
 
@@ -240,7 +240,7 @@ the home-screen app from then on, not Safari - two copies with the same
 Sync ID will merge, but it's simpler to use one.
 
 
-HOW DEMOS GET RESOLVED (v43)
+HOW DEMOS GET RESOLVED (v45)
 ----------------------------
 Your exercise names and WorkoutX's names rarely match exactly
 ("Barbell Back Squat" vs "barbell full squat"). Resolution order:
@@ -262,7 +262,7 @@ mapping, re-matches, and if the string matcher can't do it, asks the coach.
 The toast tells you which catalogue record it landed on.
 
 
-WHERE THE EXERCISE CATALOGUE IS (v43)
+WHERE THE EXERCISE CATALOGUE IS (v45)
 -------------------------------------
 Two places, both obvious now:
 
@@ -282,7 +282,7 @@ GIPHY IS GONE
 Removed from Settings entirely. Demos come from WorkoutX now.
 
 
-GETTING YOUR EXERCISES (v43) - ONE BUTTON
+GETTING YOUR EXERCISES (v45) - ONE BUTTON
 -----------------------------------------
 Settings -> Exercise catalogue -> "Get my exercises"
 
@@ -303,12 +303,12 @@ WHY YOU LOST THE 489
 The catalogue lives in IndexedDB. The write was fire-and-forget with the
 error swallowed, so if the browser refused it the app carried on as if it
 had worked - the exercises were only ever in memory and vanished on
-reload. v43 writes, reads it back, and tells you if it did not stick. If
+reload. v45 writes, reads it back, and tells you if it did not stick. If
 IndexedDB is blocked it falls back to localStorage, and it is backed up to
 your Firestore either way.
 
 
-IF DEMOS ARE MISSING (v43)
+IF DEMOS ARE MISSING (v45)
 --------------------------
 Settings -> Exercise catalogue -> "Match demos to my exercises"
 
@@ -332,7 +332,7 @@ actually reports zero remaining. A failed or partial sync now backs up what
 it did get, so nothing is wasted.
 
 
-GETTING THE CATALOGUE ONTO YOUR IPHONE (v43)
+GETTING THE CATALOGUE ONTO YOUR IPHONE (v45)
 --------------------------------------------
 ON THE DESKTOP, in order:
 
@@ -359,3 +359,40 @@ re-fetches the GIF properly with your key, and swaps it in.
 
 Your API key therefore needs to be on each device for demos to display.
 Turn on "Also sync my API keys" in Cloud sync and the phone gets it too.
+
+
+NOT LOSING THE DOWNLOADED EXERCISES (v45)
+-----------------------------------------
+Three copies. Do the first two now, they take a minute.
+
+  1. A FILE ON YOUR DISK  (nothing can evict this)
+     Settings -> Exercise catalogue -> "Save my exercises to a file"
+     Keep the .json somewhere sensible. "Load exercises from a file"
+     puts it back on any device, offline, for free.
+
+  2. YOUR CLOUD  (so the iPhone can get it)
+     Settings -> Exercise catalogue -> "Save my exercises to the cloud"
+     Then on the phone: "Get my exercises"
+
+  3. THIS BROWSER  (convenient, least reliable)
+     Settings -> App and storage -> "Make storage permanent"
+     Browsers clear storage for sites they think you don't use. This asks
+     for an exemption. Chrome usually grants it once the site is bookmarked
+     or installed - use the install icon in the address bar.
+
+ALSO FIXED: the normal Export backup never contained the catalogue, because
+it lives in IndexedDB rather than in the main data blob. It does now, so an
+"Export a backup" file restores your exercises as well as your training.
+
+
+v45 - THE CATALOGUE NOW SAVES TO THE CLOUD
+------------------------------------------
+It was writing to a second collection (amirpt_cat) that your published
+rules did not cover, so Firestore refused it. It now writes to the same
+amirpt collection as everything else, using document ids like
+
+    amirpt/<your sync id>__cat0, __cat1, __cat2 ...
+
+Your existing rule already allows this - the {docId} wildcard covers it.
+NO console change needed. Just deploy v45 and press
+"Save my exercises to the cloud" again.
