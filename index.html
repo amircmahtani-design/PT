@@ -543,8 +543,6 @@ a{color:var(--orange);}
   <section class="screen" id="s-workout">
     <div class="head"><div><div class="greet">Log as you go</div><h1 class="display">Train</h1></div>
       <button class="btn sec" style="width:auto;padding:11px 14px;font-size:12px" onclick="rerollWorkout()">New exercises</button></div>
-    <div id="readyTrain"></div>
-    <button class="btn sec mb" onclick="go('browse')">Browse all exercises</button>
     <button class="btn blue mb" id="planBtn" onclick="aiPlanToday(true)">Build today’s session</button>
     <div id="planOut"></div>
     <div id="workoutSheet"></div>
@@ -604,6 +602,7 @@ a{color:var(--orange);}
       <div class="field" style="margin-bottom:12px"><label>WorkoutX API key</label>
         <input class="txtin" id="setWxKey" type="password" placeholder="wx_..." />
         <div class="hint mt">Free plan: 500 requests a month. A full sync uses about 120 of them, once. Get a key at workoutxapp.com.</div></div>
+      <button class="btn sec mb" onclick="go('browse')">Browse all exercises</button>
       <button class="btn" onclick="getMyExercises()">Get my exercises</button>
       <div class="hint mt">Restores from your cloud backup if there is one (free), otherwise downloads from WorkoutX.</div>
       <button class="btn sec mt" onclick="saveWxKey()">Save key only</button>
@@ -3963,7 +3962,7 @@ function scheduleInApp(){
    v18 ADDITIONS — draggable rest timer · weekly training memory · AI planner
    · Firestore sync
    ========================================================================== */
-const APP_VERSION="v58 · 04/08/2026";
+const APP_VERSION="v59 · 04/08/2026";
 
 /* ===== 1. REST TIMER — drag it anywhere so it never blocks the chat box ===== */
 let _rtDrag=null;
@@ -4438,7 +4437,9 @@ async function firstRunRestore(){
 }
 function renderReadiness(){
   const html=readinessHTML();
-  ["readyToday","readyTrain"].forEach(id=>{ const el=document.getElementById(id); if(el) el.innerHTML=html; });
+  /* v59: Train no longer carries a second copy of the readiness card — it lives
+     on Home, where the check-in happens. Train is for training. */
+  ["readyToday"].forEach(id=>{ const el=document.getElementById(id); if(el) el.innerHTML=html; });
 }
 /* Plain-text version for the AI so it reasons from the same evidence Amir sees. */
 function readinessContext(){

@@ -1,12 +1,34 @@
-AMIR PT — v58 · 04/08/2026
+AMIR PT — v59 · 04/08/2026
 ==========================
 
 Deploy exactly as before: index.html, sw.js, manifest.json and the two icons
 in the same folder, at the repo root. Filenames are case-sensitive —
 index.html, never Index.html.
 
-Check it landed: Settings → bottom → "Amir PT · v58 · 04/08/2026".
+Check it landed: Settings → bottom → "Amir PT · v59 · 04/08/2026".
 Nothing in this update touches your data. Every logged set survives.
+
+
+WHAT'S NEW IN v59
+=================
+
+THE TRAIN PAGE IS FOR TRAINING NOW
+  Two things were sitting at the top of Train that pushed the actual workout
+  below the fold:
+
+  READINESS CARD REMOVED FROM TRAIN. "Nothing's flagging / green light / streak"
+  was rendered twice — once on Home and again on Train. It belongs on Home,
+  next to the check-in that produces it. Nothing is lost: its two buttons were
+  volume overrides, and the Train sheet already carries its own sets picker
+  ("2 sets · 8-12 reps") to do the same job in place.
+
+  BROWSE ALL EXERCISES MOVED TO SETTINGS. It now sits at the top of the
+  "Exercise catalogue" section, alongside the WorkoutX sync, importing and
+  exporting — with the rest of the library management, rather than competing
+  with your workout.
+
+  Train now opens straight onto: New exercises · Build today's session · your
+  session. The workout is the first thing you see.
 
 
 WHAT'S NEW IN v58
