@@ -245,6 +245,15 @@ textarea.txtin{min-height:88px;resize:vertical;line-height:1.45;}
 .mvb .mvtime{margin-top:7px;background:#1a120b;border:1px solid #3d2a15;color:var(--orange);border-radius:10px;
   padding:7px 12px;font-size:12.5px;font-weight:800;}
 .mvb .mvtime.run{background:#0c2716;border-color:#1fbf68;color:var(--green);}
+.splitsel{flex:0 0 auto;background:var(--card2);color:var(--txt);border:1px solid var(--line);border-radius:10px;
+  padding:9px 8px;font-size:13px;font-weight:700;max-width:150px;-webkit-appearance:none;appearance:none;
+  background-image:linear-gradient(45deg,transparent 50%,var(--muted) 50%),linear-gradient(135deg,var(--muted) 50%,transparent 50%);
+  background-position:calc(100% - 15px) calc(1em + 1px),calc(100% - 10px) calc(1em + 1px);
+  background-size:5px 5px,5px 5px;background-repeat:no-repeat;padding-right:28px;}
+.tmrpick{background:#12100d;border:1px solid var(--line);border-radius:14px;padding:13px;}
+.tmrpick .tpl{font-size:11.5px;font-weight:800;text-transform:uppercase;letter-spacing:.7px;color:var(--label);margin-bottom:9px;}
+.tmrpick .tprow{display:flex;align-items:center;gap:9px;flex-wrap:wrap;}
+.tmrpick .splitsel{flex:1 1 130px;max-width:none;}
 .syncdot{margin-top:10px;font-size:11.5px;font-weight:700;text-align:center;color:var(--dim);letter-spacing:.2px;}
 .syncdot.ok{color:#2f8f57;}
 .syncdot.dirty{color:var(--gold);}
@@ -881,6 +890,15 @@ async function restoreIfWiped(){ try{
 try{ if(navigator.storage&&navigator.storage.persist) navigator.storage.persist(); }catch(e){}
 let DB = load();
 function today(){ return new Date().toISOString().slice(0,10); }
+/* Day-first, for everything Amir actually reads: filenames, exports, labels.
+   today() stays year-first because it is a SORT KEY the app compares as text —
+   it is never shown on screen. See ukDate() for anything human-facing. */
+function ukDate(iso){
+  const d = iso? String(iso) : today();
+  const m = d.match(/^(\d{4})-(\d{2})-(\d{2})/);
+  return m? (m[3]+"/"+m[2]+"/"+m[1]) : d;
+}
+function ukFile(iso){ return ukDate(iso).replace(/\//g,"-"); }
 function fmt(s){ return String(s).replace(/\*\*(.+?)\*\*/g,'<b>$1</b>').replace(/\n/g,'<br>'); }
 function val(id){ const e=document.getElementById(id); return e?e.value:''; }
 
@@ -3317,11 +3335,11 @@ function renderItin(){
     const pill= splitPill(split);
     const col=splitColour(split);
     const last=lastDoneOf(split);
-    html+="<div class='itin-row "+(isToday?'today':'')+"' style='border-left:3px solid "+col+"' onclick='cycleDay("+dow+")'>"+
+    html+="<div class='itin-row "+(isToday?'today':'')+"' style='border-left:3px solid "+col+"'>"+
       "<div class='itin-day'>"+DOW[dow]+(isToday?" •":"")+"</div>"+
       "<div class='itin-split'><span class='splitchip' style='color:"+col+";border-color:"+col+"44;background:"+col+"1a'>"+split+"</span>"+
         (last? "<span class='itin-last'>"+last+"</span>" : "")+"</div>"+
-      "<div class='itin-edit'>✎</div></div>"; });
+      splitSelectHTML(dow,"sel"+dow,split)+"</div>"; });
   el.innerHTML=html+"<button class='addday' onclick='addDayTypePrompt()'>+ Add a session type (Pilates, Core, HIIT…)</button>";
 }
 /* "when did I last actually do this?" \u2014 read from what he logged, not the plan. */
@@ -3350,6 +3368,30 @@ function addDayTypePrompt(){
   if(!DB.dayTypes[name]) DB.dayTypes[name]={main:[],note:""};
   save(); renderItin();
   toast("Added \u00b7 "+name+" \u2014 tap a day to assign it");
+}
+/* v51 — pick a session type from a list instead of tapping through them.
+   cycleDay() is kept because the coach's God-mode commands still call it. */
+function splitSelectHTML(dow,id,cur){
+  const opts=allSplits().map(sp=>
+    "<option value='"+attrEsc(sp)+"'"+(sp===cur?" selected":"")+">"+escapeHtml(sp)+"</option>").join("");
+  return "<select class='splitsel' id='"+id+"' onchange='setDaySplit("+dow+",this.value)' "+
+         "onclick='event.stopPropagation()'>"+opts+"</select>";
+}
+function setDaySplit(dow,split){
+  if(!split) return;
+  const known=allSplits().includes(split);
+  DB.schedule[dow]=split;
+  if(!known){ DB.dayTypes=DB.dayTypes||{}; DB.dayTypes[split]={main:[],note:""}; }
+  /* Changing TODAY has to rebuild the session, not just relabel the row. */
+  if(dow===new Date().getDay()){
+    DB.dayOverride={date:today(),split};
+    DB.workout=null;
+    try{ ensureWorkout(); }catch(e){}
+    const t=document.getElementById('heroTitle'); if(t)t.textContent=split;
+  }
+  save(); renderItin(); renderTomorrow();
+  try{ renderWeek(); }catch(e){}
+  toast(DOW[dow]+" \u2192 "+split);
 }
 function cycleDay(dow){
   const SP=allSplits();
@@ -3518,9 +3560,22 @@ function saveProfile(){
 }
 function exportData(){
   const out=Object.assign({},DB,{photos:(DB.photos||[]).map(p=>Object.assign({},p,{src:photoSrc(p)}))});
+  /* A readable header, so opening the file tells you what it is and when it was
+     taken in day-first without having to decode anything. */
+  out._backup={ takenOn:ukDate(), takenAt:new Date().toLocaleString('en-GB'),
+                app:"Amir PT "+APP_VERSION, dateFormat:"Dates shown as DD/MM/YYYY. The internal 'date' keys stay YYYY-MM-DD because the app sorts and matches on them as text." };
+  /* Every logged session also carries a human-readable day-first label. */
+  try{
+    const lab={}; Object.entries(DB.strength||{}).forEach(([ex,arr])=>{
+      lab[ex]=(arr||[]).map(x=>ukDate(x.date)+": "+((x.sets||[]).map(t=>t.timed?(t.r+"s"):(t.w+"kg x "+t.r)).join(", ")));
+    });
+    out._readable={ sessions:lab,
+      rowing:(DB.rowing||[]).map(r=>ukDate(r.date)+": "+r.dist+" "+r.time),
+      completed:Object.entries(DB.completed||{}).map(([d,c])=>ukDate(d)+": "+(c.title||"session")+(c.durMs?(" ("+fmtDurWords(c.durMs)+")"):"")) };
+  }catch(e){}
   /* The catalogue lives in IndexedDB, so it was never in these files. It is now. */
   try{ if(typeof WXIDX!=="undefined" && Object.keys(WXIDX).length) out._catalogue=WXIDX; }catch(e){}
-  const blob=new Blob([JSON.stringify(out,null,2)],{type:"application/json"}); const a=document.createElement('a'); a.href=URL.createObjectURL(blob); a.download="amirpt-backup-"+today()+".json"; a.click(); toast("Backup downloaded"); }
+  const blob=new Blob([JSON.stringify(out,null,2)],{type:"application/json"}); const a=document.createElement('a'); a.href=URL.createObjectURL(blob); a.download="amirpt-backup-"+ukFile()+".json"; a.click(); toast("Backup downloaded"); }
 function importData(inp){ const f=inp.files[0]; if(!f) return; const rd=new FileReader();
   rd.onload=e=>{ try{ const parsed=JSON.parse(e.target.result);
     if(!parsed||typeof parsed!=='object'||!('profile' in parsed||'strength' in parsed)){ toast("That doesn't look like an Amir PT backup"); return; }
@@ -3570,7 +3625,7 @@ function scheduleInApp(){
    v18 ADDITIONS — draggable rest timer · weekly training memory · AI planner
    · Firestore sync
    ========================================================================== */
-const APP_VERSION="v49 · 04/08/2026";
+const APP_VERSION="v51 · 04/08/2026";
 
 /* ===== 1. REST TIMER — drag it anywhere so it never blocks the chat box ===== */
 let _rtDrag=null;
@@ -4952,7 +5007,7 @@ function exportCatalogue(){
   const blob=new Blob([JSON.stringify({kind:"amirpt-exercises",at:new Date().toISOString(),
     count:wxCount(),items:WXIDX,exMap:DB.exMap||{}},null,0)],{type:"application/json"});
   const a=document.createElement('a'); a.href=URL.createObjectURL(blob);
-  a.download="amirpt-exercises-"+today()+".json"; a.click();
+  a.download="amirpt-exercises-"+ukFile()+".json"; a.click();
   wxMsg("\u2705 Saved <b>"+wxCount()+" exercises</b> to your downloads folder. Keep that file \u2014 loading it back costs nothing and works with no internet.");
 }
 function importCatalogue(inp){
@@ -5137,17 +5192,34 @@ async function suggestTomorrow(){
   }catch(e){ console.warn(e); if(box) box.innerHTML="<div class='sm'>That broke: "+escapeHtml(String(e&&e.message||e))+"</div>"; }
   finally{ _suggesting=false; }
 }
+/* v51 — you shouldn't have to tap through six session types to reach Pilates.
+   Pick it straight from the list; the coach's suggestion sits underneath as an
+   opinion you can take or ignore. */
+function tomorrowPickHTML(){
+  const dow=tomorrowDow(), cur=DB.schedule[dow];
+  const col=splitColour(cur);
+  return "<div class='tmrpick'>"+
+    "<div class='tpl'>"+tomorrowName()+" \u2014 what do you fancy?</div>"+
+    "<div class='tprow'>"+
+      "<span class='splitchip' style='color:"+col+";border-color:"+col+"44;background:"+col+"1a'>"+escapeHtml(cur)+"</span>"+
+      splitSelectHTML(dow,"tmrSel",cur)+
+    "</div>"+
+    "<div class='sm' style='margin-top:7px'>Picking here sets "+tomorrowName()+" in your plan. The coach still adapts it to wherever you are and how you pull up.</div>"+
+  "</div>";
+}
 function renderTomorrow(){
   const box=document.getElementById('tmrBox'); if(!box) return;
   const t=DB.tomorrow;
   if(!t || t.date!==today()){
-    box.innerHTML="<button class='btn sec' onclick='suggestTomorrow()'>Ask the coach what I should do tomorrow</button>";
+    box.innerHTML=tomorrowPickHTML()+
+      "<button class='btn sec mt' onclick='suggestTomorrow()'>Or ask the coach what I should do</button>";
     return;
   }
   const col=splitColour(t.split);
   const already=DB.schedule[tomorrowDow()]===t.split;
   box.innerHTML=
-    "<div class='tmr' style='border-color:"+col+"55'>"+
+    tomorrowPickHTML()+
+    "<div class='tmr mt' style='border-color:"+col+"55'>"+
       "<div class='tl'>"+tomorrowName()+"</div>"+
       "<div class='tn' style='color:"+col+"'>"+escapeHtml(t.split)+"</div>"+
       (t.why? "<div class='tw'>"+fmt(escapeHtml(t.why))+"</div>" : "")+

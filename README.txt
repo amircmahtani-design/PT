@@ -1,12 +1,86 @@
-AMIR PT — v49 · 04/08/2026
+AMIR PT — v51 · 04/08/2026
 ==========================
 
 Deploy exactly as before: index.html, sw.js, manifest.json and the two icons
 in the same folder, at the repo root. Filenames are case-sensitive —
 index.html, never Index.html.
 
-Check it landed: Settings → bottom → "Amir PT · v49 · 04/08/2026".
+Check it landed: Settings → bottom → "Amir PT · v51 · 04/08/2026".
 Nothing in this update touches your data. Every logged set survives.
+
+
+WHAT'S NEW IN v51
+=================
+
+PICK TOMORROW FROM A LIST — NO MORE TAPPING THROUGH
+----------------------------------------------------
+Today tab, above the coach's suggestion: "Tomorrow — what do you fancy?" with
+a dropdown of every session type you have, custom ones included. One tap,
+choose Pilates, done. It writes straight into your weekly plan.
+
+The coach's "what should I do tomorrow" call is still there underneath as an
+opinion you can take or ignore.
+
+THE WEEKLY PLAN USES DROPDOWNS TOO
+  Every day in the plan had to be TAPPED THROUGH one type at a time to reach
+  the one you wanted — six taps to get to Pilates. Each row now has the same
+  dropdown. Changing today rebuilds today's session immediately rather than
+  just relabelling the row.
+
+
+LOCATION — WHAT CHANGES AND WHAT DOESN'T
+-----------------------------------------
+Set yourself to Madrid and:
+
+  YOUR WEEKLY PLAN DOES NOT CHANGE. Monday is still Push Day. The split is
+  what you're training, and that's independent of where you are.
+
+  THE TODAY TAB DOES SAY MADRID. The title stays "Push Day"; the line under it
+  reads "Today · Madrid · Dumbbells Only" — so you see at a glance which kit
+  the session was built for.
+
+  THE TRAIN TAB REBUILDS FOR THE KIT. Madrid is dumbbells + bodyweight + bands
+  only, so no barbell, no machines, no rower, and the Concept2 block doesn't
+  appear at all. Change location and the session regenerates by itself.
+
+  Greece goes further — no equipment at all, so it's bodyweight, shorter, and
+  AMRAP-style rather than fixed loads.
+
+Same plan, same intent, different tools.
+
+
+WHAT'S NEW IN v50
+=================
+
+DATES ARE DAY-FIRST EVERYWHERE YOU SEE THEM
+--------------------------------------------
+Already day-first before this: every date on screen (en-GB throughout).
+Changed now:
+
+  Backup filename      amirpt-backup-04-08-2026.json   (was 2026-08-04)
+  Exercises filename   amirpt-exercises-04-08-2026.json
+  Version stamp        Amir PT · v50 · 04/08/2026
+
+Open a backup file and it now starts with a readable header — when it was
+taken, which app version — plus a "_readable" block listing every session,
+row and finished workout in plain day-first text:
+
+  "04/08/2026: 40kg x 10, 40kg x 10, 40kg x 9"
+
+ONE THING DELIBERATELY LEFT ALONE, AND WHY
+  Inside the data, each session is still keyed YYYY-MM-DD. That is not a
+  displayed date, it is a SORT KEY the app compares as text. Day-first sorts
+  wrongly as text:
+
+     correct  2025-12-31, 2026-01-01, 2026-08-04
+     wrong    01/01/2026, 04/08/2026, 31/12/2025
+
+  Changing it would also break matching (today's sets would stop being found),
+  and — the real danger — your phone and desktop would no longer agree on what
+  a date looks like, so the cloud merge would treat every session as new and
+  DUPLICATE your entire history on whichever device updated second.
+
+  You never see these keys. Every human-facing surface is day-first.
 
 
 WHAT'S NEW IN v49
