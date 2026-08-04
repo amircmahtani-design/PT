@@ -90,6 +90,15 @@ h2.display{font-size:25px;font-weight:800;letter-spacing:-.4px;margin:6px 0;colo
 .powerbox{display:flex;align-items:center;gap:16px;padding:2px 0;}
 .powerbox .num{font-weight:800;font-size:46px;line-height:1;color:var(--orange);letter-spacing:-2px;}
 .powerbox .lab{font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:.8px;color:var(--muted);}
+.demolist{max-height:340px;overflow-y:auto;margin-top:10px;-webkit-overflow-scrolling:touch;}
+.demorow{display:flex;align-items:center;gap:11px;width:100%;text-align:left;padding:8px;border-radius:11px;
+  background:transparent;border:1px solid transparent;margin-bottom:4px;}
+.demorow.on{border-color:var(--orange);background:#2a1c0e;}
+.demorow img{width:58px;height:58px;flex:0 0 auto;border-radius:10px;object-fit:cover;background:#0d0a07;border:1px solid var(--line);}
+.demorow .dm{flex:1 1 auto;min-width:0;}
+.demorow .dn{display:block;font-size:13px;font-weight:700;color:var(--txt);}
+.demorow .ds{display:block;font-size:11px;color:var(--label);margin-top:2px;text-transform:capitalize;}
+.demorow .dc{color:var(--orange);font-weight:800;font-size:16px;}
 .tmr{border:1px solid var(--line);border-radius:14px;padding:15px;background:#0d0a07;}
 .tmr .tl{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.7px;color:var(--label);}
 .tmr .tn{font-size:22px;font-weight:800;letter-spacing:-.3px;margin-top:3px;}
@@ -1160,7 +1169,11 @@ function refreshDemo(i){
   delete _gifTried[e.name]; delete _gifBlob[e.name];
   catInvalidate();
   let r=catMatch(e.name);
-  if(r){ toast("Demo from catalogue \u00b7 "+r.name); return; }
+  if(r){
+    const el2=document.getElementById('exb'+i); if(el2) el2.outerHTML=exBlockHTML(DB.workout.main[i],i);
+    toast("Demo from catalogue \u00b7 "+r.name+" \u2014 tap again to choose a different one");
+    return;
+  }
   if(mediaFor(e.name)){ toast("Using the built-in demo"); return; }
   if(!wxHas()){ toast("Download the exercise catalogue in Settings"); return; }
   if(DB.ai&&DB.ai.provider==="openai"&&DB.ai.key){
@@ -1168,8 +1181,11 @@ function refreshDemo(i){
     queueAiMatch(e.name,rec=>{
       const el2=document.getElementById('exb'+i); if(el2) el2.outerHTML=exBlockHTML(DB.workout.main[i],i);
       toast("Matched \u00b7 "+rec.name);
-    }).then(()=>{ if(!catMatch(e.name)) toast("The coach couldn't find a match for that one"); });
-  } else toast("Add your OpenAI key and the coach will find it");
+    }).then(()=>{
+      const el2=document.getElementById('exb'+i); if(el2) el2.outerHTML=exBlockHTML(DB.workout.main[i],i);
+      if(!catMatch(e.name)) toast("Coach couldn't place it \u2014 tap again to pick from the list");
+    });
+  } else { toast("No OpenAI key \u2014 tap again to pick from the list yourself"); }
   try{ hydrateMedia(); }catch(err){}
 }
 function allSplits(){ const base=SPLITS.filter(s=>s!=="Rest"); const custom=Object.keys(DB.dayTypes||{}); return [...base, ...custom, "Rest"]; }
@@ -1957,7 +1973,8 @@ function exBlockHTML(e,i){
       "<span class='d'>"+todaySets(e.name).length+" logged</span></div>"+
     lastTimeHTML(e.name)+
     "<button class='swapbtn' onclick='swapEx("+i+")'>Swap this exercise</button>"+
-    "<button class='swapbtn' style='margin-left:7px' onclick='refreshDemo("+i+")'>Wrong demo?</button>"+
+    "<button class='swapbtn' style='margin-left:7px' onclick='demoBtn("+i+")'>"+demoBtnLabel(e.name)+"</button>"+
+    "<div id='demo"+i+"' data-open='0'></div>"+
     "<div id='swap"+i+"' data-open='0'></div>"+
     "<div class='cue'><b>Cue:</b> "+e.cue+"</div>"+stepsHTML(e.name)+rec+wn+
     "<div>"+e.muscles.map(m=>"<span class='mini'>"+m+"</span>").join('')+"</div>"+
@@ -3069,7 +3086,7 @@ function scheduleInApp(){
    v18 ADDITIONS — draggable rest timer · weekly training memory · AI planner
    · Firestore sync
    ========================================================================== */
-const APP_VERSION="v46 · 2026-08-04";
+const APP_VERSION="v47 · 2026-08-04";
 
 /* ===== 1. REST TIMER — drag it anywhere so it never blocks the chat box ===== */
 let _rtDrag=null;
@@ -4373,6 +4390,23 @@ async function wxGifSrc(name){
   if(_gifBlob[name]) return _gifBlob[name];
   return e.gif;
 }
+/* Same fetch, but for a catalogue record by its own name (used by the picker). */
+async function catGifAuthed(catName){
+  const rec=(typeof WXIDX!=="undefined"&&WXIDX[catName])||null;
+  if(!rec||!rec.gif||!wxKey()) return null;
+  if(_gifBlob["cat:"+catName]) return _gifBlob["cat:"+catName];
+  try{
+    const r=await fetch(rec.gif,{headers:{"X-WorkoutX-Key":wxKey()}});
+    if(!r.ok) return null;
+    const u=URL.createObjectURL(await r.blob());
+    _gifBlob["cat:"+catName]=u; return u;
+  }catch(e){ return null; }
+}
+async function pickImgFail(img,catName){
+  try{ img.onerror=null; }catch(e){}
+  const u=await catGifAuthed(catName);
+  if(u&&img){ img.src=u; } else if(img){ img.style.visibility="hidden"; }
+}
 async function wxGifAuthed(name){
   const rec=catMatch(name)||EX(name);
   const src=rec&&rec.gif;
@@ -4471,6 +4505,102 @@ async function backupCatalogueNow(){
     } else wxMsg("\u2717 Couldn't save \u2014 check Cloud sync is connected.");
   }catch(e){ wxMsg(cloudErrHelp(e,"save to")); }
   finally{ _backingUp=false; renderWxFields(); }
+}
+
+/* ===== PICK THE DEMO YOURSELF =====
+   The matcher gets it wrong sometimes. Rather than one guess, show every
+   catalogue clip that could plausibly be this movement and let him choose. */
+function demoCandidates(exName,term){
+  if(typeof WXIDX==="undefined") return [];
+  const q=normTokens(term||exName), head=q[q.length-1];
+  const want=((EX(exName)||guessEx(exName)).m||["core"])[0];
+  const eqw=eqOf(exName);
+  const typed=!!(term&&term.trim());
+  const words=typed? normTokens(term) : [];
+  return Object.keys(WXIDX).map(k=>{
+    const r=WXIDX[k]; if(!r.gif) return null;
+    const tk=normTokens(k);
+    if(typed && !words.every(w=>tk.some(x=>x.indexOf(w)>=0))) return null;
+    let sc=0;
+    if(tk[tk.length-1]===head) sc+=5;
+    q.forEach(w=>{ if(tk.indexOf(w)>=0) sc+=2; });
+    if((r.m||[])[0]===want) sc+=2;
+    if(r.eq===eqw) sc+=2;
+    if(!typed && sc<3) return null;
+    return {k,sc,r};
+  }).filter(Boolean).sort((a,b)=>b.sc-a.sc || a.k.localeCompare(b.k)).slice(0,60);
+}
+let _pickTerm={};
+/* First press: let the coach have a go. Second press: show him the list. */
+const _demoAsked={};
+function demoBtnLabel(name){ return _demoAsked[name]? "Still wrong? Pick from the list" : "Wrong demo?"; }
+function demoBtn(i){
+  const ex=DB.workout&&DB.workout.main[i]; if(!ex) return;
+  const box=document.getElementById('demo'+i);
+  if(box && box.dataset.open==="1"){ box.innerHTML=""; box.dataset.open="0"; return; }
+  if(!_demoAsked[ex.name]){
+    _demoAsked[ex.name]=1;
+    refreshDemo(i);
+    return;
+  }
+  openDemoPicker(i);
+}
+function openDemoPicker(i){
+  const ex=DB.workout&&DB.workout.main[i]; if(!ex) return;
+  const box=document.getElementById('demo'+i); if(!box) return;
+  if(box.dataset.open==="1"){ box.innerHTML=""; box.dataset.open="0"; return; }
+  box.dataset.open="1";
+  if(_pickTerm[i]===undefined){
+    const tk=normTokens(ex.name);
+    _pickTerm[i]=tk[tk.length-1]||"";          // e.g. "squat"
+  }
+  renderDemoPicker(i);
+}
+function renderDemoPicker(i){
+  const ex=DB.workout&&DB.workout.main[i]; if(!ex) return;
+  const box=document.getElementById('demo'+i); if(!box) return;
+  if(!wxHas()){
+    box.innerHTML="<div class='altpick'><div class='sm'>No exercise catalogue on this device yet. Settings \u2192 Exercise catalogue \u2192 Get my exercises.</div></div>";
+    return;
+  }
+  const term=_pickTerm[i]||"";
+  const list=demoCandidates(ex.name,term);
+  const cur=(DB.exMap&&DB.exMap[ex.name])||"";
+  const rows=list.map(o=>
+    "<button class='demorow"+(cur===o.k?" on":"")+"' onclick=\"chooseDemo("+i+",'"+jsAttr(o.k)+"')\">"+
+      "<img loading='lazy' src='"+attrEsc(o.r.gif)+"' alt='' onerror=\"pickImgFail(this,'"+jsAttr(o.k)+"')\">"+
+      "<span class='dm'><span class='dn'>"+escapeHtml(o.k)+"</span>"+
+        "<span class='ds'>"+((o.r.m||[]).join(" \u00b7 "))+"  \u2014  "+(EQLABEL[o.r.eq]||"bodyweight")+"</span></span>"+
+      (cur===o.k? "<span class='dc'>\u2713</span>":"")+
+    "</button>").join('');
+  box.innerHTML=
+    "<div class='altpick'>"+
+      "<div class='sm' style='margin-bottom:8px'>Pick the clip that matches <b>"+escapeHtml(ex.name)+"</b>:</div>"+
+      "<input class='txtin' id='dq"+i+"' value='"+attrEsc(term)+"' placeholder='squat, press, row\u2026' "+
+        "oninput=\"_pickTerm["+i+"]=this.value; renderDemoPicker("+i+"); setTimeout(()=>{var e=document.getElementById('dq"+i+"'); if(e){e.focus(); e.setSelectionRange(e.value.length,e.value.length);} },0);\">"+
+      "<div class='demolist'>"+(rows||"<div class='sm' style='padding:10px 2px'>Nothing in the catalogue matches that word. Try a shorter one \u2014 'squat' rather than 'back squat'.</div>")+"</div>"+
+      "<div class='sm' style='margin-top:8px'>"+list.length+" clip"+(list.length===1?"":"s")+" shown"+
+        (cur? " \u00b7 currently using <b>"+escapeHtml(cur)+"</b>" : "")+"</div>"+
+      (cur? "<button class='swapbtn mt' onclick='clearDemo("+i+")'>Use no demo</button>":"")+
+    "</div>";
+}
+function chooseDemo(i,catName){
+  const ex=DB.workout&&DB.workout.main[i]; if(!ex) return;
+  DB.exMap=DB.exMap||{}; DB.exMap[ex.name]=catName;
+  if(DB.media) delete DB.media[ex.name];
+  if(DB.mediaPicked) delete DB.mediaPicked[ex.name];
+  delete _gifTried[ex.name]; delete _gifBlob[ex.name];
+  catInvalidate(); save();
+  const el=document.getElementById('exb'+i); if(el) el.outerHTML=exBlockHTML(ex,i);
+  toast("Demo set \u00b7 "+catName);
+  try{ catBackup(); }catch(e){}
+}
+function clearDemo(i){
+  const ex=DB.workout&&DB.workout.main[i]; if(!ex) return;
+  DB.exMap=DB.exMap||{}; DB.exMap[ex.name]="\u2205";
+  catInvalidate(); save();
+  const el=document.getElementById('exb'+i); if(el) el.outerHTML=exBlockHTML(ex,i);
+  toast("Demo cleared");
 }
 
 /* ===== WHAT SHOULD I DO TOMORROW? =====
