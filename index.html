@@ -247,6 +247,13 @@ textarea.txtin{min-height:88px;resize:vertical;line-height:1.45;}
 .st{width:38px;height:38px;flex:0 0 auto;border-radius:11px;background:#0d0a07;border:1px solid var(--line);
   color:var(--txt);font-size:19px;font-weight:800;line-height:1;}
 .st:active{transform:scale(.94);}
+.steps{margin-top:9px;}
+.steps summary{font-size:12px;font-weight:700;color:var(--orange);cursor:pointer;list-style:none;}
+.steps summary::-webkit-details-marker{display:none;}
+.steps summary:before{content:"\203A ";font-weight:800;}
+.steps[open] summary:before{content:"\2304 ";}
+.steps ol{margin:8px 0 0;padding-left:18px;}
+.steps li{font-size:12.5px;color:var(--muted);line-height:1.6;margin-bottom:5px;}
 .exsets{display:flex;align-items:center;gap:9px;margin-top:11px;}
 .exsets .l{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.7px;color:var(--label);}
 .exsets .n{min-width:26px;text-align:center;font-size:17px;font-weight:800;color:#fff;font-variant-numeric:tabular-nums;}
@@ -564,6 +571,7 @@ a{color:var(--orange);}
       <button class="btn green mt" onclick="saveCloud()">Save and connect</button>
       <button class="btn sec mt" onclick="cloudSyncNow()">Sync now</button>
       <button class="btn sec mt" onclick="cloudVerify()">Check my cloud backup</button>
+      <button class="btn sec mt" onclick="pushKeysNow()">Send my keys now</button>
       <button class="btn ghost mt" onclick="cloudRestore()">Restore from cloud</button>
       <div id="cloudMsg" class="hint mt" style="font-size:13px"></div>
     </div>
@@ -630,10 +638,10 @@ const EXIMG={
  "Hollow Hold":"https://fitsmove.com/videos/3420-ZuXu4Eq.gif",
  "DB Bench Press":"https://fitsmove.com/videos/0025-EIeI8Vf.gif","DB Shoulder Press":"https://fitsmove.com/videos/0426-A6wtbuL.gif",
  "DB Row":"https://fitsmove.com/videos/0027-eZyBC3j.gif","DB Romanian Deadlift":"https://fitsmove.com/videos/0085-wQ2c4XD.gif",
- "DB Front Squat":"https://fitsmove.com/videos/1760-yn8yg1r.gif","Barbell Back Squat":"https://fitsmove.com/videos/1760-yn8yg1r.gif",
+ "DB Front Squat":"https://fitsmove.com/videos/1760-yn8yg1r.gif",
  "Hammer Curl":"https://fitsmove.com/videos/0294-NbVPDMW.gif","Reverse Lunge":"https://fitsmove.com/videos/1460-IZVHb27.gif",
  "Diamond Push-up":"https://fitsmove.com/videos/0662-I4hDWkc.gif","Bench Dip":"https://fitsmove.com/videos/0201-3ZflifB.gif",
- "Decline Push-up":"https://fitsmove.com/videos/0662-I4hDWkc.gif","Side Plank":"https://fitsmove.com/videos/2135-VBAWRPG.gif"
+ "Side Plank":"https://fitsmove.com/videos/2135-VBAWRPG.gif"
 };
 const SPLITS=["Push Day","Pull Day","Legs & Core","Upper Body","Full Body","Rest"];
 const DOW=["Sun","Mon","Tue","Wed","Thu","Fri","Sat"];
@@ -670,7 +678,7 @@ const DEFAULTS = {
   photos:[], rowing:[],
   chat:[], streak:0, lastSessionDate:null, workout:null,
   integrations:{"Apple Watch":true,"Concept2 (manual)":true,"Photos":true,"Camera":false,"Notifications":true},
-  lib:{}, dayTypes:{}, media:{}, progression:{},
+  lib:{}, dayTypes:{}, media:{}, mediaPicked:{}, progression:{},
   nutrition:{calorieTarget:null, proteinTarget:null, phase:"", log:[]},
   cardio:null, readiness:null, aiPlan:null, restCall:null, setsOverride:null, completed:{},
   wx:{key:"", on:true, plan:"free", synced:null, count:0, quota:null, quotaLeft:null},
@@ -995,9 +1003,31 @@ function EX(name){ if(!name) return null; return (DB.lib&&DB.lib[name]) || EXDB[
 function allExNames(){ return [...new Set([...Object.keys(EXDB), ...Object.keys(DB.lib||{}), ...(typeof WXIDX!=="undefined"?Object.keys(WXIDX):[])])]; }
 /* The built-in set only \u2014 used where a huge list would be unhelpful. */
 function coreExNames(){ return [...new Set([...Object.keys(EXDB), ...Object.keys(DB.lib||{})])]; }
+/* Order matters. A WorkoutX record has a demo made FOR that exact movement;
+   EXIMG is my hand-written fallback table and was in some cases an approximation.
+   Only a demo Amir (or the coach) chose deliberately outranks the catalogue. */
+/* Look in the catalogue DIRECTLY. EX() prefers the built-in table, and built-ins
+   carry no demo \u2014 which is why a catalogue exercise that shares a name with a
+   built-in was falling through to the hand-written fallback. */
+function catGif(name){
+  if(typeof WXIDX==="undefined"||!name) return null;
+  const r=WXIDX[name]; return (r&&r.gif)||null;
+}
 function mediaFor(name){
-  const e=EX(name);
-  return (DB.media&&DB.media[name]) || EXIMG[name] || (e&&e.gif) || null;
+  const picked=DB.media&&DB.media[name];
+  if(picked && DB.mediaPicked && DB.mediaPicked[name]) return picked;   // he or the coach chose this
+  return catGif(name) || ((EX(name)||{}).gif) || picked || EXIMG[name] || null;
+}
+/* Forget whatever demo is cached for this exercise and fall back to the best source. */
+function refreshDemo(i){
+  const e=DB.workout&&DB.workout.main[i]; if(!e) return;
+  if(DB.media) delete DB.media[e.name];
+  if(DB.mediaPicked) delete DB.mediaPicked[e.name];
+  save();
+  const el=document.getElementById('exb'+i); if(el) el.outerHTML=exBlockHTML(e,i);
+  const src=mediaFor(e.name);
+  toast(src? "Demo refreshed" : "No demo for that one \u2014 download the catalogue in Settings");
+  try{ hydrateMedia(); }catch(err){}
 }
 function allSplits(){ const base=SPLITS.filter(s=>s!=="Rest"); const custom=Object.keys(DB.dayTypes||{}); return [...base, ...custom, "Rest"]; }
 function realMediaOnly(){ return DB.prefs && DB.prefs.visualMode==="real"; }
@@ -1021,7 +1051,7 @@ async function resolveExerciseMedia(name,query){
   if(EXIMG[name]) return EXIMG[name];
   const url=await giphyFind(query||(name+" exercise proper form"));
   if(url){ DB.media=DB.media||{}; DB.media[name]=url; save(); }
-  return url;
+  return url;   /* auto-fetched, so NOT marked as a deliberate pick */
 }
 /* After a sheet renders, fill any missing exercise demos from the web (throttled, cached). */
 async function hydrateMedia(){
@@ -1657,6 +1687,14 @@ function setChip(sset){
     ? "<span class='setchip'>"+dot+sset.r+"s hold</span>"
     : "<span class='setchip'>"+dot+sset.w+"kg × "+sset.r+"</span>";
 }
+/* WorkoutX ships real step-by-step instructions \u2014 better than my one-liners. */
+function stepsHTML(name){
+  const r=(typeof WXIDX!=="undefined"&&WXIDX[name])||null;
+  const steps=(r&&r.steps)||[];
+  if(steps.length<2) return "";
+  return "<details class='steps'><summary>How to do it</summary><ol>"+
+    steps.map(x=>"<li>"+escapeHtml(String(x))+"</li>").join("")+"</ol></details>";
+}
 function exBlockHTML(e,i){
   const rec=e.rec?"<div class='cue'><b>Load:</b> "+e.rec.text+"</div>":"";
   const wn=e.wristNote?"<div class='cue' style='color:var(--gold)'><b>⚠ TFCC swap:</b> "+e.wristNote+"</div>":"";
@@ -1673,8 +1711,9 @@ function exBlockHTML(e,i){
       "<span class='d'>"+todaySets(e.name).length+" logged</span></div>"+
     lastTimeHTML(e.name)+
     "<button class='swapbtn' onclick='swapEx("+i+")'>Swap this exercise</button>"+
+    "<button class='swapbtn' style='margin-left:7px' onclick='refreshDemo("+i+")'>Wrong demo?</button>"+
     "<div id='swap"+i+"' data-open='0'></div>"+
-    "<div class='cue'><b>Cue:</b> "+e.cue+"</div>"+rec+wn+
+    "<div class='cue'><b>Cue:</b> "+e.cue+"</div>"+stepsHTML(e.name)+rec+wn+
     "<div>"+e.muscles.map(m=>"<span class='mini'>"+m+"</span>").join('')+"</div>"+
     "<div class='setlog' id='sl"+i+"'>"+chips+"</div>"+input+
     "<button class='grouprest' onclick='groupRest("+i+")'>⏱ Rest before next exercise</button>"+
@@ -2150,6 +2189,8 @@ function coachSetCardio(raw){ const p=String(raw||"").split('|').map(x=>x.trim()
 function coachSetCardioIntervals(raw){ const p=String(raw||"").split('|').map(x=>x.trim()); const name=p.length>1?p[0]:((DB.cardio&&DB.cardio.name)||"Concept2 Row"); const intervals=p.length>1?p.slice(1).join('; '):p[0]; DB.cardio=Object.assign({},DB.cardio,{name,intervals}); save(); if(DB.workout)finalizeCoachEdit(); return {name,intervals}; }
 function coachSetCardioField(field,val){ DB.cardio=Object.assign({name:"Concept2 Row"},DB.cardio); DB.cardio[field]=String(val||"").trim(); save(); if(DB.workout)finalizeCoachEdit(); return DB.cardio[field]; }
 /* Media */
+/* An explicit URL from the coach is always a deliberate pick. */
+function markPicked(n){ DB.mediaPicked=DB.mediaPicked||{}; DB.mediaPicked[String(n).trim()]=1; }
 function coachSetExerciseMedia(nameRaw,url){ const n=resolveExName(nameRaw)||String(nameRaw).trim(); if(!n||!url) return null; DB.media[n]=String(url).trim(); if(DB._mediaMissing) DB._mediaMissing=DB._mediaMissing.filter(x=>x!==n); save(); if(DB.workout)finalizeCoachEdit(); return n; }
 function coachSetSectionMedia(match,url){ if(!match||!url) return null; DB.media[String(match).trim()]=String(url).trim(); save(); if(DB.workout)finalizeCoachEdit(); return String(match).trim(); }
 function coachMarkMediaMissing(nameRaw){ const n=(resolveExName(nameRaw)||nameRaw||"").trim(); if(!n) return null; if(DB.media) delete DB.media[n]; DB._mediaMissing=DB._mediaMissing||[]; if(!DB._mediaMissing.includes(n)) DB._mediaMissing.push(n); save(); if(DB.workout)finalizeCoachEdit(); return n; }
@@ -2277,12 +2318,13 @@ function applyCoachDirectivesInner(reply){
     const nm=String(name).trim(); if(!nm) return "";
     notes.push("🔎 Finding a web demo for "+nm+"…");
     resolveExerciseMedia(nm,(q||nm+" exercise proper form").trim()).then(url=>{
-      if(url){ try{ if(DB.workout) renderWorkoutSheet(DB.workout); }catch(e){} toast("Demo added · "+nm); }
+      if(url){ DB.mediaPicked=DB.mediaPicked||{}; DB.mediaPicked[nm]=1; save();
+               try{ if(DB.workout) renderWorkoutSheet(DB.workout); }catch(e){} toast("Demo added · "+nm); }
       else toast("No clip found for "+nm+(wxHas()||mediaKey()?"":" — download the exercise catalogue in Settings"));
     });
     return "";
   });
-  out=out.replace(/\[\[\s*SET_EXERCISE_MEDIA\s*:\s*([^|\]]+?)\s*\|\s*(https?:\/\/[^\]]+?)\s*\]\]/ig,(m,n,u)=>{ const r=coachSetExerciseMedia(n,u); if(r) notes.push("🎬 Media set → "+r); return ""; });
+  out=out.replace(/\[\[\s*SET_EXERCISE_MEDIA\s*:\s*([^|\]]+?)\s*\|\s*(https?:\/\/[^\]]+?)\s*\]\]/ig,(m,n,u)=>{ const r=coachSetExerciseMedia(n,u); if(r){ markPicked(r); save(); notes.push("Media set → "+r); } return ""; });
   out=out.replace(/\[\[\s*SET_(?:WARMUP|COOLDOWN)_MEDIA\s*:\s*([^|\]]+?)\s*\|\s*(https?:\/\/[^\]]+?)\s*\]\]/ig,(m,n,u)=>{ const r=coachSetSectionMedia(n,u); if(r) notes.push("🎬 Media set → "+r); return ""; });
   out=out.replace(/\[\[\s*MARK_MEDIA_MISSING\s*:\s*([^\]]+)\]\]/ig,(m,a)=>{ const r=coachMarkMediaMissing(a); if(r) notes.push("📷 Flagged missing media → "+r); return ""; });
   /* ---- History / progression ---- */
@@ -2717,7 +2759,7 @@ function scheduleInApp(){
    v18 ADDITIONS — draggable rest timer · weekly training memory · AI planner
    · Firestore sync
    ========================================================================== */
-const APP_VERSION="v35 · 2026-08-04";
+const APP_VERSION="v36 · 2026-08-04";
 
 /* ===== 1. REST TIMER — drag it anywhere so it never blocks the chat box ===== */
 let _rtDrag=null;
@@ -3958,9 +4000,8 @@ function toggleKeySync(el){
   DB.cloud.syncKeys=!DB.cloud.syncKeys;
   el.classList.toggle('on',DB.cloud.syncKeys);
   save();
-  cloudMsg(DB.cloud.syncKeys
-    ? "Keys will be included from the next sync. Make sure your Sync ID isn't guessable."
-    : "Keys stay on this device only.");
+  if(DB.cloud.syncKeys){ pushKeysNow(); }
+  else cloudMsg("Keys stay on this device only. (Any already in the backup stay there until the next sync.)");
 }
 function toggleCloud(el){ DB.cloud.on=!DB.cloud.on; el.classList.toggle('on',DB.cloud.on); save();
   if(DB.cloud.on) cloudSyncNow(); else cloudMsg("Sync off \u2014 data stays on this device only."); }
@@ -4059,6 +4100,27 @@ async function cloudPull(quiet){
   }catch(e){ cloudMsg(cloudErrHelp(e,"read from")); return null; }
 }
 /* Reads the cloud document and reports exactly what's in it. Writes nothing. */
+/* The toggle alone only queues a debounced push. This sends immediately and
+   tells him whether it actually landed. */
+async function pushKeysNow(){
+  DB.cloud=DB.cloud||{};
+  if(!DB.cloud.on){ cloudMsg("\u2717 Turn cloud sync on first."); return; }
+  const have=[];
+  if(DB.ai&&DB.ai.key) have.push("OpenAI");
+  if(DB.wx&&DB.wx.key) have.push("WorkoutX");
+  if(DB.ai&&DB.ai.giphyKey) have.push("Giphy");
+  if(!have.length){
+    cloudMsg("\u2717 There are no keys on <b>this</b> device to send. Paste them into Settings here first \u2014 or run this on the device that already has them.");
+    return;
+  }
+  DB.cloud.syncKeys=true;
+  const kw=document.getElementById('keySwitch'); if(kw) kw.classList.add('on');
+  save();
+  cloudMsg("<span class='spin'></span> Sending "+have.join(" and ")+"\u2026");
+  _cloudPulled=true;                       /* explicit user action on a device that has the keys */
+  const ok=await cloudPush(false);
+  if(ok) cloudMsg("\u2713 Sent "+have.join(" and ")+" to your backup. Now on your other device: enter the same Sync ID and tap <b>Restore</b>. Use <b>Check my cloud backup</b> here to confirm.");
+}
 async function cloudVerify(){
   cloudMsg("<span class='spin'></span> Checking your cloud backup\u2026");
   if(!DB.cloud||!DB.cloud.on){ cloudMsg("\u2717 Cloud sync is switched off."); return; }
@@ -4089,6 +4151,12 @@ async function cloudVerify(){
       "<div class='recrow'><span class='k'>Last written</span><span class='v'>"+when+"</span></div>"+
       "<div class='recrow'><span class='k'>In the cloud</span><span class='v'>"+sess+" sessions \u00b7 "+lifts+" lifts \u00b7 "+cks+" check-ins \u00b7 "+rws+" rows \u00b7 "+kb+" KB</span></div>"+
       "<div class='recrow'><span class='k'>On this device</span><span class='v'>"+L.sessions+" sessions \u00b7 "+L.lifts+" lifts \u00b7 "+L.checkins+" check-ins \u00b7 "+L.rows+" rows</span></div>"+
+      "<div class='recrow'><span class='k'>Keys in the cloud</span><span class='v'>"+
+        (d._keys
+          ? ((d._keys.openai?"\u2713 OpenAI":"\u2717 OpenAI")+" \u00b7 "+(d._keys.workoutx?"\u2713 WorkoutX":"\u2717 WorkoutX"))
+          : "\u2717 none stored")+"</span></div>"+
+      (d._keys? "" :
+        "<div class='sm' style='color:var(--gold);margin-top:8px'>Your keys are <b>not</b> in the backup. On the device that has them: turn on <b>Also sync my API keys</b>, then tap <b>Send my keys now</b>.</div>")+
       (behind? "<div class='sm' style='color:var(--gold);margin-top:8px'>This device has more than the cloud. Tap <b>Sync now</b> to push it up.</div>"
              : "<div class='sm' style='margin-top:8px'>Your history is safe off this device. If you lose the phone, install the app anywhere, set the same Sync ID, and tap Restore from cloud.</div>")
     );
