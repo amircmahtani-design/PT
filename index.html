@@ -427,7 +427,7 @@ a{color:var(--orange);}
           <button data-v="demo" onclick="segPick(this,'prov')">Demo (offline)</button></div></div>
       <div class="field" style="margin-bottom:14px"><label>OpenAI API Key</label>
         <input class="txtin" id="setKey" type="password" placeholder="sk-..." />
-        <div class="hint mt">Stored only on this device. Needs a paid account — gpt-5.5 & photo analysis don't work on the free tier.</div></div>
+        <div class="hint mt">Stored only on this device and <b>never synced to the cloud</b> — if your data was cleared you'll need to paste it again. Get one at <b>platform.openai.com/api-keys</b>. Needs a paid account — gpt-5.5 &amp; photo analysis don't work on the free tier.</div></div>
       <div class="field" style="margin-bottom:12px"><label>Model</label>
         <select class="txtin" id="setModel" onchange="onModelChange()">
           <option value="gpt-5.5">gpt-5.5 · newest (needs paid account)</option>
@@ -502,7 +502,8 @@ a{color:var(--orange);}
     <div class="section-h">Cloud Sync — Firestore</div>
     <div class="card">
       <div class="notebox mb">Your training history lives on this device (localStorage + IndexedDB) and <b>survives redeploys</b> — a new index.html on the same domain never wipes it. Turn this on and every lift is also mirrored to your own Firebase project, so it survives a lost phone, a cleared browser, and syncs across devices. Photos and chat stay local (too big for a Firestore doc).</div>
-      <div class="field" style="margin-bottom:12px"><label>Firebase config (paste the JSON object)</label>
+      <div class="notebox mb" style="border-color:#1fbf68;color:#7ef0b0">✅ Firebase is already filled in for your <b>PTchat</b> project — nothing to paste. Just switch on Firestore and Anonymous sign-in in the Firebase console.</div>
+      <div class="field" style="margin-bottom:12px"><label>Firebase config</label>
         <textarea class="txtin" id="setFbConfig" style="min-height:120px;font-size:12px" placeholder='{"apiKey":"...","authDomain":"...","projectId":"...","appId":"..."}'></textarea>
         <div class="hint mt">Firebase console → Project settings → Your apps → Web app → SDK setup &amp; config. Enable <b>Firestore</b> and <b>Anonymous</b> sign-in (Authentication → Sign-in method).</div></div>
       <div class="field" style="margin-bottom:12px"><label>Sync ID</label>
@@ -588,6 +589,18 @@ const CATRULES=[[/push|press|dip|fly|lateral|tricep|extension/i,"Push"],[/pull|r
 function catFromName(n){ for(const [re,c] of CATRULES){ if(re.test(String(n))) return c; } return "Other"; }
 const CAT={};
 
+/* Amir's Firebase project, pre-filled so Cloud Sync needs no setup inside the app.
+   A Firebase web config is public by design \u2014 it identifies the project, it does not
+   grant access. The Firestore rules are what actually protect the data. */
+const FB_CONFIG={
+  apiKey:"AIzaSyBp4csrAvI9TCeult4GD6iB_w48uU5InWM",
+  authDomain:"ptchat-170ff.firebaseapp.com",
+  projectId:"ptchat-170ff",
+  storageBucket:"ptchat-170ff.firebasestorage.app",
+  messagingSenderId:"547217019363",
+  appId:"1:547217019363:web:7a514c9009004780a350d6"
+};
+const FB_SYNC_DEFAULT="amir-9k3xq7";
 const DEFAULTS = {
   profile:{name:"Amir", location:"dubai",
     goal:"Build the physique I want — not chase bodyweight", phase:"Lean Recomp / mini-cut",
@@ -608,7 +621,7 @@ const DEFAULTS = {
   lib:{}, dayTypes:{}, media:{}, progression:{},
   nutrition:{calorieTarget:null, proteinTarget:null, phase:"", log:[]},
   cardio:null, readiness:null, aiPlan:null, restCall:null, setsOverride:null, completed:{},
-  cloud:{on:false, config:"", syncId:"amir-pt", last:null},
+  cloud:{on:true, config:JSON.stringify(FB_CONFIG,null,2), syncId:FB_SYNC_DEFAULT, last:null},
   prefs:{visualMode:"auto", showIcons:true, exerciseGifs:true, workoutFormat:"list", coachStyle:"direct funny concise",
          autoPlan:true, restPos:null, restMini:false}
 };
@@ -632,6 +645,9 @@ function mergeDefaults(parsed){ const d={...structuredClone(DEFAULTS),...parsed}
   d.profile=Object.assign(structuredClone(DEFAULTS.profile),d.profile||{});
   d.prefs=Object.assign(structuredClone(DEFAULTS.prefs),d.prefs||{});
   d.cloud=Object.assign(structuredClone(DEFAULTS.cloud),d.cloud||{});
+  /* Upgrading from a build where sync was never configured: fill it in and switch it on. */
+  if(!d.cloud.config){ d.cloud.config=JSON.stringify(FB_CONFIG,null,2); d.cloud.on=true; }
+  if(!d.cloud.syncId || d.cloud.syncId==="amir-pt") d.cloud.syncId=FB_SYNC_DEFAULT;
   /* migrate old 2-location model → dubai/madrid/greece */
   if(d.profile.location==="home"||!d.profile.location) d.profile.location="dubai";
   if(!d.profile.equip||typeof d.profile.equip!=="object") d.profile.equip={dubai:"",madrid:"",greece:""};
@@ -2496,7 +2512,7 @@ function scheduleInApp(){
    v18 ADDITIONS — draggable rest timer · weekly training memory · AI planner
    · Firestore sync
    ========================================================================== */
-const APP_VERSION="v25 · 2026-08-04";
+const APP_VERSION="v26 · 2026-08-04";
 
 /* ===== 1. REST TIMER — drag it anywhere so it never blocks the chat box ===== */
 let _rtDrag=null;
@@ -3378,6 +3394,21 @@ async function cloudInit(){
     _fs=firebase.firestore(); _fbReady=true; return true;
   }catch(e){ cloudMsg("\u2717 Couldn't start Firebase: "+(e&&e.message||e)); return false; }
 }
+/* Turn Firebase's terse errors into the actual console step that's missing. */
+function cloudErrHelp(e,verb){
+  const m=String((e&&e.message)||e||"");
+  if(/permission|insufficient/i.test(m))
+    return "\u2717 Firestore refused to "+verb+" it.<br><b>Two things to check in the Firebase console:</b><br>"+
+      "1. Authentication \u2192 Sign-in method \u2192 <b>Anonymous</b> must be Enabled.<br>"+
+      "2. Firestore \u2192 Rules \u2192 must allow /amirpt/{docId} for signed-in users, and you must click <b>Publish</b>.";
+  if(/not-found|NOT_FOUND|database/i.test(m))
+    return "\u2717 No Firestore database in that project yet.<br>Firebase console \u2192 <b>Firestore Database</b> \u2192 Create database \u2192 production mode.";
+  if(/api-key|invalid|app-deleted|configuration/i.test(m))
+    return "\u2717 Firebase rejected the config.<br>Check the project still exists and the web app registration wasn't deleted.";
+  if(/network|offline|unavailable/i.test(m))
+    return "\u2717 Couldn't reach Firestore \u2014 looks like a connection problem. It'll retry on the next change.";
+  return "\u2717 Sync failed: "+m;
+}
 function cloudRef(){ return _fs.collection("amirpt").doc(String((DB.cloud.syncId||"amir-pt")).trim()); }
 function cloudQueue(){ if(!DB.cloud||!DB.cloud.on) return; if(_cloudTimer) clearTimeout(_cloudTimer); _cloudTimer=setTimeout(()=>{cloudPush(true);},4000); }
 async function cloudPush(quiet){
@@ -3388,7 +3419,7 @@ async function cloudPush(quiet){
     try{ localStorage.setItem(STORE_KEY,JSON.stringify(DB)); }catch(e){}
     if(!quiet) cloudMsg("\u2713 Backed up \u2014 "+new Date().toLocaleString('en-GB'));
     return true;
-  }catch(e){ cloudMsg("\u2717 Backup failed: "+(e&&e.message||e)+"<br>Check your Firestore rules allow this signed-in user to write."); return false; }
+  }catch(e){ cloudMsg(cloudErrHelp(e,"save to")); return false; }
 }
 /* Merge, never overwrite: every logged set on either side survives. */
 function mergeCloud(r,rev){
@@ -3427,7 +3458,7 @@ async function cloudPull(quiet){
     const stat=mergeCloud(remote, raw.rev||0);
     save(); boot();
     return stat;
-  }catch(e){ cloudMsg("\u2717 Restore failed: "+(e&&e.message||e)+"<br>Check your Firestore rules allow reads."); return null; }
+  }catch(e){ cloudMsg(cloudErrHelp(e,"read from")); return null; }
 }
 async function cloudSyncNow(silent){
   if(!DB.cloud||!DB.cloud.on){ if(!silent) cloudMsg("Turn sync on first."); return; }

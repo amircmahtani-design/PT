@@ -1,0 +1,16 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // Amir PT sync. One document per Sync ID.
+    // Requires a signed-in user (anonymous sign-in counts).
+    match /amirpt/{docId} {
+      allow read, write: if request.auth != null;
+    }
+
+    // Nothing else in the project is readable or writable.
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}

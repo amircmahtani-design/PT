@@ -1,4 +1,4 @@
-AMIR PT — v25 · 2026-08-04
+AMIR PT — v26 · 2026-08-04
 ==========================
 
 WHAT TO UPLOAD
@@ -21,7 +21,7 @@ FILENAMES ARE CASE-SENSITIVE. It must be index.html, not Index.html.
 AFTER DEPLOYING
 ---------------
 1. Open the site, go to Settings, scroll to the bottom.
-   The line should read: Amir PT · v25 · 2026-08-04
+   The line should read: Amir PT · v26 · 2026-08-04
    If it says anything else, the old file is still being served — hard refresh.
 
 2. Settings → App & Storage tells you the truth about your install:
@@ -51,3 +51,48 @@ THE SERVICE WORKER IS DELIBERATELY NETWORK-FIRST
 A cache-first worker would serve you a stale app after a redeploy and make
 the version stamp lie. This one always fetches the newest index.html when
 you're online, and falls back to the last cached copy when you're not.
+
+
+CLOUD SYNC — WHAT'S LEFT TO DO
+------------------------------
+The Firebase config for your PTchat project is already built into the app.
+You do NOT need to paste anything into Settings.
+
+Three clicks remain, and they're all in the Firebase console
+(console.firebase.google.com -> PTchat), because I have no access to it:
+
+  1. Firestore Database -> Create database -> Production mode
+                        -> region europe-west1  (permanent, choose carefully)
+
+  2. Authentication -> Get started -> Sign-in method
+                    -> Anonymous -> Enable -> Save
+
+  3. Firestore Database -> Rules -> paste firestore-rules.txt -> PUBLISH
+     (Production mode denies everything until you publish these.)
+
+Then open the app: Settings -> Cloud Sync -> Sync now.
+Verify it worked in the Firebase console: Firestore -> Data. You should see
+a collection "amirpt" containing a document named amir-9k3xq7.
+If that document isn't there, it did not sync, whatever the app says.
+
+
+YOUR SYNC ID IS IN THE PAGE SOURCE
+----------------------------------
+Sync ID: amir-9k3xq7
+
+Because it's baked into index.html, anyone who views the source of your
+public Netlify site can read it, and the rules above let any signed-in
+user read that document. In practice that means your training log is
+readable by someone who bothers to look.
+
+If you'd rather it weren't: Settings -> Cloud Sync -> change the Sync ID to
+something private, Save & Connect, and type the same value on each device.
+Takes about twenty seconds per device and closes the hole.
+
+
+YOUR OPENAI KEY
+---------------
+Deliberately never synced to the cloud — an API key doesn't belong in a
+database. It lives only in the browser you typed it into, so you re-enter
+it once per device, and again if storage is ever cleared.
+Get a new one at platform.openai.com/api-keys
