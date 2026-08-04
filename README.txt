@@ -1,12 +1,75 @@
-AMIR PT — v56 · 04/08/2026
+AMIR PT — v58 · 04/08/2026
 ==========================
 
 Deploy exactly as before: index.html, sw.js, manifest.json and the two icons
 in the same folder, at the repo root. Filenames are case-sensitive —
 index.html, never Index.html.
 
-Check it landed: Settings → bottom → "Amir PT · v56 · 04/08/2026".
+Check it landed: Settings → bottom → "Amir PT · v58 · 04/08/2026".
 Nothing in this update touches your data. Every logged set survives.
+
+
+WHAT'S NEW IN v58
+=================
+
+"DONE TODAY" ON MONDAY'S ROW, WHEN TODAY IS TUESDAY
+  The label was never about that day. It was a lookback on the SESSION TYPE:
+  "Legs & Core is something you last trained today". On Monday's row, that
+  reads like Monday thinks it's today. Fixed twice over:
+
+    1. It now reads "last time: today" / "last time: 3d ago" / "last time:
+       never" — wording that cannot be mistaken for a claim about that day.
+
+    2. The day column now spells out "today" under the actual current day,
+       instead of a small bullet that was easy to miss.
+
+  So Monday shows "Legs & Core / last time: today" (you trained legs this
+  morning), and the TUE row carries the "today" stamp. Both true, neither
+  confusing.
+
+
+WHAT'S NEW IN v57
+=================
+
+YOUR WEEK STARTS ON MONDAY — THE COACH NOW KNOWS THAT
+  The weekly plan always displayed Mon-first, but the AI was being handed a
+  Sunday-first template in its instructions, so it planned Sunday-first and the
+  logic came out shifted. Every example and the output format now lead with
+  Monday, and it is told explicitly, twice, that the week starts Monday and
+  never to lead with Sunday.
+
+FIXED: "done today" ON THREE UNRELATED DAYS AT ONCE
+  In your screenshot one leg session had marked Monday, Saturday AND Sunday as
+  "done today". Not the week regeneration — the matching was far too loose:
+
+    - It only checked whether a muscle category appeared ANYWHERE in the
+      session, so the Plank in your leg day counted, and a single back or core
+      accessory was enough to mark a Pull Day as done.
+    - "Full Body" matched on nothing more than "3+ categories present", which
+      almost any varied session satisfies.
+
+  Now an exact completed-session title wins outright, and the fallback demands
+  the session's DOMINANT focus actually be that kind. Full Body needs 3+
+  distinct groups including legs plus a push or pull; Upper needs both push and
+  pull and no legs.
+
+  Same scenario, re-run:
+
+    MON  Legs & Core   done today     <- correct, that's what you trained
+    TUE  Push Day      not yet
+    WED  Pilates       not yet
+    THU  Cardio Day    not yet
+    FRI  Rest          (blank)
+    SAT  Full Body     not yet        <- was wrongly "done today"
+    SUN  Pull Day      not yet        <- was wrongly "done today"
+
+  Tuesday reading "not yet" while you trained today is correct: Tuesday is
+  Push Day and you did legs.
+
+DAY NAMES GIVEN REAL CLEARANCE FROM THE COLOUR BARS
+  v56 widened the column but the row still had no left padding, so the text sat
+  hard against the coloured bar. 15px of padding added (23px on today's
+  highlighted row so it lines up).
 
 
 WHAT'S NEW IN v56

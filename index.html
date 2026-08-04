@@ -110,10 +110,11 @@ h2.display{font-size:25px;font-weight:800;letter-spacing:-.4px;margin:6px 0;colo
 .addday{display:block;width:100%;margin-top:12px;padding:12px;border-radius:12px;background:#0d0a07;
   border:1px dashed var(--line);color:var(--label);font-size:12.5px;font-weight:700;}
 .addday:active{color:var(--orange);}
-.itin-row{display:flex;align-items:center;gap:14px;padding:13px 0;border-bottom:1px solid var(--line);}
+.itin-row{display:flex;align-items:center;gap:14px;padding:14px 0 14px 15px;border-bottom:1px solid var(--line);}
 .itin-row:last-child{border-bottom:none;}
-.itin-row.today{background:linear-gradient(90deg,#ff8a2b14,transparent);margin:0 -8px;padding-left:8px;padding-right:8px;border-radius:8px;}
-.itin-day{width:52px;flex:0 0 52px;font-weight:800;font-size:13px;color:var(--gold);text-transform:uppercase;letter-spacing:.5px;padding-right:6px;}
+.itin-row.today{background:linear-gradient(90deg,#ff8a2b14,transparent);margin:0 -8px;padding-left:23px;padding-right:8px;border-radius:8px;}
+.istoday{display:block;font-size:9px;font-weight:800;letter-spacing:.6px;color:var(--orange);margin-top:3px;}
+.itin-day{width:56px;flex:0 0 56px;font-weight:800;font-size:13px;color:var(--gold);text-transform:uppercase;letter-spacing:.5px;padding-right:6px;}
 .itin-split{flex:1;font-weight:700;font-size:15px;min-width:0;}
 .itin-row.today .itin-split{color:#fff;}
 .itin-edit{font-size:11px;color:var(--dim);font-weight:700;text-transform:none;letter-spacing:0;}
@@ -2906,7 +2907,7 @@ function coachSystem(){
 "WARM-UP / COOL-DOWN & ICONS:\n"+
 "[[SET_WARMUP: Cat-cow ×8 | 🐈 ; Arm circles ×15 | 🔄]] · [[SET_COOLDOWN: Child's pose 60s | 🧘]] · [[SET_ICON: warmup | Cat-cow | 🐈]] · [[FIX_ICONS]]\n\n"+
 "WEEKLY SCHEDULE & DAY TYPES:\n"+
-"[[SET_WEEKDAY: Monday | Cardio Day]] · [[SET_WEEKLY_SCHEDULE: Sun Upper Body; Mon Cardio Day; Tue Pull Day; Wed Full Body; Thu Push Day; Fri Legs & Core; Sat Rest]] · [[CREATE_DAY_TYPE: Mobility Day]] · [[CREATE_DAY_TYPE: Cardio Day | kind:cardio | note:Zone 2 engine work]] · [[REMOVE_SCHEDULE_DAY_TYPE: Rest]]\n"+
+"HIS WEEK STARTS ON MONDAY \u2014 always list and think Mon-first, never Sunday-first.\n[[SET_WEEKDAY: Monday | Cardio Day]] · [[SET_WEEKLY_SCHEDULE: Mon Cardio Day; Tue Pull Day; Wed Full Body; Thu Push Day; Fri Legs & Core; Sat Upper Body; Sun Rest]] · [[CREATE_DAY_TYPE: Mobility Day]] · [[CREATE_DAY_TYPE: Cardio Day | kind:cardio | note:Zone 2 engine work]] · [[REMOVE_SCHEDULE_DAY_TYPE: Rest]]\n"+
 "(CREATE_DAY_TYPE options after the name, pipe-separated: kind:cardio|mobility|strength, main:Ex1,Ex2, sets:4, note:...)\n\n"+
 "EXERCISE LIBRARY (add anything not built-in):\n"+
 "[[ADD_LIBRARY_EXERCISE: Seated Cable Row | muscles:back,arms | cue:Drive elbows to hips | category:Pull | equipment:cable | sets:3 | reps:10 | wrist:neutral grip | media:https://...gif]]  (only name is required)\n\n"+
@@ -3641,7 +3642,7 @@ function renderItin(){
     const col=splitColour(split);
     const last=lastDoneOf(split);
     html+="<div class='itin-row "+(isToday?'today':'')+"' style='border-left:3px solid "+col+"'>"+
-      "<div class='itin-day'>"+DOW[dow]+(isToday?" •":"")+"</div>"+
+      "<div class='itin-day'>"+DOW[dow]+(isToday?"<span class='istoday'>today</span>":"")+"</div>"+
       "<div class='itin-split'><span class='splitchip' style='color:"+col+";border-color:"+col+"44;background:"+col+"1a'>"+split+"</span>"+
         (last? "<span class='itin-last'>"+last+"</span>" : "")+"</div>"+
       splitSelectHTML(dow,"sel"+dow,split)+"</div>"; });
@@ -3651,6 +3652,23 @@ function renderItin(){
 function lastDoneOf(split){
   const info=splitInfo(split);
   if(info.key==="rest") return "";
+  /* v58: "done today" on Monday's row read as if Monday were today. It was
+     always a lookback on the SESSION TYPE. Phrased so it cannot be misread. */
+  const label=n=> n===0?"last time: today" : n===1?"last time: yesterday" : "last time: "+n+"d ago";
+
+  /* v57 — this used to say "done today" on three unrelated days at once.
+     One leg session marked Legs (right), Full Body (because the old rule was
+     merely "3+ categories present") and Pull (because it only checked whether
+     the category appeared ANYWHERE in the session, so a single core or back
+     accessory counted as a pull day). Now: an exact completed-session title
+     wins, and the fallback demands the session was genuinely THAT kind. */
+  const comp=DB.completed||{};
+  const want=String(split).toLowerCase();
+  const exact=Object.keys(comp)
+    .filter(d=>String((comp[d]||{}).title||"").toLowerCase()===want)
+    .sort().reverse()[0];
+  if(exact) return label(daysSince(exact));
+
   const all=sessionsByDate(null);
   const dates=Object.keys(all).sort().reverse();
   for(const d of dates){
@@ -3658,12 +3676,19 @@ function lastDoneOf(split){
       const m=((EX(l.ex)||guessEx(l.ex)).m||[])[0];
       return {chest:"push",shoulders:"push",arms:"arms",back:"pull",legs:"legs",core:"core"}[m]||"other";
     });
-    const hit = cats.includes(info.key) ||
-      (info.key==="upper" && cats.some(c=>["push","pull","arms"].includes(c))) ||
-      (info.key==="full"  && cats.length>=3);
-    if(hit){ const n=daysSince(d); return n===0?"done today":n===1?"done yesterday":"done "+n+"d ago"; }
+    if(!cats.length) continue;
+    const count={}; cats.forEach(c=>count[c]=(count[c]||0)+1);
+    const distinct=Object.keys(count);
+    const dominant=distinct.sort((a,b)=>count[b]-count[a])[0];
+    let hit;
+    if(info.key==="full")       hit = distinct.length>=3 && distinct.includes("legs") &&
+                                      (distinct.includes("push")||distinct.includes("pull"));
+    else if(info.key==="upper") hit = distinct.includes("push") && distinct.includes("pull") &&
+                                      !distinct.includes("legs");
+    else                        hit = dominant===info.key;   /* the session's MAIN focus, not a stray accessory */
+    if(hit) return label(daysSince(d));
   }
-  return "not yet";
+  return "last time: never";
 }
 function addDayTypePrompt(){
   const n=prompt("Name the session type \u2014 e.g. Pilates, Core Day, HIIT, Mobility");
@@ -3938,7 +3963,7 @@ function scheduleInApp(){
    v18 ADDITIONS — draggable rest timer · weekly training memory · AI planner
    · Firestore sync
    ========================================================================== */
-const APP_VERSION="v56 · 04/08/2026";
+const APP_VERSION="v58 · 04/08/2026";
 
 /* ===== 1. REST TIMER — drag it anywhere so it never blocks the chat box ===== */
 let _rtDrag=null;
@@ -4154,6 +4179,7 @@ async function aiPlanWeek(){
 "\n\n=== YOU ARE PLANNING HIS WHOLE WEEK RIGHT NOW ===\n"+
 "Decide all seven days: what he trains, and CRUCIALLY where the rest days go. Rest is a decision, not a gap.\n"+
 "HARD RULES:\n"+
+"0. HIS WEEK STARTS ON MONDAY. List the days Mon, Tue, Wed, Thu, Fri, Sat, Sun \u2014 in that order, always. Never lead with Sunday.\n"+
 "1. Base it on what he has ACTUALLY trained (the digest above), not on what the current plan says. Hit the neglected groups first.\n"+
 "2. Never put two heavy sessions for the same muscle group on consecutive days.\n"+
 "3. At least one full rest day, and at most two consecutive training days without an easier one, given the Klinefelter recovery load.\n"+
@@ -4161,7 +4187,7 @@ async function aiPlanWeek(){
 "5. You may invent session types he doesn't have yet with [[CREATE_DAY_TYPE: Name]] before assigning them.\n"+
 "HIS EXISTING SESSION TYPES: "+known+"\n"+
 "OUTPUT FORMAT \u2014 the directive FIRST, on its own line, all seven days:\n"+
-"[[SET_WEEKLY_SCHEDULE: Sun X; Mon X; Tue X; Wed X; Thu X; Fri X; Sat X]]\n"+
+"[[SET_WEEKLY_SCHEDULE: Mon X; Tue X; Wed X; Thu X; Fri X; Sat X; Sun X]]\n"+
 "Then 3-5 short lines: the logic, which group you're prioritising and why, and where the rest falls. No bullet lists, no preamble.";
     const usr="Plan my full week from "+ukDate()+". I'm in "+LOC().label+" ("+currentEquipment()+"). Decide the training days and the rest days and write it into my plan.";
     const reply=await callAI([{role:"system",content:sys},{role:"user",content:usr}],700);
