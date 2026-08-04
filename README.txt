@@ -1,4 +1,4 @@
-AMIR PT — v36 · 2026-08-04
+AMIR PT — v38 · 2026-08-04
 ==========================
 
 WHAT TO UPLOAD
@@ -21,7 +21,7 @@ FILENAMES ARE CASE-SENSITIVE. It must be index.html, not Index.html.
 AFTER DEPLOYING
 ---------------
 1. Open the site, go to Settings, scroll to the bottom.
-   The line should read: Amir PT · v36 · 2026-08-04
+   The line should read: Amir PT · v38 · 2026-08-04
    If it says anything else, the old file is still being served — hard refresh.
 
 2. Settings → App & Storage tells you the truth about your install:
@@ -217,7 +217,7 @@ default personality line, so write it as instructions:
   "Blunt. No cheerleading. Short sentences. Tell me when I'm being soft,
    but never make light of the Klinefelter or the wrist."
 
-FIXED IN v36: the "Coaching rules" and "Injuries and medical" boxes were
+FIXED IN v38: the "Coaching rules" and "Injuries and medical" boxes were
 saved and redisplayed but never actually sent to the coach. Everything you
 had typed there had been ignored. All three now reach the prompt.
 
@@ -238,3 +238,25 @@ So on the home-screen app, once:
 After that the home-screen app syncs on its own. Do all your training in
 the home-screen app from then on, not Safari - two copies with the same
 Sync ID will merge, but it's simpler to use one.
+
+
+HOW DEMOS GET RESOLVED (v38)
+----------------------------
+Your exercise names and WorkoutX's names rarely match exactly
+("Barbell Back Squat" vs "barbell full squat"). Resolution order:
+
+  1. A demo you or the coach deliberately chose
+  2. A mapping the AI worked out before (cached forever, synced)
+  3. Name matching on meaning - same movement noun, same equipment
+  4. The AI: given a shortlist of ~45 candidates with their equipment
+     and muscles, it picks the right one or answers NONE
+  5. The small built-in demo table
+  6. External "Watch demo" link (last resort only)
+
+Step 4 costs ONE OpenAI call per exercise, ever. The answer is stored in
+DB.exMap and synced, so a new device inherits every mapping you've already
+resolved. A NONE is cached too - it won't keep asking about the same one.
+
+If a demo looks wrong, tap "Wrong demo?" on the exercise. It clears the
+mapping, re-matches, and if the string matcher can't do it, asks the coach.
+The toast tells you which catalogue record it landed on.

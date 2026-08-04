@@ -678,7 +678,7 @@ const DEFAULTS = {
   photos:[], rowing:[],
   chat:[], streak:0, lastSessionDate:null, workout:null,
   integrations:{"Apple Watch":true,"Concept2 (manual)":true,"Photos":true,"Camera":false,"Notifications":true},
-  lib:{}, dayTypes:{}, media:{}, mediaPicked:{}, progression:{},
+  lib:{}, dayTypes:{}, media:{}, mediaPicked:{}, exMap:{}, progression:{},
   nutrition:{calorieTarget:null, proteinTarget:null, phase:"", log:[]},
   cardio:null, readiness:null, aiPlan:null, restCall:null, setsOverride:null, completed:{},
   wx:{key:"", on:true, plan:"free", synced:null, count:0, quota:null, quotaLeft:null},
@@ -1006,13 +1006,66 @@ function coreExNames(){ return [...new Set([...Object.keys(EXDB), ...Object.keys
 /* Order matters. A WorkoutX record has a demo made FOR that exact movement;
    EXIMG is my hand-written fallback table and was in some cases an approximation.
    Only a demo Amir (or the coach) chose deliberately outranks the catalogue. */
-/* Look in the catalogue DIRECTLY. EX() prefers the built-in table, and built-ins
-   carry no demo \u2014 which is why a catalogue exercise that shares a name with a
-   built-in was falling through to the hand-written fallback. */
-function catGif(name){
-  if(typeof WXIDX==="undefined"||!name) return null;
-  const r=WXIDX[name]; return (r&&r.gif)||null;
+/* My built-in names and WorkoutX's names rarely match character for character
+   \u2014 "Barbell Back Squat" vs "barbell squat", "DB Bench Press" vs "dumbbell
+   bench press". An exact key lookup finds almost nothing, so match on meaning. */
+const WX_SYN={db:"dumbbell",dumbbells:"dumbbell",bb:"barbell",barbells:"barbell",
+  bw:"bodyweight",kb:"kettlebell",ohp:"overhead shoulder press",rdl:"romanian deadlift",
+  /* Same movement, different vocabulary. Expanding to BOTH words lets an
+     "Overhead Press" find a "shoulder press" without losing to a bench press. */
+  overhead:"overhead shoulder",military:"military shoulder",shoulder:"shoulder",
+  lat:"lats",pulldown:"pulldown lat",glute:"glutes",ab:"abs",tricep:"triceps",bicep:"biceps",
+  hamstring:"hamstrings",quad:"quads",calf:"calves",
+  pushup:"push up",pushups:"push up",pullup:"pull up",pullups:"pull up",chinup:"chin up",
+  situp:"sit up",dips:"dip",curls:"curl",presses:"press",rows:"row",raises:"raise",squats:"squat",
+  lunges:"lunge",extensions:"extension",pulldowns:"pulldown"};
+const WX_FILLER=new Set(["the","a","with","and","on","to","standing","seated","alternate","alternating","single","one","two"]);
+function normTokens(name){
+  let t=String(name||"").toLowerCase().replace(/[^a-z0-9 ]+/g," ").split(/\s+/).filter(Boolean);
+  const out=[];
+  t.forEach(w=>{ const x=WX_SYN[w]||w; x.split(" ").forEach(y=>{ if(y&&!WX_FILLER.has(y)) out.push(y); }); });
+  return out;
 }
+let _catIdx=null, _catHit={};
+function catIndex(){
+  if(_catIdx) return _catIdx;
+  _catIdx=[];
+  if(typeof WXIDX!=="undefined"){
+    Object.keys(WXIDX).forEach(k=>{ const tk=normTokens(k); _catIdx.push({k,tk,set:new Set(tk),head:tk[tk.length-1]}); });
+  }
+  return _catIdx;
+}
+function catInvalidate(){ _catIdx=null; _catHit={}; }
+/* Best catalogue record for one of our exercise names, or null. */
+function catMatch(name){
+  if(!name||typeof WXIDX==="undefined") return null;
+  /* A mapping the AI worked out once is authoritative and permanent. */
+  const learned=DB.exMap&&DB.exMap[name];
+  if(learned && WXIDX[learned]) return WXIDX[learned];
+  if(learned==="\u2205") return null;              // AI checked and there genuinely isn't one
+  if(_catHit[name]!==undefined) return _catHit[name];
+  let best=null;
+  if(WXIDX[name]) best={k:name,score:1};
+  else{
+    const q=normTokens(name); if(!q.length){ _catHit[name]=null; return null; }
+    const qs=new Set(q), head=q[q.length-1];
+    const wantEq=eqOf(name);
+    catIndex().forEach(c=>{
+      if(c.head!==head) return;                          // must be the same movement noun
+      let shared=0; qs.forEach(w=>{ if(c.set.has(w)) shared++; });
+      const union=new Set([...qs,...c.set]).size;
+      let score=shared/union + shared*0.02;   /* more words in common breaks ties */
+      if((WXIDX[c.k]||{}).eq===wantEq) score+=0.25;      // same kit is a strong signal
+      if(c.tk.length<=q.length+2) score+=0.05;           // prefer the plainer name
+      if(score>(best?best.score:0)) best={k:c.k,score};
+    });
+    if(best && best.score<0.45) best=null;
+  }
+  const rec=best? (WXIDX[best.k]||null) : null;
+  _catHit[name]=rec;
+  return rec;
+}
+function catGif(name){ const r=catMatch(name); return (r&&r.gif)||null; }
 function mediaFor(name){
   const picked=DB.media&&DB.media[name];
   if(picked && DB.mediaPicked && DB.mediaPicked[name]) return picked;   // he or the coach chose this
@@ -1025,8 +1078,19 @@ function refreshDemo(i){
   if(DB.mediaPicked) delete DB.mediaPicked[e.name];
   save();
   const el=document.getElementById('exb'+i); if(el) el.outerHTML=exBlockHTML(e,i);
-  const src=mediaFor(e.name);
-  toast(src? "Demo refreshed" : "No demo for that one \u2014 download the catalogue in Settings");
+  if(DB.exMap) delete DB.exMap[e.name];
+  catInvalidate();
+  let r=catMatch(e.name);
+  if(r){ toast("Demo from catalogue \u00b7 "+r.name); return; }
+  if(mediaFor(e.name)){ toast("Using the built-in demo"); return; }
+  if(!wxHas()){ toast("Download the exercise catalogue in Settings"); return; }
+  if(DB.ai&&DB.ai.provider==="openai"&&DB.ai.key){
+    toast("Asking the coach to find it\u2026");
+    queueAiMatch(e.name,rec=>{
+      const el2=document.getElementById('exb'+i); if(el2) el2.outerHTML=exBlockHTML(DB.workout.main[i],i);
+      toast("Matched \u00b7 "+rec.name);
+    }).then(()=>{ if(!catMatch(e.name)) toast("The coach couldn't find a match for that one"); });
+  } else toast("Add your OpenAI key and the coach will find it");
   try{ hydrateMedia(); }catch(err){}
 }
 function allSplits(){ const base=SPLITS.filter(s=>s!=="Rest"); const custom=Object.keys(DB.dayTypes||{}); return [...base, ...custom, "Rest"]; }
@@ -1053,8 +1117,73 @@ async function resolveExerciseMedia(name,query){
   if(url){ DB.media=DB.media||{}; DB.media[name]=url; save(); }
   return url;   /* auto-fetched, so NOT marked as a deliberate pick */
 }
+/* ===== The AI resolves names the string matcher can't =====
+   One call per exercise, ever. The answer is cached permanently and synced. */
+let _aiMatching={}, _aiMatchQueue=Promise.resolve();
+function catCandidates(name,cap){
+  if(typeof WXIDX==="undefined") return [];
+  const q=normTokens(name), head=q[q.length-1];
+  const want=((EX(name)||guessEx(name)).m||["core"])[0];
+  const eqw=eqOf(name);
+  const scored=Object.keys(WXIDX).map(k=>{
+    const r=WXIDX[k], tk=normTokens(k);
+    let sc=0;
+    if(tk[tk.length-1]===head) sc+=3;
+    if(q.some(w=>tk.indexOf(w)>=0)) sc+=2;
+    if((r.m||[])[0]===want) sc+=2;
+    if(r.eq===eqw) sc+=1;
+    return {k,sc};
+  }).filter(x=>x.sc>=2).sort((a,b)=>b.sc-a.sc).slice(0,cap||45);
+  return scored.map(x=>x.k);
+}
+async function aiMatchExercise(name){
+  if(!name||!wxHas()) return null;
+  if(DB.exMap&&DB.exMap[name]!==undefined) return DB.exMap[name]==="\u2205"?null:WXIDX[DB.exMap[name]]||null;
+  if(DB.ai.provider!=="openai"||!DB.ai.key) return null;
+  if(_aiMatching[name]) return null;
+  _aiMatching[name]=1;
+  try{
+    const cands=catCandidates(name);
+    if(!cands.length){ DB.exMap=DB.exMap||{}; DB.exMap[name]="\u2205"; save(); return null; }
+    const list=cands.map(k=>{ const r=WXIDX[k]; return "- "+k+"  ["+(r.eq||"?")+", "+((r.m||[]).join("/")||"?")+"]"; }).join("\n");
+    const sys="You match exercise names to a catalogue. Reply with EXACTLY one name copied character-for-character from the list, or the single word NONE. No punctuation, no explanation, no quotes.";
+    const usr="Which catalogue entry is the same movement as \""+name+"\"?\n"+
+      "It uses: "+(eqOf(name))+" and trains: "+(((EX(name)||guessEx(name)).m||[]).join(", "))+".\n"+
+      "Same movement pattern and same equipment matter more than a similar name. If none is genuinely the same movement, reply NONE.\n\nCATALOGUE:\n"+list;
+    const reply=await callAI([{role:"system",content:sys},{role:"user",content:usr}],40);
+    const pick=String(reply||"").trim().replace(/^["'\-\s]+|["'.\s]+$/g,"");
+    DB.exMap=DB.exMap||{};
+    if(pick && WXIDX[pick]){ DB.exMap[name]=pick; save(); catInvalidate(); return WXIDX[pick]; }
+    /* Tolerate a case difference, but nothing looser. */
+    const ci=Object.keys(WXIDX).find(k=>k.toLowerCase()===pick.toLowerCase());
+    if(ci){ DB.exMap[name]=ci; save(); catInvalidate(); return WXIDX[ci]; }
+    DB.exMap[name]="\u2205"; save();
+    return null;
+  }catch(e){ console.warn("aiMatch",e); return null; }
+  finally{ delete _aiMatching[name]; }
+}
+/* Resolve the whole sheet's missing demos, one at a time so we don't hammer the API. */
+function queueAiMatch(name,onDone){
+  _aiMatchQueue=_aiMatchQueue.then(async()=>{
+    const r=await aiMatchExercise(name);
+    if(r&&onDone) onDone(r);
+  }).catch(()=>{});
+  return _aiMatchQueue;
+}
 /* After a sheet renders, fill any missing exercise demos from the web (throttled, cached). */
 async function hydrateMedia(){
+  /* First: let the AI name-match anything the catalogue didn't resolve. */
+  try{
+    if(wxHas() && DB.ai && DB.ai.provider==="openai" && DB.ai.key && DB.workout){
+      const missing=(DB.workout.main||[]).map(e=>e.name)
+        .filter(n=>!mediaFor(n))
+        .filter(n=>!(DB.exMap&&DB.exMap[n]!==undefined))
+        .slice(0,6);
+      missing.forEach(n=>queueAiMatch(n,()=>{
+        try{ if(DB.workout) renderWorkoutSheet(DB.workout); }catch(e){}
+      }));
+    }
+  }catch(e){ console.warn(e); }
   if(!mediaKey()) return;
   const nodes=[...document.querySelectorAll('[data-exmedia]')];
   for(const el of nodes){
@@ -1689,7 +1818,7 @@ function setChip(sset){
 }
 /* WorkoutX ships real step-by-step instructions \u2014 better than my one-liners. */
 function stepsHTML(name){
-  const r=(typeof WXIDX!=="undefined"&&WXIDX[name])||null;
+  const r=catMatch(name);
   const steps=(r&&r.steps)||[];
   if(steps.length<2) return "";
   return "<details class='steps'><summary>How to do it</summary><ol>"+
@@ -2759,7 +2888,7 @@ function scheduleInApp(){
    v18 ADDITIONS — draggable rest timer · weekly training memory · AI planner
    · Firestore sync
    ========================================================================== */
-const APP_VERSION="v36 · 2026-08-04";
+const APP_VERSION="v38 · 2026-08-04";
 
 /* ===== 1. REST TIMER — drag it anywhere so it never blocks the chat box ===== */
 let _rtDrag=null;
@@ -3759,7 +3888,7 @@ function wxHas(){ return wxCount()>0; }
 async function wxLoadCatalogue(){
   try{
     const raw=await idbGet(WX_KEY);
-    if(raw){ const o=JSON.parse(raw); WXIDX=o.items||{}; }
+    if(raw){ const o=JSON.parse(raw); WXIDX=o.items||{}; catInvalidate(); }
   }catch(e){ WXIDX={}; }
   return wxCount();
 }
@@ -3911,7 +4040,10 @@ function wxMsg(t){ const el=document.getElementById('wxMsg'); if(el) el.innerHTM
 function renderWxFields(){
   const el=document.getElementById('setWxKey'); if(el) el.value=(DB.wx&&DB.wx.key)||"";
   const n=wxCount();
-  wxMsg(n? ("\u2713 <b>"+n+" exercises</b> on this device"+(DB.wx&&DB.wx.synced?" \u00b7 synced "+new Date(DB.wx.synced).toLocaleDateString('en-GB'):"")+
+  let matched=0, core=coreExNames();
+  if(n) core.forEach(x=>{ if(catMatch(x)) matched++; });
+  wxMsg(n? ("\u2713 <b>"+n+" exercises</b> on this device"+
+            " \u00b7 demos matched for "+matched+"/"+core.length+" of your regular lifts"+(DB.wx&&DB.wx.synced?" \u00b7 synced "+new Date(DB.wx.synced).toLocaleDateString('en-GB'):"")+
             (DB.wx&&DB.wx.quotaLeft!=null?" \u00b7 "+DB.wx.quotaLeft+" API calls left this month":""))
          : "No catalogue downloaded yet \u2014 the app is using its "+coreExNames().length+" built-in exercises.");
 }
@@ -3930,7 +4062,7 @@ async function startWxSync(){
       if(p.done) return;
       wxMsg("<span class='spin'></span> "+(p.total||0)+" exercises \u00b7 "+p.reqs+" calls \u00b7 "+(p.eq||""));
     });
-    DB.wx.count=wxCount(); save();
+    DB.wx.count=wxCount(); save(); catInvalidate();
     try{ ensureWorkout(); renderWorkoutSheet(DB.workout); }catch(e){}
     wxMsg("\u2713 Done \u2014 <b>"+wxCount()+" exercises</b> stored on this device using "+r.reqs+" API calls."+
           (r.capped?" (Stopped at the safety cap; tap again to continue.)":"")+
@@ -4077,7 +4209,7 @@ function mergeCloud(r,rev){
   const cd=new Set((DB.checkins||[]).map(c=>c.date));
   (r.checkins||[]).forEach(c=>{ if(!cd.has(c.date)){ DB.checkins.push(c); cd.add(c.date); stat.checkins++; } });
   DB.checkins.sort((a,b)=>String(a.date).localeCompare(String(b.date)));
-  ["lib","dayTypes","media","progression"].forEach(k=>{ DB[k]=Object.assign({},r[k]||{},DB[k]||{}); });
+  ["lib","dayTypes","media","mediaPicked","exMap","progression"].forEach(k=>{ DB[k]=Object.assign({},r[k]||{},DB[k]||{}); });
   if((rev||0) > (DB._rev||0)){
     ["profile","schedule","prefs","nutrition","cardio","memory","integrations","reminder","weights","dayOverride"].forEach(k=>{ if(r[k]!==undefined) DB[k]=r[k]; });
     if(typeof r.streak==="number") DB.streak=Math.max(DB.streak||0,r.streak);
