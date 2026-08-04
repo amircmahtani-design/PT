@@ -1,4 +1,4 @@
-AMIR PT — v29 · 2026-08-04
+AMIR PT — v32 · 2026-08-04
 ==========================
 
 WHAT TO UPLOAD
@@ -21,7 +21,7 @@ FILENAMES ARE CASE-SENSITIVE. It must be index.html, not Index.html.
 AFTER DEPLOYING
 ---------------
 1. Open the site, go to Settings, scroll to the bottom.
-   The line should read: Amir PT · v29 · 2026-08-04
+   The line should read: Amir PT · v32 · 2026-08-04
    If it says anything else, the old file is still being served — hard refresh.
 
 2. Settings → App & Storage tells you the truth about your install:
@@ -130,3 +130,93 @@ The session is built to fit. Budget per set is roughly 40s work plus
 70-105s rest depending on whether it's a compound lift, plus a minute to
 change station. Turn the row off and that time goes back into lifting.
 The rowing block only appears where you have the erg (Dubai).
+
+
+SYNC IN DUBAI FIRST
+-------------------
+The catalogue downloads in the order that matters for where you currently
+are. Set your location to Dubai BEFORE running the sync and it pulls
+barbell -> dumbbell -> cable -> machines first, bodyweight later. If the
+sync is ever cut short by the monthly quota, you keep the gym work.
+
+If you sync while set to Greece it leads with bodyweight instead, which is
+correct for Greece but not what you want as your main catalogue.
+
+
+IS MY FIRESTORE ACTUALLY WORKING?
+---------------------------------
+Settings -> Cloud sync -> "Check my cloud backup"
+
+It reads the document and writes nothing. You want to see:
+
+  Backup found.
+  Document      amirpt / <your sync id>
+  Last written  <a recent date>
+  In the cloud  N sessions - N lifts - N check-ins
+  On this device  N sessions - N lifts - N check-ins
+
+If it says "there is no backup yet", the connection and rules are FINE but
+nothing has been uploaded - tap Sync now.
+
+If it errors, the message names the console step that's missing.
+
+Cross-check in the Firebase console: Firestore Database -> Data.
+You should see collection "amirpt" containing a document named your Sync ID.
+If that document is not there, you are not backed up, whatever the app says.
+
+
+IF YOU REINSTALL THE APP
+------------------------
+Deleting a home-screen web app on iOS deletes its storage with it. Nothing
+local survives that - not localStorage, not IndexedDB.
+
+To get your history back on a fresh install:
+  1. Settings -> Cloud sync
+  2. Set the SAME Sync ID you used before
+  3. Tap "Restore from cloud"
+
+The app now also pulls before it pushes on startup, and REFUSES to upload
+from a device with no logged history. An empty reinstall can no longer
+overwrite your backup.
+
+
+SET IT ONCE — STOP RE-ENTERING EVERYTHING
+-----------------------------------------
+Settings -> Cloud sync -> turn ON "Also sync my API keys"
+
+From then on, your OpenAI key, WorkoutX key, Giphy key, coach tone,
+rules, injuries, schedule and history all live in your Firestore. On a new
+device you enter ONE thing - the Sync ID - and tap Restore from cloud.
+
+Restore never overwrites a key already on the device, so it can't wipe a
+newer key with an older one.
+
+IMPORTANT before you turn it on: change your Sync ID to something private.
+The Sync ID is visible in this page's source, and the Firestore rules let
+any signed-in user read that document. With a guessable Sync ID, turning on
+key sync means publishing your OpenAI key.
+
+Settings -> Cloud sync -> Sync ID -> e.g. amir-7fk2q9x4 -> Save and connect
+Do the same on each device.
+
+WHY THE KEYS ARE NOT BUILT INTO index.html
+------------------------------------------
+Your Netlify site and its GitHub repo are public. An OpenAI key in page
+source gets found by scrapers within hours - OpenAI itself scans public
+repos and auto-revokes leaked keys - and until it is revoked, anyone can
+spend money on your account. Cloud sync gives you the same convenience
+without publishing the secret.
+
+
+COACH TONE
+----------
+Settings -> Profile and rules -> "How the coach should talk to me"
+
+Free text. It is injected into every AI call and explicitly overrides the
+default personality line, so write it as instructions:
+  "Blunt. No cheerleading. Short sentences. Tell me when I'm being soft,
+   but never make light of the Klinefelter or the wrist."
+
+FIXED IN v32: the "Coaching rules" and "Injuries and medical" boxes were
+saved and redisplayed but never actually sent to the coach. Everything you
+had typed there had been ignored. All three now reach the prompt.

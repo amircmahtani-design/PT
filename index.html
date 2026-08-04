@@ -509,9 +509,12 @@ a{color:var(--orange);}
         <textarea class="txtin" id="setEquipGreece"></textarea></div>
       <div class="field"><label>Injuries & medical</label>
         <textarea class="txtin" id="setInjuries">TFCC injury (right wrist) — avoid loaded wrist extension & heavy pressing on straight wrist. Klinefelter syndrome — manage recovery/fatigue, prioritise consistent progressive overload.</textarea></div>
+      <div class="field"><label>How the coach should talk to me</label>
+        <textarea class="txtin" id="setTone" placeholder="e.g. Blunt. No cheerleading. Short sentences. Tell me when I'm being soft — but never make light of the Klinefelter or the wrist."></textarea>
+        <div class="hint mt">Voice and tone only — training rules go in the box below. Syncs to the cloud, so you set it once.</div></div>
       <div class="field"><label>Coaching rules</label>
         <textarea class="txtin" id="setRules">Never make me choose workouts. Tell me exactly what to do. Technique beats weight. Never ego lift. Only increase load after previous weight mastered with excellent form. Consistency beats intensity. Be direct, funny, encouraging.</textarea></div>
-      <button class="btn green mt" onclick="saveProfile()">Save Profile</button>
+      <button class="btn green mt" onclick="saveProfile()">Save profile</button>
     </div>
     <div class="section-h">Integrations</div>
     <div class="card" id="integList"></div>
@@ -529,6 +532,7 @@ a{color:var(--orange);}
     </div>
     <div class="section-h">Cloud sync</div>
     <div class="card">
+      <div class="notebox mb" style="border-color:#5c3712;color:var(--gold)">Deleting the app from your phone deletes its local storage with it. <b>Cloud sync is the only thing that survives that.</b> Set it up, then tap <b>Check my cloud backup</b> — if that doesn't say "Backup found", you are not backed up.</div>
       <div class="notebox mb">Your training history lives on this device (localStorage + IndexedDB) and <b>survives redeploys</b> — a new index.html on the same domain never wipes it. Turn this on and every lift is also mirrored to your own Firebase project, so it survives a lost phone, a cleared browser, and syncs across devices. Photos and chat stay local (too big for a Firestore doc).</div>
       <div class="notebox mb" style="border-color:#1fbf68;color:#7ef0b0">✅ Firebase is already filled in for your <b>PTchat</b> project — nothing to paste. Just switch on Firestore and Anonymous sign-in in the Firebase console.</div>
       <div class="field" style="margin-bottom:12px"><label>Firebase config</label>
@@ -539,8 +543,13 @@ a{color:var(--orange);}
         <div class="hint mt">Any word you like. Use the same one on every device to share history. Document path: amirpt/&lt;sync id&gt;.</div></div>
       <div class="set-row"><span class="k" style="color:var(--txt);font-weight:600">Sync enabled</span>
         <div class="switch" id="cloudSwitch" onclick="toggleCloud(this)"></div></div>
+      <div class="set-row"><span class="k" style="color:var(--txt);font-weight:600">Also sync my API keys</span>
+        <div class="switch" id="keySwitch" onclick="toggleKeySync(this)"></div></div>
+      <div class="hint" style="margin-top:-4px">Saves re-pasting your OpenAI and WorkoutX keys on every device. <b>Only turn this on if your Sync ID is private</b> — anyone who reads this page's source can see the Sync ID, and the rules let any signed-in user read that document.</div>
       <button class="btn green mt" onclick="saveCloud()">Save and connect</button>
       <button class="btn sec mt" onclick="cloudSyncNow()">Sync now</button>
+      <button class="btn sec mt" onclick="cloudVerify()">Check my cloud backup</button>
+      <button class="btn ghost mt" onclick="cloudRestore()">Restore from cloud</button>
       <div id="cloudMsg" class="hint mt" style="font-size:13px"></div>
     </div>
     <div class="section-h">Data and backup</div>
@@ -631,7 +640,7 @@ const FB_CONFIG={
 const FB_SYNC_DEFAULT="amir-9k3xq7";
 const DEFAULTS = {
   profile:{name:"Amir", location:"dubai",
-    goal:"Build the physique I want — not chase bodyweight", phase:"Lean Recomp / mini-cut",
+    goal:"Build the physique I want — not chase bodyweight", phase:"Lean Recomp / mini-cut", coachTone:"",
     equip:{dubai:"",madrid:"",greece:""},
     equipment:"Adjustable dumbbells, barbell + plates, bench, pull-up bar, Concept2 rower, resistance bands",
     injuries:"TFCC injury (right wrist) — avoid loaded wrist extension & heavy pressing on straight wrist. Klinefelter syndrome — manage recovery/fatigue, prioritise consistent progressive overload.",
@@ -651,7 +660,7 @@ const DEFAULTS = {
   cardio:null, readiness:null, aiPlan:null, restCall:null, setsOverride:null, completed:{},
   wx:{key:"", on:true, plan:"free", synced:null, count:0, quota:null, quotaLeft:null},
   timeBudget:{mins:45, row:true, rowMins:10},
-  cloud:{on:true, config:JSON.stringify(FB_CONFIG,null,2), syncId:FB_SYNC_DEFAULT, last:null},
+  cloud:{on:true, config:JSON.stringify(FB_CONFIG,null,2), syncId:FB_SYNC_DEFAULT, last:null, syncKeys:false},
   prefs:{visualMode:"auto", showIcons:true, exerciseGifs:true, workoutFormat:"list", coachStyle:"direct funny concise",
          autoPlan:true, restPos:null, restMini:false}
 };
@@ -875,6 +884,18 @@ const LOCS={
           equipment:"No equipment at all — bodyweight only.",
           blurb:"No kit, holiday — short sharp bodyweight session."}
 };
+/* What Amir should be reaching for FIRST in each place. Dubai has a full gym,
+   so barbell and dumbbell work outrank bodyweight there; Greece is the reverse. */
+const GEAR_PRIORITY={
+  dubai :["bb","db","mach","kb","band","bar","other","bw"],
+  madrid:["db","band","bw"],
+  greece:["bw"]
+};
+function gearRank(name,key){
+  const order=GEAR_PRIORITY[key||locKey()]||["bw"];
+  const i=order.indexOf(eqOf(name));
+  return i<0? 99 : i;
+}
 function locKey(){ const l=(DB.profile&&DB.profile.location)||"dubai"; if(l==="home") return "dubai"; return LOCS[l]?l:"dubai"; }
 function LOC(){ return LOCS[locKey()]; }
 function currentEquipment(){ const e=(DB.profile&&DB.profile.equip)||{}; return (e[locKey()]||"").trim() || LOC().equipment; }
@@ -894,6 +915,9 @@ function promptExNames(key,cap){
       const g=((EX(n)||{}).m||["core"])[0];
       (byGroup[g]=byGroup[g]||[]).push(n);
     });
+    /* Within each muscle group, offer the kit he'd actually reach for here first. */
+    Object.keys(byGroup).forEach(g=>byGroup[g].sort((a,b)=>
+      (gearRank(a,key)-gearRank(b,key)) || (((EX(a)||{}).pop||500)-((EX(b)||{}).pop||500))));
     const groups=Object.keys(byGroup); let i=0;
     while(out.size<cap && groups.length){
       const g=groups[i%groups.length];
@@ -1499,9 +1523,9 @@ function muscleAlts(name){
   const curM=cur.m||["core"];
   return allExNames().filter(n=>!exclude.has(n) && canDoHere(n))
     .map(n=>{ const ex=EX(n)||{}; const m=ex.m||[]; const overlap=m.filter(x=>curM.includes(x)).length; const primary=m[0]===curM[0]?1:0;
-              return {n,overlap,primary,timed:!!ex.timed,bw:eqOf(n)==="bw"}; })
+              return {n,overlap,primary,timed:!!ex.timed,gear:gearRank(n),pop:(ex.pop||500)}; })
     .filter(o=>o.overlap>0 && o.timed===!!cur.timed)
-    .sort((a,b)=>(b.overlap-a.overlap)||(b.primary-a.primary)||(b.bw-a.bw))
+    .sort((a,b)=>(b.overlap-a.overlap)||(b.primary-a.primary)||(a.gear-b.gear)||(a.pop-b.pop))
     .map(o=>o.n);
 }
 let _swapAlts={};
@@ -1730,6 +1754,8 @@ function coachSystem(){
   const state=
 "\n\nLIVE APP STATE:\n- TIME TODAY: "+timeBudget().mins+" minutes"+(timeBudget().row?" (including a "+(timeBudget().rowMins||10)+" min rowing warm-up)":"")+
 "\n- LOCATION TODAY: "+LOC().label.toUpperCase()+" \u2014 "+currentEquipment()+
+"\n- REACH FOR, IN ORDER: "+(GEAR_PRIORITY[locKey()]||["bw"]).map(g=>({bb:"barbell",db:"dumbbell",mach:"machine/cable",kb:"kettlebell",band:"band",bar:"pull-up bar",bw:"bodyweight",other:"other kit"}[g]||g)).join(" > ")+
+(locKey()==="dubai"? ". He has a full gym here \u2014 do NOT default to bodyweight movements. Bodyweight is for Greece." : "")+
 "\n- Phase: "+p.phase+"\n- Mode: "+(p.mode||"\u2014")+
 "\n- Today scheduled: "+pickSplit()+"\n- Today's exercises: "+curW+
 "\n- Custom day types: "+dayTypesStr+"\n- Cardio: "+cardioStr+"\n- Nutrition: "+nutStr+
@@ -1741,7 +1767,11 @@ function coachSystem(){
 "\n\n"+readinessContext()+
 "\n\n"+trainingContext()+
 "\n\nCONCEPT2 / CARDIO LOG:\n"+rowing;
-  return "You are Amir's personal trainer — the ONLY coach he has. You know him deeply and remember everything. This app stores his data; you are the coaching brain."+mem+"\n\nPERSONALITY: "+(prefs.coachStyle||"Direct, funny, warm, encouraging")+". Never robotic or generic. Challenge him, explain WHY, celebrate wins. Text like a real PT. Keep it tight.\n\nPERMANENT RULES:\n- Goal: "+p.goal+". The physique he wants, NOT bodyweight targets.\n- Klinefelter syndrome — respect recovery/fatigue, patient strength curve.\n- TFCC injury (right wrist) — avoid loaded wrist extension / straight-wrist heavy pressing; prefer neutral-grip. If wrist pain reported, swap immediately.\n- Technique beats weight. Never ego lift. Only add load after current weight is MASTERED with clean form.\n- He never chooses workouts — YOU decide and tell him exactly what to do.\n\nLOCATION RULES — THREE PLACES, THREE KIT LISTS:\n- DUBAI: full gym + time. Barbell, dumbbells, bench, pull-up bar, machines, Concept2 rower, bands. Full sessions.\n- MADRID: DUMBBELLS ONLY (plus bodyweight). No barbell, no machines, no rower, no pull-up bar. Never program a barbell or cable movement there.\n- GREECE: NOTHING AT ALL. Bodyweight only, holiday, short (~15 min), maintenance. No rower, no bands, no bar. Never guilt him about food or drink.\nHE IS IN "+LOC().label.toUpperCase()+" TODAY — equipment: "+currentEquipment()+". Only ever program from AVAILABLE EXERCISES below; anything else is useless to him.\n- GIFs: library moves already show demos automatically. If Amir asks to 'add gifs', the app enables them — just confirm briefly, no need to attach URLs unless adding a brand-new exercise.\n\n"+editBlock+state;
+  return "You are Amir's personal trainer — the ONLY coach he has. You know him deeply and remember everything. This app stores his data; you are the coaching brain."+mem+"\n\nPERSONALITY: "+(prefs.coachStyle||"Direct, funny, warm, encouraging")+". Never robotic or generic. Challenge him, explain WHY, celebrate wins. Text like a real PT. Keep it tight.\n\nPERMANENT RULES:\n- Goal: "+p.goal+". The physique he wants, NOT bodyweight targets.\n- Klinefelter syndrome — respect recovery/fatigue, patient strength curve.\n- TFCC injury (right wrist) — avoid loaded wrist extension / straight-wrist heavy pressing; prefer neutral-grip. If wrist pain reported, swap immediately.\n- Technique beats weight. Never ego lift. Only add load after current weight is MASTERED with clean form.\n- He never chooses workouts — YOU decide and tell him exactly what to do.\n"+
+(p.rules? "\nHIS OWN STANDING RULES (he wrote these — follow them):\n"+p.rules+"\n":"")+
+(p.injuries? "\nINJURIES AND LIMITATIONS:\n"+p.injuries+"\n":"")+
+(p.coachTone? "\nHOW HE WANTS YOU TO TALK TO HIM — match this voice exactly, it overrides the generic personality line above:\n"+p.coachTone+"\n":"")+
+"\nLOCATION RULES — THREE PLACES, THREE KIT LISTS:\n- DUBAI: full gym + time. Barbell, dumbbells, bench, pull-up bar, machines, Concept2 rower, bands. Full sessions.\n- MADRID: DUMBBELLS ONLY (plus bodyweight). No barbell, no machines, no rower, no pull-up bar. Never program a barbell or cable movement there.\n- GREECE: NOTHING AT ALL. Bodyweight only, holiday, short (~15 min), maintenance. No rower, no bands, no bar. Never guilt him about food or drink.\nHE IS IN "+LOC().label.toUpperCase()+" TODAY — equipment: "+currentEquipment()+". Only ever program from AVAILABLE EXERCISES below; anything else is useless to him.\n- GIFs: library moves already show demos automatically. If Amir asks to 'add gifs', the app enables them — just confirm briefly, no need to attach URLs unless adding a brand-new exercise.\n\n"+editBlock+state;
 }
 
 function aiIsReasoning(model){ return /^gpt-5/i.test(model)||/^o\d/i.test(model); }
@@ -2553,7 +2583,7 @@ function renderEquipFields(){
 }
 function saveProfile(){
   DB.profile.name=val('setName'); DB.profile.goal=val('setGoal'); DB.profile.phase=val('setPhase');
-  DB.profile.injuries=val('setInjuries'); DB.profile.rules=val('setRules');
+  DB.profile.injuries=val('setInjuries'); DB.profile.rules=val('setRules'); DB.profile.coachTone=val('setTone');
   DB.profile.equip=DB.profile.equip||{};
   DB.profile.equip.dubai=val('setEquipDubai').trim(); DB.profile.equip.madrid=val('setEquipMadrid').trim(); DB.profile.equip.greece=val('setEquipGreece').trim();
   DB.profile.equipment=DB.profile.equip.dubai;
@@ -2605,7 +2635,7 @@ function scheduleInApp(){
    v18 ADDITIONS — draggable rest timer · weekly training memory · AI planner
    · Firestore sync
    ========================================================================== */
-const APP_VERSION="v29 · 2026-08-04";
+const APP_VERSION="v32 · 2026-08-04";
 
 /* ===== 1. REST TIMER — drag it anywhere so it never blocks the chat box ===== */
 let _rtDrag=null;
@@ -3577,13 +3607,22 @@ function wxErrText(e){
   if(/abort/i.test(m)) return "\u2717 WorkoutX timed out. Try again.";
   return "\u2717 "+m;
 }
-const WX_PULL=["body weight","dumbbell","barbell","cable","leverage machine","kettlebell",
-               "resistance band","ez barbell","smith machine","olympic barbell","medicine ball","stability ball"];
+/* Pull order matters: if the sync is cut short by quota, whatever came first is
+   what he ends up with. Dubai is where he actually trains, so gym kit leads. */
+const WX_PULL_BY_LOC={
+  dubai :["barbell","dumbbell","cable","leverage machine","olympic barbell","ez barbell","smith machine",
+          "kettlebell","body weight","resistance band","trap bar","medicine ball","stability ball"],
+  madrid:["dumbbell","body weight","kettlebell","resistance band","barbell","cable","leverage machine",
+          "olympic barbell","ez barbell","smith machine","medicine ball","stability ball"],
+  greece:["body weight","resistance band","dumbbell","kettlebell","barbell","cable","leverage machine",
+          "olympic barbell","ez barbell","smith machine","medicine ball","stability ball"]
+};
+function wxPullOrder(){ return WX_PULL_BY_LOC[locKey()]||WX_PULL_BY_LOC.dubai; }
 /* One-time sync. Pages 10 at a time (the free-plan ceiling), reporting progress. */
 async function wxSync(onProgress,maxRequests){
   const cap=maxRequests||220;
   let reqs=0, added=0, updated=0;
-  for(const eq of WX_PULL){
+  for(const eq of wxPullOrder()){
     let offset=0;
     for(;;){
       if(reqs>=cap) { onProgress&&onProgress({done:true,reqs,added,capped:true}); await wxSaveCatalogue(); return {reqs,added,updated,capped:true}; }
@@ -3726,15 +3765,45 @@ async function wxGifAuthed(name){
 
 /* ===== 10. FIRESTORE — history that outlives this phone ===== */
 let _fbReady=false,_fs=null,_cloudTimer=null;
-const CLOUD_SKIP=["photos","chat","cloud","ai","workout","_rev"];
-function cloudPayload(){ const o={}; Object.keys(DB).forEach(k=>{ if(CLOUD_SKIP.indexOf(k)<0) o[k]=DB[k]; }); return o; }
+const CLOUD_SKIP=["photos","chat","cloud","ai","wx","workout","_rev"];
+function syncKeysOn(){ return !!(DB.cloud&&DB.cloud.syncKeys); }
+function cloudPayload(){
+  const o={}; Object.keys(DB).forEach(k=>{ if(CLOUD_SKIP.indexOf(k)<0) o[k]=DB[k]; });
+  /* Opt-in only. Off by default because the doc is readable by anyone who knows
+     the Sync ID, and the Sync ID is visible in this page's source. */
+  if(syncKeysOn()){
+    o._keys={ openai:(DB.ai&&DB.ai.key)||"", giphy:(DB.ai&&DB.ai.giphyKey)||"",
+              workoutx:(DB.wx&&DB.wx.key)||"", model:(DB.ai&&DB.ai.model)||"" };
+  }
+  return o;
+}
+function applyCloudKeys(r){
+  if(!syncKeysOn() || !r || !r._keys) return false;
+  let got=false;
+  DB.ai=DB.ai||{}; DB.wx=DB.wx||{};
+  if(r._keys.openai   && !DB.ai.key){ DB.ai.key=r._keys.openai; got=true; }
+  if(r._keys.giphy    && !DB.ai.giphyKey){ DB.ai.giphyKey=r._keys.giphy; got=true; }
+  if(r._keys.workoutx && !DB.wx.key){ DB.wx.key=r._keys.workoutx; DB.wx.on=true; got=true; }
+  if(r._keys.model    && !DB.ai.model){ DB.ai.model=r._keys.model; }
+  return got;
+}
 function cloudMsg(t){ const el=document.getElementById('cloudMsg'); if(el) el.innerHTML=t; }
 function renderCloudFields(){
   const c=DB.cloud||{};
   const a=document.getElementById('setFbConfig'); if(a) a.value=c.config||"";
   const b=document.getElementById('setFbSyncId'); if(b) b.value=c.syncId||"amir-pt";
   const sw=document.getElementById('cloudSwitch'); if(sw) sw.classList.toggle('on',!!c.on);
+  const kw=document.getElementById('keySwitch'); if(kw) kw.classList.toggle('on',!!c.syncKeys);
   if(c.last) cloudMsg("Last sync: "+new Date(c.last).toLocaleString('en-GB'));
+}
+function toggleKeySync(el){
+  DB.cloud=DB.cloud||{};
+  DB.cloud.syncKeys=!DB.cloud.syncKeys;
+  el.classList.toggle('on',DB.cloud.syncKeys);
+  save();
+  cloudMsg(DB.cloud.syncKeys
+    ? "Keys will be included from the next sync. Make sure your Sync ID isn't guessable."
+    : "Keys stay on this device only.");
 }
 function toggleCloud(el){ DB.cloud.on=!DB.cloud.on; el.classList.toggle('on',DB.cloud.on); save();
   if(DB.cloud.on) cloudSyncNow(); else cloudMsg("Sync off \u2014 data stays on this device only."); }
@@ -3766,7 +3835,22 @@ function cloudErrHelp(e,verb){
 }
 function cloudRef(){ return _fs.collection("amirpt").doc(String((DB.cloud.syncId||"amir-pt")).trim()); }
 function cloudQueue(){ if(!DB.cloud||!DB.cloud.on) return; if(_cloudTimer) clearTimeout(_cloudTimer); _cloudTimer=setTimeout(()=>{cloudPush(true);},4000); }
+/* Counts what's actually worth protecting on this device. */
+function localHistorySize(){
+  let sessions=0;
+  Object.values(DB.strength||{}).forEach(a=>sessions+=(a||[]).length);
+  return {sessions, lifts:Object.keys(DB.strength||{}).length,
+          checkins:(DB.checkins||[]).length, rows:(DB.rowing||[]).length};
+}
+function localHasHistory(){ const h=localHistorySize(); return (h.sessions+h.checkins+h.rows)>0; }
+let _cloudPulled=false;
 async function cloudPush(quiet){
+  /* A freshly installed, empty app must NEVER overwrite the cloud copy before
+     it has pulled. This is the difference between a backup and a shredder. */
+  if(!_cloudPulled && !localHasHistory()){
+    if(!quiet) cloudMsg("\u26a0\ufe0f Nothing logged on this device yet \u2014 refusing to overwrite your cloud backup. Tap <b>Restore from cloud</b> first.");
+    return false;
+  }
   if(!(await cloudInit())) return false;
   try{
     await cloudRef().set({rev:DB._rev||Date.now(), updated:new Date().toISOString(), data:JSON.stringify(cloudPayload())});
@@ -3807,13 +3891,62 @@ async function cloudPull(quiet){
   if(!(await cloudInit())) return null;
   try{
     const snap=await cloudRef().get();
-    if(!snap.exists) return {sessions:0,rows:0,checkins:0,fresh:true};
+    if(!snap.exists){ _cloudPulled=true; return {sessions:0,rows:0,checkins:0,fresh:true}; }
     const raw=snap.data()||{};
     const remote=JSON.parse(raw.data||"{}");
     const stat=mergeCloud(remote, raw.rev||0);
+    stat.keys=applyCloudKeys(remote);
+    _cloudPulled=true;
     save(); boot();
     return stat;
   }catch(e){ cloudMsg(cloudErrHelp(e,"read from")); return null; }
+}
+/* Reads the cloud document and reports exactly what's in it. Writes nothing. */
+async function cloudVerify(){
+  cloudMsg("<span class='spin'></span> Checking your cloud backup\u2026");
+  if(!DB.cloud||!DB.cloud.on){ cloudMsg("\u2717 Cloud sync is switched off."); return; }
+  if(!(await cloudInit())){ return; }
+  let uid=null;
+  try{ uid=firebase.auth().currentUser&&firebase.auth().currentUser.uid; }catch(e){}
+  const L=localHistorySize();
+  try{
+    const snap=await cloudRef().get();
+    const path="amirpt / "+String((DB.cloud.syncId||"amir-pt")).trim();
+    if(!snap.exists){
+      cloudMsg("<b>Connection works.</b> Signed in"+(uid?" (anonymous id "+uid.slice(0,8)+"\u2026)":"")+
+        ", rules allow reading.<br><br>\u26a0\ufe0f <b>But there is no backup yet</b> at <code>"+path+"</code>.<br>"+
+        "This device has "+L.sessions+" lift sessions and "+L.checkins+" check-ins. Tap <b>Sync now</b> to upload them.");
+      return;
+    }
+    const raw=snap.data()||{};
+    let d={}; try{ d=JSON.parse(raw.data||"{}"); }catch(e){}
+    let sess=0; Object.values(d.strength||{}).forEach(a=>sess+=(a||[]).length);
+    const cks=(d.checkins||[]).length, rws=(d.rowing||[]).length;
+    const lifts=Object.keys(d.strength||{}).length;
+    const when=raw.updated? new Date(raw.updated).toLocaleString('en-GB') : "unknown";
+    const kb=Math.round((raw.data||"").length/1024);
+    const behind = sess<L.sessions || cks<L.checkins;
+    cloudMsg(
+      "\u2705 <b>Backup found.</b><br>"+
+      "<div class='recrow'><span class='k'>Document</span><span class='v'>"+path+"</span></div>"+
+      "<div class='recrow'><span class='k'>Last written</span><span class='v'>"+when+"</span></div>"+
+      "<div class='recrow'><span class='k'>In the cloud</span><span class='v'>"+sess+" sessions \u00b7 "+lifts+" lifts \u00b7 "+cks+" check-ins \u00b7 "+rws+" rows \u00b7 "+kb+" KB</span></div>"+
+      "<div class='recrow'><span class='k'>On this device</span><span class='v'>"+L.sessions+" sessions \u00b7 "+L.lifts+" lifts \u00b7 "+L.checkins+" check-ins \u00b7 "+L.rows+" rows</span></div>"+
+      (behind? "<div class='sm' style='color:var(--gold);margin-top:8px'>This device has more than the cloud. Tap <b>Sync now</b> to push it up.</div>"
+             : "<div class='sm' style='margin-top:8px'>Your history is safe off this device. If you lose the phone, install the app anywhere, set the same Sync ID, and tap Restore from cloud.</div>")
+    );
+  }catch(e){ cloudMsg(cloudErrHelp(e,"read from")); }
+}
+/* Explicit one-way restore \u2014 for a new or wiped device. */
+async function cloudRestore(){
+  if(!DB.cloud||!DB.cloud.on){ cloudMsg("Turn sync on first."); return; }
+  cloudMsg("<span class='spin'></span> Restoring\u2026");
+  const stat=await cloudPull(false);
+  if(stat===null) return;
+  if(stat.fresh){ cloudMsg("\u2717 There's no backup at that Sync ID yet \u2014 nothing to restore. Check the Sync ID matches your other device exactly."); return; }
+  const L=localHistorySize();
+  cloudMsg("\u2705 Restored \u2014 this device now has "+L.sessions+" lift sessions, "+L.lifts+" lifts and "+L.checkins+" check-ins.");
+  toast("Restored from cloud \u2705");
 }
 async function cloudSyncNow(silent){
   if(!DB.cloud||!DB.cloud.on){ if(!silent) cloudMsg("Turn sync on first."); return; }
@@ -3853,6 +3986,7 @@ function boot(){
   document.getElementById('setRemindTime').value=DB.reminder||"07:00";
   document.getElementById('setName').value=DB.profile.name; document.getElementById('setGoal').value=DB.profile.goal; document.getElementById('setPhase').value=DB.profile.phase;
   document.getElementById('setInjuries').value=DB.profile.injuries; document.getElementById('setRules').value=DB.profile.rules;
+  { const el=document.getElementById('setTone'); if(el) el.value=DB.profile.coachTone||""; }
   syncCheckinLoc();
   { const t=timeBudget(); const el=document.getElementById('ciTime'); if(el) el.value=t.mins;
     const v=document.getElementById('ciTimeV'); if(v) v.textContent=t.mins;
@@ -3873,7 +4007,16 @@ registerSW();
 loadPhotos();
 wxLoadCatalogue().then(n=>{ if(n){ try{ renderWxFields(); ensureWorkout(); }catch(e){} } });
 restoreIfWiped();
-setTimeout(()=>{ if(DB.cloud&&DB.cloud.on) cloudSyncNow(true); },1200);
+setTimeout(async()=>{
+  if(!(DB.cloud&&DB.cloud.on)) return;
+  const empty=!localHasHistory();
+  const stat=await cloudPull(true);          /* pull first, always */
+  if(stat===null) return;
+  if(empty && !stat.fresh && localHasHistory()){
+    toast("Restored your history from the cloud \u2705");
+  }
+  await cloudPush(true);
+},1200);
 window.addEventListener('resize',()=>{ try{ restClamp(); }catch(e){} });
 
 </script>
