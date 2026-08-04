@@ -239,6 +239,20 @@ textarea.txtin{min-height:88px;resize:vertical;line-height:1.45;}
 .setspick.auto{flex:1.5;font-size:13px;}
 .setspick.on{background:linear-gradient(100deg,#ff8a2b,#ff5a1a);color:#fff;border-color:transparent;}
 .setspick:active{transform:scale(.96);}
+.donewrap{padding:16px;border-top:1px solid var(--line);}
+.doneprog{height:7px;border-radius:4px;background:#0d0a07;border:1px solid var(--line);overflow:hidden;margin-bottom:10px;}
+.doneprog span{display:block;height:100%;background:linear-gradient(90deg,#1fbf68,#7ef0b0);transition:width .35s ease;}
+.donecard{background:linear-gradient(150deg,#0c2716,var(--card) 65%);border:1px solid #1fbf68;border-radius:16px;padding:16px;text-align:center;}
+.donehd{font-size:17px;font-weight:800;color:#7ef0b0;letter-spacing:-.3px;}
+.donestat{font-size:14px;font-weight:700;color:#fff;margin-top:7px;}
+.donesub{font-size:12.5px;font-weight:600;color:var(--muted);margin-top:6px;line-height:1.55;}
+.donerun{font-size:12px;font-weight:800;color:var(--gold);margin-top:10px;text-transform:uppercase;letter-spacing:.6px;}
+.recrow{display:flex;flex-wrap:wrap;align-items:center;gap:6px;padding:9px 0;border-bottom:1px solid var(--line);}
+.recrow:last-child{border-bottom:none;}
+.recrow .k{flex:1 1 100%;font-weight:700;color:var(--txt);font-size:13px;}
+.recrow .v{flex:1 1 auto;font-size:12px;color:var(--muted);}
+.card.ciloc{border-color:#12406e;background:linear-gradient(150deg,#0a2138,var(--card) 62%);}
+.card.ciloc label{color:#7cbcff;}
 .readyrow{display:flex;gap:8px;margin-top:12px;}
 .readyrow .btn{margin:0;padding:13px 8px;font-size:13.5px;}
 .locpill{display:inline-flex;align-items:center;gap:6px;background:#0a2138;border:1px solid #12406e;color:#7cbcff;border-radius:999px;padding:5px 11px;font-size:12px;font-weight:700;}
@@ -335,6 +349,17 @@ a{color:var(--orange);}
 
   <section class="screen" id="s-checkin">
     <div class="head"><div><div class="greet">Every Morning</div><h1 class="display">Check-in</h1></div></div>
+    <div class="card ciloc">
+      <div class="field" style="margin-bottom:0">
+        <label>Where are you today?</label>
+        <div class="seg three" id="ciLocSeg">
+          <button data-v="dubai"  onclick="segPick(this,'ciloc')">🏠 Dubai</button>
+          <button data-v="madrid" onclick="segPick(this,'ciloc')">🇪🇸 Madrid</button>
+          <button data-v="greece" onclick="segPick(this,'ciloc')">🇬🇷 Greece</button>
+        </div>
+        <div class="hint mt" id="ciLocHint"></div>
+      </div>
+    </div>
     <div class="card">
       <div class="field"><label>Bodyweight <span class="hint" style="float:right;font-weight:700;color:var(--gold)">kg</span></label>
         <input class="txtin" id="ciWeight" inputmode="decimal" placeholder="e.g. 84.2" /></div>
@@ -468,6 +493,12 @@ a{color:var(--orange);}
       <button class="btn sec mt" onclick="renderStorageStatus()">↻ Check again</button>
       <button class="btn ghost mt" onclick="purgePhotos()">Clear physique photos (frees the most space)</button>
     </div>
+    <div class="section-h">Recover Lost Data</div>
+    <div class="card">
+      <div class="notebox mb">The app keeps three copies on this device: the main store, a backup copy, and an IndexedDB mirror. If your history vanished, check here first — one of them often survives.</div>
+      <div id="recoverBox" class="hint" style="font-size:12.5px"></div>
+      <button class="btn sec mt" onclick="renderRecovery()">↻ Scan for recoverable data</button>
+    </div>
     <div class="section-h">Cloud Sync — Firestore</div>
     <div class="card">
       <div class="notebox mb">Your training history lives on this device (localStorage + IndexedDB) and <b>survives redeploys</b> — a new index.html on the same domain never wipes it. Turn this on and every lift is also mirrored to your own Firebase project, so it survives a lost phone, a cleared browser, and syncs across devices. Photos and chat stay local (too big for a Firestore doc).</div>
@@ -576,7 +607,7 @@ const DEFAULTS = {
   integrations:{"Apple Watch":true,"Concept2 (manual)":true,"Photos":true,"Camera":false,"Notifications":true},
   lib:{}, dayTypes:{}, media:{}, progression:{},
   nutrition:{calorieTarget:null, proteinTarget:null, phase:"", log:[]},
-  cardio:null, readiness:null, aiPlan:null, restCall:null, setsOverride:null,
+  cardio:null, readiness:null, aiPlan:null, restCall:null, setsOverride:null, completed:{},
   cloud:{on:false, config:"", syncId:"amir-pt", last:null},
   prefs:{visualMode:"auto", showIcons:true, exerciseGifs:true, workoutFormat:"list", coachStyle:"direct funny concise",
          autoPlan:true, restPos:null, restMini:false}
@@ -649,6 +680,7 @@ function go(s){
   document.getElementById('chatBar').style.display = s==='coach'?'flex':'none';
   window.scrollTo(0,0);
   const rt=document.getElementById('restTimer'); if(rt) rt.classList.toggle('overchat', s==='coach');
+  if(s==='checkin') syncCheckinLoc();
   if(s==='coach') renderChat();
   if(s==='progress'){ drawChart(); renderRowingLog(); }
   if(s==='history') renderHistory();
@@ -679,12 +711,31 @@ function undoChange(id){
   rerenderEverything(); toast("Reverted ✅");
 }
 loadSnaps();
-let ciLocPick=null;
+let ciLocPick=null, ciLocPickDay=null;
+/* Dubai is home, so it's the default every morning \u2014 travel is the exception you
+   pick deliberately. The one exception: if you've already checked in today, show
+   what you actually chose today rather than silently resetting it. */
+function checkinLocDefault(){
+  const ci=(DB.checkins||[]).find(c=>c.date===today());
+  if(ci && ci.loc && LOCS[ci.loc]) return ci.loc;
+  return "dubai";
+}
+function syncCheckinLoc(){
+  if(!ciLocPick || ciLocPickDay!==today()){ ciLocPick=checkinLocDefault(); ciLocPickDay=today(); }
+  if(!LOCS[ciLocPick]) ciLocPick="dubai";
+  const seg=document.getElementById('ciLocSeg');
+  if(seg) seg.querySelectorAll('button').forEach(b=>b.classList.toggle('on',b.dataset.v===ciLocPick));
+  const h=document.getElementById('ciLocHint');
+  if(h){
+    let txt="<b>"+LOCS[ciLocPick].label+"</b> \u2014 "+LOCS[ciLocPick].equipment;
+    if(ciLocPick!==locKey()) txt+="<br><span style='color:var(--gold)'>Saving will move your training to "+LOCS[ciLocPick].label+".</span>";
+    h.innerHTML=txt;
+  }
+}
 function segPick(btn,group){
   btn.parentElement.querySelectorAll('button').forEach(b=>b.classList.remove('on')); btn.classList.add('on');
   if(group==='loc'){ setLocation(btn.dataset.v); toast("Location \u2192 "+LOC().label); renderEquipFields(); }
-  if(group==='ciloc'){ ciLocPick=btn.dataset.v; const h=document.getElementById('ciLocHint');
-    if(h) h.innerHTML="<b>"+LOCS[ciLocPick].label+"</b> \u2014 "+LOCS[ciLocPick].equipment; }
+  if(group==='ciloc'){ ciLocPick=btn.dataset.v; ciLocPickDay=today(); syncCheckinLoc(); }
   if(group==='prov'){ DB.ai.provider=btn.dataset.v; }
 }
 
@@ -1276,7 +1327,8 @@ function renderWorkoutSheet(w){
   "<div class='sheet-sec'><h3>◆ Main Workout · log each set</h3>"+exHTML+"</div>"+
   (cardio?cardioBlockHTML(cardio):"")+
   "<div class='sheet-sec'><h3>◆ Cool-down</h3>"+w.cooldown.map(mvHTML).join('')+"</div>"+
-  "<div class='sheet-sec'><h3>◆ Recovery Notes</h3><div class='recovery'>"+w.recovery+"</div></div></div>";
+  "<div class='sheet-sec'><h3>◆ Recovery Notes</h3><div class='recovery'>"+w.recovery+"</div></div>"+
+  completeBlockHTML(w)+"</div>";
   try{ hydrateMedia(); }catch(e){}
 }
 
@@ -1445,6 +1497,7 @@ async function logSet(i){
   const sl=document.getElementById('sl'+i); if(sl) sl.insertAdjacentHTML('beforeend',setChip({w,r}));
   ri.value=''; wi.value=w; afterLog(i);
   showEffortPrompt(i,ex);
+  refreshDoneCard();
   const cb=document.getElementById('cb'+i); if(cb) cb.innerHTML="<div class='coachbubble'><div class='who'>◆ Coach <span class='typing'><i></i><i></i><i></i></span></div></div>";
   const exObj={name:ex.name,cue:ex.cue,rec:ex.rec,target:DB.workout.sets,sets:todaySets(ex.name)};
   const reply=await coachSetReply(exObj,{w,r});
@@ -1891,7 +1944,15 @@ function coachLogSet(raw){ const p=String(raw||"").split('|').map(x=>x.trim()); 
   else if(/easy|light|comfortable/.test(tail)) set.e=1;
   else if(/right|solid/.test(tail)) set.e=2;
   saveSet(name,set); markSession(); save(); if(document.getElementById('strengthPBs'))renderStrengthPBs(); return {name,w,r}; }
-function coachWorkoutComplete(){ DB.lastSessionDate=today(); if(DB.streak==null)DB.streak=0; markSession(); save(); updateStreak(); return true; }
+function coachWorkoutComplete(){
+  const s=todaySummary();
+  DB.completed=DB.completed||{};
+  DB.completed[today()]={at:new Date().toISOString(),title:s.title,loc:s.loc,
+    exercises:s.done.length,planned:s.planned.length,sets:s.sets,
+    volume:Math.round(s.volume),secs:s.timedSecs,skipped:s.skipped,avgEff:s.avgEff};
+  DB.lastSessionDate=today(); markSession(); save(); updateStreak();
+  try{ renderWorkoutSheet(DB.workout); }catch(e){}
+  return true; }
 function coachSetNextTarget(raw){ const p=String(raw||"").split('|').map(x=>x.trim()); const n=resolveExName(p[0]); if(!n) return null; DB.progression[n]=Object.assign({},DB.progression[n],{next:p[1]||"",keep:false,delta:0}); save(); if(DB.workout)finalizeCoachEdit(); return {n,t:p[1]}; }
 function coachIncreaseLoad(raw){ const p=String(raw||"").split('|').map(x=>x.trim()); const n=resolveExName(p[0]); if(!n) return null; const d=parseFloat((p[1]||"").replace(/[^0-9.\-]/g,''))||0; DB.progression[n]=Object.assign({},DB.progression[n],{delta:d,keep:false,next:""}); save(); if(DB.workout)finalizeCoachEdit(); return {n,d}; }
 function coachKeepLoad(raw){ const n=resolveExName(raw); if(!n) return null; DB.progression[n]=Object.assign({},DB.progression[n],{keep:true,delta:0,next:""}); save(); if(DB.workout)finalizeCoachEdit(); return n; }
@@ -2435,7 +2496,7 @@ function scheduleInApp(){
    v18 ADDITIONS — draggable rest timer · weekly training memory · AI planner
    · Firestore sync
    ========================================================================== */
-const APP_VERSION="v22 · 2026-08-04";
+const APP_VERSION="v25 · 2026-08-04";
 
 /* ===== 1. REST TIMER — drag it anywhere so it never blocks the chat box ===== */
 let _rtDrag=null;
@@ -3123,7 +3184,176 @@ function effortRegressions(){
   return out;
 }
 
-/* ===== 8. FIRESTORE — history that outlives this phone ===== */
+/* ==========================================================================
+   v25 — FINISH THE SESSION. A real "done" button with a summary of what you
+   actually did, plus a storage recovery panel.
+   ========================================================================== */
+
+/* ===== A. WHAT DID HE ACTUALLY DO TODAY? ===== */
+function todaySummary(){
+  const w=DB.workout||{};
+  const planned=(w.main||[]).map(e=>e.name);
+  const done=[], skipped=[];
+  let sets=0, volume=0, timedSecs=0;
+  const efforts=[];
+  planned.forEach(n=>{
+    const ss=todaySets(n);
+    if(ss.length){
+      done.push(n); sets+=ss.length;
+      ss.forEach(x=>{
+        if(x.timed || (EX(n)||{}).timed) timedSecs+=(x.r||0);
+        else volume+=((x.w||0)*(x.r||0));
+        const e=effortOf(x); if(e) efforts.push(e);
+      });
+    } else skipped.push(n);
+  });
+  /* Anything he logged today that wasn't on the plan still counts. */
+  const extras=[];
+  Object.keys(DB.strength||{}).forEach(n=>{
+    if(planned.indexOf(n)>=0) return;
+    const ss=todaySets(n);
+    if(ss.length){
+      extras.push(n); done.push(n); sets+=ss.length;
+      ss.forEach(x=>{
+        if(x.timed || (EX(n)||{}).timed) timedSecs+=(x.r||0);
+        else volume+=((x.w||0)*(x.r||0));
+        const e=effortOf(x); if(e) efforts.push(e);
+      });
+    }
+  });
+  const rows=(DB.rowing||[]).filter(r=>r.date===today());
+  const avgEff=efforts.length? efforts.reduce((a,b)=>a+b,0)/efforts.length : null;
+  const target=(w.sets||0)*(planned.length||0);
+  return {planned,done,skipped,extras,sets,volume,timedSecs,rows,avgEff,target,
+          title:w.title||"Session", loc:locKey()};
+}
+function completionOf(d){ return (DB.completed||{})[d||today()]||null; }
+/* Update the finish card in place, without re-rendering the whole sheet
+   (that would blow away the effort prompt he's about to tap). */
+function refreshDoneCard(){
+  const el=document.getElementById('doneCard'); if(!el||!DB.workout) return;
+  const html=completeBlockHTML(DB.workout);
+  if(html) el.outerHTML=html;
+}
+
+/* ===== B. MARK IT DONE ===== */
+function completeWorkout(){
+  const s=todaySummary();
+  if(!s.sets && !s.rows.length){
+    if(!confirm("You haven't logged a single set today. Mark the session complete anyway?")) return;
+  }
+  DB.completed=DB.completed||{};
+  DB.completed[today()]={
+    at:new Date().toISOString(), title:s.title, loc:s.loc,
+    exercises:s.done.length, planned:s.planned.length,
+    sets:s.sets, volume:Math.round(s.volume), secs:s.timedSecs,
+    skipped:s.skipped, avgEff:s.avgEff
+  };
+  markSession(); save(); updateStreak();
+  renderWorkoutSheet(DB.workout);
+  try{ renderWeek(); renderReadiness(); renderHistory(); }catch(e){}
+  try{ celebrate(); }catch(e){}
+  toast("Session logged \u2705  \u00b7  "+(DB.streak||1)+" day run");
+  setTimeout(()=>{ const el=document.getElementById('doneCard'); if(el) el.scrollIntoView({behavior:"smooth",block:"center"}); },120);
+}
+function undoComplete(){
+  if(!DB.completed||!DB.completed[today()]) return;
+  delete DB.completed[today()];
+  save(); updateStreak(); renderWorkoutSheet(DB.workout);
+  try{ renderWeek(); renderReadiness(); }catch(e){}
+  toast("Marked as not finished \u2014 carry on");
+}
+function celebrate(){
+  try{ if(navigator.vibrate) navigator.vibrate([18,40,18,40,60]); }catch(e){}
+  try{ beep(880,0.09); setTimeout(()=>beep(1320,0.12),110); }catch(e){}
+}
+
+/* ===== C. THE BUTTON / THE RECEIPT ===== */
+function fmtVol(v){ return v>=1000? (Math.round(v/100)/10)+"t" : Math.round(v)+"kg"; }
+function completeBlockHTML(w){
+  if(!w || w.sets===0 || w.kind==='cardio' || w.kind==='mobility') return "";
+  const c=completionOf();
+  const s=todaySummary();
+  const bits=[];
+  if(s.sets) bits.push(s.sets+" set"+(s.sets===1?"":"s"));
+  if(s.volume) bits.push(fmtVol(s.volume)+" moved");
+  if(s.timedSecs) bits.push(Math.round(s.timedSecs)+"s held");
+  if(s.rows.length) bits.push(s.rows.length+" row"+(s.rows.length===1?"":"s"));
+  const effTxt=(s.avgEff!=null)? " \u00b7 felt "+effortWord(s.avgEff) : "";
+
+  if(c){
+    const when=new Date(c.at).toLocaleTimeString('en-GB',{hour:'2-digit',minute:'2-digit'});
+    return "<div class='sheet-sec donewrap' id='doneCard'>"+
+      "<div class='donecard'>"+
+        "<div class='donehd'>\u2705 Session complete</div>"+
+        "<div class='donestat'>"+(bits.join("  \u00b7  ")||"nothing logged")+effTxt+"</div>"+
+        "<div class='donesub'>"+c.exercises+"/"+c.planned+" exercises \u00b7 finished "+when+
+          (c.skipped&&c.skipped.length? " \u00b7 skipped "+c.skipped.join(", ") : "")+"</div>"+
+        "<div class='donerun'>"+(DB.streak||1)+" day run \uD83D\uDD25</div>"+
+        "<button class='btn ghost mt' onclick='undoComplete()'>\u21a9 Not finished after all</button>"+
+      "</div></div>";
+  }
+  const pct=s.target? Math.min(100,Math.round((s.sets/s.target)*100)) : 0;
+  return "<div class='sheet-sec donewrap' id='doneCard'>"+
+    "<div class='doneprog'><span style='width:"+pct+"%'></span></div>"+
+    "<div class='donesub' style='margin-bottom:10px'>"+
+      (s.sets? s.sets+" of about "+s.target+" sets logged"+(s.skipped.length? " \u00b7 still to do: "+s.skipped.join(", ") : " \u00b7 everything's in") 
+             : "Nothing logged yet \u2014 log your sets as you go.")+"</div>"+
+    "<button class='btn green' onclick='completeWorkout()' style='font-size:16px;padding:16px'>\u2705 Workout Complete</button>"+
+  "</div>";
+}
+
+/* ===== D. STORAGE RECOVERY \u2014 see what survived, and get it back ===== */
+async function scanStores(){
+  const out=[];
+  const size=v=>v? (v.length/1024).toFixed(0)+" KB" : null;
+  const describe=(label,raw,restoreArg)=>{
+    if(!raw){ out.push({label,found:false}); return; }
+    let d=null; try{ d=JSON.parse(raw); }catch(e){}
+    const lifts=d&&d.strength? Object.keys(d.strength).length : 0;
+    const sessions=d&&d.strength? Object.values(d.strength).reduce((a,v)=>a+(v||[]).length,0) : 0;
+    const checkins=d&&d.checkins? d.checkins.length : 0;
+    out.push({label,found:true,size:size(raw),lifts,sessions,checkins,
+              hasKey:!!(d&&d.ai&&d.ai.key), restoreArg});
+  };
+  try{ describe("This device \u00b7 main store", localStorage.getItem(STORE_KEY), "local"); }catch(e){}
+  try{ describe("This device \u00b7 backup copy", localStorage.getItem(BACKUP_KEY), "backup"); }catch(e){}
+  try{ describe("This device \u00b7 IndexedDB mirror", await idbGet(), "idb"); }catch(e){}
+  return out;
+}
+async function renderRecovery(){
+  const el=document.getElementById('recoverBox'); if(!el) return;
+  el.innerHTML="<span class='spin'></span> Checking\u2026";
+  const rows=await scanStores();
+  const any=rows.some(r=>r.found && (r.sessions||r.checkins));
+  el.innerHTML=rows.map(r=>{
+    if(!r.found) return "<div class='recrow'><span class='k'>"+r.label+"</span><span class='v muted'>empty</span></div>";
+    return "<div class='recrow'><span class='k'>"+r.label+"</span>"+
+      "<span class='v'>"+r.sessions+" sessions \u00b7 "+r.lifts+" lifts \u00b7 "+r.checkins+" check-ins \u00b7 "+r.size+
+        (r.hasKey?" \u00b7 has API key":"")+"</span>"+
+      (r.sessions||r.checkins? "<button class='warnbtn' onclick=\"restoreFrom('"+r.restoreArg+"')\">Restore this</button>":"")+
+    "</div>";
+  }).join('')+
+  (any? "" : "<div class='sm' style='margin-top:10px'>All three local stores are empty. Nothing was deleted by the app \u2014 the browser cleared them. If you have an exported JSON backup, use Import above. If Cloud Sync was on, use \u2018Sync now\u2019 and it will pull everything back.</div>");
+}
+async function restoreFrom(which){
+  let raw=null;
+  try{
+    if(which==="local")  raw=localStorage.getItem(STORE_KEY);
+    if(which==="backup") raw=localStorage.getItem(BACKUP_KEY);
+    if(which==="idb")    raw=await idbGet();
+  }catch(e){}
+  if(!raw){ toast("Nothing there to restore"); return; }
+  if(!confirm("Replace what's currently in the app with this copy?")) return;
+  try{
+    DB=mergeDefaults(JSON.parse(raw));
+    save(); await loadPhotos(); boot();
+    toast("Restored \u2705");
+    renderRecovery();
+  }catch(e){ toast("That copy is corrupted \u2014 couldn't restore"); }
+}
+
+/* ===== 9. FIRESTORE — history that outlives this phone ===== */
 let _fbReady=false,_fs=null,_cloudTimer=null;
 const CLOUD_SKIP=["photos","chat","cloud","ai","workout","_rev"];
 function cloudPayload(){ const o={}; Object.keys(DB).forEach(k=>{ if(CLOUD_SKIP.indexOf(k)<0) o[k]=DB[k]; }); return o; }
@@ -3237,9 +3467,7 @@ function boot(){
   document.getElementById('setRemindTime').value=DB.reminder||"07:00";
   document.getElementById('setName').value=DB.profile.name; document.getElementById('setGoal').value=DB.profile.goal; document.getElementById('setPhase').value=DB.profile.phase;
   document.getElementById('setInjuries').value=DB.profile.injuries; document.getElementById('setRules').value=DB.profile.rules;
-  { const k=locKey(); ciLocPick=ciLocPick||k;
-    document.querySelectorAll('#ciLocSeg button').forEach(b=>b.classList.toggle('on',b.dataset.v===ciLocPick));
-    const h=document.getElementById('ciLocHint'); if(h) h.innerHTML="<b>"+LOCS[ciLocPick].label+"</b> — "+LOCS[ciLocPick].equipment; }
+  syncCheckinLoc();
   document.querySelectorAll('#provSeg button').forEach(b=>b.classList.toggle('on',b.dataset.v===DB.ai.provider));
   renderMetrics(); renderItin(); renderStrengthPBs(); renderRowing(); renderRowingLog(); renderPhotos(); renderIntegrations(); updateStreak(); renderNutrition();
   if(typeof scheduleInApp==="function") scheduleInApp();
