@@ -1490,7 +1490,77 @@ function inferDayKind(name){ const s=String(name).toLowerCase();
   if(/mobility|recovery|yoga|stretch|flexib/.test(s)) return "mobility";
   if(/\brow\b|erg|\brun\b|jog|bike|cycle|spin|zone ?2|steady state|liss/.test(s)) return "cardio";
   return "strength"; }
+/* ==========================================================================
+   v49 — COMING BACK AFTER TIME OFF
+   The load recommendation used to read the last logged session and never ask
+   WHEN it was, so a fortnight away still got you "45kg — you mastered 40kg,
+   earned it". Now the gap is measured and the number is pulled back.
+
+   The gap is measured from your last WEIGHT TRAINING SESSION OF ANY KIND, not
+   from the last time you did this particular lift — training through in Spain
+   means you aren't detrained, you've just not squatted lately. Missing three
+   weeks entirely is a different thing, and that's what this catches.
+
+   The ladder is capped at 20 days on purpose: that's the longest break you
+   actually plan on, so there is no 12-week "start from scratch" tier to be
+   wrongly triggered by a stale log.
+   ========================================================================== */
+function lastStrengthDate(){
+  let best=null; const t=today();
+  Object.values(DB.strength||{}).forEach(arr=>{
+    (arr||[]).forEach(s=>{
+      if(!s.date||s.date==='prev') return;
+      if(s.date>=t) return;                    /* today doesn't count, or the gap
+                                                  would collapse to 0 mid-session */
+      if(!(s.sets||[]).length) return;
+      if(!best||s.date>best) best=s.date;
+    });
+  });
+  return best;
+}
+/* Round to something you can actually load. */
+function loadRound(w){ const step=(w<20)?0.5:2.5; return Math.max(0,Math.round(w/step)*step); }
+function layoffInfo(){
+  const last=lastStrengthDate();
+  if(!last) return {gap:null,tier:0,factor:1,hold:false,label:null};
+  const gap=daysSince(last);
+  if(gap==null||gap<=7)  return {gap,tier:0,factor:1,   hold:false,label:null};
+  if(gap<=13)            return {gap,tier:1,factor:1,   hold:true,
+    label:gap+" days since you last lifted — hold the weight, don't add today."};
+  /* 14 days and beyond, capped: it never gets harsher than this. */
+  return {gap,tier:2,factor:0.9,hold:true,
+    label:gap+" days off — starting at 90%. Ramp back over a session or two, don't test it cold."};
+}
+/* The raw recommendation, then the layoff adjustment on top. */
 function recommendLoad(ex){
+  const r=recommendLoadRaw(ex);
+  if(!r) return r;
+  const L=layoffInfo();
+  if(!L.tier || r.w==null) return r;
+  const prevTop=lastTopWeight(ex);
+  if(prevTop==null) return r;
+  /* Never let a layoff push the number UP, and never bump on the first
+     session back however good the last one felt. */
+  let w = (L.tier===1) ? Math.min(r.w, prevTop) : loadRound(prevTop*L.factor);
+  if(w>prevTop) w=prevTop;
+  const back = (w<prevTop);
+  return {
+    w, up:false,
+    text: back
+      ? w+"kg \u2014 "+L.label+" You were at "+prevTop+"kg."
+      : w+"kg \u2014 "+L.label,
+    layoff:L.gap
+  };
+}
+function lastTopWeight(ex){
+  const h=DB.strength[ex]; if(!h||!h.length) return null;
+  const prev=h.filter(s=>s.date!==today());
+  const src=(prev.length?prev:h)[(prev.length?prev:h).length-1];
+  const sets=(src&&src.sets)||[]; if(!sets.length) return null;
+  const top=Math.max(...sets.map(s=>s.w||0));
+  return top>0? top : null;
+}
+function recommendLoadRaw(ex){
   const pr=DB.progression&&DB.progression[ex];
   const h=DB.strength[ex];
   const topPrev = (h&&h.length)? Math.max(...(h[h.length-1].sets||[]).map(s=>s.w).concat([0])) : null;
@@ -2072,6 +2142,20 @@ function sessBarHTML(){
       "<button class='fin' onclick='finishSessionBtn()'>■ Finish</button>"+
     "</div></div>";
 }
+/* How long since he last lifted anything — the coach must not prescribe PR
+   attempts on a first session back. */
+function layoffLine(){
+  try{
+    const L=layoffInfo();
+    if(L.gap==null) return "no lifting logged yet";
+    if(!L.tier) return "training continuously, last session "+L.gap+"d ago \u2014 progress loads normally";
+    return "FIRST SESSION BACK after "+L.gap+" days off. "+
+      (L.tier===1
+        ? "Hold last session's weights today, no increases, however good they felt."
+        : "Start ~10% below his last top weights and ramp back. Do NOT attempt PRs or add load today.")+
+      " Say so plainly \u2014 he expects to be pulled back, not flattered.";
+  }catch(e){ return "unknown"; }
+}
 /* One line for the coach's prompt so it knows how long he's actually been at it. */
 function sessClockLine(){
   try{
@@ -2297,12 +2381,22 @@ function lastSessionOf(name){
 }
 function lastTimeHTML(name){
   const s=lastSessionOf(name);
-  if(!s||!(s.sets||[]).length) return "<div class='cue'><b>Last time:</b> first time on this one \u2014 pick a weight you can own for 8\u201312 clean reps.</div>";
+  if(!s||!(s.sets||[]).length){
+    const L0=layoffInfo();
+    return "<div class='cue'><b>Last time:</b> first time on this one \u2014 pick a weight you can own for 8\u201312 clean reps."+
+      (L0.tier? " You're "+L0.gap+" days off training, so start lighter than you think." : "")+"</div>";
+  }
   const timed=!!(EX(name)||{}).timed;
   const txt=(s.sets||[]).map(x=>timed?(x.r+"s"):(x.w+"kg\u00d7"+x.r)).join("  \u00b7  ");
   const ago=daysSince(s.date);
+  const L=layoffInfo();
+  const backNote = L.tier
+    ? "<div class='cue' style='color:var(--gold)'><b>\u26a0 Back after "+L.gap+" days:</b> "+
+      (L.tier===1? "hold last session's weight today \u2014 no jumps. Add next time if it moves well."
+                 : "start about 10% under and ramp back up. You'll be back on it within a couple of sessions.")+
+      "</div>" : "";
   const top=timed? Math.max(...s.sets.map(x=>x.r||0))+"s" : Math.max(...s.sets.map(x=>x.w||0))+"kg";
-  return "<div class='cue'><b>Last time ("+(ago===0?"earlier today":ago===1?"yesterday":ago+"d ago")+"):</b> "+txt+" \u2014 top "+top+"</div>";
+  return "<div class='cue'><b>Last time ("+(ago===0?"earlier today":ago===1?"yesterday":ago+"d ago")+"):</b> "+txt+" \u2014 top "+top+"</div>"+backNote;
 }
 /* Sets are per exercise. DB.workout.sets is only the default for new ones. */
 function exSets(e){
@@ -2525,6 +2619,7 @@ function coachSystem(){
 "\n- REACH FOR, IN ORDER: "+(GEAR_PRIORITY[locKey()]||["bw"]).map(g=>({bb:"barbell",db:"dumbbell",mach:"machine/cable",kb:"kettlebell",band:"band",bar:"pull-up bar",bw:"bodyweight",other:"other kit"}[g]||g)).join(" > ")+
 (locKey()==="dubai"? ". He has a full gym here \u2014 do NOT default to bodyweight movements. Bodyweight is for Greece." : "")+
 "\n- SESSION CLOCK: "+sessClockLine()+
+"\n- LAYOFF: "+layoffLine()+
 "\n- Phase: "+p.phase+"\n- Mode: "+(p.mode||"\u2014")+
 "\n- Today scheduled: "+pickSplit()+"\n- Today's exercises: "+curW+
 "\n- Custom day types: "+dayTypesStr+"\n- Cardio: "+cardioStr+"\n- Nutrition: "+nutStr+
@@ -3475,7 +3570,7 @@ function scheduleInApp(){
    v18 ADDITIONS — draggable rest timer · weekly training memory · AI planner
    · Firestore sync
    ========================================================================== */
-const APP_VERSION="v48 · 2026-08-04";
+const APP_VERSION="v49 · 04/08/2026";
 
 /* ===== 1. REST TIMER — drag it anywhere so it never blocks the chat box ===== */
 let _rtDrag=null;

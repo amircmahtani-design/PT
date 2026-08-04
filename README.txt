@@ -1,12 +1,45 @@
-AMIR PT — v48 · 2026-08-04
+AMIR PT — v49 · 04/08/2026
 ==========================
 
 Deploy exactly as before: index.html, sw.js, manifest.json and the two icons
 in the same folder, at the repo root. Filenames are case-sensitive —
 index.html, never Index.html.
 
-Check it landed: Settings → bottom → "Amir PT · v48 · 2026-08-04".
+Check it landed: Settings → bottom → "Amir PT · v49 · 04/08/2026".
 Nothing in this update touches your data. Every logged set survives.
+
+
+WHAT'S NEW IN v49
+=================
+
+0. IT NOW KNOWS YOU'VE BEEN AWAY
+---------------------------------
+The load recommendation read your last logged session and never asked WHEN it
+was. Two weeks in Greece still got you "45kg — you mastered 40kg, earned it".
+The number in the box was wrong in the dangerous direction.
+
+THE GAP IS MEASURED FROM YOUR LAST WEIGHT SESSION OF ANY KIND — not from the
+last time you did that particular lift. Training through in Spain means you
+are not detrained, you just haven't squatted lately, and you get your full
+progression. Missing the time entirely is the different thing this catches.
+
+  0-7 days     normal progression, unchanged
+  8-13 days    hold last session's weight, no bump however good it felt
+  14+ days     ~90% of your last top weight, ramp back up
+
+CAPPED AT 14+ DELIBERATELY. There is no 12-week "start from scratch" tier,
+because you don't take breaks like that and a stale log shouldn't be able to
+trigger one. 40 days off gets treated exactly like 14.
+
+Weights round to loadable increments (2.5kg above 20kg, 0.5kg below), so 40kg
+comes back as 35kg rather than an unloadable 36kg.
+
+The exercise shows an amber line — "⚠ Back after 17 days: start about 10%
+under and ramp back up" — and the coach is told in its prompt, so its chat
+advice matches the numbers in the boxes instead of contradicting them.
+
+One trap closed: logging your first lift of the day no longer collapses the
+gap to zero and quietly restores full loads halfway through the session.
 
 
 WHAT'S NEW IN v48
