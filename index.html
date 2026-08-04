@@ -257,6 +257,16 @@ details.sec[open] .secsum{border-radius:var(--radius) var(--radius) 0 0;border-b
 details.sec[open] .secsum:after{content:"\2212";}
 details.sec[open] > .card{border-radius:0 0 var(--radius) var(--radius);border-top:none;margin-bottom:0;}
 details.sec > .card{margin-bottom:0;}
+details.sec2{padding:0;}
+.secsum2{list-style:none;cursor:pointer;display:flex;align-items:center;justify-content:space-between;gap:10px;
+  padding:15px 20px;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.7px;color:var(--label);}
+.secsum2::-webkit-details-marker{display:none;}
+.secsum2 .m{text-transform:none;letter-spacing:0;font-weight:600;color:var(--dim);font-size:11.5px;}
+.secsum2:after{content:"+";font-size:17px;font-weight:800;line-height:1;color:var(--label);margin-left:2px;}
+details.sec2[open] .secsum2{color:var(--orange);padding-bottom:6px;}
+details.sec2[open] .secsum2:after{content:"\2212";}
+.secbody{padding:0 20px 18px;}
+.secbody .sheet-sec{padding:0;border:none;}
 .brrow{display:flex;align-items:center;gap:11px;padding:9px 0;border-bottom:1px solid var(--hair);}
 .brrow:last-child{border-bottom:none;}
 .brrow img,.brrow .ph{width:54px;height:54px;flex:0 0 auto;border-radius:11px;object-fit:cover;background:#0d0a07;border:1px solid var(--line);}
@@ -500,8 +510,11 @@ a{color:var(--orange);}
       <div class="field" style="margin-bottom:12px"><label>WorkoutX API key</label>
         <input class="txtin" id="setWxKey" type="password" placeholder="wx_..." />
         <div class="hint mt">Free plan: 500 requests a month. A full sync uses about 120 of them, once. Get a key at workoutxapp.com.</div></div>
-      <button class="btn" onclick="saveWxKey()">Save key</button>
-      <button class="btn sec mt" onclick="startWxSync()">Download exercise catalogue</button>
+      <button class="btn" onclick="getMyExercises()">Get my exercises</button>
+      <div class="hint mt">Restores from your cloud backup if there is one (free), otherwise downloads from WorkoutX.</div>
+      <button class="btn sec mt" onclick="saveWxKey()">Save key only</button>
+      <button class="btn ghost mt" onclick="startWxSync(true)">Force a fresh download</button>
+      <div id="wxStatus" class="hint mt" style="font-size:12.5px"></div>
       <div id="wxMsg" class="hint mt" style="font-size:13px"></div>
       <div class="field mt" style="margin-bottom:0;border-top:1px solid var(--hair);padding-top:14px">
         <label>Browse what you've downloaded</label>
@@ -1685,6 +1698,26 @@ function setsPickerHTML(w){
       ? "Manual \u2014 you set <b>"+cur+"</b>. Tap <b>Auto</b> to hand it back to the coach."
       : "Coach chose <b>"+cur+"</b> from your readiness. Tap a number to override for today.")+"</div></div>";
 }
+/* Collapsible block for the workout sheet. `key` remembers open/closed;
+   the main workout is never collapsible \u2014 that's the thing he's using. */
+function sheetSec(key,title,meta,body,openDefault){
+  const st=(DB.prefs&&DB.prefs.openSheet)||{};
+  const open = (st[key]===undefined)? !!openDefault : !!st[key];
+  return "<details class='sheet-sec sec2'"+(open?" open":"")+" data-sk='"+key+"'>"+
+    "<summary class='secsum2'><span class='t'>"+title+"</span>"+
+      (meta? "<span class='m'>"+meta+"</span>" : "")+"</summary>"+
+    "<div class='secbody'>"+body+"</div></details>";
+}
+function bindSheetSecs(){
+  document.querySelectorAll('#workoutSheet details[data-sk]').forEach(d=>{
+    if(d.dataset.bound==="1") return; d.dataset.bound="1";
+    d.addEventListener('toggle',()=>{
+      DB.prefs=DB.prefs||{}; DB.prefs.openSheet=DB.prefs.openSheet||{};
+      DB.prefs.openSheet[d.dataset.sk]=d.open; save();
+    });
+  });
+}
+function moveCount(a){ const n=(a||[]).length; return n+" move"+(n===1?"":"s"); }
 function renderWorkoutSheet(w){
   if(!w){ document.getElementById('workoutSheet').innerHTML=""; return; }
   const cardio = w.cardio || (w.kind==='cardio'? DB.cardio : null);
@@ -1692,14 +1725,14 @@ function renderWorkoutSheet(w){
     document.getElementById('workoutSheet').innerHTML=
     "<div class='sheet'><div class='sheet-hd'><div class='tag'>"+w.tag+"</div><h2 class='display'>"+w.title+"</h2></div>"+
     "<div class='sheet-sec'><div class='recovery'>"+w.note+"</div></div>"+
-    (w.warmup&&w.warmup.length?("<div class='sheet-sec'><h3>◆ Warm-up</h3>"+w.warmup.map(mvHTML).join('')+"</div>"):"")+
+    (w.warmup&&w.warmup.length? sheetSec("warm","Warm-up",moveCount(w.warmup),w.warmup.map(mvHTML).join(''),false) : "")+
     cardioBlockHTML(cardio||{name:"Concept2 Row",duration:"30 min",zone:"Zone 2"})+
-    "<div class='sheet-sec'><h3>◆ Cool-down</h3>"+w.cooldown.map(mvHTML).join('')+"</div>"+
-    "<div class='sheet-sec'><h3>◆ Recovery Notes</h3><div class='recovery'>"+w.recovery+"</div></div></div>";
+    sheetSec("cool","Cool-down",moveCount(w.cooldown),w.cooldown.map(mvHTML).join(''),false)+
+    sheetSec("rec","Recovery notes","","<div class='recovery'>"+w.recovery+"</div>",false)+"</div>";
     return;
   }
   if(w.sets===0){
-    document.getElementById('workoutSheet').innerHTML="<div class='sheet'><div class='sheet-hd'><div class='tag'>"+w.tag+"</div><h2 class='display'>"+w.title+"</h2></div><div class='sheet-sec'><div class='recovery'>"+w.note+"</div></div>"+(cardio?cardioBlockHTML(cardio):"")+"<div class='sheet-sec'><h3>◆ "+(w.kind==='mobility'?'Mobility Flow':'Mobility')+"</h3>"+w.cooldown.map(mvHTML).join('')+"</div></div>";
+    document.getElementById('workoutSheet').innerHTML="<div class='sheet'><div class='sheet-hd'><div class='tag'>"+w.tag+"</div><h2 class='display'>"+w.title+"</h2></div><div class='sheet-sec'><div class='recovery'>"+w.note+"</div></div>"+(cardio?cardioBlockHTML(cardio):"")+sheetSec("mob",(w.kind==='mobility'?'Mobility flow':'Mobility'),moveCount(w.cooldown),w.cooldown.map(mvHTML).join(''),true)+"</div>";
     return;
   }
   const exHTML=w.main.map((e,i)=>exBlockHTML(e,i)).join('');
@@ -1708,13 +1741,14 @@ function renderWorkoutSheet(w){
     "<div class='meta'><span class='pill orange'>"+w.sets+" sets</span><span class='pill'>"+w.reps+"</span><span class='pill purple'>"+w.phase+"</span></div></div>"+
   timeBarHTML(w)+
   setsPickerHTML(w)+
-  "<div class='sheet-sec'><h3>◆ Warm-up</h3>"+w.warmup.map(mvHTML).join('')+"</div>"+
-  (showRowWarmup(w) ? rowBlockHTML(w.travel) : "")+
-  "<div class='sheet-sec'><h3>◆ Main Workout · log each set</h3>"+exHTML+"</div>"+
+  sheetSec("warm","Warm-up",moveCount(w.warmup)+(showRowWarmup(w)?" + row":""),
+    w.warmup.map(mvHTML).join('')+(showRowWarmup(w)? rowBlockHTML(w.travel) : ""), false)+
+  "<div class='sheet-sec'><h3>◆ Main workout · log each set</h3>"+exHTML+"</div>"+
   (cardio?cardioBlockHTML(cardio):"")+
-  "<div class='sheet-sec'><h3>◆ Cool-down</h3>"+w.cooldown.map(mvHTML).join('')+"</div>"+
-  "<div class='sheet-sec'><h3>◆ Recovery Notes</h3><div class='recovery'>"+w.recovery+"</div></div>"+
+  sheetSec("cool","Cool-down",moveCount(w.cooldown),w.cooldown.map(mvHTML).join(''),false)+
+  sheetSec("rec","Recovery notes","","<div class='recovery'>"+w.recovery+"</div>",false)+
   completeBlockHTML(w)+"</div>";
+  try{ bindSheetSecs(); }catch(e){}
   try{ hydrateMedia(); }catch(e){}
 }
 
@@ -2931,7 +2965,7 @@ function scheduleInApp(){
    v18 ADDITIONS — draggable rest timer · weekly training memory · AI planner
    · Firestore sync
    ========================================================================== */
-const APP_VERSION="v39 · 2026-08-04";
+const APP_VERSION="v41 · 2026-08-04";
 
 /* ===== 1. REST TIMER — drag it anywhere so it never blocks the chat box ===== */
 let _rtDrag=null;
@@ -3929,14 +3963,28 @@ let WXIDX={};                       // name -> record
 function wxCount(){ return Object.keys(WXIDX).length; }
 function wxHas(){ return wxCount()>0; }
 async function wxLoadCatalogue(){
-  try{
-    const raw=await idbGet(WX_KEY);
-    if(raw){ const o=JSON.parse(raw); WXIDX=o.items||{}; catInvalidate(); }
-  }catch(e){ WXIDX={}; }
+  let raw=null;
+  try{ raw=await idbGet(WX_KEY); }catch(e){}
+  if(!raw){ try{ raw=localStorage.getItem(WX_KEY); }catch(e){} }
+  try{ if(raw){ const o=JSON.parse(raw); WXIDX=o.items||{}; catInvalidate(); } }
+  catch(e){ WXIDX={}; }
   return wxCount();
 }
+/* Write it, then read it back. An IndexedDB write that silently fails is how
+   489 exercises turn into 0 on the next launch. */
+let _wxStoreOk=null;
 async function wxSaveCatalogue(){
-  try{ await idbSet(JSON.stringify({at:new Date().toISOString(),items:WXIDX}),WX_KEY); }catch(e){ console.warn("wx save",e); }
+  const payload=JSON.stringify({at:new Date().toISOString(),items:WXIDX});
+  try{
+    await idbSet(payload,WX_KEY);
+    const back=await idbGet(WX_KEY);
+    _wxStoreOk = !!(back && back.length>=payload.length-2);
+  }catch(e){ console.warn("wx save",e); _wxStoreOk=false; }
+  if(_wxStoreOk===false){
+    /* Fall back to localStorage if it's small enough to fit. */
+    try{ localStorage.setItem(WX_KEY,payload); _wxStoreOk="local"; }catch(e){}
+  }
+  return _wxStoreOk;
 }
 
 /* ---------- API client ---------- */
@@ -4080,25 +4128,56 @@ function planForTime(pool,t){
 
 /* ---------- Settings handlers ---------- */
 function wxMsg(t){ const el=document.getElementById('wxMsg'); if(el) el.innerHTML=t; }
+function wxStatus(t){ const el=document.getElementById('wxStatus'); if(el) el.innerHTML=t; }
 function renderWxFields(){
   const el=document.getElementById('setWxKey'); if(el) el.value=(DB.wx&&DB.wx.key)||"";
   const n=wxCount();
   let matched=0, core=coreExNames();
   if(n) core.forEach(x=>{ if(catMatch(x)) matched++; });
-  wxMsg(n? ("\u2713 <b>"+n+" exercises</b> on this device"+
-            " \u00b7 demos matched for "+matched+"/"+core.length+" of your regular lifts"+(DB.wx&&DB.wx.synced?" \u00b7 synced "+new Date(DB.wx.synced).toLocaleDateString('en-GB'):"")+
+  const bk=DB.wx&&DB.wx.backedUp;
+  const store = _wxStoreOk===false? " \u00b7 \u26a0\ufe0f not saved locally"
+              : _wxStoreOk==="local"? " \u00b7 saved (fallback store)" : "";
+  const cloud = bk? " \u00b7 cloud backup: "+bk.count+" exercises" : (n? " \u00b7 no cloud backup yet" : "");
+  wxStatus(n? ("\u2713 <b>"+n+" exercises</b> on this device"+
+            " \u00b7 demos matched for "+matched+"/"+core.length+" of your regular lifts"+store+cloud+
             (DB.wx&&DB.wx.quotaLeft!=null?" \u00b7 "+DB.wx.quotaLeft+" API calls left this month":""))
-         : "No catalogue downloaded yet \u2014 the app is using its "+coreExNames().length+" built-in exercises.");
+         : "No catalogue on this device yet \u2014 using the "+coreExNames().length+" built-in exercises.");
 }
 function saveWxKey(){
   DB.wx=DB.wx||{}; DB.wx.key=val('setWxKey').trim(); DB.wx.on=true; save();
   wxMsg(DB.wx.key? "Key saved. Now tap <b>Download exercise catalogue</b>." : "Key cleared.");
 }
+/* The only button he should ever need. */
 let _wxSyncing=false;
-async function startWxSync(){
+async function getMyExercises(){
+  if(_wxSyncing) return;
+  DB.wx=DB.wx||{};
+  const typed=val('setWxKey').trim();
+  if(typed && typed!==DB.wx.key){ DB.wx.key=typed; DB.wx.on=true; save(); }
+  _wxSyncing=true;
+  try{
+    wxMsg("<span class='spin'></span> Checking your cloud backup\u2026");
+    let got=0;
+    try{ got=await catRestore(p=>wxMsg("<span class='spin'></span> Restoring "+p.got+" exercises\u2026")); }
+    catch(e){ console.warn(e); }
+    if(got){
+      wxMsg("\u2713 Restored <b>"+wxCount()+" exercises</b> from your cloud backup \u2014 <b>no WorkoutX requests used</b>.");
+      try{ ensureWorkout(); renderWorkoutSheet(DB.workout); renderCatList(); }catch(e){}
+      return;
+    }
+    if(!wxKey()){ wxMsg("\u2717 No cloud backup yet, and no WorkoutX key on this device. Paste your wx_ key above first."); return; }
+    wxMsg("<span class='spin'></span> No backup found \u2014 downloading from WorkoutX (about 120 of your 500 monthly requests, once)\u2026");
+    await runWxSync();
+  } finally { _wxSyncing=false; renderWxFields(); }
+}
+async function startWxSync(force){
   if(_wxSyncing) return;
   if(!wxKey()){ wxMsg("\u2717 Add your WorkoutX key first."); return; }
+  if(force && !confirm("Download the whole catalogue again from WorkoutX? This uses about 120 of your 500 monthly requests. If you already have a cloud backup, 'Get my exercises' restores it for free.")) return;
   _wxSyncing=true;
+  try{ await runWxSync(); } finally { _wxSyncing=false; renderWxFields(); }
+}
+async function runWxSync(){
   wxMsg("<span class='spin'></span> Downloading\u2026 this runs once.");
   try{
     const r=await wxSync(p=>{
@@ -4107,11 +4186,18 @@ async function startWxSync(){
     });
     DB.wx.count=wxCount(); save(); catInvalidate();
     try{ ensureWorkout(); renderWorkoutSheet(DB.workout); }catch(e){}
-    wxMsg("\u2713 Done \u2014 <b>"+wxCount()+" exercises</b> stored on this device using "+r.reqs+" API calls."+
-          (r.capped?" (Stopped at the safety cap; tap again to continue.)":"")+
-          " The coach can now program any of them, and it all works offline.");
+    const stored=await wxSaveCatalogue();
+    let where = stored===true? "saved on this device"
+              : stored==="local"? "saved on this device (fallback store \u2014 IndexedDB refused)"
+              : "\u26a0\ufe0f <b>NOT saved</b> \u2014 this browser is blocking local storage";
+    wxMsg("<span class='spin'></span> Backing up "+wxCount()+" exercises to your cloud\u2026");
+    let chunks=0;
+    try{ chunks=await catBackup(); }catch(e){ console.warn(e); }
+    wxMsg("\u2713 <b>"+wxCount()+" exercises</b> downloaded using "+r.reqs+" API calls \u00b7 "+where+
+          (chunks? " \u00b7 backed up to your cloud, so you'll never pay for this again." : " \u00b7 <b>cloud backup failed</b> \u2014 check Cloud sync.")+
+          (r.capped?"<br>Stopped at the safety cap; tap again to continue.":""));
+    try{ renderCatList(); }catch(e){}
   }catch(e){ wxMsg(wxErrText(e)+"<br>Anything already downloaded ("+wxCount()+" exercises) has been kept."); }
-  finally{ _wxSyncing=false; renderWxFields(); }
 }
 /* GIFs: try the plain URL first; if the CDN wants the key, fetch and blob it. */
 const _gifBlob={};
@@ -4128,6 +4214,51 @@ async function wxGifAuthed(name){
     const b=await r.blob(); const u=URL.createObjectURL(b);
     _gifBlob[name]=u; return u;
   }catch(err){ return null; }
+}
+
+/* ===== CATALOGUE BACKUP =====
+   Stored in his own Firestore alongside everything else, split into chunks so it
+   can't hit the 1MB document ceiling. Restoring costs zero WorkoutX requests. */
+const CAT_CHUNK=200;
+function slimRecord(r){
+  return {n:r.name,e:r.eq,m:r.m,g:r.gif,t:r.timed?1:0,p:r.pop||null,
+          c:(r.cue||"").slice(0,120),s:(r.steps||[]).slice(0,4)};
+}
+function fatRecord(o){
+  return {name:o.n,eq:o.e,m:o.m||["core"],gif:o.g||null,timed:!!o.t,pop:o.p||null,
+          cue:o.c||"Control every rep.",steps:o.s||[],wristAlt:"Neutral grip if the wrist complains"};
+}
+function catDocRef(i){ return _fs.collection("amirpt_cat").doc(String((DB.cloud.syncId||"amir-pt")).trim()+"_"+i); }
+async function catBackup(onProgress){
+  if(!(await cloudInit())) return false;
+  const keys=Object.keys(WXIDX);
+  if(!keys.length) return false;
+  const chunks=[];
+  for(let i=0;i<keys.length;i+=CAT_CHUNK) chunks.push(keys.slice(i,i+CAT_CHUNK));
+  for(let i=0;i<chunks.length;i++){
+    const items=chunks[i].map(k=>slimRecord(WXIDX[k]));
+    await catDocRef(i).set({i,total:chunks.length,count:items.length,
+      updated:new Date().toISOString(), data:JSON.stringify(items)});
+    onProgress&&onProgress({i:i+1,of:chunks.length});
+  }
+  DB.wx=DB.wx||{}; DB.wx.backedUp={at:new Date().toISOString(),chunks:chunks.length,count:keys.length};
+  save();
+  return chunks.length;
+}
+async function catRestore(onProgress){
+  if(!(await cloudInit())) return 0;
+  let i=0,total=1,got=0;
+  while(i<total && i<40){
+    const snap=await catDocRef(i).get();
+    if(!snap.exists) break;
+    const d=snap.data()||{};
+    total=d.total||1;
+    let items=[]; try{ items=JSON.parse(d.data||"[]"); }catch(e){}
+    items.forEach(o=>{ const r=fatRecord(o); if(r.name){ WXIDX[r.name]=r; got++; } });
+    i++; onProgress&&onProgress({i,of:total,got});
+  }
+  if(got){ await wxSaveCatalogue(); catInvalidate(); DB.wx=DB.wx||{}; DB.wx.count=wxCount(); save(); }
+  return got;
 }
 
 /* ===== EXERCISE BROWSER =====
@@ -4501,7 +4632,17 @@ try{ collapsibleSettings(); }catch(e){}
 initRestDrag();
 registerSW();
 loadPhotos();
-wxLoadCatalogue().then(n=>{ if(n){ try{ renderWxFields(); ensureWorkout(); }catch(e){} } });
+wxLoadCatalogue().then(n=>{
+  try{ renderWxFields(); renderCatList(); }catch(e){}
+  if(n){ try{ ensureWorkout(); if(DB.workout) renderWorkoutSheet(DB.workout); renderBrowse(); }catch(e){} }
+  /* Nothing here but a cloud backup exists? Bring it down automatically. */
+  if(!n && DB.cloud && DB.cloud.on){
+    catRestore().then(got=>{ if(got){
+      try{ renderWxFields(); renderCatList(); ensureWorkout(); if(DB.workout) renderWorkoutSheet(DB.workout); }catch(e){}
+      toast("Restored "+got+" exercises from your cloud \u2705");
+    }}).catch(()=>{});
+  }
+});
 restoreIfWiped();
 setTimeout(async()=>{
   if(!(DB.cloud&&DB.cloud.on)) return;

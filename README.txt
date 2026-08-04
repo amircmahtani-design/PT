@@ -1,4 +1,4 @@
-AMIR PT — v39 · 2026-08-04
+AMIR PT — v41 · 2026-08-04
 ==========================
 
 WHAT TO UPLOAD
@@ -21,7 +21,7 @@ FILENAMES ARE CASE-SENSITIVE. It must be index.html, not Index.html.
 AFTER DEPLOYING
 ---------------
 1. Open the site, go to Settings, scroll to the bottom.
-   The line should read: Amir PT · v39 · 2026-08-04
+   The line should read: Amir PT · v41 · 2026-08-04
    If it says anything else, the old file is still being served — hard refresh.
 
 2. Settings → App & Storage tells you the truth about your install:
@@ -217,7 +217,7 @@ default personality line, so write it as instructions:
   "Blunt. No cheerleading. Short sentences. Tell me when I'm being soft,
    but never make light of the Klinefelter or the wrist."
 
-FIXED IN v39: the "Coaching rules" and "Injuries and medical" boxes were
+FIXED IN v41: the "Coaching rules" and "Injuries and medical" boxes were
 saved and redisplayed but never actually sent to the coach. Everything you
 had typed there had been ignored. All three now reach the prompt.
 
@@ -240,7 +240,7 @@ the home-screen app from then on, not Safari - two copies with the same
 Sync ID will merge, but it's simpler to use one.
 
 
-HOW DEMOS GET RESOLVED (v39)
+HOW DEMOS GET RESOLVED (v41)
 ----------------------------
 Your exercise names and WorkoutX's names rarely match exactly
 ("Barbell Back Squat" vs "barbell full squat"). Resolution order:
@@ -262,7 +262,7 @@ mapping, re-matches, and if the string matcher can't do it, asks the coach.
 The toast tells you which catalogue record it landed on.
 
 
-WHERE THE EXERCISE CATALOGUE IS (v39)
+WHERE THE EXERCISE CATALOGUE IS (v41)
 -------------------------------------
 Two places, both obvious now:
 
@@ -280,3 +280,29 @@ you leave open is remembered.
 GIPHY IS GONE
 -------------
 Removed from Settings entirely. Demos come from WorkoutX now.
+
+
+GETTING YOUR EXERCISES (v41) - ONE BUTTON
+-----------------------------------------
+Settings -> Exercise catalogue -> "Get my exercises"
+
+It checks your cloud backup first and restores from there for FREE (zero
+WorkoutX requests). Only if there is no backup does it download from the
+API. After any download it backs the catalogue up automatically, so you
+never pay for the same exercises twice.
+
+"Force a fresh download" is there if you want newly added exercises. It
+warns you about the request cost and asks first.
+
+The status line tells you the truth:
+  489 exercises on this device - demos matched for 58/62 of your
+  regular lifts - cloud backup: 489 exercises
+
+WHY YOU LOST THE 489
+--------------------
+The catalogue lives in IndexedDB. The write was fire-and-forget with the
+error swallowed, so if the browser refused it the app carried on as if it
+had worked - the exercises were only ever in memory and vanished on
+reload. v41 writes, reads it back, and tells you if it did not stick. If
+IndexedDB is blocked it falls back to localStorage, and it is backed up to
+your Firestore either way.
