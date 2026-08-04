@@ -270,6 +270,7 @@ details.sec2[open] .secsum2:after{content:"\2212";}
 .brrow{display:flex;align-items:center;gap:11px;padding:9px 0;border-bottom:1px solid var(--hair);}
 .brrow:last-child{border-bottom:none;}
 .brrow img,.brrow .ph{width:54px;height:54px;flex:0 0 auto;border-radius:11px;object-fit:cover;background:#0d0a07;border:1px solid var(--line);}
+.brrow .ph{display:flex;align-items:center;justify-content:center;font-size:9.5px;font-weight:700;color:var(--dim);text-align:center;line-height:1.2;}
 .brrow .meta{flex:1 1 auto;min-width:0;}
 .brrow .n{font-size:13.5px;font-weight:700;color:var(--txt);}
 .brrow .s{font-size:11.5px;color:var(--label);margin-top:2px;text-transform:capitalize;}
@@ -513,6 +514,8 @@ a{color:var(--orange);}
       <button class="btn" onclick="getMyExercises()">Get my exercises</button>
       <div class="hint mt">Restores from your cloud backup if there is one (free), otherwise downloads from WorkoutX.</div>
       <button class="btn sec mt" onclick="saveWxKey()">Save key only</button>
+      <button class="btn sec mt" onclick="backupCatalogueNow()">Save my exercises to the cloud</button>
+      <button class="btn sec mt" onclick="matchAllExercises()">Match demos to my exercises</button>
       <button class="btn ghost mt" onclick="startWxSync(true)">Force a fresh download</button>
       <div id="wxStatus" class="hint mt" style="font-size:12.5px"></div>
       <div id="wxMsg" class="hint mt" style="font-size:13px"></div>
@@ -1122,6 +1125,7 @@ function catMatch(name){
   return rec;
 }
 function catGif(name){ const r=catMatch(name); return (r&&r.gif)||null; }
+const _gifTried={};
 function mediaFor(name){
   const picked=DB.media&&DB.media[name];
   if(picked && DB.mediaPicked && DB.mediaPicked[name]) return picked;   // he or the coach chose this
@@ -1135,6 +1139,7 @@ function refreshDemo(i){
   save();
   const el=document.getElementById('exb'+i); if(el) el.outerHTML=exBlockHTML(e,i);
   if(DB.exMap) delete DB.exMap[e.name];
+  delete _gifTried[e.name]; delete _gifBlob[e.name];
   catInvalidate();
   let r=catMatch(e.name);
   if(r){ toast("Demo from catalogue \u00b7 "+r.name); return; }
@@ -1585,9 +1590,26 @@ function demoSearchURL(name){ return "https://www.google.com/search?tbm=isch&q="
 function jsAttr(s){ return String(s||"").replace(/\\/g,"\\\\").replace(/'/g,"\\'").replace(/"/g,"&quot;"); }
 function watchInner(name){ return "<b>▶ Watch demo</b><span>tap to see "+attrEsc(name)+"</span>"; }
 function watchTileHTML(name,dataAttrs){ return "<a class='imgwrap watch'"+(dataAttrs||"")+" href='"+demoSearchURL(name)+"' target='_blank' rel='noopener'><div class='watchlink'>"+watchInner(name)+"</div></a>"; }
-function mediaFail(img,name){ try{ const w=img&&img.closest('.imgwrap'); if(!w) return;
-  w.classList.add('watch');
-  w.innerHTML="<a class='watchlink' href='"+demoSearchURL(name)+"' target='_blank' rel='noopener'>"+watchInner(name)+"</a>"; }catch(e){} }
+/* An <img> can't send the X-WorkoutX-Key header, so a catalogue GIF loaded by
+   plain src comes back 401. Before falling back to an external link, fetch it
+   properly with the key and swap in a blob. */
+function mediaFallback(name){
+  try{ const w=document.querySelector(".imgwrap[data-ex='"+CSS.escape(name)+"']"); if(!w) return;
+    w.classList.add('watch');
+    w.innerHTML="<a class='watchlink' href='"+demoSearchURL(name)+"' target='_blank' rel='noopener'>"+watchInner(name)+"</a>";
+  }catch(e){}
+}
+function mediaFail(img,name){
+  try{
+    if(img) img.onerror=null;
+    if(_gifTried[name] || !wxKey() || !(catMatch(name)||{}).gif){ mediaFallback(name); return; }
+    _gifTried[name]=1;
+    wxGifAuthed(name).then(url=>{
+      if(url && img && img.isConnected){ img.src=url; }
+      else mediaFallback(name);
+    }).catch(()=>mediaFallback(name));
+  }catch(e){ mediaFallback(name); }
+}
 function exImgHTML(name,muscles){
   const src=mediaFor(name), nEsc=attrEsc(name), js=jsAttr(name);
   if(src){
@@ -2965,7 +2987,7 @@ function scheduleInApp(){
    v18 ADDITIONS — draggable rest timer · weekly training memory · AI planner
    · Firestore sync
    ========================================================================== */
-const APP_VERSION="v41 · 2026-08-04";
+const APP_VERSION="v43 · 2026-08-04";
 
 /* ===== 1. REST TIMER — drag it anywhere so it never blocks the chat box ===== */
 let _rtDrag=null;
@@ -3990,8 +4012,23 @@ async function wxSaveCatalogue(){
 /* ---------- API client ---------- */
 function wxKey(){ return (DB.wx&&DB.wx.key||"").trim(); }
 function wxOn(){ return !!wxKey() && DB.wx && DB.wx.on!==false; }
+let _wxTimes=[];
+function wxSleep(ms){ return new Promise(r=>setTimeout(r,ms)); }
+/* The free plan allows 30 requests a minute. Firing them back to back is what
+   produced a 429 that then got mislabelled as "monthly quota used up". */
+async function wxPace(){
+  const now=Date.now();
+  _wxTimes=_wxTimes.filter(t=>now-t<60000);
+  if(_wxTimes.length>=25){
+    const wait=60000-(now-_wxTimes[0])+500;
+    await wxSleep(Math.max(1000,wait));
+    _wxTimes=_wxTimes.filter(t=>Date.now()-t<60000);
+  }
+  _wxTimes.push(Date.now());
+}
 async function wxGet(path,params){
   const k=wxKey(); if(!k) throw new Error("No WorkoutX key");
+  await wxPace();
   const qs=new URLSearchParams(params||{}).toString();
   const url="https://api.workoutxapp.com/v1"+path+(qs?("?"+qs):"");
   const ctl=new AbortController(); const timer=setTimeout(()=>{try{ctl.abort();}catch(e){}},25000);
@@ -4003,16 +4040,23 @@ async function wxGet(path,params){
     const ql=r.headers.get("X-Quota-Limit"); if(ql!=null) DB.wx.quota=+ql;
     if(r.status===401) throw new Error("AUTH");
     if(r.status===403) throw new Error("PLAN");
-    if(r.status===429) throw new Error("QUOTA");
+    if(r.status===429){
+      const left=DB.wx.quotaLeft;
+      throw new Error((left==null||left>0)? "RATE" : "QUOTA");
+    }
     if(!r.ok) throw new Error("HTTP "+r.status);
     return await r.json();
   } finally { clearTimeout(timer); }
 }
 function wxErrText(e){
   const m=String(e&&e.message||e);
+  const left=DB.wx&&DB.wx.quotaLeft;
   if(m==="AUTH")  return "\u2717 WorkoutX rejected the key. Check it starts with wx_ and was copied whole.";
   if(m==="PLAN")  return "\u2717 That endpoint needs a paid plan. The app falls back to the free endpoints automatically.";
-  if(m==="QUOTA") return "\u2717 Monthly quota used up (500/month on the free plan). It resets next month \u2014 your downloaded catalogue still works offline.";
+  if(m==="RATE")  return "\u23f8 Hit the 30-per-minute rate limit. Waiting and carrying on \u2014 you still have "+(left!=null?left:"plenty of")+" calls left this month.";
+  if(m==="QUOTA") return (left>0)
+    ? "\u23f8 Rate limited (30 requests a minute). You still have "+left+" calls this month \u2014 tap again in a minute to carry on."
+    : "\u2717 Monthly quota used up (500/month on the free plan). It resets next month \u2014 your downloaded catalogue still works offline.";
   if(/abort/i.test(m)) return "\u2717 WorkoutX timed out. Try again.";
   return "\u2717 "+m;
 }
@@ -4035,9 +4079,19 @@ async function wxSync(onProgress,maxRequests){
     let offset=0;
     for(;;){
       if(reqs>=cap) { onProgress&&onProgress({done:true,reqs,added,capped:true}); await wxSaveCatalogue(); return {reqs,added,updated,capped:true}; }
-      let page;
-      try{ page=await wxGet("/exercises/equipment/"+encodeURIComponent(eq),{limit:10,offset}); }
-      catch(err){ await wxSaveCatalogue(); throw err; }
+      let page, tries=0;
+      for(;;){
+        try{ page=await wxGet("/exercises/equipment/"+encodeURIComponent(eq),{limit:10,offset}); break; }
+        catch(err){
+          if(String(err.message)==="RATE" && tries<3){
+            tries++;
+            onProgress&&onProgress({eq,reqs,total:wxCount(),waiting:true});
+            await wxSleep(20000);
+            continue;
+          }
+          await wxSaveCatalogue(); throw err;
+        }
+      }
       reqs++;
       const list=Array.isArray(page)? page : (page&&page.data)||[];
       list.forEach(raw=>{
@@ -4182,7 +4236,9 @@ async function runWxSync(){
   try{
     const r=await wxSync(p=>{
       if(p.done) return;
-      wxMsg("<span class='spin'></span> "+(p.total||0)+" exercises \u00b7 "+p.reqs+" calls \u00b7 "+(p.eq||""));
+      wxMsg(p.waiting
+        ? "<span class='spin'></span> Rate limit reached \u2014 pausing 20s, then carrying on. "+(p.total||0)+" exercises so far."
+        : "<span class='spin'></span> "+(p.total||0)+" exercises \u00b7 "+p.reqs+" calls \u00b7 "+(p.eq||""));
     });
     DB.wx.count=wxCount(); save(); catInvalidate();
     try{ ensureWorkout(); renderWorkoutSheet(DB.workout); }catch(e){}
@@ -4197,23 +4253,87 @@ async function runWxSync(){
           (chunks? " \u00b7 backed up to your cloud, so you'll never pay for this again." : " \u00b7 <b>cloud backup failed</b> \u2014 check Cloud sync.")+
           (r.capped?"<br>Stopped at the safety cap; tap again to continue.":""));
     try{ renderCatList(); }catch(e){}
-  }catch(e){ wxMsg(wxErrText(e)+"<br>Anything already downloaded ("+wxCount()+" exercises) has been kept."); }
+  }catch(e){
+    let saved=""; 
+    try{ await wxSaveCatalogue(); const ch=await catBackup(); if(ch) saved=" It's backed up to your cloud, so you won't pay for these again."; }catch(_){}
+    wxMsg(wxErrText(e)+"<br>The "+wxCount()+" exercises already downloaded have been kept."+saved);
+  }
 }
 /* GIFs: try the plain URL first; if the CDN wants the key, fetch and blob it. */
 const _gifBlob={};
+async function wxImgFail(img,name){
+  try{ img.onerror=null; }catch(e){}
+  if(!name||_gifTried[name]){ if(img) img.style.visibility="hidden"; return; }
+  _gifTried[name]=1;
+  const url=await wxGifAuthed(name);
+  if(url && img){ img.src=url; img.style.visibility=""; }
+  else if(img) img.style.visibility="hidden";
+}
 async function wxGifSrc(name){
   const e=EX(name); if(!e||!e.gif) return null;
   if(_gifBlob[name]) return _gifBlob[name];
   return e.gif;
 }
 async function wxGifAuthed(name){
-  const e=EX(name); if(!e||!e.gif||!wxKey()) return null;
+  const rec=catMatch(name)||EX(name);
+  const src=rec&&rec.gif;
+  if(!src||!wxKey()) return null;
+  if(_gifBlob[name]) return _gifBlob[name];
   try{
-    const r=await fetch(e.gif,{headers:{"X-WorkoutX-Key":wxKey()}});
+    const r=await fetch(src,{headers:{"X-WorkoutX-Key":wxKey()}});
     if(!r.ok) return null;
     const b=await r.blob(); const u=URL.createObjectURL(b);
     _gifBlob[name]=u; return u;
   }catch(err){ return null; }
+}
+
+/* Resolve every one of his regular lifts against the catalogue, using the AI for
+   anything the string matcher can't place. Costs one OpenAI call per unmatched
+   exercise, once ever \u2014 no WorkoutX requests at all. */
+let _matchingAll=false;
+async function matchAllExercises(){
+  if(_matchingAll) return;
+  if(!wxHas()){ wxMsg("\u2717 No catalogue on this device yet \u2014 tap <b>Get my exercises</b> first."); return; }
+  const core=coreExNames();
+  const todo=core.filter(n=>!catMatch(n));
+  if(!todo.length){ wxMsg("\u2713 Every one of your "+core.length+" exercises already has a demo."); return; }
+  if(!(DB.ai&&DB.ai.provider==="openai"&&DB.ai.key)){
+    wxMsg("\u2717 "+todo.length+" exercises have no demo, and matching them needs your OpenAI key (Settings \u2192 AI coach).");
+    return;
+  }
+  _matchingAll=true;
+  let fixed=0, checked=0;
+  try{
+    for(const n of todo){
+      checked++;
+      wxMsg("<span class='spin'></span> Matching "+checked+" of "+todo.length+"\u2026 "+fixed+" found so far ("+n+")");
+      try{ if(await aiMatchExercise(n)) fixed++; }catch(e){ console.warn(e); }
+    }
+    catInvalidate();
+    const still=coreExNames().filter(x=>!catMatch(x)).length;
+    wxMsg("\u2713 Matched <b>"+fixed+"</b> more \u00b7 "+(core.length-still)+"/"+core.length+" of your exercises now have a real demo."+
+      (still? " The remaining "+still+" genuinely aren't in the catalogue \u2014 they'll use the built-in demo or a web link." : ""));
+    try{ renderCatList(); if(DB.workout) renderWorkoutSheet(DB.workout); renderBrowse(); }catch(e){}
+    try{ await catBackup(); }catch(e){}
+  } finally { _matchingAll=false; renderWxFields(); }
+}
+
+/* Explicit, so he never has to wonder whether it happened. */
+let _backingUp=false;
+async function backupCatalogueNow(){
+  if(_backingUp) return;
+  if(!wxCount()){ wxMsg("\u2717 There are no downloaded exercises on this device to save."); return; }
+  if(!(DB.cloud&&DB.cloud.on)){ wxMsg("\u2717 Turn on Cloud sync first (further down Settings)."); return; }
+  _backingUp=true;
+  try{
+    wxMsg("<span class='spin'></span> Saving "+wxCount()+" exercises to your cloud\u2026");
+    const chunks=await catBackup(p=>wxMsg("<span class='spin'></span> Saving part "+p.i+" of "+p.of+"\u2026"));
+    if(chunks){
+      wxMsg("\u2705 <b>"+wxCount()+" exercises saved to your cloud</b> in "+chunks+" part"+(chunks===1?"":"s")+
+        ".<br>On your iPhone: open the app, Settings \u2192 Exercise catalogue \u2192 <b>Get my exercises</b>. It restores for free.");
+    } else wxMsg("\u2717 Couldn't save \u2014 check Cloud sync is connected.");
+  }catch(e){ wxMsg(cloudErrHelp(e,"save to")); }
+  finally{ _backingUp=false; renderWxFields(); }
 }
 
 /* ===== CATALOGUE BACKUP =====
@@ -4285,10 +4405,11 @@ function browseMatches(q,locMode,muscle){
 const EQLABEL={bw:"bodyweight",db:"dumbbell",bb:"barbell",mach:"machine",band:"band",bar:"pull-up bar",kb:"kettlebell",other:"other kit"};
 function browseRowHTML(n,withAdd){
   const e=EX(n)||{}, img=mediaFor(n);
+  const sub=((e.m||[]).join(" \u00b7 ")||"\u2014")+"  \u2014  "+(EQLABEL[e.eq]||"bodyweight");
   return "<div class='brrow'>"+
-    (img? "<img loading='lazy' src='"+attrEsc(img)+"' alt=''/>" : "<div class='ph'></div>")+
+    (img? "<img loading='lazy' src='"+attrEsc(img)+"' alt='' onerror=\"wxImgFail(this,'"+jsAttr(n)+"')\"/>" : "<div class='ph'>no demo</div>")+
     "<div class='meta'><div class='n'>"+escapeHtml(n)+"</div>"+
-      "<div class='s'>"+((e.m||[]).join(" \u00b7 ")||"\u2014")+"  \u2014  "+(EQLABEL[e.eq]||"bodyweight")+"</div></div>"+
+      "<div class='s'>"+sub+"</div></div>"+
     (withAdd? "<button class='addbtn' onclick=\"browseAdd('"+jsAttr(n)+"')\">Add</button>" : "")+
   "</div>";
 }
@@ -4300,9 +4421,11 @@ function renderBrowse(){
     "<button class='mchip"+(brState.m===m?" on":"")+"' onclick=\"brMuscle('"+m+"')\">"+m+"</button>").join('');
   const res=browseMatches(brState.q,brState.loc,brState.m);
   const c=document.getElementById('brCount');
-  if(c) c.textContent=res.length+" exercise"+(res.length===1?"":"s")+
+  const noDemo=res.filter(n=>!mediaFor(n)).length;
+  if(c) c.innerHTML=res.length+" exercise"+(res.length===1?"":"s")+
     (brState.loc==="here"? " you can do in "+LOC().label : " in total")+
-    (wxHas()? "" : " \u2014 download the catalogue in Settings for 1,400 more");
+    (wxHas()? "" : " \u2014 download the catalogue in Settings for 1,400 more")+
+    (noDemo? " \u00b7 <span style='color:var(--gold)'>"+noDemo+" without a demo</span>" : "");
   list.innerHTML=res.length? res.slice(0,300).map(n=>browseRowHTML(n,true)).join('')
     : "<div class='card'><div class='muted' style='font-size:14px'>Nothing matches that. Try a muscle, a piece of kit, or part of the name.</div></div>";
 }

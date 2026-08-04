@@ -1,4 +1,4 @@
-AMIR PT — v41 · 2026-08-04
+AMIR PT — v43 · 2026-08-04
 ==========================
 
 WHAT TO UPLOAD
@@ -21,7 +21,7 @@ FILENAMES ARE CASE-SENSITIVE. It must be index.html, not Index.html.
 AFTER DEPLOYING
 ---------------
 1. Open the site, go to Settings, scroll to the bottom.
-   The line should read: Amir PT · v41 · 2026-08-04
+   The line should read: Amir PT · v43 · 2026-08-04
    If it says anything else, the old file is still being served — hard refresh.
 
 2. Settings → App & Storage tells you the truth about your install:
@@ -217,7 +217,7 @@ default personality line, so write it as instructions:
   "Blunt. No cheerleading. Short sentences. Tell me when I'm being soft,
    but never make light of the Klinefelter or the wrist."
 
-FIXED IN v41: the "Coaching rules" and "Injuries and medical" boxes were
+FIXED IN v43: the "Coaching rules" and "Injuries and medical" boxes were
 saved and redisplayed but never actually sent to the coach. Everything you
 had typed there had been ignored. All three now reach the prompt.
 
@@ -240,7 +240,7 @@ the home-screen app from then on, not Safari - two copies with the same
 Sync ID will merge, but it's simpler to use one.
 
 
-HOW DEMOS GET RESOLVED (v41)
+HOW DEMOS GET RESOLVED (v43)
 ----------------------------
 Your exercise names and WorkoutX's names rarely match exactly
 ("Barbell Back Squat" vs "barbell full squat"). Resolution order:
@@ -262,7 +262,7 @@ mapping, re-matches, and if the string matcher can't do it, asks the coach.
 The toast tells you which catalogue record it landed on.
 
 
-WHERE THE EXERCISE CATALOGUE IS (v41)
+WHERE THE EXERCISE CATALOGUE IS (v43)
 -------------------------------------
 Two places, both obvious now:
 
@@ -282,7 +282,7 @@ GIPHY IS GONE
 Removed from Settings entirely. Demos come from WorkoutX now.
 
 
-GETTING YOUR EXERCISES (v41) - ONE BUTTON
+GETTING YOUR EXERCISES (v43) - ONE BUTTON
 -----------------------------------------
 Settings -> Exercise catalogue -> "Get my exercises"
 
@@ -303,6 +303,59 @@ WHY YOU LOST THE 489
 The catalogue lives in IndexedDB. The write was fire-and-forget with the
 error swallowed, so if the browser refused it the app carried on as if it
 had worked - the exercises were only ever in memory and vanished on
-reload. v41 writes, reads it back, and tells you if it did not stick. If
+reload. v43 writes, reads it back, and tells you if it did not stick. If
 IndexedDB is blocked it falls back to localStorage, and it is backed up to
 your Firestore either way.
+
+
+IF DEMOS ARE MISSING (v43)
+--------------------------
+Settings -> Exercise catalogue -> "Match demos to my exercises"
+
+Your exercise names and WorkoutX's names differ, so plain text matching only
+gets some of them. This button hands every unmatched one to the AI, which
+reads the catalogue and picks the right record. Costs one OpenAI call per
+exercise, ONCE - and zero WorkoutX requests. The result is cached and
+backed up to your cloud.
+
+Run it after any catalogue download.
+
+RATE LIMIT vs QUOTA
+-------------------
+The free plan allows 30 requests a MINUTE as well as 500 a month. The app
+used to fire requests back to back, hit the per-minute limit, and then
+report it as "monthly quota used up" - which was wrong and alarming.
+
+It now paces itself to 25/minute, pauses 20 seconds and resumes if it is
+still rate limited, and only says the monthly quota is gone when the API
+actually reports zero remaining. A failed or partial sync now backs up what
+it did get, so nothing is wasted.
+
+
+GETTING THE CATALOGUE ONTO YOUR IPHONE (v43)
+--------------------------------------------
+ON THE DESKTOP, in order:
+
+  1. Settings -> Cloud sync -> check it says connected
+  2. Settings -> Exercise catalogue -> "Save my exercises to the cloud"
+     Wait for: "602 exercises saved to your cloud in 4 parts"
+  3. Settings -> Exercise catalogue -> "Match demos to my exercises"
+  4. "Save my exercises to the cloud" again (so the phone gets the matches)
+
+ON THE IPHONE:
+
+  5. Settings -> Exercise catalogue -> "Get my exercises"
+     It restores from the cloud. Zero WorkoutX requests.
+
+The status line must say "cloud backup: 602 exercises". If it still says
+"no cloud backup yet", step 2 did not work - check Cloud sync.
+
+WHY THE DEMOS WERE BROKEN IMAGES
+--------------------------------
+WorkoutX GIF URLs need your API key sent as a request header. An <img> tag
+cannot send headers, so the browser got a 401 and showed a broken image or
+fell back to an external "Watch demo" link. The app now catches that,
+re-fetches the GIF properly with your key, and swaps it in.
+
+Your API key therefore needs to be on each device for demos to display.
+Turn on "Also sync my API keys" in Cloud sync and the phone gets it too.
