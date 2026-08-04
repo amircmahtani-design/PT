@@ -106,14 +106,14 @@ h2.display{font-size:25px;font-weight:800;letter-spacing:-.4px;margin:6px 0;colo
 .tmr .tw{font-size:13.5px;color:var(--muted);line-height:1.6;margin-top:8px;}
 .sdot{display:inline-block;width:8px;height:8px;border-radius:50%;margin-right:7px;vertical-align:0px;}
 .splitchip{display:inline-block;border:1px solid;border-radius:999px;padding:5px 12px;font-size:12.5px;font-weight:700;}
-.itin-last{font-size:11px;font-weight:600;color:var(--label);margin-left:9px;}
+.itin-last{display:block;font-size:11px;font-weight:600;color:var(--label);margin-left:0;margin-top:5px;}
 .addday{display:block;width:100%;margin-top:12px;padding:12px;border-radius:12px;background:#0d0a07;
   border:1px dashed var(--line);color:var(--label);font-size:12.5px;font-weight:700;}
 .addday:active{color:var(--orange);}
-.itin-row{display:flex;align-items:center;gap:10px;padding:11px 0;border-bottom:1px solid var(--line);cursor:pointer;}
+.itin-row{display:flex;align-items:center;gap:14px;padding:13px 0;border-bottom:1px solid var(--line);}
 .itin-row:last-child{border-bottom:none;}
 .itin-row.today{background:linear-gradient(90deg,#ff8a2b14,transparent);margin:0 -8px;padding-left:8px;padding-right:8px;border-radius:8px;}
-.itin-day{width:44px;font-weight:800;font-size:13px;color:var(--gold);text-transform:uppercase;}
+.itin-day{width:52px;flex:0 0 52px;font-weight:800;font-size:13px;color:var(--gold);text-transform:uppercase;letter-spacing:.5px;padding-right:6px;}
 .itin-split{flex:1;font-weight:700;font-size:15px;min-width:0;}
 .itin-row.today .itin-split{color:#fff;}
 .itin-edit{font-size:11px;color:var(--dim);font-weight:700;text-transform:none;letter-spacing:0;}
@@ -255,6 +255,14 @@ textarea.txtin{min-height:88px;resize:vertical;line-height:1.45;}
 .tmrpick .tpl{font-size:11.5px;font-weight:800;text-transform:uppercase;letter-spacing:.7px;color:var(--label);margin-bottom:9px;}
 .tmrpick .tprow{display:flex;align-items:center;gap:9px;flex-wrap:wrap;}
 .tmrpick .splitsel{flex:1 1 130px;max-width:none;}
+.hcard{background:var(--card);border:1px solid var(--line);border-radius:18px;margin-bottom:14px;overflow:hidden;}
+.hsum{list-style:none;cursor:pointer;padding:16px;display:flex;align-items:center;justify-content:space-between;gap:8px;
+  font-size:14px;font-weight:800;color:var(--txt);}
+.hsum::-webkit-details-marker{display:none;}
+.hsum .chev{color:var(--label);font-size:19px;font-weight:700;transition:transform .18s;}
+.hcard[open] .hsum .chev{transform:rotate(90deg);}
+.hcard[open] .hsum{border-bottom:1px solid var(--line);}
+.hbody{padding:14px 16px 16px;}
 .syncdot{margin-top:10px;font-size:11.5px;font-weight:700;text-align:center;color:var(--dim);letter-spacing:.2px;}
 .syncdot.ok{color:#2f8f57;}
 .syncdot.dirty{color:var(--gold);}
@@ -461,10 +469,13 @@ a{color:var(--orange);}
     <button class="btn green mb" onclick="go('checkin')" style="font-size:16px;padding:16px">Start check-in</button>
     <div id="firstRun"></div>
     <div id="readyToday"></div>
-    <div class="card">
+    <details class="hcard" data-hk="tmr">
+      <summary class="hsum"><span class="t">Tomorrow</span><span class="chev">›</span></summary>
+      <div class="hbody">
       <div class="card-title"><span>Coach's call for tomorrow</span></div>
       <div id="tmrBox"></div>
-    </div>
+      </div>
+    </details>
     <div class="card hero tap" onclick="go('workout')">
       <div class="glow"></div>
       <div class="eyebrow" id="heroPhase">Today</div>
@@ -472,16 +483,27 @@ a{color:var(--orange);}
       <div class="sub" id="heroSub">Tap to open your session — log sets right on the exercise.</div>
       <button class="cta" onclick="event.stopPropagation();generateWorkout()">Open Today's Workout</button>
     </div>
-    <div class="grid" id="metricGrid"></div>
+    <details class="hcard" data-hk="metrics">
+      <summary class="hsum"><span class="t">Your numbers</span><span class="chev">›</span></summary>
+      <div class="hbody"><div class="grid" id="metricGrid"></div></div>
+    </details>
     <div id="nutriLine" style="display:none"></div>
-    <div class="card">
-      <div class="card-title"><span>Weekly plan</span><span class="itin-edit">tap a day to change</span></div>
+    <details class="hcard" data-hk="week" open>
+      <summary class="hsum"><span class="t">Weekly plan</span><span class="chev">›</span></summary>
+      <div class="hbody">
+      <div class="card-title"><span>Weekly plan</span><span class="itin-edit">pick from the dropdowns</span></div>
+      <button class="btn blue mb" id="weekPlanBtn" onclick="aiPlanWeek()">Ask the coach to plan my week</button>
+      <div id="weekPlanOut"></div>
       <div id="itinList"></div>
-    </div>
-    <div class="card">
+      </div>
+    </details>
+    <details class="hcard" data-hk="streak">
+      <summary class="hsum"><span class="t">Streak</span><span class="chev">›</span></summary>
+      <div class="hbody">
       <div class="powerbox"><div class="num" id="streakNum">0</div>
         <div><div class="lab">Training Day Run</div><div style="font-size:13px;font-weight:600;color:var(--muted);margin-top:3px">Rest days don't break it — three days off does </div></div></div>
-    </div>
+      </div>
+    </details>
   </section>
 
   <section class="screen" id="s-checkin">
@@ -519,7 +541,7 @@ a{color:var(--orange);}
 
   <section class="screen" id="s-workout">
     <div class="head"><div><div class="greet">Log as you go</div><h1 class="display">Train</h1></div>
-      <button class="btn sec" style="width:auto;padding:11px 14px;font-size:12px" onclick="generateWorkout()">Regenerate</button></div>
+      <button class="btn sec" style="width:auto;padding:11px 14px;font-size:12px" onclick="rerollWorkout()">New exercises</button></div>
     <div id="readyTrain"></div>
     <button class="btn sec mb" onclick="go('browse')">Browse all exercises</button>
     <button class="btn blue mb" id="planBtn" onclick="aiPlanToday(true)">Build today’s session</button>
@@ -734,7 +756,7 @@ a{color:var(--orange);}
 </div>
 
 <nav class="tabbar" id="tabbar">
-  <button class="tab active" data-s="today" onclick="goTab('today')"><svg viewBox="0 0 24 24"><path d="M3 11.5 12 4l9 7.5"/><path d="M5 10v10h14V10"/></svg>Today</button>
+  <button class="tab active" data-s="today" onclick="goTab('today')"><svg viewBox="0 0 24 24"><path d="M3 11.5 12 4l9 7.5"/><path d="M5 10v10h14V10"/></svg>Home</button>
   <button class="tab" data-s="workout" onclick="goTab('workout')"><svg viewBox="0 0 24 24"><path d="M6 7v10M18 7v10M3 9v6M21 9v6M6 12h12"/></svg>Train</button>
   <button class="tab" data-s="coach" onclick="goTab('coach')"><svg viewBox="0 0 24 24"><path d="M4 5h16v11H8l-4 4z"/></svg>Coach</button>
   <button class="tab" data-s="progress" onclick="goTab('progress')"><svg viewBox="0 0 24 24"><path d="M4 19V5M4 19h16M8 16l3-4 3 3 5-7"/></svg>Progress</button>
@@ -1355,6 +1377,7 @@ function lastDoneDays(name){
 }
 /* Rotation: longest-unused first, so the menu cycles instead of repeating.
    Ties break towards the kit you should be reaching for in this location. */
+let _reroll=0;                     /* bumped by the "New exercises" button */
 function pickRotated(list,n,key,taken){
   const seen=taken||new Set();
   const cand=(list||[])
@@ -1362,7 +1385,11 @@ function pickRotated(list,n,key,taken){
     .filter(x=>canDoHere(x,key))
     .map(name=>({name, days:lastDoneDays(name), gear:gearRank(name,key), pop:(EX(name)||{}).pop||500}));
   cand.sort((a,b)=>(b.days-a.days)||(a.gear-b.gear)||(a.pop-b.pop));
-  const out=cand.slice(0,Math.max(0,n)).map(o=>o.name);
+  /* Rerolling rotates the window down the list instead of re-picking the same
+     top names, so pressing "New exercises" actually changes the session. */
+  const off=_reroll% Math.max(1,cand.length);
+  const rolled=off? cand.slice(off).concat(cand.slice(0,off)) : cand;
+  const out=rolled.slice(0,Math.max(0,n)).map(o=>o.name);
   out.forEach(x=>seen.add(x));
   return out;
 }
@@ -2108,6 +2135,21 @@ function ensureWorkout(){
     const su=document.getElementById('heroSub'); if(su)su.textContent=DB.workout.note;
     const hp=document.getElementById('heroPhase'); if(hp)hp.textContent="Today · "+DB.workout.tag; }
   renderWorkoutSheet(DB.workout);
+}
+/* "New exercises" — rebuild today's session with different movements from the
+   same menu. Rerolls rather than regenerating identically, which is what the
+   old "Regenerate" button did once rotation became deterministic. */
+function rerollWorkout(){
+  const logged=(DB.workout&&DB.workout.main||[]).reduce((a,e)=>a+todaySets(e.name).length,0);
+  if(logged && !confirm("You've already logged "+logged+" set"+(logged===1?"":"s")+" today.\n\nSwapping in new exercises keeps everything you've logged in your history, but today's sheet will show different movements. Carry on?")) return;
+  _reroll++;
+  DB.workout=buildWorkout(); save();
+  renderWorkoutSheet(DB.workout);
+  const t=document.getElementById('heroTitle'); if(t)t.textContent=DB.workout.title;
+  const su=document.getElementById('heroSub'); if(su)su.textContent=DB.workout.note;
+  const hp=document.getElementById('heroPhase'); if(hp)hp.textContent="Today \u00b7 "+DB.workout.tag;
+  const names=(DB.workout.main||[]).map(e=>e.name);
+  toast(names.length? ("New session \u00b7 "+names.slice(0,2).join(", ")+(names.length>2?"\u2026":"")) : "Session rebuilt");
 }
 function generateWorkout(){
   DB.workout=buildWorkout(); save();
@@ -3619,7 +3661,7 @@ function lastDoneOf(split){
     const hit = cats.includes(info.key) ||
       (info.key==="upper" && cats.some(c=>["push","pull","arms"].includes(c))) ||
       (info.key==="full"  && cats.length>=3);
-    if(hit){ const n=daysSince(d); return n===0?"today":n===1?"yesterday":n+"d ago"; }
+    if(hit){ const n=daysSince(d); return n===0?"done today":n===1?"done yesterday":"done "+n+"d ago"; }
   }
   return "not yet";
 }
@@ -3896,7 +3938,7 @@ function scheduleInApp(){
    v18 ADDITIONS — draggable rest timer · weekly training memory · AI planner
    · Firestore sync
    ========================================================================== */
-const APP_VERSION="v55 · 04/08/2026";
+const APP_VERSION="v56 · 04/08/2026";
 
 /* ===== 1. REST TIMER — drag it anywhere so it never blocks the chat box ===== */
 let _rtDrag=null;
@@ -4096,6 +4138,50 @@ function substituteUnavailable(){
     return exObject(alt);
   });
   return swapped;
+}
+/* v56 — "plan my whole week". Reads what he's actually trained, decides the
+   split AND where the rest days go, and writes it into the schedule. */
+let _weekPlanning=false;
+async function aiPlanWeek(){
+  const btn=document.getElementById('weekPlanBtn'), out=document.getElementById('weekPlanOut');
+  if(DB.ai.provider!=="openai"||!DB.ai.key){ toast("Add your OpenAI key in Settings first"); go('settings'); return; }
+  if(_weekPlanning) return; _weekPlanning=true;
+  if(btn){ btn.disabled=true; btn.innerHTML="<span class='spin'></span> Reading your training\u2026"; }
+  if(out) out.innerHTML="<div class='card mt center muted'><span class='spin'></span> Coach is planning your week\u2026</div>";
+  try{
+    const known=allSplits().join(", ");
+    const sys=coachSystem()+
+"\n\n=== YOU ARE PLANNING HIS WHOLE WEEK RIGHT NOW ===\n"+
+"Decide all seven days: what he trains, and CRUCIALLY where the rest days go. Rest is a decision, not a gap.\n"+
+"HARD RULES:\n"+
+"1. Base it on what he has ACTUALLY trained (the digest above), not on what the current plan says. Hit the neglected groups first.\n"+
+"2. Never put two heavy sessions for the same muscle group on consecutive days.\n"+
+"3. At least one full rest day, and at most two consecutive training days without an easier one, given the Klinefelter recovery load.\n"+
+"4. Flexibility and mobility are a real goal \u2014 give him at least one mobility or Pilates day in the week, not just cool-downs.\n"+
+"5. You may invent session types he doesn't have yet with [[CREATE_DAY_TYPE: Name]] before assigning them.\n"+
+"HIS EXISTING SESSION TYPES: "+known+"\n"+
+"OUTPUT FORMAT \u2014 the directive FIRST, on its own line, all seven days:\n"+
+"[[SET_WEEKLY_SCHEDULE: Sun X; Mon X; Tue X; Wed X; Thu X; Fri X; Sat X]]\n"+
+"Then 3-5 short lines: the logic, which group you're prioritising and why, and where the rest falls. No bullet lists, no preamble.";
+    const usr="Plan my full week from "+ukDate()+". I'm in "+LOC().label+" ("+currentEquipment()+"). Decide the training days and the rest days and write it into my plan.";
+    const reply=await callAI([{role:"system",content:sys},{role:"user",content:usr}],700);
+    if(!reply){
+      if(out) out.innerHTML="<div class='card mt'><div class='coachnote'><div class='who'>\u25c6 Coach</div>Couldn't reach the AI just then \u2014 your plan is unchanged. Tap again to retry.</div></div>";
+    } else {
+      const {cleaned,notes}=applyCoachDirectives(reply);
+      save(); renderItin(); renderTomorrow(); try{ renderWeek(); }catch(e){}
+      if(out) out.innerHTML="<div class='card mt'><div class='coachnote'><div class='who'>\u25c6 Coach</div>"+
+        fmt(escapeHtml(cleaned||"Week updated."))+
+        (notes&&notes.length? "<div class='sm' style='margin-top:10px'>"+notes.map(escapeHtml).join("<br>")+"</div>":"")+
+        "</div></div>";
+      toast("Week planned \u2705");
+    }
+  }catch(e){
+    if(out) out.innerHTML="<div class='card mt'><div class='coachnote'><div class='who'>\u25c6 Coach</div>That didn't go through ("+escapeHtml(String(e&&e.message||e))+"). Your plan is unchanged.</div></div>";
+  }finally{
+    _weekPlanning=false;
+    if(btn){ btn.disabled=false; btn.textContent="Ask the coach to plan my week"; }
+  }
 }
 async function aiPlanToday(force){
   const btn=document.getElementById('planBtn'), out=document.getElementById('planOut');
@@ -6006,6 +6092,19 @@ function saveCloud(){
 }
 
 
+/* Remember which Home sections he leaves open. */
+function bindHomeCards(){
+  document.querySelectorAll('#s-today details[data-hk]').forEach(d=>{
+    const k=d.dataset.hk;
+    const st=(DB.prefs&&DB.prefs.openHome)||{};
+    if(st[k]!==undefined) d.open=!!st[k];
+    if(d.dataset.bound==="1") return; d.dataset.bound="1";
+    d.addEventListener('toggle',()=>{
+      DB.prefs=DB.prefs||{}; DB.prefs.openHome=DB.prefs.openHome||{};
+      DB.prefs.openHome[k]=d.open; save();
+    });
+  });
+}
 function boot(){
   const d=new Date(), hr=d.getHours();
   document.getElementById('greetLine').textContent=hr<12?"Good Morning":hr<18?"Good Afternoon":"Good Evening";
@@ -6033,6 +6132,7 @@ function boot(){
   renderWeek(); renderReadiness(); renderFirstRun(); renderTomorrow(); renderEquipFields(); renderCloudFields(); restApplyPos(); renderStorageStatus(); renderWxFields();
   try{ sessFloatSync(); if(sessRunning()) sessTickStart(); }catch(e){}
   try{ updateSyncDot(); }catch(e){}
+  try{ bindHomeCards(); }catch(e){}
   { const v=document.getElementById('verLine'); if(v) v.textContent="Amir PT · "+APP_VERSION; }
 }
 boot();

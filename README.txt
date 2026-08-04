@@ -1,12 +1,61 @@
-AMIR PT — v55 · 04/08/2026
+AMIR PT — v56 · 04/08/2026
 ==========================
 
 Deploy exactly as before: index.html, sw.js, manifest.json and the two icons
 in the same folder, at the repo root. Filenames are case-sensitive —
 index.html, never Index.html.
 
-Check it landed: Settings → bottom → "Amir PT · v55 · 04/08/2026".
+Check it landed: Settings → bottom → "Amir PT · v56 · 04/08/2026".
 Nothing in this update touches your data. Every logged set survives.
+
+
+WHAT'S NEW IN v56
+=================
+
+"TODAY" TAB IS NOW "HOME"
+  It holds the whole week, tomorrow's call, your numbers and your streak. It
+  hasn't been just "today" for a while.
+
+FIXED: "today" APPEARING BESIDE TUESDAY, SATURDAY AND SUNDAY
+  Not a bug in the day logic — that text was the LAST DONE marker, meaning
+  "you last did this kind of session today". Those three days share a session
+  type you'd trained that morning, so all three said "today" and it read as if
+  they thought they were today. It now reads "done today" / "done 3d ago" /
+  "not yet", on its own line under the session name.
+
+DAYS NO LONGER CROWD THE COLOUR CHIPS
+  Day column widened, gap increased, row padding up, and the last-done note
+  moved onto its own line instead of being jammed alongside.
+
+ASK THE COACH TO PLAN YOUR WHOLE WEEK
+  New button directly above the weekly plan. It reads what you've ACTUALLY
+  trained (not what the plan claims), then decides all seven days including
+  where the rest days fall, and writes it in. It's told to: never put two heavy
+  sessions for the same group back to back, give you at least one full rest day,
+  respect the Klinefelter recovery load, and include at least one mobility or
+  Pilates day because flexibility is a stated goal. It can invent session types
+  it needs. If the AI can't be reached your plan is left untouched.
+
+HOME COLLAPSES — FAR LESS SCROLLING
+  Tomorrow, Your numbers, Weekly plan and Streak are now collapsible cards.
+  Weekly plan is open by default, the rest closed. Whatever you leave open is
+  remembered.
+
+"REGENERATE" IS NOW "NEW EXERCISES" — AND IT ACTUALLY WORKS
+  You were right to ask. It rebuilt the session for today's split, which was
+  fine when exercises came from a fixed list — but once v53 made selection
+  deterministic rotation, pressing it returned THE IDENTICAL SESSION every
+  time. It looked broken because it was.
+
+  It now rolls the rotation window down the menu, so each press gives you
+  genuinely different movements from the same session type:
+
+    press 1  Back Squat, Front Squat, Bulgarian Split Squat, Walking Lunge...
+    press 2  Front Squat, Deadlift, Walking Lunge, Reverse Lunge, Step-up
+    press 3  Deadlift, Romanian Deadlift, Reverse Lunge, Step-up, Nordic Curl
+
+  If you've already logged sets today it asks first, and explains that your
+  logged sets stay in your history either way.
 
 
 WHAT'S NEW IN v55
