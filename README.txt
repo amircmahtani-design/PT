@@ -1,4 +1,4 @@
-AMIR PT — v32 · 2026-08-04
+AMIR PT — v35 · 2026-08-04
 ==========================
 
 WHAT TO UPLOAD
@@ -21,7 +21,7 @@ FILENAMES ARE CASE-SENSITIVE. It must be index.html, not Index.html.
 AFTER DEPLOYING
 ---------------
 1. Open the site, go to Settings, scroll to the bottom.
-   The line should read: Amir PT · v32 · 2026-08-04
+   The line should read: Amir PT · v35 · 2026-08-04
    If it says anything else, the old file is still being served — hard refresh.
 
 2. Settings → App & Storage tells you the truth about your install:
@@ -217,6 +217,24 @@ default personality line, so write it as instructions:
   "Blunt. No cheerleading. Short sentences. Tell me when I'm being soft,
    but never make light of the Klinefelter or the wrist."
 
-FIXED IN v32: the "Coaching rules" and "Injuries and medical" boxes were
+FIXED IN v35: the "Coaching rules" and "Injuries and medical" boxes were
 saved and redisplayed but never actually sent to the coach. Everything you
 had typed there had been ignored. All three now reach the prompt.
+
+
+ADDING TO YOUR IPHONE HOME SCREEN
+---------------------------------
+iOS gives a home-screen web app its OWN storage, completely separate from
+Safari. Adding to home screen therefore starts a BLANK copy - nothing you
+did in Safari carries across. This is iOS behaviour, not a bug in the app.
+
+Because a blank copy also starts with the DEFAULT Sync ID, it cannot find
+your data if you changed your Sync ID to something private.
+
+So on the home-screen app, once:
+  Today tab -> "Nothing logged on this device" card
+  -> type your Sync ID -> Restore my history
+
+After that the home-screen app syncs on its own. Do all your training in
+the home-screen app from then on, not Safari - two copies with the same
+Sync ID will merge, but it's simpler to use one.

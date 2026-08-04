@@ -238,6 +238,20 @@ textarea.txtin{min-height:88px;resize:vertical;line-height:1.45;}
 .chartfoot{display:flex;justify-content:space-between;gap:8px;margin-top:8px;font-size:11.5px;font-weight:700;color:var(--muted);flex-wrap:wrap;}
 .chartfoot .up{color:var(--green);}
 .chartfoot .down{color:#ff8f84;}
+.timerow{display:flex;align-items:center;gap:8px;}
+.timein{width:82px;background:#0d0a07;border:1px solid var(--line);border-radius:11px;padding:11px 10px;
+  color:#fff;font-size:19px;font-weight:800;text-align:center;font-variant-numeric:tabular-nums;-moz-appearance:textfield;}
+.timein::-webkit-outer-spin-button,.timein::-webkit-inner-spin-button{-webkit-appearance:none;margin:0;}
+.timein:focus{outline:none;border-color:var(--orange);}
+.timerow .u{font-size:13px;font-weight:700;color:var(--label);}
+.st{width:38px;height:38px;flex:0 0 auto;border-radius:11px;background:#0d0a07;border:1px solid var(--line);
+  color:var(--txt);font-size:19px;font-weight:800;line-height:1;}
+.st:active{transform:scale(.94);}
+.exsets{display:flex;align-items:center;gap:9px;margin-top:11px;}
+.exsets .l{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.7px;color:var(--label);}
+.exsets .n{min-width:26px;text-align:center;font-size:17px;font-weight:800;color:#fff;font-variant-numeric:tabular-nums;}
+.exsets .d{font-size:11.5px;font-weight:600;color:var(--label);margin-left:auto;}
+.exsets .st{width:34px;height:34px;font-size:17px;}
 .timeline{display:flex;gap:3px;margin:10px 0 8px;height:24px;}
 .timeline .seg{display:flex;align-items:center;justify-content:center;border-radius:6px;font-size:10px;font-weight:700;overflow:hidden;white-space:nowrap;min-width:0;}
 .timeline .row{background:#2a1c0e;color:var(--gold);}
@@ -340,6 +354,7 @@ a{color:var(--orange);}
       <div class="avatar">A</div>
     </div>
     <button class="btn green mb" onclick="go('checkin')" style="font-size:16px;padding:16px">Start check-in</button>
+    <div id="firstRun"></div>
     <div id="readyToday"></div>
     <div class="card hero tap" onclick="go('workout')">
       <div class="glow"></div>
@@ -376,8 +391,8 @@ a{color:var(--orange);}
     <div class="card">
       <div class="field"><label>Bodyweight <span class="hint" style="float:right;font-weight:700;color:var(--gold)">kg</span></label>
         <input class="txtin" id="ciWeight" inputmode="decimal" placeholder="e.g. 84.2" /></div>
-      <div class="field"><label>How long have you got? <span class="slideval"><span id="ciTimeV">45</span> min</span></label>
-        <input type="range" min="15" max="120" step="5" value="45" id="ciTime" oninput="ciTimeV.textContent=this.value" />
+      <div class="field"><label>How long have you got?</label>
+        <div class="timerow"><input class="timein" id="ciTime" type="number" inputmode="numeric" min="10" max="150" placeholder="45" /><span class="u">minutes</span></div>
         <div class="hint mt" id="ciTimeHint"></div></div>
       <div class="field"><label>Sleep <span class="slideval"><span id="ciSleepV">7</span>/10</span></label>
         <input type="range" min="1" max="10" value="7" id="ciSleep" oninput="ciSleepV.textContent=this.value" /></div>
@@ -740,7 +755,7 @@ function go(s){
   if(s==='progress'){ drawChart(); renderRowingLog(); }
   if(s==='history') renderHistory();
   if(s==='workout'){ ensureWorkout(); renderReadiness(); maybeAutoPlan(); }
-  if(s==='today'){ renderNutrition(); renderWeek(); renderReadiness(); }
+  if(s==='today'){ renderNutrition(); renderWeek(); renderReadiness(); renderFirstRun(); }
 }
 function toast(m){const t=document.getElementById('toast');t.textContent=m;t.classList.add('show');setTimeout(()=>t.classList.remove('show'),2600);}
 
@@ -1084,6 +1099,23 @@ function buildWorkout(){
   /* Warm-up and cool-down come from THIS session's movements, not a fixed list. */
   const warmup=buildWarmup(main,{travel,wrist,firstEx:main[0]});
   const coolFor=buildCooldown(main,{wrist});
+  /* In Dubai and Madrid, prefer the loaded version of a movement over the
+     bodyweight one where the kit exists. */
+  if(!L.short){
+    const claimed=new Set(main);
+    main=main.map(n=>{
+      if(gearRank(n,key)<=1) return n;
+      const want=((EX(n)||guessEx(n)).m||["core"])[0];
+      const better=allExNames()
+        .filter(x=>canDoHere(x,key)&&!claimed.has(x))
+        .filter(x=>{const o=EX(x)||{};return (o.m||[])[0]===want && !!o.timed===!!(EX(n)||{}).timed;})
+        .filter(x=>gearRank(x,key)<gearRank(n,key))
+        .sort((a,b)=>(gearRank(a,key)-gearRank(b,key))||(((EX(a)||{}).pop||500)-((EX(b)||{}).pop||500)))[0];
+      if(!better) return n;
+      claimed.delete(n); claimed.add(better);
+      return better;
+    });
+  }
   const estF=estimateMinutes(main,sets,tb);
   return {title: split, tag: L.tag, loc:key, mins:tb.mins, est:estF,
     phase: DB.profile.phase, note, reps: travel? "AMRAP-ish \u00b7 2 in reserve" : "8\u201312 reps", sets, warmup, travel,
@@ -1399,14 +1431,20 @@ function addWarmupRow(travel){
 }
 function timeBarHTML(w){
   const t=timeBudget();
-  const est=estimateMinutes((w.main||[]).map(e=>e.name), w.sets||3, t);
-  const chip=m=>"<button class='setspick"+(t.mins===m?" on":"")+"' onclick='pickTime("+m+")'>"+m+"</button>";
+  const est=estimateMinutes(w.main||[], w.sets||3, t);
   const rowBit=hasRower()
-    ? "<button class='setspick auto"+(t.row?" on":"")+"' onclick='toggleRowWarmup()'>"+(t.row?"Row "+(t.rowMins||10)+"m":"No row")+"</button>"
+    ? "<button class='setspick auto"+(t.row?" on":"")+"' onclick='toggleRowWarmup()'>"+(t.row?"Row "+(t.rowMins||10)+" min":"No row")+"</button>"
     : "";
   const over=est.total>t.mins+3;
   return "<div class='setsbar'><div class='lab'>Time available</div>"+
-    "<div class='setsrow'>"+[20,30,45,60,75].map(chip).join('')+rowBit+"</div>"+
+    "<div class='timerow'>"+
+      "<button class='st' onclick='nudgeTime(-5)' aria-label='five minutes less'>\u2212</button>"+
+      "<input class='timein' id='timeMins' type='number' inputmode='numeric' min='10' max='150' value='"+t.mins+"' "+
+        "onchange='pickTime(this.value)' onblur='pickTime(this.value)' />"+
+      "<span class='u'>min</span>"+
+      "<button class='st' onclick='nudgeTime(5)' aria-label='five minutes more'>+</button>"+
+      rowBit+
+    "</div>"+
     "<div class='timeline'>"+
       (est.row? "<span class='seg row' style='flex:"+est.row+"'>row "+est.row+"m</span>":"")+
       "<span class='seg warm' style='flex:"+est.warm+"'>"+est.warm+"m</span>"+
@@ -1418,8 +1456,23 @@ function timeBarHTML(w){
            : "About "+est.total+" min of your "+t.mins+".")+
     "</div></div>";
 }
-function pickTime(m){ setTimeBudget(m,null); renderWorkoutSheet(DB.workout); toast(m+" min session"); }
+function pickTime(m){
+  const n=parseInt(m); if(isNaN(n)) { refreshTimeBar(); return; }
+  const t=timeBudget(); if(n===t.mins){ refreshTimeBar(); return; }
+  setTimeBudget(n,null);
+  renderWorkoutSheet(DB.workout);
+  toast(timeBudget().mins+" min session");
+}
+function nudgeTime(d){ pickTime(timeBudget().mins+d); }
 function toggleRowWarmup(){ const t=timeBudget(); setTimeBudget(null,!t.row); renderWorkoutSheet(DB.workout); }
+/* Update just the time bar, without rebuilding the sheet under his thumb. */
+function refreshTimeBar(){
+  if(!DB.workout) return;
+  const host=document.querySelector('.setsbar'); if(!host) return;
+  const wrap=document.createElement('div');
+  wrap.innerHTML=timeBarHTML(DB.workout);
+  const fresh=wrap.firstChild; if(fresh) host.replaceWith(fresh);
+}
 function setsPickerHTML(w){
   const cur=w.sets, locked=!!(DB.setsOverride && DB.setsOverride.date===today());
   const btn=n=>"<button class='setspick"+(locked&&cur===n?" on":"")+"' onclick='pickSets("+n+")'>"+n+"</button>";
@@ -1499,7 +1552,7 @@ function resyncTimers(){
 document.addEventListener('visibilitychange',function(){ if(!document.hidden) resyncTimers(); });
 window.addEventListener('focus',resyncTimers);
 function afterLog(i){
-  const ex=DB.workout.main[i]; const done=todaySets(ex.name).length; const target=DB.workout.sets;
+  const ex=DB.workout.main[i]; const done=todaySets(ex.name).length; const target=exSets(ex);
   if(done>=target){ const next=DB.workout.main[i+1]; const exRest=DB.workout.travel?90:150; startRest(exRest, next? ("Rest before "+next.name) : "Last exercise done — nice work"); }
   else { startRest(restSeconds(ex.rest), ex.name+" · next set in"); }
 }
@@ -1574,6 +1627,29 @@ function lastTimeHTML(name){
   const top=timed? Math.max(...s.sets.map(x=>x.r||0))+"s" : Math.max(...s.sets.map(x=>x.w||0))+"kg";
   return "<div class='cue'><b>Last time ("+(ago===0?"earlier today":ago===1?"yesterday":ago+"d ago")+"):</b> "+txt+" \u2014 top "+top+"</div>";
 }
+/* Sets are per exercise. DB.workout.sets is only the default for new ones. */
+function exSets(e){
+  if(!e) return (DB.workout&&DB.workout.sets)||3;
+  const n=(typeof e==="object")? e.sets : null;
+  return (n>=1&&n<=8)? n : ((DB.workout&&DB.workout.sets)||3);
+}
+function totalSets(){ return ((DB.workout&&DB.workout.main)||[]).reduce((a,e)=>a+exSets(e),0); }
+function setExSets(i,n){
+  const e=DB.workout&&DB.workout.main[i]; if(!e) return;
+  n=parseInt(n); if(isNaN(n)||n<1||n>8) return;
+  e.sets=n;
+  e.scheme=schemeFor(e.name,n);
+  save();
+  const el=document.getElementById('exb'+i); if(el) el.outerHTML=exBlockHTML(e,i);
+  refreshDoneCard(); refreshTimeBar();
+  toast(e.name+" \u2192 "+n+" sets");
+}
+function schemeFor(name,n){
+  const e=EX(name)||{}; const travel=DB.workout?!!DB.workout.travel:!!LOC().short;
+  const tail = travel? ((e.m||[]).includes('core')||e.timed? "40\u201360s hold" : "12\u201320 reps")
+                     : (e.timed? "30\u201360s hold" : "8\u201312");
+  return n+" sets \u00b7 "+tail;
+}
 function setChip(sset){
   const e=effortOf(sset), m=e?EFFORT[e]:null;
   const dot=m? "<i class='effdot' style='background:"+m.col+"' title='"+m.lab+"'></i>" : "";
@@ -1590,6 +1666,11 @@ function exBlockHTML(e,i){
     : "<div class='logrow'><input id='w"+i+"' inputmode='decimal' placeholder='kg' value='"+(e.rec?e.rec.w:'')+"'><input id='r"+i+"' inputmode='numeric' placeholder='reps'><button onclick='logSet("+i+")'>Log</button></div>";
   return "<div class='exb' id='exb"+i+"'>"+exImgHTML(e.name,e.muscles)+
     "<div class='name'>"+e.name+"</div><div class='scheme'>"+e.scheme+" · rest "+e.rest+"</div>"+
+    "<div class='exsets'><span class='l'>Sets</span>"+
+      "<button class='st' onclick='setExSets("+i+","+(exSets(e)-1)+")' aria-label='fewer sets'>−</button>"+
+      "<span class='n'>"+exSets(e)+"</span>"+
+      "<button class='st' onclick='setExSets("+i+","+(exSets(e)+1)+")' aria-label='more sets'>+</button>"+
+      "<span class='d'>"+todaySets(e.name).length+" logged</span></div>"+
     lastTimeHTML(e.name)+
     "<button class='swapbtn' onclick='swapEx("+i+")'>Swap this exercise</button>"+
     "<div id='swap"+i+"' data-open='0'></div>"+
@@ -1995,7 +2076,8 @@ function setSessionSets(n,manual){
   if(!manual && locked) return DB.setsOverride.sets;      // Amir's call wins
   if(manual) DB.setsOverride={date:today(),sets:n};
   DB.workout.sets=n;
-  DB.workout.main=(DB.workout.main||[]).map(e=>exObject(e.name));
+  /* Applying to all clears any per-exercise tweaks \u2014 that's what "all" means. */
+  DB.workout.main=(DB.workout.main||[]).map(e=>{ const o=exObject(e.name); delete o.sets; return o; });
   finalizeCoachEdit();
   return n;
 }
@@ -2635,7 +2717,7 @@ function scheduleInApp(){
    v18 ADDITIONS — draggable rest timer · weekly training memory · AI planner
    · Firestore sync
    ========================================================================== */
-const APP_VERSION="v32 · 2026-08-04";
+const APP_VERSION="v35 · 2026-08-04";
 
 /* ===== 1. REST TIMER — drag it anywhere so it never blocks the chat box ===== */
 let _rtDrag=null;
@@ -2795,6 +2877,31 @@ function trainingContext(){
 /* ===== 3. THE COACH BUILDS THE SESSION — Amir never edits a workout again ===== */
 let _planning=false;
 const PLAN_LABEL="\uD83E\uDDE0 Coach: build today's session from my week";
+/* Available isn't the same as appropriate. In a full gym a push-up is a
+   downgrade from a bench press \u2014 upgrade to the best kit he has here. */
+function upgradeGear(){
+  if(!DB.workout||!Array.isArray(DB.workout.main)) return [];
+  const key=locKey();
+  if(key==="greece") return [];                     // bodyweight IS the best kit there
+  const swapped=[];
+  /* Track picks as we go \u2014 otherwise two press-ups both "upgrade" to the same bench. */
+  const taken=new Set(DB.workout.main.map(x=>x.name));
+  DB.workout.main=DB.workout.main.map(e=>{
+    const cur=EX(e.name)||guessEx(e.name);
+    if(gearRank(e.name,key)<=1) return e;            // already top-tier kit
+    const want=(cur.m||["core"])[0];
+    const better=allExNames()
+      .filter(n=>canDoHere(n,key) && !taken.has(n))
+      .filter(n=>{ const x=EX(n)||{}; return (x.m||[])[0]===want && !!x.timed===!!cur.timed; })
+      .filter(n=>gearRank(n,key)<gearRank(e.name,key))
+      .sort((a,b)=>(gearRank(a,key)-gearRank(b,key))||(((EX(a)||{}).pop||500)-((EX(b)||{}).pop||500)))[0];
+    if(!better) return e;
+    taken.delete(e.name); taken.add(better);
+    swapped.push(e.name+" \u2192 "+better);
+    return exObject(better);
+  });
+  return swapped;
+}
 function substituteUnavailable(){
   if(!DB.workout||!Array.isArray(DB.workout.main)) return [];
   const pool=POOLS[locKey()], swapped=[];
@@ -2847,7 +2954,7 @@ async function aiPlanToday(force){
     _aiPlanningSets=true;
     let res;
     try{ res=applyCoachDirectives(reply); } finally { _aiPlanningSets=false; }
-    const swapped=substituteUnavailable();
+    const swapped=substituteUnavailable().concat(upgradeGear());
     if(swapped.length) finalizeCoachEdit();
     DB.aiPlan={date:today(),loc:locKey()}; save();
     renderWorkoutSheet(DB.workout);
@@ -2997,6 +3104,46 @@ function readinessHTML(){
     "<div class='coachnote'><div class='who'>\u25c6 Coach</div>"+body+
       "<div class='sm' style='margin-top:8px'>"+(c.verdict==="rest"||c.verdict==="deload"?"Why: ":"Reading: ")+why+"</div></div>"+
     "<div class='readyrow'>"+btns+"</div></div>";
+}
+/* A fresh install (or a new home-screen app) starts empty. Say so, and offer
+   the one thing that fixes it, instead of quietly looking like a new account. */
+function renderFirstRun(){
+  const el=document.getElementById('firstRun'); if(!el) return;
+  if(localHasHistory()){ el.innerHTML=""; return; }
+  const id=(DB.cloud&&DB.cloud.syncId)||"";
+  el.innerHTML=
+    "<div class='card' style='border-color:#5c3712'>"+
+      "<div class='card-title'><span>Nothing logged on this device</span></div>"+
+      "<div class='sm' style='margin-bottom:12px;line-height:1.6'>iOS keeps a home-screen app's storage <b>completely separate from Safari</b> \u2014 adding it to your home screen starts a blank copy. Your history isn't lost if cloud sync was on; it's under your Sync ID.</div>"+
+      "<div class='field' style='margin-bottom:10px'><label>Your Sync ID</label>"+
+        "<input class='txtin' id='frSyncId' value='"+attrEsc(id)+"' placeholder='the one you set on your other device' /></div>"+
+      "<button class='btn' onclick='firstRunRestore()'>Restore my history</button>"+
+      "<div id='frMsg' class='hint mt' style='font-size:12.5px'></div>"+
+    "</div>";
+}
+async function firstRunRestore(){
+  const idEl=document.getElementById('frSyncId');
+  const id=(idEl&&idEl.value||"").trim();
+  const msg=document.getElementById('frMsg');
+  if(!id){ if(msg) msg.textContent="Enter the Sync ID you used on your other device."; return; }
+  DB.cloud=DB.cloud||{}; DB.cloud.syncId=id; DB.cloud.on=true; save();
+  _fbReady=false; _fs=null;
+  if(msg) msg.innerHTML="<span class='spin'></span> Looking for your backup\u2026";
+  const stat=await cloudPull(false);
+  if(stat===null){ if(msg) msg.innerHTML="Couldn't reach Firestore. Check Settings \u2192 Cloud sync."; return; }
+  if(stat.fresh || !localHasHistory()){
+    if(msg) msg.innerHTML="\u2717 No backup found under <b>"+attrEsc(id)+"</b>. Check the Sync ID matches your other device exactly \u2014 it's case-sensitive.";
+    return;
+  }
+  const L=localHistorySize();
+  const keys=[];
+  if(DB.ai&&DB.ai.key) keys.push("OpenAI");
+  if(DB.wx&&DB.wx.key) keys.push("WorkoutX");
+  if(msg) msg.innerHTML="\u2705 Restored \u2014 "+L.sessions+" sessions, "+L.lifts+" lifts, "+L.checkins+" check-ins"+
+    (keys.length? " and your "+keys.join(" and ")+" key"+(keys.length>1?"s":"")+" \u2014 nothing left to type."
+                : ".<br>Your API keys weren't in the backup. On your other device turn on <b>Also sync my API keys</b>, tap Sync now, then restore again here.");
+  toast("Restored \u2014 "+L.sessions+" sessions back \u2705");
+  renderFirstRun();
 }
 function renderReadiness(){
   const html=readinessHTML();
@@ -3363,7 +3510,7 @@ function todaySummary(){
   });
   const rows=(DB.rowing||[]).filter(r=>r.date===today());
   const avgEff=efforts.length? efforts.reduce((a,b)=>a+b,0)/efforts.length : null;
-  const target=(w.sets||0)*(planned.length||0);
+  const target=(w.main||[]).reduce((a,e)=>a+exSets(e),0);
   return {planned,done,skipped,extras,sets,volume,timedSecs,rows,avgEff,target,
           title:w.title||"Session", loc:locKey()};
 }
@@ -3682,9 +3829,12 @@ function estimateMinutes(names,sets,t){
   const warm = LOC().short? 3 : 5;
   const cool = 4;
   let lift=0;
-  (names||[]).forEach(n=>{
-    const per=workSecsFor(n)+restSecsFor(n,sets);
-    lift += (per*sets)/60;
+  (names||[]).forEach(item=>{
+    /* Accepts a plain name or a workout entry with its own set count. */
+    const n=(typeof item==="object")? item.name : item;
+    const k=(typeof item==="object" && item.sets>=1)? item.sets : sets;
+    const per=workSecsFor(n)+restSecsFor(n,k);
+    lift += (per*k)/60;
     lift += 1;                                 // changing station / setting up
   });
   return {row,warm,cool,lift:Math.round(lift),total:Math.round(row+warm+cool+lift)};
@@ -3778,13 +3928,20 @@ function cloudPayload(){
   return o;
 }
 function applyCloudKeys(r){
-  if(!syncKeysOn() || !r || !r._keys) return false;
+  if(!r || !r._keys) return false;
+  /* Keys are only ever IN the document because he opted in on another device.
+     A fresh install starts with the toggle off, so gating on the local flag here
+     would mean the keys sit in his own backup and never come down. Finding them
+     IS the decision \u2014 apply them, and switch this device's toggle on to match. */
+  DB.cloud=DB.cloud||{};
+  if(!DB.cloud.syncKeys) DB.cloud.syncKeys=true;
   let got=false;
   DB.ai=DB.ai||{}; DB.wx=DB.wx||{};
   if(r._keys.openai   && !DB.ai.key){ DB.ai.key=r._keys.openai; got=true; }
   if(r._keys.giphy    && !DB.ai.giphyKey){ DB.ai.giphyKey=r._keys.giphy; got=true; }
   if(r._keys.workoutx && !DB.wx.key){ DB.wx.key=r._keys.workoutx; DB.wx.on=true; got=true; }
   if(r._keys.model    && !DB.ai.model){ DB.ai.model=r._keys.model; }
+  if(got){ DB.ai.provider="openai"; save(); try{ renderWxFields(); }catch(e){} }
   return got;
 }
 function cloudMsg(t){ const el=document.getElementById('cloudMsg'); if(el) el.innerHTML=t; }
@@ -3958,6 +4115,7 @@ async function cloudSyncNow(silent){
   if(stat.sessions) bits.push(stat.sessions+" lift session"+(stat.sessions===1?"":"s"));
   if(stat.rows) bits.push(stat.rows+" row"+(stat.rows===1?"":"s"));
   if(stat.checkins) bits.push(stat.checkins+" check-in"+(stat.checkins===1?"":"s"));
+  if(stat.keys) bits.push("your API keys");
   const msg="\u2713 Synced "+new Date().toLocaleString('en-GB')+(bits.length?" \u2014 pulled in "+bits.join(", "):" \u2014 already up to date");
   cloudMsg(msg);
   if(!silent) toast("Synced \u2601\uFE0F");
@@ -3989,7 +4147,6 @@ function boot(){
   { const el=document.getElementById('setTone'); if(el) el.value=DB.profile.coachTone||""; }
   syncCheckinLoc();
   { const t=timeBudget(); const el=document.getElementById('ciTime'); if(el) el.value=t.mins;
-    const v=document.getElementById('ciTimeV'); if(v) v.textContent=t.mins;
     const h=document.getElementById('ciTimeHint');
     if(h) h.textContent = hasRower()&&t.row ? "Includes your "+(t.rowMins||10)+" min row warm-up." : "No rowing warm-up here \u2014 all of it is training."; }
   document.querySelectorAll('#provSeg button').forEach(b=>b.classList.toggle('on',b.dataset.v===DB.ai.provider));
@@ -3998,7 +4155,7 @@ function boot(){
   const split=pickSplit();
   if(DB.workout){ renderWorkoutSheet(DB.workout); document.getElementById('heroTitle').textContent=DB.workout.title; document.getElementById('heroPhase').textContent="Today · "+DB.workout.tag; }
   else { document.getElementById('heroTitle').textContent = split==="Rest"?"Rest & Recover":split; document.getElementById('heroPhase').textContent="Today · "+LOC().label; }
-  renderWeek(); renderReadiness(); renderEquipFields(); renderCloudFields(); restApplyPos(); renderStorageStatus(); renderWxFields();
+  renderWeek(); renderReadiness(); renderFirstRun(); renderEquipFields(); renderCloudFields(); restApplyPos(); renderStorageStatus(); renderWxFields();
   { const v=document.getElementById('verLine'); if(v) v.textContent="Amir PT · "+APP_VERSION; }
 }
 boot();
