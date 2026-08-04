@@ -1,12 +1,108 @@
-AMIR PT — v51 · 04/08/2026
+AMIR PT — v53 · 04/08/2026
 ==========================
 
 Deploy exactly as before: index.html, sw.js, manifest.json and the two icons
 in the same folder, at the repo root. Filenames are case-sensitive —
 index.html, never Index.html.
 
-Check it landed: Settings → bottom → "Amir PT · v51 · 04/08/2026".
+Check it landed: Settings → bottom → "Amir PT · v53 · 04/08/2026".
 Nothing in this update touches your data. Every logged set survives.
+
+
+WHAT'S NEW IN v53
+=================
+
+NO MORE DOING THE SAME FIVE EXERCISES FOREVER
+----------------------------------------------
+Every leg day was Barbell Back Squat, Romanian Deadlift, Bulgarian Split Squat,
+Nordic Curl, Plank. Every single time. Same for push, pull, and every custom
+type — each group was a fixed five-item list that got sliced whole.
+
+Each group is now a DEEP MENU split into anchors (the compound the session is
+built around) and accessories. The session is drawn by ROTATION: whatever
+you've gone longest without doing comes up first, read from what you actually
+logged.
+
+Six consecutive leg days now look like this:
+
+  wk1  Barbell Back Squat, Front Squat, Bulgarian Split Squat, Walking Lunge,
+       Reverse Lunge
+  wk2  Deadlift, Romanian Deadlift, Step-up, Nordic Curl, Single-leg Glute Bridge
+  wk3  Leg Press, Goblet Squat, Calf Raise, Wall Sit, Glute Bridge
+  wk4  Hip Thrust, Barbell Back Squat, Pistol Squat, Jump Squat, Bulgarian Split
+  wk5  Front Squat, Deadlift, Walking Lunge, Reverse Lunge, Step-up
+  wk6  Romanian Deadlift, Leg Press, Nordic Curl, Single-leg Glute Bridge, Calf Raise
+
+You still always get a real compound to progress — the anchors come first, so
+it can't hand you five accessories and no squat. Underneath, it cycles.
+
+
+PILATES IS ACTUALLY PILATES NOW
+--------------------------------
+v52 built "Pilates" out of dead bugs and bird dogs. That's generic core work.
+
+The classical mat repertoire is now in the app — 20 movements with proper
+cues: The Hundred, Roll-Up, Roll Over, Single Leg Circles, Rolling Like a Ball,
+Single Leg Stretch, Double Leg Stretch, Scissors, Criss-Cross, Spine Stretch
+Forward, Saw, Swan, Single Leg Kick, Shoulder Bridge, Spine Twist, Teaser,
+Swimming, Side Kick Series, Leg Pull Front, Mermaid Stretch.
+
+Three Pilates sessions in a row:
+
+  1  The Hundred, Roll-Up, Single Leg Stretch, Double Leg Stretch, Criss-Cross,
+     Scissors
+  2  Teaser, The Hundred, Single Leg Circles, Spine Stretch Forward, Saw, Swan
+  3  Roll-Up, The Hundred, Swimming, Shoulder Bridge, Side Kick Series, Spine Twist
+
+The Hundred keeps coming back because it opens every Pilates session — that's
+correct, not a bug.
+
+All wrist-safe (TFCC) alternatives are filled in, and everything is filtered by
+location, so Greece gives you the mat work with no kit required.
+
+THE COACH STILL OVERRIDES ALL OF IT
+  This rotation is the offline backbone — what you get with no internet and no
+  API call. The AI can still rewrite any session, invent movements, and swap
+  exercises on the fly. It just no longer has to, to stop you repeating
+  yourself.
+
+
+WHAT'S NEW IN v52
+=================
+
+FIXED: PILATES, CORE DAY AND HIIT ALL BUILT THE SAME GENERIC SESSION
+--------------------------------------------------------------------
+Adding a session type created an empty shell with no exercises. The builder
+only knew three kinds — mobility, cardio, and "strength" — so Pilates, Core Day
+and HIIT all fell through to "strength", and a strength day with no exercise
+list fell back to the FULL BODY pool.
+
+So switching today to Core Day DID rebuild the session. It rebuilt it into
+squat / bench / row / overhead press / plank — the same thing it showed before.
+That's why it looked like nothing happened.
+
+It was NOT because you'd already logged legs, and NOT because the coach didn't
+know. Logged sets live separately from the plan and never block a rebuild, and
+the coach was already being told your custom day types.
+
+NOW RECOGNISED, each with its own exercise pool per location:
+
+  Core Day   Hanging Knee Raise, Plank, Side Plank, Dead Bug, Farmer Carry
+  Pilates    Dead Bug, Hollow Hold, Glute Bridge, Side Plank, Bird Dog
+  HIIT       DB Thruster, Burpee, Jump Squat, Mountain Climber, Farmer Carry
+  Arms       DB Curl, Hammer Curl, Triceps Pushdown, Overhead Ext, Face Pull
+  Mobility   full mobility flow (this one was already working)
+
+Each also gets a note that matches — "bracing and anti-rotation, not endless
+crunches" rather than "custom day your coach built".
+
+The pools resolve PER LOCATION at build time, so the same Core Day gives you
+Hanging Knee Raises and Farmer Carries in Dubai, and floor work in Greece.
+Adding a type now tells you what it will build: "Added · Core Day — builds
+core work".
+
+Matching is on meaning, so "Abs", "Conditioning", "Metcon", "Circuit",
+"Tabata", "Barre" and "Biceps" all land in the right place too.
 
 
 WHAT'S NEW IN v51
