@@ -1,445 +1,171 @@
-AMIR PT — v47 · 2026-08-04
+AMIR PT — v48 · 2026-08-04
 ==========================
 
-WHAT TO UPLOAD
---------------
-Put all five files in the SAME folder at the root of your repo
-(the same place index.html already lives):
+Deploy exactly as before: index.html, sw.js, manifest.json and the two icons
+in the same folder, at the repo root. Filenames are case-sensitive —
+index.html, never Index.html.
 
-  index.html               the app
-  sw.js                    offline support        <- NEW, must sit next to index.html
-  manifest.json            makes it installable   <- NEW, must sit next to index.html
-  apple-touch-icon.png     unchanged
-  apple-touch-icon-180.png unchanged
+Check it landed: Settings → bottom → "Amir PT · v48 · 2026-08-04".
+Nothing in this update touches your data. Every logged set survives.
 
-index.html works on its own. sw.js and manifest.json only add offline use
-and installability — if you skip them, nothing breaks.
 
-FILENAMES ARE CASE-SENSITIVE. It must be index.html, not Index.html.
+WHAT'S NEW IN v48
+=================
 
-
-AFTER DEPLOYING
----------------
-1. Open the site, go to Settings, scroll to the bottom.
-   The line should read: Amir PT · v47 · 2026-08-04
-   If it says anything else, the old file is still being served — hard refresh.
-
-2. Settings → App & Storage tells you the truth about your install:
-     - whether you're running installed or in the browser
-     - whether persistent storage was granted
-     - how much space you're using
-     - whether offline mode is live
-
-3. If it says "Running in the browser", do Share → Add to Home Screen.
-   This is what stops iOS quietly deleting your training history.
-
-4. Offline mode needs two loads to activate (the worker installs on the
-   first load, takes over on the second). Reload once and check again.
-
-
-YOUR DATA
----------
-Nothing is wiped by this update. localStorage is keyed to your domain, not
-to the file, so replacing index.html leaves every logged set in place.
-Photos migrate automatically to IndexedDB on first load.
-
-Optional but worth it: Settings → Export a backup (JSON) before you deploy.
-
-
-THE SERVICE WORKER IS DELIBERATELY NETWORK-FIRST
-------------------------------------------------
-A cache-first worker would serve you a stale app after a redeploy and make
-the version stamp lie. This one always fetches the newest index.html when
-you're online, and falls back to the last cached copy when you're not.
-
-
-CLOUD SYNC — WHAT'S LEFT TO DO
-------------------------------
-The Firebase config for your PTchat project is already built into the app.
-You do NOT need to paste anything into Settings.
-
-Three clicks remain, and they're all in the Firebase console
-(console.firebase.google.com -> PTchat), because I have no access to it:
-
-  1. Firestore Database -> Create database -> Production mode
-                        -> region europe-west1  (permanent, choose carefully)
-
-  2. Authentication -> Get started -> Sign-in method
-                    -> Anonymous -> Enable -> Save
-
-  3. Firestore Database -> Rules -> paste firestore-rules.txt -> PUBLISH
-     (Production mode denies everything until you publish these.)
-
-Then open the app: Settings -> Cloud Sync -> Sync now.
-Verify it worked in the Firebase console: Firestore -> Data. You should see
-a collection "amirpt" containing a document named amir-9k3xq7.
-If that document isn't there, it did not sync, whatever the app says.
-
-
-YOUR SYNC ID IS IN THE PAGE SOURCE
-----------------------------------
-Sync ID: amir-9k3xq7
-
-Because it's baked into index.html, anyone who views the source of your
-public Netlify site can read it, and the rules above let any signed-in
-user read that document. In practice that means your training log is
-readable by someone who bothers to look.
-
-If you'd rather it weren't: Settings -> Cloud Sync -> change the Sync ID to
-something private, Save & Connect, and type the same value on each device.
-Takes about twenty seconds per device and closes the hole.
-
-
-YOUR OPENAI KEY
----------------
-Deliberately never synced to the cloud — an API key doesn't belong in a
-database. It lives only in the browser you typed it into, so you re-enter
-it once per device, and again if storage is ever cleared.
-Get a new one at platform.openai.com/api-keys
-
-
-EXERCISE CATALOGUE — WORKOUTX
------------------------------
-Settings -> Exercise catalogue -> paste your wx_ key -> Save key
-                               -> Download exercise catalogue
-
-This runs ONCE. It pages through the free-plan endpoints 10 results at a
-time (about 120 of your 500 monthly requests) and stores everything in
-IndexedDB on the device. After that the app never calls WorkoutX again for
-workouts - exercises, GIFs, difficulty, equipment and muscle tags all work
-offline. Re-run it only when you want newly added exercises.
-
-Free plan notes:
-  - 500 requests/month, 30/min, max 10 results per call
-  - GIFs are 180px with a small watermark
-  - Multi-filter search and the workout generator are paid-only; the app
-    uses the free single-filter endpoints instead and does the combining
-    itself, so nothing is lost
-  - If the sync stops early, tap it again - it keeps what it already has
-
-
-TIME-BUDGETED SESSIONS
-----------------------
-Daily check-in: "How long have you got?" slider.
-Train tab: 20 / 30 / 45 / 60 / 75 chips plus a row on/off toggle.
-
-The bar underneath shows where the time actually goes:
-  row 10m | 5m mobility | lifting 26m | 4m cool-down
-
-The session is built to fit. Budget per set is roughly 40s work plus
-70-105s rest depending on whether it's a compound lift, plus a minute to
-change station. Turn the row off and that time goes back into lifting.
-The rowing block only appears where you have the erg (Dubai).
-
-
-SYNC IN DUBAI FIRST
--------------------
-The catalogue downloads in the order that matters for where you currently
-are. Set your location to Dubai BEFORE running the sync and it pulls
-barbell -> dumbbell -> cable -> machines first, bodyweight later. If the
-sync is ever cut short by the monthly quota, you keep the gym work.
-
-If you sync while set to Greece it leads with bodyweight instead, which is
-correct for Greece but not what you want as your main catalogue.
-
-
-IS MY FIRESTORE ACTUALLY WORKING?
----------------------------------
-Settings -> Cloud sync -> "Check my cloud backup"
-
-It reads the document and writes nothing. You want to see:
-
-  Backup found.
-  Document      amirpt / <your sync id>
-  Last written  <a recent date>
-  In the cloud  N sessions - N lifts - N check-ins
-  On this device  N sessions - N lifts - N check-ins
-
-If it says "there is no backup yet", the connection and rules are FINE but
-nothing has been uploaded - tap Sync now.
-
-If it errors, the message names the console step that's missing.
-
-Cross-check in the Firebase console: Firestore Database -> Data.
-You should see collection "amirpt" containing a document named your Sync ID.
-If that document is not there, you are not backed up, whatever the app says.
-
-
-IF YOU REINSTALL THE APP
-------------------------
-Deleting a home-screen web app on iOS deletes its storage with it. Nothing
-local survives that - not localStorage, not IndexedDB.
-
-To get your history back on a fresh install:
-  1. Settings -> Cloud sync
-  2. Set the SAME Sync ID you used before
-  3. Tap "Restore from cloud"
-
-The app now also pulls before it pushes on startup, and REFUSES to upload
-from a device with no logged history. An empty reinstall can no longer
-overwrite your backup.
-
-
-SET IT ONCE — STOP RE-ENTERING EVERYTHING
------------------------------------------
-Settings -> Cloud sync -> turn ON "Also sync my API keys"
-
-From then on, your OpenAI key, WorkoutX key, Giphy key, coach tone,
-rules, injuries, schedule and history all live in your Firestore. On a new
-device you enter ONE thing - the Sync ID - and tap Restore from cloud.
-
-Restore never overwrites a key already on the device, so it can't wipe a
-newer key with an older one.
-
-IMPORTANT before you turn it on: change your Sync ID to something private.
-The Sync ID is visible in this page's source, and the Firestore rules let
-any signed-in user read that document. With a guessable Sync ID, turning on
-key sync means publishing your OpenAI key.
-
-Settings -> Cloud sync -> Sync ID -> e.g. amir-7fk2q9x4 -> Save and connect
-Do the same on each device.
-
-WHY THE KEYS ARE NOT BUILT INTO index.html
-------------------------------------------
-Your Netlify site and its GitHub repo are public. An OpenAI key in page
-source gets found by scrapers within hours - OpenAI itself scans public
-repos and auto-revokes leaked keys - and until it is revoked, anyone can
-spend money on your account. Cloud sync gives you the same convenience
-without publishing the secret.
-
-
-COACH TONE
-----------
-Settings -> Profile and rules -> "How the coach should talk to me"
-
-Free text. It is injected into every AI call and explicitly overrides the
-default personality line, so write it as instructions:
-  "Blunt. No cheerleading. Short sentences. Tell me when I'm being soft,
-   but never make light of the Klinefelter or the wrist."
-
-FIXED IN v47: the "Coaching rules" and "Injuries and medical" boxes were
-saved and redisplayed but never actually sent to the coach. Everything you
-had typed there had been ignored. All three now reach the prompt.
-
-
-ADDING TO YOUR IPHONE HOME SCREEN
----------------------------------
-iOS gives a home-screen web app its OWN storage, completely separate from
-Safari. Adding to home screen therefore starts a BLANK copy - nothing you
-did in Safari carries across. This is iOS behaviour, not a bug in the app.
-
-Because a blank copy also starts with the DEFAULT Sync ID, it cannot find
-your data if you changed your Sync ID to something private.
-
-So on the home-screen app, once:
-  Today tab -> "Nothing logged on this device" card
-  -> type your Sync ID -> Restore my history
-
-After that the home-screen app syncs on its own. Do all your training in
-the home-screen app from then on, not Safari - two copies with the same
-Sync ID will merge, but it's simpler to use one.
-
-
-HOW DEMOS GET RESOLVED (v47)
-----------------------------
-Your exercise names and WorkoutX's names rarely match exactly
-("Barbell Back Squat" vs "barbell full squat"). Resolution order:
-
-  1. A demo you or the coach deliberately chose
-  2. A mapping the AI worked out before (cached forever, synced)
-  3. Name matching on meaning - same movement noun, same equipment
-  4. The AI: given a shortlist of ~45 candidates with their equipment
-     and muscles, it picks the right one or answers NONE
-  5. The small built-in demo table
-  6. External "Watch demo" link (last resort only)
-
-Step 4 costs ONE OpenAI call per exercise, ever. The answer is stored in
-DB.exMap and synced, so a new device inherits every mapping you've already
-resolved. A NONE is cached too - it won't keep asking about the same one.
-
-If a demo looks wrong, tap "Wrong demo?" on the exercise. It clears the
-mapping, re-matches, and if the string matcher can't do it, asks the coach.
-The toast tells you which catalogue record it landed on.
-
-
-WHERE THE EXERCISE CATALOGUE IS (v47)
--------------------------------------
-Two places, both obvious now:
-
-  Settings -> "Exercise catalogue" (now the FIRST section)
-      key, download button, and a search box listing what you have
-  Train tab -> "Browse all exercises"
-      full screen: search, filter by muscle, "doable here" vs everything,
-      demo thumbnails, tap Add to drop one into today's session
-
-SETTINGS NOW COLLAPSES
-----------------------
-Every section is closed by default - tap a heading to open it. Which ones
-you leave open is remembered.
-
-GIPHY IS GONE
--------------
-Removed from Settings entirely. Demos come from WorkoutX now.
-
-
-GETTING YOUR EXERCISES (v47) - ONE BUTTON
------------------------------------------
-Settings -> Exercise catalogue -> "Get my exercises"
-
-It checks your cloud backup first and restores from there for FREE (zero
-WorkoutX requests). Only if there is no backup does it download from the
-API. After any download it backs the catalogue up automatically, so you
-never pay for the same exercises twice.
-
-"Force a fresh download" is there if you want newly added exercises. It
-warns you about the request cost and asks first.
-
-The status line tells you the truth:
-  489 exercises on this device - demos matched for 58/62 of your
-  regular lifts - cloud backup: 489 exercises
-
-WHY YOU LOST THE 489
+1. THE SESSION CLOCK
 --------------------
-The catalogue lives in IndexedDB. The write was fire-and-forget with the
-error swallowed, so if the browser refused it the app carried on as if it
-had worked - the exercises were only ever in memory and vanished on
-reload. v47 writes, reads it back, and tells you if it did not stick. If
-IndexedDB is blocked it falls back to localStorage, and it is backed up to
-your Firestore either way.
+A green "Start training" card now sits directly above the warm-up.
+
+  Start    — begins the clock and logs the session as started
+  Pause    — nothing counts while paused. Use it every time you get pulled away
+  Resume   — picks up exactly where it stopped
+  Finish   — stops the clock and scrolls you to the "Workout complete" button
+
+The clock records timestamps, not a ticking counter, so locking the phone,
+switching apps, or reloading loses nothing — it recalculates from wall-clock
+time whenever you come back.
+
+Forget to press start? Logging any set, hold or row starts it automatically
+rather than silently recording nothing.
+
+A clock left running overnight is discarded, not counted as a 14-hour session.
+
+THE FLOATING PAUSE PILL
+  A round pause button hovers bottom-right, showing the live time, wherever you
+  are on the page. One tap pauses or resumes. Drag it anywhere you like and it
+  stays there. Double-tap it to send it back to its corner.
+
+WHERE THE TIME SHOWS UP
+  - On the completion card: "45 min on the clock · 12 min paused"
+  - In History: a ⏱ chip on each day
+  - In the coach's prompt, so it knows how long you've actually been at it and
+    how that compares to your recent sessions
 
 
-IF DEMOS ARE MISSING (v47)
---------------------------
-Settings -> Exercise catalogue -> "Match demos to my exercises"
+2. CONCEPT2 ROW IS ITS OWN BLOCK
+---------------------------------
+It's out of the warm-up entirely. It now sits as its own section between the
+warm-up and the first exercise, with its own stopwatch — start it, stop it, and
+the mm:ss drops straight into the log box. The warm-up no longer duplicates the
+row as its pulse-raiser.
 
-Your exercise names and WorkoutX's names differ, so plain text matching only
-gets some of them. This button hands every unmatched one to the AI, which
-reads the catalogue and picks the right record. Costs one OpenAI call per
-exercise, ONCE - and zero WorkoutX requests. The result is cached and
-backed up to your cloud.
-
-Run it after any catalogue download.
-
-RATE LIMIT vs QUOTA
--------------------
-The free plan allows 30 requests a MINUTE as well as 500 a month. The app
-used to fire requests back to back, hit the per-minute limit, and then
-report it as "monthly quota used up" - which was wrong and alarming.
-
-It now paces itself to 25/minute, pauses 20 seconds and resumes if it is
-still rate limited, and only says the monthly quota is gone when the API
-actually reports zero remaining. A failed or partial sync now backs up what
-it did get, so nothing is wasted.
+Unchanged: the block only appears where there's actually an erg (not Greece).
 
 
-GETTING THE CATALOGUE ONTO YOUR IPHONE (v47)
---------------------------------------------
-ON THE DESKTOP, in order:
+3. EVERY TAB REMEMBERS WHERE YOU WERE
+--------------------------------------
+Leaving Train mid-session to check something and coming back used to dump you
+at the top of the page. Each tab now keeps its own scroll position and puts you
+back exactly where you were.
 
-  1. Settings -> Cloud sync -> check it says connected
-  2. Settings -> Exercise catalogue -> "Save my exercises to the cloud"
-     Wait for: "602 exercises saved to your cloud in 4 parts"
-  3. Settings -> Exercise catalogue -> "Match demos to my exercises"
-  4. "Save my exercises to the cloud" again (so the phone gets the matches)
-
-ON THE IPHONE:
-
-  5. Settings -> Exercise catalogue -> "Get my exercises"
-     It restores from the cloud. Zero WorkoutX requests.
-
-The status line must say "cloud backup: 602 exercises". If it still says
-"no cloud backup yet", step 2 did not work - check Cloud sync.
-
-WHY THE DEMOS WERE BROKEN IMAGES
---------------------------------
-WorkoutX GIF URLs need your API key sent as a request header. An <img> tag
-cannot send headers, so the browser got a 401 and showed a broken image or
-fell back to an external "Watch demo" link. The app now catches that,
-re-fetches the GIF properly with your key, and swaps it in.
-
-Your API key therefore needs to be on each device for demos to display.
-Turn on "Also sync my API keys" in Cloud sync and the phone gets it too.
+Tapping the tab you're already on scrolls to the top — the usual gesture.
 
 
-NOT LOSING THE DOWNLOADED EXERCISES (v47)
------------------------------------------
-Three copies. Do the first two now, they take a minute.
+4. COOL-DOWN TIMERS
+--------------------
+Every stretch reads its own dose and gets a countdown button. "60s each side"
+runs 60 seconds, beeps, tells you to swap, runs 60 more. Rep-based moves get no
+timer, correctly.
 
-  1. A FILE ON YOUR DISK  (nothing can evict this)
-     Settings -> Exercise catalogue -> "Save my exercises to a file"
-     Keep the .json somewhere sensible. "Load exercises from a file"
-     puts it back on any device, offline, for free.
+"Run the whole cool-down" walks the entire thing for you, move by move, side by
+side. Tap any running timer again to stop it.
 
-  2. YOUR CLOUD  (so the iPhone can get it)
-     Settings -> Exercise catalogue -> "Save my exercises to the cloud"
-     Then on the phone: "Get my exercises"
-
-  3. THIS BROWSER  (convenient, least reliable)
-     Settings -> App and storage -> "Make storage permanent"
-     Browsers clear storage for sites they think you don't use. This asks
-     for an exemption. Chrome usually grants it once the site is bookmarked
-     or installed - use the install icon in the address bar.
-
-ALSO FIXED: the normal Export backup never contained the catalogue, because
-it lives in IndexedDB rather than in the main data blob. It does now, so an
-"Export a backup" file restores your exercises as well as your training.
+Mobility days and cardio days get the same treatment.
 
 
-v47 - THE CATALOGUE NOW SAVES TO THE CLOUD
-------------------------------------------
-It was writing to a second collection (amirpt_cat) that your published
-rules did not cover, so Firestore refused it. It now writes to the same
-amirpt collection as everything else, using document ids like
+5. FLEXIBILITY AND MOBILITY ARE NOW A STATED GOAL
+--------------------------------------------------
+Your goal read as physique-only. It now reads strength AND range of motion, and
+the coach has a new permanent rule: program mobility properly, hold real
+durations, track range of motion the way it tracks load, ask about stiff spots,
+and never let mobility be what gets dropped when time is short.
 
-    amirpt/<your sync id>__cat0, __cat1, __cat2 ...
-
-Your existing rule already allows this - the {docId} wildcard covers it.
-NO console change needed. Just deploy v47 and press
-"Save my exercises to the cloud" again.
+If you had edited your goal text yourself, it's left alone — only the untouched
+default was upgraded. Settings → Profile and rules to change it.
 
 
-v47 - COLOUR CODING AND THE TOMORROW CALL
------------------------------------------
-COLOURS. Every session type has its own, used in the weekly plan, in
-History, and on the week digest bars:
+6. THREE THINGS FIXED ALONG THE WAY
+------------------------------------
+AUTO CLOUD SYNC ACTUALLY WORKS NOW
+  See the section below — this was the big one.
 
-  Legs      red        Push      orange     Pull      blue
-  Arms      pink       Core      gold       Upper     purple
-  Full      green      Cardio    cyan       Pilates   teal
-  Rest      dim brown
+COMPLETED SESSIONS NOW COME BACK FROM THE CLOUD
+  Your "session complete" receipts were being uploaded but never merged back
+  down on a restore. A fresh install rebuilt every lift and lost every receipt.
+  They now merge by date, keeping whichever record logged more.
 
-It matches on meaning, so "Leg Day", "Chest & Triceps" and "Yoga" get the
-right colour without being in a list. Anything unrecognised gets a neutral
-tone rather than breaking.
-
-Each row in the weekly plan also shows when you LAST ACTUALLY DID that kind
-of session - read from what you logged, not from the plan. "3d ago",
-"not yet".
-
-ADDING SESSION TYPES. Bottom of the weekly plan: "+ Add a session type".
-Pilates, Core Day, HIIT, Mobility - whatever. Then tap a day to assign it.
-
-THE TOMORROW CALL. Today tab -> "Coach's call for tomorrow". It reads the
-whole log - what you have trained, what is neglected, how it felt, your
-readiness, how many days straight - and decides. Rest is an answer it is
-explicitly told to give when it is right. It can also invent a session type
-you do not have yet and create it for you. "Put it in my plan" writes it
-into the weekly schedule.
+THE REST TIMER IS ACTUALLY DRAGGABLE AGAIN
+  The drag code was looking for a grip handle that wasn't in the page, so it
+  silently did nothing. The handle is there now, along with a "–" button to
+  shrink the timer to a small pill.
 
 
-v47 - FIXING A WRONG DEMO, IN TWO PRESSES
------------------------------------------
-On any exercise:
+CLOUD SYNC IS NOW ACTUALLY AUTOMATIC
+====================================
 
-  PRESS 1  "Wrong demo?"
-           Clears whatever was there, re-matches, and asks the coach to
-           find it if the name matching cannot. Usually enough.
+You were right that it wasn't. You shouldn't have had to press Sync now.
 
-  PRESS 2  "Still wrong? Pick from the list"
-           Opens a scrollable list of every catalogue clip that could be
-           this movement - all the squats, all the presses - each with its
-           thumbnail, muscles and equipment. Tap one and it is bound to
-           that exercise permanently and backed up to your cloud.
+WHAT WAS WRONG
+  Auto-sync was a single 4-second setTimeout, cleared and restarted on every
+  save. That's a nudge, not a backup, and it failed in four ordinary ways:
 
-The search box starts on the movement word ("squat"). Widen or change it to
-see more. "Use no demo" hides it entirely if nothing fits.
+    - iOS FREEZES PENDING TIMERS the moment you background or lock the app.
+      The last write of a session — the one that matters most — was usually
+      still sitting in that 4-second window when you put the phone down. It
+      died there and nothing ever retried it. This is almost certainly what
+      happened to you.
+    - A failed push (a moment of bad signal in the gym) was reported once and
+      then forgotten forever. Nothing retried it.
+    - Each save cleared the previous timer, so a busy run of changes could keep
+      pushing the deadline out.
+    - If the startup PULL failed, the startup PUSH was skipped entirely, so one
+      bad moment of signal at launch meant nothing synced all session.
+
+WHAT IT DOES NOW
+  A dirty flag, and a push on every route out of the app:
+
+    - 4s after you stop changing things
+    - a hard 20s ceiling that later saves cannot push out
+    - a 60s sweep as belt and braces
+    - THE MOMENT YOU BACKGROUND, BLUR OR CLOSE THE APP
+    - immediately when you press "Workout complete"
+    - immediately when you come back to the app with anything unsynced
+    - retries on failure at 5s, 15s, 45s, then every 2 min
+    - and the instant the connection comes back
+
+  If a change lands while a push is already in the air, it's pushed again after
+  rather than being wrongly marked as saved.
+
+  Idle app with nothing to send makes no requests at all.
+
+HOW YOU CAN SEE IT
+  A small status line now sits under the "Workout complete" button and in
+  Settings → Cloud sync:
+
+      ● backed up just now      (green — the cloud has everything)
+      ● unsynced — saving…      (amber — a write is pending or retrying)
+
+  Glance at it before you close the app. Green means you can redeploy freely.
+
+TWO THINGS WORTH KNOWING ANYWAY
+  1. Redeploying index.html does NOT touch your data, and never did.
+     localStorage is keyed to your domain, not to the file. Even with sync
+     completely off, a new index.html on the same site keeps every logged set.
+  2. The real risk is deleting the home-screen app on iOS — that deletes its
+     storage with it. That's what cloud sync is for: reinstall, same Sync ID,
+     "Restore from cloud". The app pulls before it pushes and refuses to upload
+     from a device with no history, so an empty reinstall can't overwrite you.
+
+  Settings → Cloud sync → "Check my cloud backup" still gives you the full
+  picture: the cloud count and the device count should match.
+
+  Not synced deliberately: photos and chat (too big for one Firestore doc),
+  your API keys unless you opt in, and the live session clock (device state).
+  The clock's RESULT — the duration on the finished session — is synced.
+
+
+EVERYTHING FROM v47 STILL APPLIES
+=================================
+The exercise catalogue, demo matching, coach tone, colour coding, time-budgeted
+sessions, the tomorrow call and the storage advice are all unchanged. Keep the
+v47 notes for those.

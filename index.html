@@ -212,6 +212,43 @@ textarea.txtin{min-height:88px;resize:vertical;line-height:1.45;}
 .resttimer.mini{width:auto;min-width:0;padding:7px 9px;}
 .resttimer.mini .lab,.resttimer.mini .rt-skip{display:none;}
 .resttimer.mini .cd{font-size:20px;}
+
+/* ===== v48 — SESSION CLOCK ===== */
+.sessbar{background:linear-gradient(120deg,#141a12,#12100d);border:1px solid #2c3a24;border-radius:16px;padding:14px;margin-bottom:14px;}
+.sessbar.on{border-color:#1fbf68;background:linear-gradient(120deg,#0e2416,#12100d);}
+.sessbar.hold{border-color:var(--gold);background:linear-gradient(120deg,#241d0c,#12100d);}
+.sessbar .sl{font-size:11px;font-weight:800;text-transform:uppercase;letter-spacing:.8px;color:var(--label);}
+.sessbar.on .sl{color:var(--green);} .sessbar.hold .sl{color:var(--gold);}
+.sessbar .sc{font-weight:800;font-size:34px;color:#fff;letter-spacing:-1.5px;font-variant-numeric:tabular-nums;line-height:1.1;margin-top:2px;}
+.sessbar .sm2{font-size:12.5px;color:var(--muted);font-weight:600;margin-top:3px;}
+.sessbar .sbtns{display:flex;gap:8px;margin-top:12px;}
+.sessbar .sbtns button{flex:1 1 0;border-radius:12px;padding:14px 8px;font-weight:800;font-size:15px;border:1px solid var(--line);background:var(--card2);color:var(--txt);}
+.sessbar .sbtns button.go{background:linear-gradient(100deg,#1fbf68,#12a557);border-color:#1fbf68;color:#04180d;}
+.sessbar .sbtns button.hold{background:#2a1c0e;border-color:#5c3a15;color:var(--gold);}
+.sessbar .sbtns button.fin{background:linear-gradient(100deg,#ff8a2b,#ff5a1a);border-color:#ff8a2b;color:#fff;}
+
+/* Floating pause pill — follows you around the session */
+.sessfloat{position:fixed;right:12px;bottom:calc(150px + var(--safe-bot));z-index:46;display:none;align-items:center;gap:9px;
+  background:#0e2416;border:1.5px solid #1fbf68;border-radius:999px;padding:8px 9px 8px 12px;box-shadow:0 12px 30px #000c;touch-action:none;}
+.sessfloat.show{display:flex;}
+.sessfloat.paused{background:#241d0c;border-color:var(--gold);}
+.sessfloat.moved{left:0;top:0;right:auto;bottom:auto;}
+.sessfloat .sft{font-weight:800;font-size:19px;color:#fff;font-variant-numeric:tabular-nums;letter-spacing:-.5px;cursor:grab;user-select:none;-webkit-user-select:none;}
+.sessfloat.drag .sft{cursor:grabbing;}
+.sessfloat .sfb{flex:0 0 auto;width:42px;height:42px;border-radius:999px;border:none;font-size:16px;font-weight:800;
+  background:#1fbf68;color:#04180d;display:flex;align-items:center;justify-content:center;}
+.sessfloat.paused .sfb{background:var(--gold);color:#1a1206;}
+.sessfloat .sfd{font-size:10px;font-weight:800;text-transform:uppercase;letter-spacing:.6px;color:var(--green);}
+.sessfloat.paused .sfd{color:var(--gold);}
+
+/* Cool-down / mobility timers */
+.mvb .mvtime{margin-top:7px;background:#1a120b;border:1px solid #3d2a15;color:var(--orange);border-radius:10px;
+  padding:7px 12px;font-size:12.5px;font-weight:800;}
+.mvb .mvtime.run{background:#0c2716;border-color:#1fbf68;color:var(--green);}
+.syncdot{margin-top:10px;font-size:11.5px;font-weight:700;text-align:center;color:var(--dim);letter-spacing:.2px;}
+.syncdot.ok{color:#2f8f57;}
+.syncdot.dirty{color:var(--gold);}
+.coolall{width:100%;margin-bottom:12px;background:#1a120b;border:1px solid #3d2a15;color:var(--orange);border-radius:12px;padding:13px;font-weight:800;font-size:14px;}
 .wk{display:flex;flex-direction:column;gap:10px;}
 .wkrow{display:grid;grid-template-columns:66px 1fr 66px;align-items:center;gap:9px;}
 .wkrow .g{font-size:13px;font-weight:700;color:#e7d9c8;text-transform:capitalize;}
@@ -657,6 +694,7 @@ a{color:var(--orange);}
       <button class="btn sec mt" onclick="cloudVerify()">Check my cloud backup</button>
       <button class="btn sec mt" onclick="pushKeysNow()">Send my keys now</button>
       <button class="btn ghost mt" onclick="cloudRestore()">Restore from cloud</button>
+      <div class="syncdot" style="text-align:left"></div>
       <div id="cloudMsg" class="hint mt" style="font-size:13px"></div>
     </div>
     <div class="section-h">Data and backup</div>
@@ -674,17 +712,24 @@ a{color:var(--orange);}
 </div>
 
 <div class="resttimer" id="restTimer">
-  <div><div class="lab" id="restLab">Rest</div><div class="cd" id="restCd">1:30</div></div>
-  <button class="x" onclick="stopRest()">Skip</button>
+  <div class="grip" id="restGrip">⋮⋮</div>
+  <div class="rt-main"><div class="lab" id="restLab">Rest</div><div class="cd" id="restCd">1:30</div></div>
+  <button class="x" id="restMiniBtn" onclick="restToggleMini()">–</button>
+  <button class="x rt-skip" onclick="stopRest()">Skip</button>
+</div>
+
+<div class="sessfloat" id="sessFloat">
+  <div class="sft" id="sessFloatT">0:00<div class="sfd" id="sessFloatD">Training</div></div>
+  <button class="sfb" id="sessFloatB" onclick="sessToggle()">❙❙</button>
 </div>
 
 <nav class="tabbar" id="tabbar">
-  <button class="tab active" data-s="today" onclick="go('today')"><svg viewBox="0 0 24 24"><path d="M3 11.5 12 4l9 7.5"/><path d="M5 10v10h14V10"/></svg>Today</button>
-  <button class="tab" data-s="workout" onclick="go('workout')"><svg viewBox="0 0 24 24"><path d="M6 7v10M18 7v10M3 9v6M21 9v6M6 12h12"/></svg>Train</button>
-  <button class="tab" data-s="coach" onclick="go('coach')"><svg viewBox="0 0 24 24"><path d="M4 5h16v11H8l-4 4z"/></svg>Coach</button>
-  <button class="tab" data-s="progress" onclick="go('progress')"><svg viewBox="0 0 24 24"><path d="M4 19V5M4 19h16M8 16l3-4 3 3 5-7"/></svg>Progress</button>
-  <button class="tab" data-s="history" onclick="go('history')"><svg viewBox="0 0 24 24"><path d="M3 12a9 9 0 1 0 3-6.7L3 8m0-5v5h5"/><path d="M12 8v4l3 2"/></svg>History</button>
-  <button class="tab" data-s="settings" onclick="go('settings')"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M12 3v3M12 18v3M3 12h3M18 12h3M5.6 5.6l2.1 2.1M16.3 16.3l2.1 2.1M18.4 5.6l-2.1 2.1M7.7 16.3l-2.1 2.1"/></svg>Settings</button>
+  <button class="tab active" data-s="today" onclick="goTab('today')"><svg viewBox="0 0 24 24"><path d="M3 11.5 12 4l9 7.5"/><path d="M5 10v10h14V10"/></svg>Today</button>
+  <button class="tab" data-s="workout" onclick="goTab('workout')"><svg viewBox="0 0 24 24"><path d="M6 7v10M18 7v10M3 9v6M21 9v6M6 12h12"/></svg>Train</button>
+  <button class="tab" data-s="coach" onclick="goTab('coach')"><svg viewBox="0 0 24 24"><path d="M4 5h16v11H8l-4 4z"/></svg>Coach</button>
+  <button class="tab" data-s="progress" onclick="goTab('progress')"><svg viewBox="0 0 24 24"><path d="M4 19V5M4 19h16M8 16l3-4 3 3 5-7"/></svg>Progress</button>
+  <button class="tab" data-s="history" onclick="goTab('history')"><svg viewBox="0 0 24 24"><path d="M3 12a9 9 0 1 0 3-6.7L3 8m0-5v5h5"/><path d="M12 8v4l3 2"/></svg>History</button>
+  <button class="tab" data-s="settings" onclick="goTab('settings')"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M12 3v3M12 18v3M3 12h3M18 12h3M5.6 5.6l2.1 2.1M16.3 16.3l2.1 2.1M18.4 5.6l-2.1 2.1M7.7 16.3l-2.1 2.1"/></svg>Settings</button>
 </nav>
 <div class="toast" id="toast"></div>
 <script>
@@ -747,7 +792,7 @@ const FB_CONFIG={
 const FB_SYNC_DEFAULT="amir-9k3xq7";
 const DEFAULTS = {
   profile:{name:"Amir", location:"dubai",
-    goal:"Build the physique I want — not chase bodyweight", phase:"Lean Recomp / mini-cut", coachTone:"",
+    goal:"Build the physique I want — not chase bodyweight. Just as important: get genuinely more flexible and mobile. Strength AND range of motion, not weights alone.", phase:"Lean Recomp / mini-cut", coachTone:"",
     equip:{dubai:"",madrid:"",greece:""},
     equipment:"Adjustable dumbbells, barbell + plates, bench, pull-up bar, Concept2 rower, resistance bands",
     injuries:"TFCC injury (right wrist) — avoid loaded wrist extension & heavy pressing on straight wrist. Klinefelter syndrome — manage recovery/fatigue, prioritise consistent progressive overload.",
@@ -765,11 +810,12 @@ const DEFAULTS = {
   lib:{}, dayTypes:{}, media:{}, mediaPicked:{}, exMap:{}, progression:{},
   nutrition:{calorieTarget:null, proteinTarget:null, phase:"", log:[]},
   cardio:null, readiness:null, aiPlan:null, restCall:null, setsOverride:null, completed:{}, tomorrow:null,
+  session:null,
   wx:{key:"", on:true, plan:"free", synced:null, count:0, quota:null, quotaLeft:null},
   timeBudget:{mins:45, row:true, rowMins:10},
   cloud:{on:true, config:JSON.stringify(FB_CONFIG,null,2), syncId:FB_SYNC_DEFAULT, last:null, syncKeys:false},
   prefs:{visualMode:"auto", showIcons:true, exerciseGifs:true, workoutFormat:"list", coachStyle:"direct funny concise",
-         autoPlan:true, restPos:null, restMini:false}
+         autoPlan:true, restPos:null, restMini:false, sessPos:null}
 };
 
 /* ===== DURABLE STORAGE (#7 — never wipe data on redeploy) =====
@@ -794,6 +840,9 @@ function mergeDefaults(parsed){ const d={...structuredClone(DEFAULTS),...parsed}
   /* Upgrading from a build where sync was never configured: fill it in and switch it on. */
   if(!d.cloud.config){ d.cloud.config=JSON.stringify(FB_CONFIG,null,2); d.cloud.on=true; }
   if(!d.cloud.syncId || d.cloud.syncId==="amir-pt") d.cloud.syncId=FB_SYNC_DEFAULT;
+  /* v48: the goal used to be weights-only. If it's still the untouched old default,
+     upgrade it to include flexibility and mobility. Anything he's typed himself is left alone. */
+  if(d.profile.goal==="Build the physique I want — not chase bodyweight") d.profile.goal=DEFAULTS.profile.goal;
   /* migrate old 2-location model → dubai/madrid/greece */
   if(d.profile.location==="home"||!d.profile.location) d.profile.location="dubai";
   if(!d.profile.equip||typeof d.profile.equip!=="object") d.profile.equip={dubai:"",madrid:"",greece:""};
@@ -835,12 +884,32 @@ function today(){ return new Date().toISOString().slice(0,10); }
 function fmt(s){ return String(s).replace(/\*\*(.+?)\*\*/g,'<b>$1</b>').replace(/\n/g,'<br>'); }
 function val(id){ const e=document.getElementById(id); return e?e.value:''; }
 
+/* ===== v48 — EVERY TAB REMEMBERS WHERE YOU WERE =====
+   Leaving the Train tab mid-session and coming back used to dump you at the top,
+   so you had to scroll to find the exercise you were on. Each screen now keeps
+   its own scroll position and is put back exactly where you left it. */
+let _curScreen="today", _scrollMem={};
+function rememberScroll(){ try{ _scrollMem[_curScreen]=window.scrollY||window.pageYOffset||0; }catch(e){} }
+function restoreScroll(s){
+  const y=_scrollMem[s]||0;
+  const put=()=>{ try{
+    /* Never scroll past the end of a shorter screen. */
+    const max=Math.max(0,document.body.scrollHeight-window.innerHeight);
+    window.scrollTo(0,Math.min(y,max));
+  }catch(e){} };
+  put();
+  requestAnimationFrame(put);          /* after layout */
+  setTimeout(put,90);                  /* after images/render settle */
+}
+/* Keep the memory current while he scrolls, not just when he leaves. */
+window.addEventListener('scroll',()=>{ _scrollMem[_curScreen]=window.scrollY||window.pageYOffset||0; },{passive:true});
+
 function go(s){
+  rememberScroll();
   document.querySelectorAll('.screen').forEach(x=>x.classList.remove('active'));
   document.getElementById('s-'+s).classList.add('active');
   document.querySelectorAll('.tab').forEach(t=>t.classList.toggle('active',t.dataset.s===s));
   document.getElementById('chatBar').style.display = s==='coach'?'flex':'none';
-  window.scrollTo(0,0);
   const rt=document.getElementById('restTimer'); if(rt) rt.classList.toggle('overchat', s==='coach');
   if(s==='browse') renderBrowse();
   if(s==='settings'){ collapsibleSettings(); renderCatList(); }
@@ -850,7 +919,11 @@ function go(s){
   if(s==='history') renderHistory();
   if(s==='workout'){ ensureWorkout(); renderReadiness(); maybeAutoPlan(); }
   if(s==='today'){ renderNutrition(); renderWeek(); renderReadiness(); renderFirstRun(); renderTomorrow(); }
+  _curScreen=s;
+  restoreScroll(s);
 }
+/* Tapping the tab you're already on is the universal "take me to the top" gesture. */
+function goTab(s){ if(s===_curScreen){ _scrollMem[s]=0; window.scrollTo({top:0,behavior:'smooth'}); return; } go(s); }
 function toast(m){const t=document.getElementById('toast');t.textContent=m;t.classList.add('show');setTimeout(()=>t.classList.remove('show'),2600);}
 
 /* ===== GOD MODE: the coach runs real app code, and every change is undoable ===== */
@@ -1525,9 +1598,11 @@ function buildWarmup(names,ctx){
   ctx=ctx||{};
   const out=[], seen=new Set();
   const push=it=>{ if(it&&!seen.has(it.t)&&gearOk(it)){ out.push(pickItem(it)); seen.add(it.t); return true; } return false; };
-  /* 1. pulse raiser */
+  /* 1. pulse raiser — skipped entirely where the Concept2 block is shown,
+     because that IS the pulse raiser and it now lives in its own section (v48). */
   const raisers=PREP.filter(i=>i.tag==="raise");
-  push(hasRower()? raisers.find(i=>i.needs==="rower") : raisers.find(i=>i.needs!=="rower"));
+  const rowBlockShown = !ctx.travel && hasRower();
+  if(!rowBlockShown) push(raisers.find(i=>i.needs!=="rower"));
   /* 2. wrist prep goes in early, not last \u2014 the TFCC is non-negotiable before loading. */
   /* Only when the session actually loads the hands \u2014 not on a pure leg day. */
   const loadsWrist=(names||[]).some(n=>{
@@ -1602,7 +1677,17 @@ const ICON_MAP=[
   [/hydrate|water|drink/,"💧"],[/protein|eat|meal|nutrition/,"🍽️"],[/sleep|rest\b/,""]
 ];
 function iconFor(t){ const s=String(t||"").toLowerCase(); for(const [re,e] of ICON_MAP){ if(re.test(s)) return e; } return "🤸"; }
-function mvHTML(item0){
+/* v48 — the cool-down body: a timer on every stretch, plus one button that
+   walks the whole thing for you, swapping sides on its own. */
+function coolBodyHTML(list){
+  list=list||[];
+  const timed=list.filter(m=>parseDur(enrichMove(m).d).found).length;
+  const head = timed>1
+    ? "<button class='coolall' onclick='coolRunAll()'>▶ Run the whole cool-down ("+timed+" timed)</button>"
+    : "";
+  return head+list.map((m,i)=>mvHTML(m,i)).join('');
+}
+function mvHTML(item0,coolIdx){
   const item=enrichMove(item0);
   const name=item.t||"", nEsc=attrEsc(name);
   const media = item.img || (DB.media&&DB.media[name]);
@@ -1613,10 +1698,19 @@ function mvHTML(item0){
     const attrs = mediaKey()? (" data-exmedia='"+nEsc+"' data-exq='"+attrEsc(name+" exercise how to")+"'") : "";
     thumb="<div class='thumb emo'"+attrs+">"+(item.icon||iconFor(name))+"</div>";
   }
+  let timerBtn="";
+  if(coolIdx!=null){
+    const p=parseDur(item.d);
+    if(p.found){
+      const lab="⏱ "+fmtTime(p.sec)+(p.sides>1?" × 2 sides":"");
+      timerBtn="<button class='mvtime' data-ci='"+coolIdx+"' data-lab='"+attrEsc(lab)+"' onclick='coolTimer("+coolIdx+")'>"+lab+"</button>";
+    }
+  }
   return "<div class='mvb'>"+thumb+"<div class='txt'>"+
     "<div class='n'>"+name+(item.d?"<span class='d'>"+item.d+"</span>":"")+"</div>"+
     (item.cue?"<div class='c'>"+item.cue+"</div>":"")+
     "<a class='demo' href='"+demoSearchURL(name)+"' target='_blank' rel='noopener'>▶ Watch how</a>"+
+    timerBtn+
     "</div></div>";
 }
 /* Reliable demos: a real inline clip when we have one, otherwise a one-tap "Watch demo" that always works. */
@@ -1680,22 +1774,44 @@ function hasRower(){
 }
 function rowWarmupMins(){ const t=timeBudget(); return t.row? (t.rowMins||10) : 0; }
 function showRowWarmup(w){ return !w.travel && hasRower(); }
+/* v48 — rowing is its own block now, not part of the warm-up. It sits directly
+   above the first lift, with its own stopwatch so the mm:ss fills itself in. */
 function rowBlockHTML(travel){
   const dist=travel?"1,000m":"2,000m";
-  const pace=travel?"Quick easy row to warm up.":"Easy pace ~2:10–2:20 /500m · ~9 min.";
-  return "<div class='sheet-sec'><h3>◆ Warm-up Row</h3>"+
+  const pace=travel?"Quick easy row.":"Easy pace ~2:10–2:20 /500m · ~9 min.";
+  return "<div class='sheet-sec'><h3>◆ Concept2 Row</h3>"+
     "<div class='rowbanner'><img src='"+ROW_SVG+"' alt='someone rowing'></div>"+
     "<div class='name' style='margin-top:12px'>Row · "+dist+"</div>"+
-    "<div class='sm' style='margin-top:4px'>"+pace+" Log how long it took you below.</div>"+
+    "<div class='sm' style='margin-top:4px'>"+pace+" Time it here, or type it in yourself.</div>"+
+    "<div class='holdrow'><div class='hold-cd' id='rowCd'>0:00</div>"+
+      "<button class='holdbtn' id='rowBtn' onclick='toggleRowClock()'>▶ Start row</button></div>"+
     "<div class='logrow mt'>"+
-      "<input id='warmRowTime' inputmode='text' placeholder='mm:ss  (time it took you)' style='text-align:center'>"+
+      "<input id='warmRowTime' inputmode='text' placeholder='mm:ss' style='text-align:center'>"+
       "<button onclick='addWarmupRow("+(travel?1:0)+")'>Log</button></div>"+
     "<div id='warmRowMsg' class='sm' style='margin-top:8px'></div></div>";
+}
+/* Rowing stopwatch — stop it and the time drops straight into the log box. */
+let _rowInt=null,_rowStart=0;
+function toggleRowClock(){
+  const btn=document.getElementById('rowBtn'), cd=document.getElementById('rowCd');
+  if(_rowInt){
+    const sec=Math.round((Date.now()-_rowStart)/1000);
+    clearInterval(_rowInt); _rowInt=null; _rowStart=0;
+    if(btn) btn.textContent="▶ Start row";
+    if(cd) cd.textContent=fmtTime(sec);
+    const inp=document.getElementById('warmRowTime'); if(inp) inp.value=fmtTime(sec);
+    releaseWake(); toast("Row timed · "+fmtTime(sec)+" — tap Log to save");
+  } else {
+    autoStartSession(); unlockAudio(); requestWake();
+    _rowStart=Date.now(); if(btn) btn.textContent="■ Stop";
+    _rowInt=setInterval(()=>{ const c=document.getElementById('rowCd');
+      if(c) c.textContent=fmtTime(Math.round((Date.now()-_rowStart)/1000)); },250);
+  }
 }
 function addWarmupRow(travel){
   const dist=travel?"1000m":"2000m"; const time=(val('warmRowTime')||"").trim();
   if(isNaN(timeToSec(time))){ toast("Use mm:ss  e.g. 9:20"); return; }
-  DB.rowing.push({dist,time,date:today()}); markSession(); save(); renderRowing(); renderRowingLog();
+  autoStartSession(); DB.rowing.push({dist,time,date:today()}); markSession(); save(); renderRowing(); renderRowingLog();
   const m=document.getElementById('warmRowMsg'); if(m) m.innerHTML="✅ Logged <b>"+dist+" · "+time+"</b> — saved to your rowing history.";
   const inp=document.getElementById('warmRowTime'); if(inp) inp.value="";
   toast("Row logged 🚣");
@@ -1781,14 +1897,14 @@ function renderWorkoutSheet(w){
     document.getElementById('workoutSheet').innerHTML=
     "<div class='sheet'><div class='sheet-hd'><div class='tag'>"+w.tag+"</div><h2 class='display'>"+w.title+"</h2></div>"+
     "<div class='sheet-sec'><div class='recovery'>"+w.note+"</div></div>"+
-    (w.warmup&&w.warmup.length? sheetSec("warm","Warm-up",moveCount(w.warmup),w.warmup.map(mvHTML).join(''),false) : "")+
+    (w.warmup&&w.warmup.length? sheetSec("warm","Warm-up",moveCount(w.warmup),w.warmup.map(m=>mvHTML(m)).join(''),false) : "")+
     cardioBlockHTML(cardio||{name:"Concept2 Row",duration:"30 min",zone:"Zone 2"})+
-    sheetSec("cool","Cool-down",moveCount(w.cooldown),w.cooldown.map(mvHTML).join(''),false)+
+    sheetSec("cool","Cool-down · timed",moveCount(w.cooldown),coolBodyHTML(w.cooldown),false)+
     sheetSec("rec","Recovery notes","","<div class='recovery'>"+w.recovery+"</div>",false)+"</div>";
     return;
   }
   if(w.sets===0){
-    document.getElementById('workoutSheet').innerHTML="<div class='sheet'><div class='sheet-hd'><div class='tag'>"+w.tag+"</div><h2 class='display'>"+w.title+"</h2></div><div class='sheet-sec'><div class='recovery'>"+w.note+"</div></div>"+(cardio?cardioBlockHTML(cardio):"")+sheetSec("mob",(w.kind==='mobility'?'Mobility flow':'Mobility'),moveCount(w.cooldown),w.cooldown.map(mvHTML).join(''),true)+"</div>";
+    document.getElementById('workoutSheet').innerHTML="<div class='sheet'><div class='sheet-hd'><div class='tag'>"+w.tag+"</div><h2 class='display'>"+w.title+"</h2></div><div class='sheet-sec'><div class='recovery'>"+w.note+"</div></div>"+(cardio?cardioBlockHTML(cardio):"")+sheetSec("mob",(w.kind==='mobility'?'Mobility flow · timed':'Mobility · timed'),moveCount(w.cooldown),coolBodyHTML(w.cooldown),true)+"</div>";
     return;
   }
   const exHTML=w.main.map((e,i)=>exBlockHTML(e,i)).join('');
@@ -1797,15 +1913,17 @@ function renderWorkoutSheet(w){
     "<div class='meta'><span class='pill orange'>"+w.sets+" sets</span><span class='pill'>"+w.reps+"</span><span class='pill purple'>"+w.phase+"</span></div></div>"+
   timeBarHTML(w)+
   setsPickerHTML(w)+
-  sheetSec("warm","Warm-up",moveCount(w.warmup)+(showRowWarmup(w)?" + row":""),
-    w.warmup.map(mvHTML).join('')+(showRowWarmup(w)? rowBlockHTML(w.travel) : ""), false)+
+  sessBarHTML()+
+  sheetSec("warm","Warm-up",moveCount(w.warmup), w.warmup.map(m=>mvHTML(m)).join(''), false)+
+  (showRowWarmup(w)? rowBlockHTML(w.travel) : "")+
   "<div class='sheet-sec'><h3>◆ Main workout · log each set</h3>"+exHTML+"</div>"+
   (cardio?cardioBlockHTML(cardio):"")+
-  sheetSec("cool","Cool-down",moveCount(w.cooldown),w.cooldown.map(mvHTML).join(''),false)+
+  sheetSec("cool","Cool-down · timed",moveCount(w.cooldown),coolBodyHTML(w.cooldown),false)+
   sheetSec("rec","Recovery notes","","<div class='recovery'>"+w.recovery+"</div>",false)+
   completeBlockHTML(w)+"</div>";
   try{ bindSheetSecs(); }catch(e){}
   try{ hydrateMedia(); }catch(e){}
+  try{ updateSyncDot(); }catch(e){}
 }
 
 let audioCtx=null;
@@ -1819,8 +1937,9 @@ let restInt=null, restEnd=0, restActive=false, restBeeped=false;
 let wakeLock=null;
 async function requestWake(){ try{ if('wakeLock' in navigator && !wakeLock){ wakeLock=await navigator.wakeLock.request('screen'); wakeLock.addEventListener('release',()=>{wakeLock=null;}); } }catch(e){} }
 function releaseWake(){ try{ if(wakeLock && !restActive && holdIdx<0){ wakeLock.release(); wakeLock=null; } }catch(e){} }
-function startRest(sec,label){
+function startRest(sec,label,onDone){
   unlockAudio(); requestWake(); restEnd=Date.now()+sec*1000; restActive=true; restBeeped=false;
+  restDoneCb = (typeof onDone==="function") ? onDone : null;
   const t=document.getElementById('restTimer'); t.classList.add('show'); t.classList.remove('due');
   restApplyPos();
   document.getElementById('restLab').textContent=label||"Rest · next set in";
@@ -1832,11 +1951,277 @@ function restTick(){
   const el=document.getElementById('restCd'); if(el) el.textContent=fmtTime(left);
   if(left<=0){ restActive=false; if(restInt){clearInterval(restInt);restInt=null;} restDue(); }
 }
-function restDue(){ const t=document.getElementById('restTimer'); t.classList.add('due'); const l=document.getElementById('restLab'); if(l)l.textContent="Next up — GO 💥"; const cd=document.getElementById('restCd'); if(cd)cd.textContent="0:00"; if(!restBeeped){ restBeeped=true; beeps(); if(navigator.vibrate) try{navigator.vibrate([200,90,200,90,200]);}catch(e){} } releaseWake(); }
-function stopRest(){ restActive=false; if(restInt){clearInterval(restInt);restInt=null;} const t=document.getElementById('restTimer'); if(t){t.classList.remove('show');t.classList.remove('due');} releaseWake(); }
+let restDoneCb=null;
+function restDue(){
+  const t=document.getElementById('restTimer'); t.classList.add('due');
+  const cb=restDoneCb; restDoneCb=null;
+  const l=document.getElementById('restLab'); if(l)l.textContent = cb? "Done ✅" : "Next up — GO 💥";
+  const cd=document.getElementById('restCd'); if(cd)cd.textContent="0:00";
+  if(!restBeeped){ restBeeped=true; beeps(); if(navigator.vibrate) try{navigator.vibrate([200,90,200,90,200]);}catch(e){} }
+  releaseWake();
+  if(cb) try{ cb(); }catch(e){ console.warn(e); }
+}
+function stopRest(){ restActive=false; restDoneCb=null; _coolQ=null; if(restInt){clearInterval(restInt);restInt=null;} const t=document.getElementById('restTimer'); if(t){t.classList.remove('show');t.classList.remove('due');} releaseWake(); markCoolRunning(-1); }
+/* ==========================================================================
+   v48 — THE SESSION CLOCK
+   Start it when you begin, pause it when life interrupts, finish it when
+   you're done. Time is stored as a list of segments so that pausing is exact
+   and nothing is lost to a reload, a locked screen, or a closed tab —
+   every figure is derived from wall-clock timestamps, never from a ticking
+   counter that stops when the browser suspends us.
+   ========================================================================== */
+function sess(){
+  let s=DB.session;
+  if(s && s.date!==today()){                    /* yesterday's clock left running */
+    if(s.segs&&s.segs.length&&s.segs[s.segs.length-1].e==null) s.segs[s.segs.length-1].e=s.segs[s.segs.length-1].s;
+    DB.session=null; s=null;
+  }
+  return s;
+}
+function sessMs(){
+  const s=sess(); if(!s) return 0;
+  return (s.segs||[]).reduce((a,g)=>a+Math.max(0,(g.e||Date.now())-g.s),0);
+}
+function sessRunning(){ const s=sess(); return !!(s && s.segs && s.segs.length && s.segs[s.segs.length-1].e==null); }
+function sessStarted(){ return !!sess(); }
+function sessFinished(){ const s=sess(); return !!(s && s.done); }
+function fmtDur(ms){
+  const sec=Math.max(0,Math.round(ms/1000)), h=Math.floor(sec/3600), m=Math.floor((sec%3600)/60), ss=sec%60;
+  return h? (h+":"+String(m).padStart(2,'0')+":"+String(ss).padStart(2,'0'))
+          : (m+":"+String(ss).padStart(2,'0'));
+}
+function fmtDurWords(ms){
+  const mins=Math.round(ms/60000);
+  if(mins<1) return "under a minute";
+  if(mins<60) return mins+" min";
+  return Math.floor(mins/60)+"h "+(mins%60)+"m";
+}
+function startSession(quiet){
+  if(sessRunning()) return;
+  const s=sess();
+  if(s && s.done){ s.done=false; delete s.endedAt; }        /* carrying on after "finish" */
+  if(!s) DB.session={date:today(), segs:[], done:false};
+  DB.session.segs.push({s:Date.now(), e:null});
+  markSession(); save(); sessTickStart(); renderSessBar(); sessFloatSync();
+  if(!quiet) toast("Clock started ⏱");
+}
+function pauseSession(){
+  if(!sessRunning()) return;
+  const g=DB.session.segs[DB.session.segs.length-1]; g.e=Date.now();
+  save(); sessTickStop(); renderSessBar(); sessFloatSync();
+  toast("Paused — the clock is waiting ⏸");
+}
+function resumeSession(){ if(sessRunning()) return; startSession(true); toast("Back on the clock ▶"); }
+function sessToggle(){ sessRunning()? pauseSession() : resumeSession(); }
+/* Finish stops the clock but does NOT mark the workout complete — that's the
+   green button at the bottom, which calls this itself. */
+function endSession(){
+  const s=sess(); if(!s) return 0;
+  if(sessRunning()) DB.session.segs[DB.session.segs.length-1].e=Date.now();
+  s.done=true; s.endedAt=new Date().toISOString();
+  const ms=sessMs(); save(); sessTickStop(); renderSessBar(); sessFloatSync();
+  return ms;
+}
+function resetSession(){
+  if(!confirm("Reset today's session clock back to zero?")) return;
+  DB.session=null; save(); sessTickStop(); renderSessBar(); sessFloatSync(); toast("Clock reset");
+}
+/* Anything logged without pressing Start still gets timed — the clock starts
+   itself rather than quietly recording nothing. */
+function autoStartSession(){ if(!sessStarted()) { startSession(true); toast("Clock started automatically ⏱"); } }
+
+let _sessInt=null;
+function sessTickStart(){ if(_sessInt) clearInterval(_sessInt); _sessInt=setInterval(sessTick,1000); sessTick(); }
+function sessTickStop(){ if(_sessInt){ clearInterval(_sessInt); _sessInt=null; } sessTick(); }
+function sessTick(){
+  const txt=fmtDur(sessMs());
+  const a=document.getElementById('sessClock'); if(a) a.textContent=txt;
+  const b=document.getElementById('sessFloatT');
+  if(b){ const d=document.getElementById('sessFloatD'); b.childNodes[0].nodeValue=txt; if(d) d.textContent=sessRunning()?"Training":"Paused"; }
+}
+
+/* ----- the card that sits above the warm-up ----- */
+function sessBarHTML(){
+  const started=sessStarted(), running=sessRunning(), fin=sessFinished(), ms=sessMs();
+  if(!started){
+    return "<div class='sessbar' id='sessBar'>"+
+      "<div class='sl'>Session clock</div>"+
+      "<div class='sc' id='sessClock'>0:00</div>"+
+      "<div class='sm2'>Press start when you begin. Pause it whenever you get interrupted — only real training time is counted.</div>"+
+      "<div class='sbtns'><button class='go' onclick='startSession()'>▶ Start training</button></div>"+
+    "</div>";
+  }
+  if(fin){
+    return "<div class='sessbar' id='sessBar'>"+
+      "<div class='sl'>Session clock · stopped</div>"+
+      "<div class='sc' id='sessClock'>"+fmtDur(ms)+"</div>"+
+      "<div class='sm2'>"+fmtDurWords(ms)+" of actual training"+(sessPauseNote()||"")+".</div>"+
+      "<div class='sbtns'><button onclick='resumeSession()'>▶ Carry on</button>"+
+        "<button onclick='resetSession()'>Reset</button></div>"+
+    "</div>";
+  }
+  return "<div class='sessbar "+(running?"on":"hold")+"' id='sessBar'>"+
+    "<div class='sl'>"+(running?"Training · clock running":"Paused")+"</div>"+
+    "<div class='sc' id='sessClock'>"+fmtDur(ms)+"</div>"+
+    "<div class='sm2'>"+(running
+      ? "Tap pause if you get pulled away — the pill follows you down the page too."
+      : "Clock stopped. Nothing is counting until you resume.")+"</div>"+
+    "<div class='sbtns'>"+
+      (running? "<button class='hold' onclick='pauseSession()'>❙❙ Pause</button>"
+              : "<button class='go' onclick='resumeSession()'>▶ Resume</button>")+
+      "<button class='fin' onclick='finishSessionBtn()'>■ Finish</button>"+
+    "</div></div>";
+}
+/* One line for the coach's prompt so it knows how long he's actually been at it. */
+function sessClockLine(){
+  try{
+    if(!sessStarted()) return "not started today";
+    const mins=Math.round(sessMs()/60000);
+    const recent=(DB.completed||{});
+    const past=Object.keys(recent).sort().reverse().slice(1,6).map(d=>recent[d]).filter(c=>c&&c.durMs);
+    const avg=past.length? Math.round(past.reduce((a,c)=>a+c.durMs,0)/past.length/60000) : null;
+    return (sessFinished()?"finished":sessRunning()?"running":"PAUSED")+" at "+mins+" min of actual training"+
+           (sessPauseNote()?(" ("+sessPauseNote().replace(/^ · /,"")+")"):"")+
+           (avg?(" · his recent sessions average "+avg+" min"):"");
+  }catch(e){ return "unknown"; }
+}
+function sessPauseNote(){
+  const s=sess(); if(!s||!s.segs||s.segs.length<2) return "";
+  const first=s.segs[0].s, last=s.segs[s.segs.length-1].e||Date.now();
+  const gap=(last-first)-sessMs();
+  if(gap<60000) return "";
+  return " · "+fmtDurWords(gap)+" paused";
+}
+function renderSessBar(){
+  const el=document.getElementById('sessBar'); if(!el) return;
+  const wrap=document.createElement('div'); wrap.innerHTML=sessBarHTML();
+  const fresh=wrap.firstChild; if(fresh) el.replaceWith(fresh);
+}
+/* "Finish" on the clock offers to close the whole session off properly. */
+function finishSessionBtn(){
+  const ms=endSession();
+  toast("Clock stopped · "+fmtDurWords(ms));
+  if(!completionOf()){
+    setTimeout(()=>{ const el=document.getElementById('doneCard'); if(el) el.scrollIntoView({behavior:"smooth",block:"center"}); },150);
+  }
+}
+
+/* ----- the floating pause pill ----- */
+function sessFloatSync(){
+  const f=document.getElementById('sessFloat'); if(!f) return;
+  const show = sessStarted() && !sessFinished();
+  f.classList.toggle('show',show);
+  f.classList.toggle('paused',!sessRunning());
+  const b=document.getElementById('sessFloatB'); if(b) b.textContent=sessRunning()?"❙❙":"▶";
+  sessApplyPos(); sessTick();
+}
+function sessApplyPos(){
+  const f=document.getElementById('sessFloat'); if(!f) return;
+  const p=DB.prefs&&DB.prefs.sessPos;
+  if(p&&p.x!=null){ f.classList.add('moved'); f.style.left=p.x+"px"; f.style.top=p.y+"px"; }
+  else { f.classList.remove('moved'); f.style.left=""; f.style.top=""; }
+  sessClamp();
+}
+function sessClamp(){
+  const f=document.getElementById('sessFloat');
+  if(!f||!f.classList.contains('moved')||!f.classList.contains('show')) return;
+  const w=f.offsetWidth,h=f.offsetHeight;
+  let x=parseFloat(f.style.left)||0, y=parseFloat(f.style.top)||0;
+  x=Math.max(6,Math.min(window.innerWidth-w-6,x));
+  y=Math.max(6,Math.min(window.innerHeight-h-6,y));
+  f.style.left=x+"px"; f.style.top=y+"px";
+}
+let _sfDrag=null;
+function initSessDrag(){
+  const f=document.getElementById('sessFloat'); if(!f) return;
+  const h=document.getElementById('sessFloatT'); if(!h) return;
+  h.addEventListener('pointerdown',ev=>{
+    const r=f.getBoundingClientRect();
+    _sfDrag={dx:ev.clientX-r.left, dy:ev.clientY-r.top, id:ev.pointerId};
+    f.classList.add('drag','moved'); f.style.left=r.left+"px"; f.style.top=r.top+"px";
+    try{ h.setPointerCapture(ev.pointerId); }catch(e){}
+    ev.preventDefault();
+  });
+  h.addEventListener('pointermove',ev=>{
+    if(!_sfDrag||ev.pointerId!==_sfDrag.id) return;
+    const nx=ev.clientX-_sfDrag.dx, ny=ev.clientY-_sfDrag.dy;
+    if(Math.abs(nx-_sfDrag.x0)>4||Math.abs(ny-_sfDrag.y0)>4) _sfDrag.moved=true;
+    f.style.left=nx+"px"; f.style.top=ny+"px";
+    ev.preventDefault();
+  });
+  let lastTap=0;
+  const up=ev=>{
+    if(!_sfDrag||ev.pointerId!==_sfDrag.id) return;
+    const moved=_sfDrag.moved; _sfDrag=null; f.classList.remove('drag');
+    if(moved){
+      sessClamp();
+      DB.prefs=DB.prefs||{}; DB.prefs.sessPos={x:parseFloat(f.style.left)||0,y:parseFloat(f.style.top)||0}; save();
+      return;
+    }
+    /* Didn't move it — treat as a tap. Two quick taps sends it back to its corner. */
+    sessApplyPos();
+    const n=Date.now();
+    if(n-lastTap<420){ DB.prefs=DB.prefs||{}; DB.prefs.sessPos=null; save(); sessApplyPos(); toast("Pill back to its corner"); lastTap=0; }
+    else lastTap=n;
+  };
+  h.addEventListener('pointerup',up); h.addEventListener('pointercancel',up);
+}
+
+/* ==========================================================================
+   v48 — COOL-DOWN TIMERS
+   Every stretch has a dose ("45s each side"). Read it, count it down, beep,
+   and swap sides automatically so you actually hold it long enough.
+   ========================================================================== */
+function parseDur(d){
+  const s=String(d||"").toLowerCase();
+  const sides=/each side|each way|per side|each leg|each arm|each direction/.test(s)?2:1;
+  let m,sec=0,found=false;
+  if((m=s.match(/(\d+)\s*[–\-‑]\s*(\d+)\s*min/))){ sec=Math.round(((+m[1])+(+m[2]))/2*60); found=true; }
+  else if((m=s.match(/(\d+)\s*min/))){ sec=(+m[1])*60; found=true; }
+  else if((m=s.match(/(\d+)\s*[–\-‑]\s*(\d+)\s*s\b/))){ sec=Math.round(((+m[1])+(+m[2]))/2); found=true; }
+  else if((m=s.match(/(\d+)\s*s\b/))){ sec=+m[1]; found=true; }
+  return {sec:sec||45, sides, found};
+}
+let _coolQ=null;
+function coolList(){ return (DB.workout&&DB.workout.cooldown)||[]; }
+function markCoolRunning(i){
+  document.querySelectorAll('#workoutSheet .mvtime').forEach(b=>{
+    const on = (parseInt(b.dataset.ci,10)===i);
+    b.classList.toggle('run',on);
+    b.textContent = on ? "■ Stop" : b.dataset.lab;
+  });
+}
+function coolTimer(i){
+  if(_coolQ && _coolQ.i===i && restActive){ stopRest(); return; }   /* tap again = stop */
+  _coolQ={i:i, side:1, all:false}; coolStep();
+}
+function coolRunAll(){
+  const list=coolList(); if(!list.length) return;
+  if(_coolQ && _coolQ.all && restActive){ stopRest(); toast("Cool-down stopped"); return; }
+  _coolQ={i:0, side:1, all:true}; coolStep();
+}
+function coolStep(){
+  const list=coolList();
+  if(!_coolQ || _coolQ.i>=list.length){ _coolQ=null; markCoolRunning(-1); return; }
+  const mv=enrichMove(list[_coolQ.i]);
+  const p=parseDur(mv.d);
+  const sideTxt = p.sides>1 ? (" · side "+_coolQ.side+" of 2") : "";
+  markCoolRunning(_coolQ.i);
+  startRest(p.sec, (mv.t||"Cool-down")+sideTxt, ()=>{
+    if(!_coolQ) return;
+    if(p.sides>1 && _coolQ.side===1){ _coolQ.side=2; setTimeout(coolStep,1400); return; }
+    if(_coolQ.all){ _coolQ.i++; _coolQ.side=1; if(_coolQ.i<list.length){ setTimeout(coolStep,1800); return; } toast("Cool-down done 🧘"); }
+    _coolQ=null; markCoolRunning(-1);
+    setTimeout(()=>{ if(!restActive) stopRest(); },2500);
+  });
+}
+
 /* On returning to the app, re-sync BOTH the rest countdown and the hold stopwatch
    from wall-clock time so nothing froze while we were away (#4). */
 function resyncTimers(){
+  /* The clock is derived from timestamps, so it's already correct — this just
+     redraws it and restarts the ticker the browser suspended while we were away. */
+  try{ if(sessRunning() && !_sessInt) sessTickStart(); else sessTick(); }catch(e){}
   if(restActive) restTick();
   if(holdIdx>=0 && holdInt){ const s=Math.round((Date.now()-holdStart)/1000); const c=document.getElementById('hcd'+holdIdx); if(c)c.textContent=fmtTime(s); }
   if(wakeLock===null && (restActive||holdIdx>=0)) requestWake();
@@ -1996,7 +2381,7 @@ function toggleHold(i){
     showEffortPrompt(i,ex);
     const cb=document.getElementById('cb'+i); if(cb) cb.innerHTML="<div class='coachbubble'><div class='who'>◆ Coach</div>"+holdReply(sec)+"</div>";
   } else {
-    unlockAudio(); requestWake(); if(holdInt) clearInterval(holdInt); holdIdx=i; holdStart=Date.now(); if(btn)btn.textContent="■ Stop & log";
+    unlockAudio(); autoStartSession(); requestWake(); if(holdInt) clearInterval(holdInt); holdIdx=i; holdStart=Date.now(); if(btn)btn.textContent="■ Stop & log";
     holdInt=setInterval(function(){ const s=Math.round((Date.now()-holdStart)/1000); const c=document.getElementById('hcd'+i); if(c)c.textContent=fmtTime(s); },250);
   }
 }
@@ -2007,7 +2392,7 @@ async function logSet(i){
   const wi=document.getElementById('w'+i), ri=document.getElementById('r'+i);
   const w=parseFloat(wi.value), r=parseInt(ri.value);
   if(isNaN(w)||isNaN(r)){ toast("Enter weight and reps"); return; }
-  unlockAudio(); saveSet(ex.name,{w,r}); markSession();
+  unlockAudio(); autoStartSession(); saveSet(ex.name,{w,r}); markSession();
   const sl=document.getElementById('sl'+i); if(sl) sl.insertAdjacentHTML('beforeend',setChip({w,r}));
   ri.value=''; wi.value=w; afterLog(i);
   showEffortPrompt(i,ex);
@@ -2139,6 +2524,7 @@ function coachSystem(){
 "\n- LOCATION TODAY: "+LOC().label.toUpperCase()+" \u2014 "+currentEquipment()+
 "\n- REACH FOR, IN ORDER: "+(GEAR_PRIORITY[locKey()]||["bw"]).map(g=>({bb:"barbell",db:"dumbbell",mach:"machine/cable",kb:"kettlebell",band:"band",bar:"pull-up bar",bw:"bodyweight",other:"other kit"}[g]||g)).join(" > ")+
 (locKey()==="dubai"? ". He has a full gym here \u2014 do NOT default to bodyweight movements. Bodyweight is for Greece." : "")+
+"\n- SESSION CLOCK: "+sessClockLine()+
 "\n- Phase: "+p.phase+"\n- Mode: "+(p.mode||"\u2014")+
 "\n- Today scheduled: "+pickSplit()+"\n- Today's exercises: "+curW+
 "\n- Custom day types: "+dayTypesStr+"\n- Cardio: "+cardioStr+"\n- Nutrition: "+nutStr+
@@ -2150,7 +2536,7 @@ function coachSystem(){
 "\n\n"+readinessContext()+
 "\n\n"+trainingContext()+
 "\n\nCONCEPT2 / CARDIO LOG:\n"+rowing;
-  return "You are Amir's personal trainer — the ONLY coach he has. You know him deeply and remember everything. This app stores his data; you are the coaching brain."+mem+"\n\nPERSONALITY: "+(prefs.coachStyle||"Direct, funny, warm, encouraging")+". Never robotic or generic. Challenge him, explain WHY, celebrate wins. Text like a real PT. Keep it tight.\n\nPERMANENT RULES:\n- Goal: "+p.goal+". The physique he wants, NOT bodyweight targets.\n- Klinefelter syndrome — respect recovery/fatigue, patient strength curve.\n- TFCC injury (right wrist) — avoid loaded wrist extension / straight-wrist heavy pressing; prefer neutral-grip. If wrist pain reported, swap immediately.\n- Technique beats weight. Never ego lift. Only add load after current weight is MASTERED with clean form.\n- He never chooses workouts — YOU decide and tell him exactly what to do.\n- You may invent whole session types when his week needs one — Pilates, Core Day, Mobility, HIIT, Arms, Conditioning — with [[CREATE_DAY_TYPE: Name]] then [[SET_WEEKDAY: Monday | Name]]. Don't restrict yourself to push/pull/legs if the gaps say otherwise.\n"+
+  return "You are Amir's personal trainer — the ONLY coach he has. You know him deeply and remember everything. This app stores his data; you are the coaching brain."+mem+"\n\nPERSONALITY: "+(prefs.coachStyle||"Direct, funny, warm, encouraging")+". Never robotic or generic. Challenge him, explain WHY, celebrate wins. Text like a real PT. Keep it tight.\n\nPERMANENT RULES:\n- Goal: "+p.goal+". The physique he wants, NOT bodyweight targets.\n- Klinefelter syndrome — respect recovery/fatigue, patient strength curve.\n- TFCC injury (right wrist) — avoid loaded wrist extension / straight-wrist heavy pressing; prefer neutral-grip. If wrist pain reported, swap immediately.\n- Technique beats weight. Never ego lift. Only add load after current weight is MASTERED with clean form.\n- FLEXIBILITY AND MOBILITY ARE A REAL GOAL, not a warm-up formality. He wants to get measurably more supple and move better, alongside the physique. Program for it: proper cool-down stretching every session with held durations, hip/shoulder/thoracic/ankle mobility, and dedicated mobility or Pilates-style days when the week allows. Track range of motion the way you track load, ask about stiff spots, and never let mobility be the thing that gets dropped when time is short.\n- He never chooses workouts — YOU decide and tell him exactly what to do.\n- You may invent whole session types when his week needs one — Pilates, Core Day, Mobility, HIIT, Arms, Conditioning — with [[CREATE_DAY_TYPE: Name]] then [[SET_WEEKDAY: Monday | Name]]. Don't restrict yourself to push/pull/legs if the gaps say otherwise.\n"+
 (p.rules? "\nHIS OWN STANDING RULES (he wrote these — follow them):\n"+p.rules+"\n":"")+
 (p.injuries? "\nINJURIES AND LIMITATIONS:\n"+p.injuries+"\n":"")+
 (p.coachTone? "\nHOW HE WANTS YOU TO TALK TO HIM — match this voice exactly, it overrides the generic personality line above:\n"+p.coachTone+"\n":"")+
@@ -2987,8 +3373,11 @@ function renderHistory(){
       return "<div class='hline'><span class='en'>"+l.ex+" <span class='muted' style='font-weight:600;font-size:12px'>"+reps+"</span></span><span class='ev'>"+top+"kg <button class='del' onclick=\"delStrength('"+l.ex.replace(/'/g,"\\'")+"','"+d+"')\">✕</button></span></div>"; }).join('');
     const rowLines=g.rows.map(r=>"<div class='hline'><span class='en'>🚣 Row "+r.dist+"</span><span class='ev'>"+r.time+"</span></div>").join('');
     const dd=new Date(d).toLocaleDateString('en-GB',{weekday:'short',day:'numeric',month:'short'});
+    const comp=(DB.completed||{})[d];
+    const durChip = (comp&&comp.durMs)
+      ? "<span class='splitchip' style='color:var(--muted);border-color:var(--line)'>\u23f1 "+fmtDurWords(comp.durMs)+"</span>" : "";
     return "<div class='card' style='border-left:3px solid "+col+"'><div class='hgroup'><div class='hd'><div class='dt'>"+dd+"</div>"+
-      "<span class='splitchip' style='color:"+col+";border-color:"+col+"44;background:"+col+"1a'>"+label+"</span></div>"+
+      "<span class='splitchip' style='color:"+col+";border-color:"+col+"44;background:"+col+"1a'>"+label+"</span>"+durChip+"</div>"+
       liftLines+rowLines+"</div></div>";
   }).join('');
 }
@@ -3086,7 +3475,7 @@ function scheduleInApp(){
    v18 ADDITIONS — draggable rest timer · weekly training memory · AI planner
    · Firestore sync
    ========================================================================== */
-const APP_VERSION="v47 · 2026-08-04";
+const APP_VERSION="v48 · 2026-08-04";
 
 /* ===== 1. REST TIMER — drag it anywhere so it never blocks the chat box ===== */
 let _rtDrag=null;
@@ -3915,24 +4304,31 @@ function completeWorkout(){
   if(!s.sets && !s.rows.length){
     if(!confirm("You haven't logged a single set today. Mark the session complete anyway?")) return;
   }
+  const durMs=endSession();                       /* stops the clock, returns real training time */
   DB.completed=DB.completed||{};
   DB.completed[today()]={
     at:new Date().toISOString(), title:s.title, loc:s.loc,
     exercises:s.done.length, planned:s.planned.length,
     sets:s.sets, volume:Math.round(s.volume), secs:s.timedSecs,
-    skipped:s.skipped, avgEff:s.avgEff
+    skipped:s.skipped, avgEff:s.avgEff,
+    durMs:durMs||0                                /* 0 = he never started the clock */
   };
   markSession(); save(); updateStreak();
   renderWorkoutSheet(DB.workout);
   try{ renderWeek(); renderReadiness(); renderHistory(); }catch(e){}
   try{ celebrate(); }catch(e){}
+  /* Don't leave the most important write of the day sitting in a 4-second
+     debounce he might close the app inside. Push it now. */
+  try{ if(DB.cloud&&DB.cloud.on){ _cloudDirty=true;
+        cloudFlush("complete").then(ok=>{ if(ok) toast("Backed up to your cloud \u2601\ufe0f"); }); } }catch(e){}
   toast("Session logged \u2705  \u00b7  "+(DB.streak||1)+" day run");
   setTimeout(()=>{ const el=document.getElementById('doneCard'); if(el) el.scrollIntoView({behavior:"smooth",block:"center"}); },120);
 }
 function undoComplete(){
   if(!DB.completed||!DB.completed[today()]) return;
   delete DB.completed[today()];
-  save(); updateStreak(); renderWorkoutSheet(DB.workout);
+  if(DB.session) DB.session.done=false;            /* carry on where the clock left off */
+  save(); updateStreak(); renderWorkoutSheet(DB.workout); sessFloatSync();
   try{ renderWeek(); renderReadiness(); }catch(e){}
   toast("Marked as not finished \u2014 carry on");
 }
@@ -3956,14 +4352,16 @@ function completeBlockHTML(w){
 
   if(c){
     const when=new Date(c.at).toLocaleTimeString('en-GB',{hour:'2-digit',minute:'2-digit'});
+    const dur = c.durMs ? (" \u00b7 "+fmtDurWords(c.durMs)+" on the clock"+(sessPauseNote()||"")) : "";
     return "<div class='sheet-sec donewrap' id='doneCard'>"+
       "<div class='donecard'>"+
         "<div class='donehd'>\u2705 Session complete</div>"+
         "<div class='donestat'>"+(bits.join("  \u00b7  ")||"nothing logged")+effTxt+"</div>"+
-        "<div class='donesub'>"+c.exercises+"/"+c.planned+" exercises \u00b7 finished "+when+
+        "<div class='donesub'>"+c.exercises+"/"+c.planned+" exercises \u00b7 finished "+when+dur+
           (c.skipped&&c.skipped.length? " \u00b7 skipped "+c.skipped.join(", ") : "")+"</div>"+
         "<div class='donerun'>"+(DB.streak||1)+" day run \uD83D\uDD25</div>"+
         "<button class='btn ghost mt' onclick='undoComplete()'>\u21a9 Not finished after all</button>"+
+        "<div class='syncdot'></div>"+
       "</div></div>";
   }
   const pct=s.target? Math.min(100,Math.round((s.sets/s.target)*100)) : 0;
@@ -3973,6 +4371,7 @@ function completeBlockHTML(w){
       (s.sets? s.sets+" of about "+s.target+" sets logged"+(s.skipped.length? " \u00b7 still to do: "+s.skipped.join(", ") : " \u00b7 everything's in") 
              : "Nothing logged yet \u2014 log your sets as you go.")+"</div>"+
     "<button class='btn green' onclick='completeWorkout()' style='font-size:16px;padding:16px'>Workout complete</button>"+
+    "<div class='syncdot'></div>"+
   "</div>";
 }
 
@@ -4819,7 +5218,7 @@ function collapsibleSettings(){
 
 /* ===== 10. FIRESTORE — history that outlives this phone ===== */
 let _fbReady=false,_fs=null,_cloudTimer=null;
-const CLOUD_SKIP=["photos","chat","cloud","ai","wx","workout","_rev"];
+const CLOUD_SKIP=["photos","chat","cloud","ai","wx","workout","session","_rev"];
 function syncKeysOn(){ return !!(DB.cloud&&DB.cloud.syncKeys); }
 function cloudPayload(){
   const o={}; Object.keys(DB).forEach(k=>{ if(CLOUD_SKIP.indexOf(k)<0) o[k]=DB[k]; });
@@ -4895,7 +5294,105 @@ function cloudErrHelp(e,verb){
   return "\u2717 Sync failed: "+m;
 }
 function cloudRef(){ return _fs.collection("amirpt").doc(String((DB.cloud.syncId||"amir-pt")).trim()); }
-function cloudQueue(){ if(!DB.cloud||!DB.cloud.on) return; if(_cloudTimer) clearTimeout(_cloudTimer); _cloudTimer=setTimeout(()=>{cloudPush(true);},4000); }
+/* ==========================================================================
+   v48 — THE SYNC ENGINE
+   The old version was a single 4-second setTimeout, cleared and restarted on
+   every save. That is a best-effort nudge, not a backup, and it failed in four
+   ordinary ways:
+     - the timer was cleared by the next save, so a busy stretch could starve it
+     - iOS freezes pending timers the moment you background or lock the app, so
+       the last write of a session — the one that matters most — often died
+       there and was never retried
+     - a failed push (a moment offline, a slow gym connection) was reported once
+       and then forgotten forever; nothing retried it
+     - if the startup PULL failed, the startup PUSH was skipped entirely
+   Result: your data sat on the phone until something else happened to change
+   it, or until you pressed Sync now by hand.
+
+   This version tracks a dirty flag and pushes on every route out of the app:
+   a short debounce, a hard ceiling, a periodic sweep, a flush when you
+   background it, a flush before it closes, and a retry with backoff that also
+   fires the moment the connection comes back.
+   ========================================================================== */
+let _cloudDirty=false, _cloudMaxTimer=null, _cloudRetry=0, _cloudRetryTimer=null, _cloudBusy=false, _cloudSeq=0;
+const CLOUD_DEBOUNCE=4000;     /* quiet moment after a change */
+const CLOUD_MAXWAIT=20000;     /* never let a change sit longer than this */
+const CLOUD_SWEEP=60000;       /* belt-and-braces sweep */
+
+function cloudQueue(){
+  if(!DB.cloud||!DB.cloud.on) return;
+  _cloudDirty=true; _cloudSeq++;
+  updateSyncDot();
+  if(_cloudTimer) clearTimeout(_cloudTimer);
+  _cloudTimer=setTimeout(()=>cloudFlush("debounce"),CLOUD_DEBOUNCE);
+  /* The ceiling is deliberately NOT cleared by later saves — a rapid run of
+     changes can no longer keep pushing the deadline out forever. */
+  if(!_cloudMaxTimer) _cloudMaxTimer=setTimeout(()=>cloudFlush("maxwait"),CLOUD_MAXWAIT);
+}
+async function cloudFlush(why){
+  if(!DB.cloud||!DB.cloud.on) return false;
+  if(!_cloudDirty) return true;
+  /* Something already in flight: don't fire a second write, but make sure the
+     newest change isn't left behind when that one lands. */
+  if(_cloudBusy){ return false; }
+  if(_cloudTimer){ clearTimeout(_cloudTimer); _cloudTimer=null; }
+  if(_cloudMaxTimer){ clearTimeout(_cloudMaxTimer); _cloudMaxTimer=null; }
+  if(_cloudRetryTimer){ clearTimeout(_cloudRetryTimer); _cloudRetryTimer=null; }
+  if(navigator.onLine===false){ updateSyncDot(); return false; }   /* the online handler will pick it up */
+  const seq=_cloudSeq;                 /* what this write is carrying */
+  _cloudBusy=true;
+  let ok=false;
+  try{ ok=await cloudPush(true); }catch(e){ ok=false; }
+  _cloudBusy=false;
+  if(ok){
+    _cloudRetry=0;
+    /* Only declare ourselves clean if nothing changed while that was in the air.
+       Otherwise the newer change would be silently marked as already saved. */
+    if(_cloudSeq===seq){
+      _cloudDirty=false;
+      try{ DB.cloud.lastOk=new Date().toISOString(); localStorage.setItem(STORE_KEY,JSON.stringify(DB)); }catch(e){}
+    } else {
+      setTimeout(()=>cloudFlush("followup"),300);
+    }
+  } else {
+    /* Back off, but keep trying: 5s, 15s, 45s, then every 2 min. */
+    const waits=[5000,15000,45000,120000];
+    const w=waits[Math.min(_cloudRetry,waits.length-1)]; _cloudRetry++;
+    if(_cloudRetryTimer) clearTimeout(_cloudRetryTimer);
+    _cloudRetryTimer=setTimeout(()=>cloudFlush("retry"),w);
+  }
+  updateSyncDot();
+  return ok;
+}
+/* Every exit route out of the app gets a flush. Backgrounding is the big one —
+   that's where the last set of a session used to disappear. */
+document.addEventListener('visibilitychange',()=>{ if(document.hidden) cloudFlush("hidden"); });
+window.addEventListener('pagehide',()=>{ cloudFlush("pagehide"); });
+window.addEventListener('blur',()=>{ cloudFlush("blur"); });
+window.addEventListener('online',()=>{ _cloudRetry=0; cloudFlush("online"); });
+setInterval(()=>{ if(_cloudDirty) cloudFlush("sweep"); },CLOUD_SWEEP);
+/* Anything still unsynced when we come back gets pushed straight away. */
+document.addEventListener('visibilitychange',()=>{ if(!document.hidden && _cloudDirty) cloudFlush("returned"); });
+
+/* A quiet dot so you can see at a glance whether the phone is ahead of the cloud. */
+function updateSyncDot(){
+  const els=document.querySelectorAll('.syncdot'); if(!els.length) return;
+  let txt="", cls="syncdot";
+  if(!DB.cloud||!DB.cloud.on){ txt="\u25cf cloud sync off"; cls="syncdot dirty"; }
+  else if(_cloudDirty){ txt="\u25cf unsynced \u2014 saving\u2026"; cls="syncdot dirty"; }
+  else { const t=DB.cloud.lastOk||DB.cloud.last;
+         txt = t? ("\u25cf backed up "+shortWhen(t)) : "\u25cf not backed up yet";
+         cls = "syncdot"+(t?" ok":" dirty"); }
+  els.forEach(el=>{ el.textContent=txt; el.className=cls; });
+}
+function shortWhen(iso){
+  const d=new Date(iso), mins=Math.round((Date.now()-d.getTime())/60000);
+  if(mins<1) return "just now";
+  if(mins<60) return mins+"m ago";
+  if(mins<1440) return Math.floor(mins/60)+"h ago";
+  return d.toLocaleDateString('en-GB',{day:'numeric',month:'short'});
+}
+setInterval(updateSyncDot,30000);
 /* Counts what's actually worth protecting on this device. */
 function localHistorySize(){
   let sessions=0;
@@ -4923,7 +5420,7 @@ async function cloudPush(quiet){
 }
 /* Merge, never overwrite: every logged set on either side survives. */
 function mergeCloud(r,rev){
-  const stat={sessions:0,rows:0,checkins:0};
+  const stat={sessions:0,rows:0,checkins:0,completed:0};
   Object.entries(r.strength||{}).forEach(([ex,arr])=>{
     DB.strength[ex]=DB.strength[ex]||[];
     (arr||[]).forEach(rs=>{
@@ -4937,6 +5434,15 @@ function mergeCloud(r,rev){
   const seen=new Set((DB.rowing||[]).map(rk));
   (r.rowing||[]).forEach(x=>{ if(!seen.has(rk(x))){ DB.rowing.push(x); seen.add(rk(x)); stat.rows++; } });
   DB.rowing.sort((a,b)=>String(a.date||"").localeCompare(String(b.date||"")));
+  /* v48: completed sessions (and their durations) were going UP but never coming
+     back DOWN — a restore rebuilt every lift and lost every "session complete"
+     receipt. Merged by date now, keeping whichever record logged more. */
+  DB.completed=DB.completed||{};
+  Object.entries(r.completed||{}).forEach(([d,rec])=>{
+    const mine=DB.completed[d];
+    if(!mine){ DB.completed[d]=rec; stat.completed=(stat.completed||0)+1; return; }
+    if((rec.sets||0)>(mine.sets||0) || (!mine.durMs && rec.durMs)) DB.completed[d]=Object.assign({},mine,rec);
+  });
   const cd=new Set((DB.checkins||[]).map(c=>c.date));
   (r.checkins||[]).forEach(c=>{ if(!cd.has(c.date)){ DB.checkins.push(c); cd.add(c.date); stat.checkins++; } });
   DB.checkins.sort((a,b)=>String(a.date).localeCompare(String(b.date)));
@@ -5087,11 +5593,14 @@ function boot(){
   if(DB.workout){ renderWorkoutSheet(DB.workout); document.getElementById('heroTitle').textContent=DB.workout.title; document.getElementById('heroPhase').textContent="Today · "+DB.workout.tag; }
   else { document.getElementById('heroTitle').textContent = split==="Rest"?"Rest & Recover":split; document.getElementById('heroPhase').textContent="Today · "+LOC().label; }
   renderWeek(); renderReadiness(); renderFirstRun(); renderTomorrow(); renderEquipFields(); renderCloudFields(); restApplyPos(); renderStorageStatus(); renderWxFields();
+  try{ sessFloatSync(); if(sessRunning()) sessTickStart(); }catch(e){}
+  try{ updateSyncDot(); }catch(e){}
   { const v=document.getElementById('verLine'); if(v) v.textContent="Amir PT · "+APP_VERSION; }
 }
 boot();
 try{ collapsibleSettings(); }catch(e){}
 initRestDrag();
+initSessDrag();
 registerSW();
 loadPhotos();
 wxLoadCatalogue().then(n=>{
@@ -5110,13 +5619,17 @@ setTimeout(async()=>{
   if(!(DB.cloud&&DB.cloud.on)) return;
   const empty=!localHasHistory();
   const stat=await cloudPull(true);          /* pull first, always */
-  if(stat===null) return;
-  if(empty && !stat.fresh && localHasHistory()){
+  if(stat && empty && !stat.fresh && localHasHistory()){
     toast("Restored your history from the cloud \u2705");
   }
-  await cloudPush(true);
+  /* v48: a failed pull used to skip the push entirely, so one bad moment of
+     signal at launch meant nothing synced for the whole session. Push either
+     way — and treat anything on this device as needing a push, so a write that
+     died in a suspended timer last time is caught up now. */
+  if(localHasHistory()){ _cloudDirty=true; await cloudFlush("startup"); }
+  updateSyncDot();
 },1200);
-window.addEventListener('resize',()=>{ try{ restClamp(); }catch(e){} });
+window.addEventListener('resize',()=>{ try{ restClamp(); sessClamp(); }catch(e){} });
 
 </script>
 </body>
