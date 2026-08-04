@@ -1148,6 +1148,94 @@ function guessEx(name){
   const timed=/hold|plank|carry|hang|sit\b|isometric/.test(t);
   return {m:[...new Set(m)],eq,cue:"Control every rep — technique before load.",wristAlt:"Neutral grip if the wrist complains",timed:timed};
 }
+/* v54 — variation library. The pools were too shallow to rotate properly,
+   especially in Madrid (dumbbells only) and Greece (bodyweight only), where a
+   "menu" of seven means you repeat yourself inside a fortnight. */
+const EXTRA_LIB={
+ /* ---- bodyweight: legs ---- */
+ "Cossack Squat":{m:["legs"],eq:"bw",cue:"Sink to one side, other leg straight, heel down. Brilliant for hips and ankles.",wristAlt:"No wrist load — good"},
+ "Split Squat":{m:["legs"],eq:"bw",cue:"Static lunge stance, drop the back knee straight down. Front heel planted.",wristAlt:"No wrist load — good"},
+ "Lateral Lunge":{m:["legs"],eq:"bw",cue:"Step wide, sit into that hip, other leg straight. Trains the plane you neglect.",wristAlt:"No wrist load — good"},
+ "Curtsy Lunge":{m:["legs"],eq:"bw",cue:"Step diagonally behind, hips square. Hits glute medius hard.",wristAlt:"No wrist load — good"},
+ "Shrimp Squat":{m:["legs"],eq:"bw",cue:"Hold the back foot, lower until the knee taps. Brutal single-leg strength.",wristAlt:"No wrist load — good"},
+ "Single-leg Calf Raise":{m:["legs"],eq:"bw",cue:"Full stretch at the bottom, pause at the top. Slow.",wristAlt:"No wrist load — good"},
+ "Skater Jump":{m:["legs"],eq:"bw",cue:"Bound side to side, land soft and absorb. Stick each landing.",wristAlt:"No wrist load — good"},
+ "Broad Jump":{m:["legs"],eq:"bw",cue:"Explode forward, land in a quarter squat. Quality over distance.",wristAlt:"No wrist load — good"},
+ "Wall Sit March":{m:["legs","core"],eq:"bw",cue:"Wall sit, lift one foot then the other. Thighs stay parallel.",timed:true,wristAlt:"No wrist load — good"},
+ "Nordic Negative":{m:["legs"],eq:"bw",cue:"Lower as slowly as you can, push back up with the hands. Hamstring insurance.",wristAlt:"Careful — hands catch you"},
+ /* ---- bodyweight: push ---- */
+ "Wide Push-up":{m:["chest"],eq:"bw",cue:"Hands wider than shoulders, chest to the floor, elbows out at 45.",wristAlt:"Fists or handles to keep the wrist neutral"},
+ "Incline Push-up":{m:["chest"],eq:"bw",cue:"Hands on a bench or wall. Easier angle — use it to get more clean reps.",wristAlt:"Neutral grip on an edge"},
+ "Hindu Push-up":{m:["chest","shoulders"],eq:"bw",cue:"Dive down and scoop through, finishing chest-up. Shoulders and spine love it.",wristAlt:"Skip if the TFCC complains — loaded extension"},
+ "Plank Shoulder Tap":{m:["core","shoulders"],eq:"bw",cue:"Plank, tap the opposite shoulder without the hips rocking.",wristAlt:"Forearm variation if the wrist objects"},
+ "Plank Up-Down":{m:["core","shoulders"],eq:"bw",cue:"Forearms to hands and back. Hips as still as you can keep them.",wristAlt:"Go slow — loaded wrist"},
+ "Pseudo Planche Push-up":{m:["chest","shoulders"],eq:"bw",cue:"Hands by the ribs, lean forward over them. Serious tension.",wristAlt:"Hard on the wrist — skip on a bad TFCC day"},
+ /* ---- bodyweight: pull / posterior ---- */
+ "Towel Row":{m:["back"],eq:"bw",cue:"Towel round a solid post, lean back and row. Pull the elbows past the ribs.",wristAlt:"Neutral grip — wrist friendly"},
+ "Reverse Plank":{m:["back","core"],eq:"bw",cue:"Face up, hips lifted, chest open. Squeeze the glutes.",timed:true,wristAlt:"Fingers forward, or forearms if the wrist complains"},
+ "Reverse Snow Angel Hold":{m:["back"],eq:"bw",cue:"Face down, arms sweep from hips to overhead, thumbs up throughout.",timed:true,wristAlt:"No wrist load — good"},
+ "Prone Swimmer":{m:["back","shoulders"],eq:"bw",cue:"Face down, arms behind the back and around. Slow, from the shoulder blades.",wristAlt:"No wrist load — good"},
+ "Wall Angel":{m:["back","shoulders"],eq:"bw",cue:"Back flat to the wall, slide the arms up without the ribs flaring.",wristAlt:"No wrist load — good"},
+ /* ---- bodyweight: core ---- */
+ "Bicycle Crunch":{m:["core"],eq:"bw",cue:"Slow. Rotate from the ribs, opposite elbow towards knee.",wristAlt:"No wrist load — good"},
+ "Leg Raise":{m:["core"],eq:"bw",cue:"Low back pinned, lower the legs only as far as you can keep it pinned.",wristAlt:"No wrist load — good"},
+ "V-Up":{m:["core"],eq:"bw",cue:"Fold up, fingertips to toes, lower with control.",wristAlt:"No wrist load — good"},
+ "Russian Twist":{m:["core"],eq:"bw",cue:"Lean back, rotate side to side from the waist. Chest stays open.",wristAlt:"No wrist load — good"},
+ "Flutter Kick":{m:["core"],eq:"bw",cue:"Small fast kicks, low back glued down.",timed:true,wristAlt:"No wrist load — good"},
+ "Side Plank Rotation":{m:["core"],eq:"bw",cue:"From side plank, thread the top arm under and back open.",wristAlt:"Forearm version — no wrist load"},
+ "Bear Crawl":{m:["core","shoulders"],eq:"bw",cue:"Knees an inch off the floor, opposite hand and foot, hips low.",timed:true,wristAlt:"Loaded wrist — go easy"},
+ "Hollow Rock":{m:["core"],eq:"bw",cue:"Hollow position, rock from the mid-back. Never let the low back lift.",timed:true,wristAlt:"No wrist load — good"},
+ /* ---- bodyweight: conditioning ---- */
+ "High Knees":{m:["legs","core"],eq:"bw",cue:"Fast feet, knees to hip height, arms driving.",timed:true,wristAlt:"No wrist load — good"},
+ "Jumping Jacks":{m:["legs","shoulders"],eq:"bw",cue:"Full range, land soft.",timed:true,wristAlt:"No wrist load — good"},
+ "Sprawl":{m:["legs","core"],eq:"bw",cue:"Burpee without the push-up. Chest to floor, hips flat, back up.",wristAlt:"Loaded wrist on the way down — go easy"},
+ "Squat Thrust":{m:["legs","core"],eq:"bw",cue:"Hands down, jump the feet back and in. Keep the hips low.",wristAlt:"Loaded wrist — fists if needed"},
+ "Tuck Jump":{m:["legs"],eq:"bw",cue:"Knees to chest, land soft and immediately reset.",wristAlt:"No wrist load — good"},
+ "Shadow Boxing":{m:["shoulders","core"],eq:"bw",cue:"Light on the feet, rotate through the hips, keep the hands up.",timed:true,wristAlt:"Loose fists, neutral wrist"},
+ /* ---- dumbbell ---- */
+ "DB Single-leg RDL":{m:["legs","back"],eq:"db",cue:"Hinge over one leg, back flat, hips square. Balance is part of it.",wristAlt:"Neutral grip — fine"},
+ "DB Sumo Deadlift":{m:["legs"],eq:"db",cue:"Wide stance, dumbbell between the feet, push the floor away.",wristAlt:"Neutral grip — fine"},
+ "DB Lateral Lunge":{m:["legs"],eq:"db",cue:"Step wide holding the weight at the chest, sit into that hip.",wristAlt:"Goblet hold — neutral"},
+ "DB Calf Raise":{m:["legs"],eq:"db",cue:"Weights at your sides, full stretch, pause at the top.",wristAlt:"Neutral grip — fine"},
+ "DB Swing":{m:["legs","back"],eq:"db",cue:"Hinge, snap the hips, the arms are just a rope. Never a squat.",wristAlt:"Neutral grip — fine"},
+ "DB Push Press":{m:["shoulders"],eq:"db",cue:"Small dip from the legs, drive overhead. Lets you handle more than a strict press.",wristAlt:"Neutral grip — kinder on the TFCC"},
+ "DB Arnold Press":{m:["shoulders"],eq:"db",cue:"Start palms in, rotate out as you press. Hits every head of the delt.",wristAlt:"Stop the rotation early if the wrist objects"},
+ "DB Upright Row":{m:["shoulders","back"],eq:"db",cue:"Elbows lead, stop at chest height. Stop sooner if the shoulder pinches.",wristAlt:"Wide grip, neutral wrist"},
+ "DB Front Raise":{m:["shoulders"],eq:"db",cue:"Straight arms to eye level, no swinging.",wristAlt:"Neutral (hammer) grip"},
+ "DB Reverse Fly":{m:["back","shoulders"],eq:"db",cue:"Hinge over, arms wide like wings, squeeze the shoulder blades.",wristAlt:"Neutral grip — fine"},
+ "DB Chest Fly":{m:["chest"],eq:"db",cue:"Soft elbows, open wide, hug back in. Stretch is the point.",wristAlt:"Neutral grip — fine"},
+ "DB Pullover":{m:["chest","back"],eq:"db",cue:"One weight over the chest, reach back overhead. Ribs stay down.",wristAlt:"Both hands, neutral — fine"},
+ "DB Shrug":{m:["back"],eq:"db",cue:"Straight up, pause, down slow. No rolling.",wristAlt:"Neutral grip — fine"},
+ "DB Concentration Curl":{m:["arms"],eq:"db",cue:"Elbow braced on the thigh, squeeze hard at the top.",wristAlt:"Neutral if the wrist objects"},
+ "DB Zottman Curl":{m:["arms"],eq:"db",cue:"Curl palms up, rotate at the top, lower palms down. Forearms too.",wristAlt:"Skip the rotation on a bad TFCC day"},
+ "DB Skull Crusher":{m:["arms"],eq:"db",cue:"Elbows still and pointing up, lower to the forehead.",wristAlt:"Neutral grip — kinder"},
+ "DB Kickback":{m:["arms"],eq:"db",cue:"Upper arm locked parallel to the floor, extend from the elbow only.",wristAlt:"Neutral grip — fine"},
+ "DB Russian Twist":{m:["core"],eq:"db",cue:"Weight at the chest, rotate side to side. Slow beats fast.",wristAlt:"Neutral grip — fine"},
+ "DB Side Bend":{m:["core"],eq:"db",cue:"One weight, bend sideways only. No twisting, no leaning forward.",wristAlt:"Neutral grip — fine"},
+ "DB Suitcase Carry":{m:["core","back"],eq:"db",cue:"One weight, walk tall, refuse to lean. Anti-lateral-flexion.",timed:true,wristAlt:"Neutral grip — fine"},
+ "DB Windmill":{m:["core","shoulders"],eq:"db",cue:"Weight locked overhead, hinge sideways, eyes on the weight.",wristAlt:"Go light — overhead wrist load"},
+ "DB Clean and Press":{m:["legs","shoulders"],eq:"db",cue:"Hinge, pull, catch at the shoulder, press. One smooth chain.",wristAlt:"Neutral catch position"},
+ /* ---- barbell / machine ---- */
+ "Close-grip Bench Press":{m:["chest","arms"],eq:"bb",cue:"Hands shoulder width, elbows tucked. Triceps do the work.",wristAlt:"Keep the wrist stacked — stop if the TFCC talks"},
+ "Incline Bench Press":{m:["chest"],eq:"bb",cue:"30-45 degrees, bar to the upper chest.",wristAlt:"Neutral-grip dumbbells instead"},
+ "Barbell Curl":{m:["arms"],eq:"bb",cue:"Elbows pinned to the ribs, no swinging.",wristAlt:"EZ bar or dumbbells — straight bar loads the wrist"},
+ "Good Morning":{m:["legs","back"],eq:"bb",cue:"Light. Hinge with a flat back, feel the hamstrings.",wristAlt:"Bar on the back — no wrist load"},
+ "Hip Abduction":{m:["legs"],eq:"mach",cue:"Slow out, slower back. Glute medius.",wristAlt:"No wrist load — good"},
+ "Leg Curl":{m:["legs"],eq:"mach",cue:"Full range, squeeze at the top, lower slow.",wristAlt:"No wrist load — good"},
+ "Leg Extension":{m:["legs"],eq:"mach",cue:"Pause at lockout. Great for the quad without spine load.",wristAlt:"No wrist load — good"},
+ "Standing Calf Raise":{m:["legs"],eq:"mach",cue:"Full stretch, pause at the top. Don't bounce.",wristAlt:"No wrist load — good"},
+ "Cable Fly":{m:["chest"],eq:"mach",cue:"Soft elbows, hug the arms together, squeeze.",wristAlt:"Neutral handles"},
+ "Chest-supported Row":{m:["back"],eq:"mach",cue:"Chest on the pad, row to the ribs. No cheating with the low back.",wristAlt:"Neutral grip — fine"},
+ "Cable Lateral Raise":{m:["shoulders"],eq:"mach",cue:"Constant tension, lead with the elbow.",wristAlt:"Neutral grip — fine"},
+ "Cable Crunch":{m:["core"],eq:"mach",cue:"Curl the ribs to the hips. It's a crunch, not a hip hinge.",wristAlt:"Rope, neutral grip"},
+ "Ab Wheel":{m:["core"],eq:"other",cue:"Roll out only as far as you can keep the low back flat.",wristAlt:"Loaded wrist — skip on a bad TFCC day"},
+ "Kettlebell Swing":{m:["legs","back"],eq:"kb",cue:"Hip snap, not a squat. The bell floats, you don't lift it.",wristAlt:"Neutral grip — fine"},
+ "Box Jump":{m:["legs"],eq:"other",cue:"Land soft in a quarter squat. Step down, never jump down.",wristAlt:"No wrist load — good"},
+ "Dip":{m:["chest","arms"],eq:"bar",cue:"Lean forward for chest, upright for triceps. Control the bottom.",wristAlt:"Hard on the wrist — bench dips or skip"},
+ "Landmine Press":{m:["shoulders","chest"],eq:"bb",cue:"Angled press, neutral grip. The shoulder-friendly overhead option.",wristAlt:"Neutral grip — kindest press for the TFCC"},
+ "Hack Squat":{m:["legs"],eq:"mach",cue:"Back flat to the pad, feet mid-platform. Quads, without loading the spine.",wristAlt:"No wrist load — good"},
+ "DB Single-arm Row":{m:["back"],eq:"db",cue:"One hand braced, row to the hip. Let the shoulder blade travel.",wristAlt:"Neutral grip — wrist friendly"}
+};
 /* v53 — real Pilates mat repertoire. "Pilates" was building dead bugs and bird
    dogs, which is generic core work, not Pilates. These are the actual mat
    exercises, in classical order. */
@@ -1194,62 +1282,62 @@ function ensureLibEntry(name){
    ========================================================================== */
 const VPOOLS={
  dubai:{
-  legs:{anchor:["Barbell Back Squat","Front Squat","Deadlift","Romanian Deadlift","Leg Press","Goblet Squat","Hip Thrust"],
+  legs:{anchor:["Barbell Back Squat","Front Squat","Deadlift","Romanian Deadlift","Leg Press","Goblet Squat","Hip Thrust","Hack Squat"],
         acc:["Bulgarian Split Squat","Walking Lunge","Reverse Lunge","Step-up","Nordic Curl","Single-leg Glute Bridge","Calf Raise","Wall Sit","Glute Bridge","Pistol Squat","Jump Squat"]},
-  push:{anchor:["Bench Press","Overhead Press","Incline DB Press","DB Bench Press","DB Shoulder Press","DB Floor Press"],
-        acc:["Lateral Raise","Triceps Pushdown","Overhead Triceps Extension","Diamond Push-up","Bench Dip","Push-up","Pike Push-up","Decline Push-up","Archer Push-up"]},
+  push:{anchor:["Bench Press","Overhead Press","Incline DB Press","DB Bench Press","DB Shoulder Press","DB Floor Press","Incline Bench Press","Close-grip Bench Press"],
+        acc:["Lateral Raise","Triceps Pushdown","Overhead Triceps Extension","Diamond Push-up","Bench Dip","Push-up","Pike Push-up","Decline Push-up","Archer Push-up","Cable Fly","Cable Lateral Raise","Dip","Landmine Press"]},
   pull:{anchor:["Pull-up","Barbell Row","Lat Pulldown","Chin-up","Seated Cable Row","DB Row"],
-        acc:["Face Pull","DB Curl","Hammer Curl","Band Pull-Apart","Prone Y-T-W Raise","Renegade Row","Inverted Row","Dead Hang","Reverse Snow Angel","Superman Hold"]},
-  upper:{anchor:["Bench Press","Barbell Row","Overhead Press","Pull-up","Lat Pulldown"],
-         acc:["DB Curl","Hammer Curl","Lateral Raise","Triceps Pushdown","Face Pull","Push-up","Bench Dip","Plank"]},
-  full:{anchor:["Barbell Back Squat","Deadlift","Bench Press","Overhead Press","Front Squat"],
-        acc:["Barbell Row","Pull-up","Walking Lunge","Plank","Farmer Carry","DB Thruster","Hip Thrust","Hanging Knee Raise"]},
+        acc:["Face Pull","DB Curl","Hammer Curl","Band Pull-Apart","Prone Y-T-W Raise","Renegade Row","Inverted Row","Dead Hang","Reverse Snow Angel","Superman Hold","Chest-supported Row","DB Reverse Fly","DB Shrug","Towel Row"]},
+  upper:{anchor:["Bench Press","Barbell Row","Overhead Press","Pull-up","Lat Pulldown","Incline Bench Press"],
+        acc:["DB Curl","Hammer Curl","Lateral Raise","Triceps Pushdown","Face Pull","Push-up","Bench Dip","Plank","Dip","Cable Fly","DB Reverse Fly","Cable Lateral Raise","Hanging Knee Raise"]},
+  full:{anchor:["Barbell Back Squat","Deadlift","Bench Press","Overhead Press","Front Squat","Kettlebell Swing"],
+        acc:["Barbell Row","Pull-up","Walking Lunge","Plank","Farmer Carry","DB Thruster","Hip Thrust","Hanging Knee Raise","DB Clean and Press","Box Jump","Bear Crawl","Ab Wheel"]},
   core:{anchor:["Hanging Knee Raise","Plank","Hollow Hold"],
-        acc:["Side Plank","Dead Bug","Bird Dog","Farmer Carry","Mountain Climber","Superman Hold","Criss-Cross","Leg Pull Front","Single Leg Stretch"]},
-  arms:{anchor:["DB Curl","Triceps Pushdown","Chin-up"],
-        acc:["Hammer Curl","Overhead Triceps Extension","Diamond Push-up","Bench Dip","Face Pull","Lateral Raise","Dead Hang"]},
-  hiit:{anchor:["DB Thruster","Burpee","Jump Squat"],
-        acc:["Mountain Climber","Farmer Carry","Walking Lunge","Push-up","Renegade Row","Goblet Squat","Step-up"]},
+        acc:["Side Plank","Dead Bug","Bird Dog","Farmer Carry","Mountain Climber","Superman Hold","Criss-Cross","Leg Pull Front","Single Leg Stretch","Ab Wheel","Cable Crunch","Hollow Rock","Leg Raise","V-Up","Russian Twist","DB Suitcase Carry"]},
+  arms:{anchor:["DB Curl","Triceps Pushdown","Chin-up","Barbell Curl","Close-grip Bench Press"],
+        acc:["Hammer Curl","Overhead Triceps Extension","Diamond Push-up","Bench Dip","Face Pull","Lateral Raise","Dead Hang","DB Concentration Curl","DB Zottman Curl","DB Skull Crusher","DB Kickback","Dip"]},
+  hiit:{anchor:["DB Thruster","Burpee","Jump Squat","Kettlebell Swing","Box Jump"],
+        acc:["Mountain Climber","Farmer Carry","Walking Lunge","Push-up","Renegade Row","Goblet Squat","Step-up","High Knees","Jumping Jacks","Sprawl","Squat Thrust","Skater Jump","Shadow Boxing"]},
   pilates:{anchor:["The Hundred","Roll-Up","Teaser"],
         acc:["Single Leg Stretch","Double Leg Stretch","Criss-Cross","Scissors","Single Leg Circles","Spine Stretch Forward","Saw","Swan","Swimming","Shoulder Bridge","Side Kick Series","Spine Twist","Rolling Like a Ball","Roll Over","Single Leg Kick","Leg Pull Front","Mermaid Stretch"]}
  },
  madrid:{
-  legs:{anchor:["DB Front Squat","Goblet Squat","DB Romanian Deadlift","Bulgarian Split Squat"],
-        acc:["Walking Lunge","Reverse Lunge","Step-up","Single-leg Glute Bridge","Calf Raise","Wall Sit","Glute Bridge","Jump Squat","Bodyweight Squat","Pistol Squat"]},
-  push:{anchor:["DB Bench Press","DB Shoulder Press","Incline DB Press","DB Floor Press"],
-        acc:["Lateral Raise","Overhead Triceps Extension","Push-up","Diamond Push-up","Pike Push-up","Bench Dip","Decline Push-up","Archer Push-up"]},
-  pull:{anchor:["DB Row","Renegade Row","Inverted Row"],
-        acc:["DB Curl","Hammer Curl","Prone Y-T-W Raise","Band Pull-Apart","Superman Hold","Reverse Snow Angel"]},
-  upper:{anchor:["DB Bench Press","DB Row","DB Shoulder Press"],
-         acc:["DB Curl","Hammer Curl","Lateral Raise","Push-up","Bench Dip","Plank","Renegade Row"]},
-  full:{anchor:["DB Front Squat","DB Bench Press","DB Romanian Deadlift","Goblet Squat"],
-        acc:["DB Row","Walking Lunge","Plank","DB Thruster","Renegade Row","Hollow Hold"]},
+  legs:{anchor:["DB Front Squat","Goblet Squat","DB Romanian Deadlift","Bulgarian Split Squat","DB Sumo Deadlift","DB Single-leg RDL"],
+        acc:["Walking Lunge","Reverse Lunge","Step-up","Single-leg Glute Bridge","Calf Raise","Wall Sit","Glute Bridge","Jump Squat","Bodyweight Squat","Pistol Squat","Cossack Squat","Split Squat","Lateral Lunge","Curtsy Lunge","DB Calf Raise","Single-leg Calf Raise"]},
+  push:{anchor:["DB Bench Press","DB Shoulder Press","Incline DB Press","DB Floor Press","DB Push Press","DB Arnold Press"],
+        acc:["Lateral Raise","Overhead Triceps Extension","Push-up","Diamond Push-up","Pike Push-up","Bench Dip","Decline Push-up","Archer Push-up","DB Chest Fly","DB Front Raise","Wide Push-up","Hindu Push-up","DB Pullover"]},
+  pull:{anchor:["DB Row","Renegade Row","Inverted Row","DB Single-arm Row","Towel Row"],
+        acc:["DB Curl","Hammer Curl","Prone Y-T-W Raise","Band Pull-Apart","Superman Hold","Reverse Snow Angel","DB Reverse Fly","DB Shrug","DB Upright Row","DB Pullover","Wall Angel","Prone Swimmer","Reverse Plank"]},
+  upper:{anchor:["DB Bench Press","DB Row","DB Shoulder Press","DB Arnold Press","DB Push Press"],
+        acc:["DB Curl","Hammer Curl","Lateral Raise","Push-up","Bench Dip","Plank","Renegade Row","DB Reverse Fly","DB Chest Fly","DB Concentration Curl","DB Skull Crusher","Wide Push-up","Towel Row"]},
+  full:{anchor:["DB Front Squat","DB Bench Press","DB Romanian Deadlift","Goblet Squat","DB Swing","DB Clean and Press"],
+        acc:["DB Row","Walking Lunge","Plank","DB Thruster","Renegade Row","Hollow Hold","DB Single-leg RDL","DB Push Press","Bear Crawl","Sprawl","DB Suitcase Carry","Hollow Rock"]},
   core:{anchor:["Plank","Hollow Hold"],
-        acc:["Side Plank","Dead Bug","Bird Dog","Renegade Row","Mountain Climber","Criss-Cross","Leg Pull Front","Single Leg Stretch","Superman Hold"]},
-  arms:{anchor:["DB Curl","Overhead Triceps Extension"],
-        acc:["Hammer Curl","Diamond Push-up","Bench Dip","Lateral Raise","Push-up"]},
-  hiit:{anchor:["DB Thruster","Burpee","Jump Squat"],
-        acc:["Mountain Climber","Walking Lunge","Push-up","Renegade Row","Goblet Squat","Step-up"]},
+        acc:["Side Plank","Dead Bug","Bird Dog","Renegade Row","Mountain Climber","Criss-Cross","Leg Pull Front","Single Leg Stretch","Superman Hold","DB Russian Twist","DB Side Bend","DB Suitcase Carry","Hollow Rock","Leg Raise","V-Up","Bicycle Crunch","Flutter Kick"]},
+  arms:{anchor:["DB Curl","Overhead Triceps Extension","DB Skull Crusher"],
+        acc:["Hammer Curl","Diamond Push-up","Bench Dip","Lateral Raise","Push-up","DB Concentration Curl","DB Zottman Curl","DB Kickback","DB Front Raise","DB Upright Row","Wide Push-up"]},
+  hiit:{anchor:["DB Thruster","Burpee","Jump Squat","DB Swing","DB Clean and Press"],
+        acc:["Mountain Climber","Walking Lunge","Push-up","Renegade Row","Goblet Squat","Step-up","High Knees","Jumping Jacks","Sprawl","Squat Thrust","Skater Jump","Tuck Jump","Shadow Boxing","Bear Crawl"]},
   pilates:{anchor:["The Hundred","Roll-Up","Teaser"],
         acc:["Single Leg Stretch","Double Leg Stretch","Criss-Cross","Scissors","Single Leg Circles","Spine Stretch Forward","Saw","Swan","Swimming","Shoulder Bridge","Side Kick Series","Spine Twist","Rolling Like a Ball","Single Leg Kick","Leg Pull Front","Mermaid Stretch"]}
  },
  greece:{
-  legs:{anchor:["Bodyweight Squat","Walking Lunge","Pistol Squat"],
-        acc:["Reverse Lunge","Glute Bridge","Single-leg Glute Bridge","Calf Raise","Wall Sit","Jump Squat","Step-up"]},
-  push:{anchor:["Push-up","Pike Push-up","Diamond Push-up"],
-        acc:["Bench Dip","Decline Push-up","Archer Push-up","Plank","Mountain Climber"]},
-  pull:{anchor:["Inverted Row","Superman Hold"],
-        acc:["Prone Y-T-W Raise","Reverse Snow Angel","Swimming","Swan","Hollow Hold"]},
-  upper:{anchor:["Push-up","Inverted Row","Pike Push-up"],
-         acc:["Bench Dip","Diamond Push-up","Prone Y-T-W Raise","Plank","Archer Push-up"]},
-  full:{anchor:["Bodyweight Squat","Push-up","Walking Lunge"],
-        acc:["Inverted Row","Hollow Hold","Burpee","Glute Bridge","Plank","Mountain Climber"]},
+  legs:{anchor:["Bodyweight Squat","Walking Lunge","Pistol Squat","Cossack Squat","Split Squat"],
+        acc:["Reverse Lunge","Glute Bridge","Single-leg Glute Bridge","Calf Raise","Wall Sit","Jump Squat","Step-up","Curtsy Lunge","Lateral Lunge","Shrimp Squat","Single-leg Calf Raise","Skater Jump","Broad Jump","Wall Sit March","Nordic Negative","Tuck Jump"]},
+  push:{anchor:["Push-up","Pike Push-up","Diamond Push-up","Wide Push-up","Hindu Push-up"],
+        acc:["Bench Dip","Decline Push-up","Archer Push-up","Plank","Mountain Climber","Incline Push-up","Pseudo Planche Push-up","Plank Shoulder Tap","Plank Up-Down","Bear Crawl"]},
+  pull:{anchor:["Inverted Row","Superman Hold","Towel Row"],
+        acc:["Prone Y-T-W Raise","Reverse Snow Angel","Swimming","Swan","Hollow Hold","Prone Swimmer","Wall Angel","Reverse Plank","Reverse Snow Angel Hold","Bicycle Crunch","Hollow Rock"]},
+  upper:{anchor:["Push-up","Inverted Row","Pike Push-up","Wide Push-up","Hindu Push-up"],
+        acc:["Bench Dip","Diamond Push-up","Prone Y-T-W Raise","Plank","Archer Push-up","Incline Push-up","Towel Row","Prone Swimmer","Plank Shoulder Tap","Reverse Plank","Bear Crawl"]},
+  full:{anchor:["Bodyweight Squat","Push-up","Walking Lunge","Cossack Squat","Wide Push-up"],
+        acc:["Inverted Row","Hollow Hold","Burpee","Glute Bridge","Plank","Mountain Climber","Towel Row","Sprawl","Bear Crawl","Hollow Rock","Skater Jump","Single-leg Calf Raise"]},
   core:{anchor:["Plank","Hollow Hold"],
-        acc:["Side Plank","Dead Bug","Bird Dog","Mountain Climber","Superman Hold","Criss-Cross","Leg Pull Front","Single Leg Stretch","Scissors"]},
-  arms:{anchor:["Diamond Push-up","Bench Dip"],
-        acc:["Archer Push-up","Inverted Row","Pike Push-up","Push-up"]},
-  hiit:{anchor:["Burpee","Jump Squat"],
-        acc:["Mountain Climber","Walking Lunge","Push-up","Bodyweight Squat","Reverse Lunge"]},
+        acc:["Side Plank","Dead Bug","Bird Dog","Mountain Climber","Superman Hold","Criss-Cross","Leg Pull Front","Single Leg Stretch","Scissors","Bicycle Crunch","Leg Raise","V-Up","Russian Twist","Flutter Kick","Side Plank Rotation","Hollow Rock","Reverse Plank","Bear Crawl"]},
+  arms:{anchor:["Diamond Push-up","Bench Dip","Pseudo Planche Push-up"],
+        acc:["Archer Push-up","Inverted Row","Pike Push-up","Push-up","Wide Push-up","Incline Push-up","Plank Up-Down","Towel Row","Hindu Push-up","Bear Crawl"]},
+  hiit:{anchor:["Burpee","Jump Squat","Sprawl","Squat Thrust"],
+        acc:["Mountain Climber","Walking Lunge","Push-up","Bodyweight Squat","Reverse Lunge","High Knees","Jumping Jacks","Skater Jump","Tuck Jump","Broad Jump","Shadow Boxing","Bear Crawl","Bicycle Crunch"]},
   pilates:{anchor:["The Hundred","Roll-Up","Teaser"],
         acc:["Single Leg Stretch","Double Leg Stretch","Criss-Cross","Scissors","Single Leg Circles","Spine Stretch Forward","Saw","Swan","Swimming","Shoulder Bridge","Side Kick Series","Spine Twist","Rolling Like a Ball","Single Leg Kick","Leg Pull Front","Mermaid Stretch"]}
  }
@@ -1323,8 +1411,8 @@ const POOLS={
 
 function latestCheckin(){ return DB.checkins[DB.checkins.length-1] || null; }
 /* ===== Accessors: built-in data + anything the AI has added at runtime ===== */
-function EX(name){ if(!name) return null; return (DB.lib&&DB.lib[name]) || EXDB[name] || PILATES_LIB[name] || (typeof WXIDX!=="undefined"&&WXIDX[name]) || null; }
-function allExNames(){ return [...new Set([...Object.keys(EXDB), ...Object.keys(PILATES_LIB), ...Object.keys(DB.lib||{}), ...(typeof WXIDX!=="undefined"?Object.keys(WXIDX):[])])]; }
+function EX(name){ if(!name) return null; return (DB.lib&&DB.lib[name]) || EXDB[name] || PILATES_LIB[name] || EXTRA_LIB[name] || (typeof WXIDX!=="undefined"&&WXIDX[name]) || null; }
+function allExNames(){ return [...new Set([...Object.keys(EXDB), ...Object.keys(PILATES_LIB), ...Object.keys(EXTRA_LIB), ...Object.keys(DB.lib||{}), ...(typeof WXIDX!=="undefined"?Object.keys(WXIDX):[])])]; }
 /* The built-in set only \u2014 used where a huge list would be unhelpful. */
 function coreExNames(){ return [...new Set([...Object.keys(EXDB), ...Object.keys(DB.lib||{})])]; }
 /* Order matters. A WorkoutX record has a demo made FOR that exact movement;
@@ -3807,7 +3895,7 @@ function scheduleInApp(){
    v18 ADDITIONS — draggable rest timer · weekly training memory · AI planner
    · Firestore sync
    ========================================================================== */
-const APP_VERSION="v53 · 04/08/2026";
+const APP_VERSION="v54 · 04/08/2026";
 
 /* ===== 1. REST TIMER — drag it anywhere so it never blocks the chat box ===== */
 let _rtDrag=null;

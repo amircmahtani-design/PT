@@ -1,12 +1,64 @@
-AMIR PT — v53 · 04/08/2026
+AMIR PT — v54 · 04/08/2026
 ==========================
 
 Deploy exactly as before: index.html, sw.js, manifest.json and the two icons
 in the same folder, at the repo root. Filenames are case-sensitive —
 index.html, never Index.html.
 
-Check it landed: Settings → bottom → "Amir PT · v53 · 04/08/2026".
+Check it landed: Settings → bottom → "Amir PT · v54 · 04/08/2026".
 Nothing in this update touches your data. Every logged set survives.
+
+
+WHAT'S NEW IN v54
+=================
+
+EVERY SESSION TYPE, EVERY LOCATION — ALL DEEP ENOUGH TO ROTATE
+---------------------------------------------------------------
+v53 added rotation but the menus behind it were uneven. Dubai was fine; Madrid
+and Greece were thin enough that you'd still repeat yourself inside a fortnight.
+Fourteen of the twenty-seven pools were too shallow — Greece arms had six
+movements, Greece pull had seven.
+
+70 new exercises added, weighted towards the places that needed them:
+
+  BODYWEIGHT (Greece)  Cossack Squat, Split Squat, Lateral Lunge, Curtsy Lunge,
+    Shrimp Squat, Single-leg Calf Raise, Skater Jump, Broad Jump, Tuck Jump,
+    Wall Sit March, Nordic Negative, Wide/Incline/Hindu/Pseudo-Planche Push-up,
+    Plank Shoulder Tap, Plank Up-Down, Towel Row, Reverse Plank, Prone Swimmer,
+    Wall Angel, Bicycle Crunch, Leg Raise, V-Up, Russian Twist, Flutter Kick,
+    Side Plank Rotation, Bear Crawl, Hollow Rock, High Knees, Jumping Jacks,
+    Sprawl, Squat Thrust, Shadow Boxing
+
+  DUMBBELL (Madrid)  DB Single-leg RDL, Sumo Deadlift, Lateral Lunge, Calf
+    Raise, Swing, Push Press, Arnold Press, Upright Row, Front Raise, Reverse
+    Fly, Chest Fly, Pullover, Shrug, Concentration Curl, Zottman Curl, Skull
+    Crusher, Kickback, Russian Twist, Side Bend, Suitcase Carry, Windmill,
+    Clean and Press, Single-arm Row
+
+  GYM (Dubai)  Incline Bench, Close-grip Bench, Barbell Curl, Good Morning,
+    Hack Squat, Leg Curl, Leg Extension, Standing Calf Raise, Hip Abduction,
+    Cable Fly, Cable Lateral Raise, Cable Crunch, Chest-supported Row, Ab Wheel,
+    Kettlebell Swing, Box Jump, Dip, Landmine Press
+
+EVERY POOL IS NOW 13-22 MOVEMENTS DEEP. All 27 combinations checked:
+
+                dubai      madrid     greece
+  legs            19          22         21
+  push            21          19         15
+  pull            20          18         14
+  upper           19          18         16
+  full            18          18         17
+  core            19          19         20
+  arms            17          14         13
+  hiit            18          19         17
+  pilates         20          19         19
+
+Four weeks of any type in any location now gives 13-20 DISTINCT exercises.
+
+Every name resolves to a real library entry with its own cue and its own
+wrist-safe (TFCC) alternative — 158 exercises total, all checked, no
+duplicates inside a pool. Location filtering still applies on top, so Greece
+never sees a dumbbell.
 
 
 WHAT'S NEW IN v53
