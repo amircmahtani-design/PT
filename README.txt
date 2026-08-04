@@ -1,4 +1,4 @@
-AMIR PT — v27 · 2026-08-04
+AMIR PT — v28 · 2026-08-04
 ==========================
 
 WHAT TO UPLOAD
@@ -21,7 +21,7 @@ FILENAMES ARE CASE-SENSITIVE. It must be index.html, not Index.html.
 AFTER DEPLOYING
 ---------------
 1. Open the site, go to Settings, scroll to the bottom.
-   The line should read: Amir PT · v27 · 2026-08-04
+   The line should read: Amir PT · v28 · 2026-08-04
    If it says anything else, the old file is still being served — hard refresh.
 
 2. Settings → App & Storage tells you the truth about your install:
@@ -96,3 +96,37 @@ Deliberately never synced to the cloud — an API key doesn't belong in a
 database. It lives only in the browser you typed it into, so you re-enter
 it once per device, and again if storage is ever cleared.
 Get a new one at platform.openai.com/api-keys
+
+
+EXERCISE CATALOGUE — WORKOUTX
+-----------------------------
+Settings -> Exercise catalogue -> paste your wx_ key -> Save key
+                               -> Download exercise catalogue
+
+This runs ONCE. It pages through the free-plan endpoints 10 results at a
+time (about 120 of your 500 monthly requests) and stores everything in
+IndexedDB on the device. After that the app never calls WorkoutX again for
+workouts - exercises, GIFs, difficulty, equipment and muscle tags all work
+offline. Re-run it only when you want newly added exercises.
+
+Free plan notes:
+  - 500 requests/month, 30/min, max 10 results per call
+  - GIFs are 180px with a small watermark
+  - Multi-filter search and the workout generator are paid-only; the app
+    uses the free single-filter endpoints instead and does the combining
+    itself, so nothing is lost
+  - If the sync stops early, tap it again - it keeps what it already has
+
+
+TIME-BUDGETED SESSIONS
+----------------------
+Daily check-in: "How long have you got?" slider.
+Train tab: 20 / 30 / 45 / 60 / 75 chips plus a row on/off toggle.
+
+The bar underneath shows where the time actually goes:
+  row 10m | 5m mobility | lifting 26m | 4m cool-down
+
+The session is built to fit. Budget per set is roughly 40s work plus
+70-105s rest depending on whether it's a compound lift, plus a minute to
+change station. Turn the row off and that time goes back into lifting.
+The rowing block only appears where you have the erg (Dubai).

@@ -238,6 +238,14 @@ textarea.txtin{min-height:88px;resize:vertical;line-height:1.45;}
 .chartfoot{display:flex;justify-content:space-between;gap:8px;margin-top:8px;font-size:11.5px;font-weight:700;color:var(--muted);flex-wrap:wrap;}
 .chartfoot .up{color:var(--green);}
 .chartfoot .down{color:#ff8f84;}
+.timeline{display:flex;gap:3px;margin:10px 0 8px;height:24px;}
+.timeline .seg{display:flex;align-items:center;justify-content:center;border-radius:6px;font-size:10px;font-weight:700;overflow:hidden;white-space:nowrap;min-width:0;}
+.timeline .row{background:#2a1c0e;color:var(--gold);}
+.timeline .warm{background:#1a150f;color:var(--label);}
+.timeline .lift{background:var(--orange);color:#2a1405;}
+.timeline .cool{background:#1a150f;color:var(--label);}
+.setsbar .sm.over{color:#ff8f84;}
+.wxrow{display:flex;justify-content:space-between;gap:8px;font-size:12px;padding:5px 0;border-bottom:1px solid var(--line);}
 .setsbar{padding:14px 16px;border-bottom:1px solid var(--line);}
 .setsbar .lab{margin-bottom:9px;}
 .setsrow{display:flex;gap:7px;margin-bottom:8px;}
@@ -368,6 +376,9 @@ a{color:var(--orange);}
     <div class="card">
       <div class="field"><label>Bodyweight <span class="hint" style="float:right;font-weight:700;color:var(--gold)">kg</span></label>
         <input class="txtin" id="ciWeight" inputmode="decimal" placeholder="e.g. 84.2" /></div>
+      <div class="field"><label>How long have you got? <span class="slideval"><span id="ciTimeV">45</span> min</span></label>
+        <input type="range" min="15" max="120" step="5" value="45" id="ciTime" oninput="ciTimeV.textContent=this.value" />
+        <div class="hint mt" id="ciTimeHint"></div></div>
       <div class="field"><label>Sleep <span class="slideval"><span id="ciSleepV">7</span>/10</span></label>
         <input type="range" min="1" max="10" value="7" id="ciSleep" oninput="ciSleepV.textContent=this.value" /></div>
       <div class="field"><label>Energy <span class="slideval"><span id="ciEnergyV">7</span>/10</span></label>
@@ -492,6 +503,16 @@ a{color:var(--orange);}
     </div>
     <div class="section-h">Integrations</div>
     <div class="card" id="integList"></div>
+    <div class="section-h">Exercise catalogue</div>
+    <div class="card">
+      <div class="notebox mb">WorkoutX gives the coach 1,400+ exercises with animated demos, difficulty and equipment tags. Synced <b>once</b> into this device, then it works offline forever — no per-workout API calls.</div>
+      <div class="field" style="margin-bottom:12px"><label>WorkoutX API key</label>
+        <input class="txtin" id="setWxKey" type="password" placeholder="wx_..." />
+        <div class="hint mt">Free plan: 500 requests a month. A full sync uses about 120 of them, once.</div></div>
+      <button class="btn" onclick="saveWxKey()">Save key</button>
+      <button class="btn sec mt" onclick="startWxSync()">Download exercise catalogue</button>
+      <div id="wxMsg" class="hint mt" style="font-size:13px"></div>
+    </div>
     <div class="section-h">App and storage</div>
     <div class="card">
       <div id="storeStatus" class="hint" style="font-size:13px;line-height:1.7"></div>
@@ -626,6 +647,8 @@ const DEFAULTS = {
   lib:{}, dayTypes:{}, media:{}, progression:{},
   nutrition:{calorieTarget:null, proteinTarget:null, phase:"", log:[]},
   cardio:null, readiness:null, aiPlan:null, restCall:null, setsOverride:null, completed:{},
+  wx:{key:"", on:true, plan:"free", synced:null, count:0, quota:null, quotaLeft:null},
+  timeBudget:{mins:45, row:true, rowMins:10},
   cloud:{on:true, config:JSON.stringify(FB_CONFIG,null,2), syncId:FB_SYNC_DEFAULT, last:null},
   prefs:{visualMode:"auto", showIcons:true, exerciseGifs:true, workoutFormat:"list", coachStyle:"direct funny concise",
          autoPlan:true, restPos:null, restMini:false}
@@ -840,10 +863,10 @@ const EXDB = {
 
 /* ===== LOCATIONS — equipment is decided by where Amir is, automatically ===== */
 const LOCS={
-  dubai :{key:"dubai", label:"Dubai",  emoji:"\uD83C\uDFE0", tag:"Dubai · Full Gym", gear:["bw","db","bb","mach","band","bar"], rower:true,  short:false,
+  dubai :{key:"dubai", label:"Dubai",  emoji:"\uD83C\uDFE0", tag:"Dubai · Full Gym", gear:["bw","db","bb","mach","band","bar","kb","other"], rower:true,  short:false,
           equipment:"Full gym: barbell + plates, adjustable dumbbells, bench, pull-up bar, cable/machines, Concept2 rower, resistance bands",
           blurb:"Full gym and full time — proper session."},
-  madrid:{key:"madrid",label:"Madrid", emoji:"\uD83C\uDDEA\uD83C\uDDF8", tag:"Madrid · Dumbbells Only", gear:["bw","db"], rower:false, short:false,
+  madrid:{key:"madrid",label:"Madrid", emoji:"\uD83C\uDDEA\uD83C\uDDF8", tag:"Madrid · Dumbbells Only", gear:["bw","db","band"], rower:false, short:false,
           equipment:"Dumbbells only, plus bodyweight. No barbell, no machines, no rower.",
           blurb:"Dumbbells only — same intent, different tools."},
   greece:{key:"greece",label:"Greece", emoji:"\uD83C\uDDEC\uD83C\uDDF7", tag:"Greece · No Equipment", gear:["bw"], rower:false, short:true,
@@ -856,6 +879,30 @@ function currentEquipment(){ const e=(DB.profile&&DB.profile.equip)||{}; return 
 function eqOf(name){ const e=EX(name); return (e&&e.eq)||"bw"; }
 function canDoHere(name,key){ const gear=LOCS[key||locKey()].gear; return gear.indexOf(eqOf(name))>=0; }
 function availableExNames(key){ return allExNames().filter(n=>canDoHere(n,key)); }
+/* The full catalogue can be 1000+ names \u2014 far too many for a prompt. Send the
+   built-ins plus a spread of catalogue moves across the muscle groups. */
+function promptExNames(key,cap){
+  cap=cap||160;
+  const core=coreExNames().filter(n=>canDoHere(n,key));
+  const out=new Set(core);
+  if(typeof WXIDX!=="undefined"){
+    const byGroup={};
+    Object.keys(WXIDX).forEach(n=>{
+      if(!canDoHere(n,key)||out.has(n)) return;
+      const g=((EX(n)||{}).m||["core"])[0];
+      (byGroup[g]=byGroup[g]||[]).push(n);
+    });
+    const groups=Object.keys(byGroup); let i=0;
+    while(out.size<cap && groups.length){
+      const g=groups[i%groups.length];
+      const list=byGroup[g];
+      if(list&&list.length) out.add(list.shift()); else groups.splice(i%groups.length,1);
+      i++;
+      if(i>cap*4) break;
+    }
+  }
+  return [...out].slice(0,cap);
+}
 /* Guess muscles + equipment for an exercise the coach invents, so it behaves like a real one. */
 function guessEx(name){
   const t=String(name||"").toLowerCase(); const m=[];
@@ -903,9 +950,14 @@ const POOLS={
 
 function latestCheckin(){ return DB.checkins[DB.checkins.length-1] || null; }
 /* ===== Accessors: built-in data + anything the AI has added at runtime ===== */
-function EX(name){ if(!name) return null; return (DB.lib&&DB.lib[name]) || EXDB[name] || null; }
-function allExNames(){ return [...new Set([...Object.keys(EXDB), ...Object.keys(DB.lib||{})])]; }
-function mediaFor(name){ return (DB.media&&DB.media[name]) || EXIMG[name] || null; }
+function EX(name){ if(!name) return null; return (DB.lib&&DB.lib[name]) || EXDB[name] || (typeof WXIDX!=="undefined"&&WXIDX[name]) || null; }
+function allExNames(){ return [...new Set([...Object.keys(EXDB), ...Object.keys(DB.lib||{}), ...(typeof WXIDX!=="undefined"?Object.keys(WXIDX):[])])]; }
+/* The built-in set only \u2014 used where a huge list would be unhelpful. */
+function coreExNames(){ return [...new Set([...Object.keys(EXDB), ...Object.keys(DB.lib||{})])]; }
+function mediaFor(name){
+  const e=EX(name);
+  return (DB.media&&DB.media[name]) || EXIMG[name] || (e&&e.gif) || null;
+}
 function allSplits(){ const base=SPLITS.filter(s=>s!=="Rest"); const custom=Object.keys(DB.dayTypes||{}); return [...base, ...custom, "Rest"]; }
 function realMediaOnly(){ return DB.prefs && DB.prefs.visualMode==="real"; }
 /* ===== WEB DEMO FINDER: pull a real GIF for ANY movement so Amir never has to guess the form ===== */
@@ -992,6 +1044,12 @@ function buildWorkout(){
   else { note=L.blurb+" Solid recovery, standard volume. Own every rep."; }
   if(call.verdict==="deload" && !travel){ sets=Math.max(2,sets-1); note="Backing the volume off a set \u2014 "+(call.reasons.slice(0,2).join("; ")||"you've earned a lighter one")+". Move well, two in reserve, no PB attempts. Tap 'I can push more' if you disagree."; }
   if(call.verdict==="push"){ sets=travel?3:4; note="Full volume, your call \u2014 "+sets+" sets. Technique first; if a rep looks ugly, that set's over."; }
+  /* Fit the session to the time he actually has. */
+  const tb=timeBudget();
+  const fit=planForTime(main,tb);
+  main=fit.names; sets=Math.min(sets,fit.sets);
+  const est0=estimateMinutes(main,sets,tb);
+  note+=" "+tb.mins+" min available"+(est0.row?" (including a "+est0.row+" min row)":"")+" \u2014 "+main.length+" moves \u00d7 "+sets+" sets fits in about "+est0.total+".";
   /* Amir's manual set count beats everything \u2014 readiness, AI, rebuilds. */
   if(DB.setsOverride && DB.setsOverride.date===today()){
     sets=DB.setsOverride.sets;
@@ -1000,7 +1058,8 @@ function buildWorkout(){
   /* Warm-up and cool-down come from THIS session's movements, not a fixed list. */
   const warmup=buildWarmup(main,{travel,wrist,firstEx:main[0]});
   const coolFor=buildCooldown(main,{wrist});
-  return {title: split, tag: L.tag, loc:key,
+  const estF=estimateMinutes(main,sets,tb);
+  return {title: split, tag: L.tag, loc:key, mins:tb.mins, est:estF,
     phase: DB.profile.phase, note, reps: travel? "AMRAP-ish \u00b7 2 in reserve" : "8\u201312 reps", sets, warmup, travel,
     main: main.map(n=>{
       const e=EX(n)||{m:["core"],cue:"Control the rep.",wristAlt:"Same"};
@@ -1290,6 +1349,7 @@ function hasRower(){
   if(/bodyweight only/.test(eq) || /no\s*(row|erg|concept)/.test(eq)) return false;
   return true;
 }
+function rowWarmupMins(){ const t=timeBudget(); return t.row? (t.rowMins||10) : 0; }
 function showRowWarmup(w){ return !w.travel && hasRower(); }
 function rowBlockHTML(travel){
   const dist=travel?"1,000m":"2,000m";
@@ -1311,6 +1371,29 @@ function addWarmupRow(travel){
   const inp=document.getElementById('warmRowTime'); if(inp) inp.value="";
   toast("Row logged 🚣");
 }
+function timeBarHTML(w){
+  const t=timeBudget();
+  const est=estimateMinutes((w.main||[]).map(e=>e.name), w.sets||3, t);
+  const chip=m=>"<button class='setspick"+(t.mins===m?" on":"")+"' onclick='pickTime("+m+")'>"+m+"</button>";
+  const rowBit=hasRower()
+    ? "<button class='setspick auto"+(t.row?" on":"")+"' onclick='toggleRowWarmup()'>"+(t.row?"Row "+(t.rowMins||10)+"m":"No row")+"</button>"
+    : "";
+  const over=est.total>t.mins+3;
+  return "<div class='setsbar'><div class='lab'>Time available</div>"+
+    "<div class='setsrow'>"+[20,30,45,60,75].map(chip).join('')+rowBit+"</div>"+
+    "<div class='timeline'>"+
+      (est.row? "<span class='seg row' style='flex:"+est.row+"'>row "+est.row+"m</span>":"")+
+      "<span class='seg warm' style='flex:"+est.warm+"'>"+est.warm+"m</span>"+
+      "<span class='seg lift' style='flex:"+Math.max(est.lift,1)+"'>lifting "+est.lift+"m</span>"+
+      "<span class='seg cool' style='flex:"+est.cool+"'>"+est.cool+"m</span>"+
+    "</div>"+
+    "<div class='sm"+(over?" over":"")+"'>"+
+      (over? "About "+est.total+" min \u2014 that's over your "+t.mins+". Drop a set or an exercise."
+           : "About "+est.total+" min of your "+t.mins+".")+
+    "</div></div>";
+}
+function pickTime(m){ setTimeBudget(m,null); renderWorkoutSheet(DB.workout); toast(m+" min session"); }
+function toggleRowWarmup(){ const t=timeBudget(); setTimeBudget(null,!t.row); renderWorkoutSheet(DB.workout); }
 function setsPickerHTML(w){
   const cur=w.sets, locked=!!(DB.setsOverride && DB.setsOverride.date===today());
   const btn=n=>"<button class='setspick"+(locked&&cur===n?" on":"")+"' onclick='pickSets("+n+")'>"+n+"</button>";
@@ -1342,6 +1425,7 @@ function renderWorkoutSheet(w){
   document.getElementById('workoutSheet').innerHTML=
   "<div class='sheet'><div class='sheet-hd'><div class='tag'>"+w.tag+"</div><h2 class='display'>"+w.title+"</h2>"+
     "<div class='meta'><span class='pill orange'>"+w.sets+" sets</span><span class='pill'>"+w.reps+"</span><span class='pill purple'>"+w.phase+"</span></div></div>"+
+  timeBarHTML(w)+
   setsPickerHTML(w)+
   "<div class='sheet-sec'><h3>◆ Warm-up</h3>"+w.warmup.map(mvHTML).join('')+"</div>"+
   (showRowWarmup(w) ? rowBlockHTML(w.travel) : "")+
@@ -1556,6 +1640,7 @@ document.addEventListener('click',e=>{ if(e.target.closest('#ciPlanSeg')) planPi
 async function submitCheckin(){
   const weight=parseFloat(val('ciWeight'));
   if(ciLocPick && ciLocPick!==locKey()) setLocation(ciLocPick);
+  { const m=parseInt(val('ciTime')); if(!isNaN(m)) setTimeBudget(m,null); }
   const ci={date:today(),weight:isNaN(weight)?null:weight,sleep:+val('ciSleep'),energy:+val('ciEnergy'),plan:planPick,pain:val('ciPain').trim(),loc:locKey()};
   DB.checkins=DB.checkins.filter(c=>c.date!==ci.date);
   DB.checkins.push(ci);
@@ -1641,12 +1726,13 @@ function coachSystem(){
 "NEVER invent or recall image/GIF URLs — they break. Every exercise auto-loads a real demo GIF fetched live from the web. To fetch or refresh one yourself:\n[[FIND_MEDIA: Exercise Name | short web search phrase]]  e.g. [[FIND_MEDIA: Teaser | pilates teaser exercise]]\nJust naming the exercise is usually enough. "+(mediaKey()? "(Web finder is ON.)" : "(Web finder is OFF — tell Amir to add a free Giphy key in Settings so demos load automatically.)")+"\n\n"+
 "So \"make Monday cardio forever\" = [[CREATE_DAY_TYPE: Cardio Day]] + [[SET_WEEKDAY: Monday | Cardio Day]] + [[SET_CARDIO: Concept2 Row | 30 min | Zone 2]]. Prefer EXACT library names where they fit; respect his TFCC wrist + Klinefelter recovery. Use [[FIND_MEDIA]] for demos, never raw URLs.";
   const state=
-"\n\nLIVE APP STATE:\n- LOCATION TODAY: "+LOC().label.toUpperCase()+" \u2014 "+currentEquipment()+
+"\n\nLIVE APP STATE:\n- TIME TODAY: "+timeBudget().mins+" minutes"+(timeBudget().row?" (including a "+(timeBudget().rowMins||10)+" min rowing warm-up)":"")+
+"\n- LOCATION TODAY: "+LOC().label.toUpperCase()+" \u2014 "+currentEquipment()+
 "\n- Phase: "+p.phase+"\n- Mode: "+(p.mode||"\u2014")+
 "\n- Today scheduled: "+pickSplit()+"\n- Today's exercises: "+curW+
 "\n- Custom day types: "+dayTypesStr+"\n- Cardio: "+cardioStr+"\n- Nutrition: "+nutStr+
 "\n- Prefs: visual="+(prefs.visualMode||'auto')+", icons="+(prefs.showIcons!==false)+", format="+(prefs.workoutFormat||'list')+
-"\n\nAVAILABLE EXERCISES IN "+LOC().label.toUpperCase()+" (the ONLY ones he can do today):\n"+availableExNames().join(", ")+
+"\n\nAVAILABLE EXERCISES IN "+LOC().label.toUpperCase()+" (a representative slice \u2014 name any other and the app will find it):\n"+promptExNames().join(", ")+
 "\n\nFULL EXERCISE LIBRARY (all locations): "+libNames+
 "\n\nWEEKLY SCHEDULE:\n"+sched+
 "\n\nRECENT CHECK-INS:\n"+recentCk+
@@ -2517,7 +2603,7 @@ function scheduleInApp(){
    v18 ADDITIONS — draggable rest timer · weekly training memory · AI planner
    · Firestore sync
    ========================================================================== */
-const APP_VERSION="v27 · 2026-08-04";
+const APP_VERSION="v28 · 2026-08-04";
 
 /* ===== 1. REST TIMER — drag it anywhere so it never blocks the chat box ===== */
 let _rtDrag=null;
@@ -2701,7 +2787,7 @@ async function aiPlanToday(force){
   if(out) out.innerHTML="<div class='card mt center muted'><span class='spin'></span> Coach is looking at what you've done\u2026</div>";
   try{
     coachEnsureWorkout();
-    const avail=availableExNames();
+    const avail=promptExNames();
     const sys=coachSystem()+
 "\n\n=== YOU ARE PLANNING TODAY'S SESSION RIGHT NOW ===\n"+
 "Amir should NEVER have to edit a workout himself. You decide the whole thing from what he has actually done.\n"+
@@ -2712,13 +2798,14 @@ async function aiPlanToday(force){
 "4. Respect the TFCC wrist, Klinefelter recovery, and today's check-in (sleep / energy / pain).\n"+
 "4b. Obey the READINESS CALL above. If it says REST, do not program a hard session \u2014 say so and prescribe mobility instead. If it says DELOAD, cut a set and say why. If Amir has overruled it, build what he asked for but hold him to clean technique.\n"+
 "5. Progressive overload: reference his actual last numbers on the first two lifts and set the call for today.\n"+
-"6. 4-6 exercises. Sets: 2 if he's beaten up or in Greece, 3 normal, 4 if recovered and in Dubai.\n"+
+"6. TIME IS A HARD CONSTRAINT. He has "+timeBudget().mins+" minutes total"+(timeBudget().row?", of which "+(timeBudget().rowMins||10)+" is his rowing warm-up":"")+", plus about "+(LOC().short?3:5)+" min mobility and 4 min cool-down. That leaves roughly "+Math.max(4,timeBudget().mins-(timeBudget().row?(timeBudget().rowMins||10):0)-(LOC().short?3:5)-4)+" minutes of actual lifting. Budget about (40s work + 70-105s rest) per set plus a minute to change station. Program only what genuinely fits \u2014 a session that runs over is a session he abandons.\n"+
+"7. Sets: 2 if he's beaten up or in Greece, 3 normal, 4 if recovered and in Dubai \u2014 within the time limit above.\n"+
 "OUTPUT FORMAT \u2014 directives first, each on its own line:\n"+
 "[[SET_WORKOUT: Exercise One, Exercise Two, Exercise Three, Exercise Four, Exercise Five]]\n"+
 "[[SET_SETS: 3]]\n"+
 "Then 3-4 short lines: what you picked, WHY based on his week (name the neglected group), and the load call on the first lift. No preamble, no bullet lists.\n"+
 "AVAILABLE EXERCISES IN "+LOC().label.toUpperCase()+": "+avail.join(", ");
-    const usr="Plan my session for "+today()+". Scheduled split: "+pickSplit()+". I'm in "+LOC().label+" ("+currentEquipment()+"). Read my week and tell me exactly what to do.";
+    const usr="Plan my session for "+today()+". Scheduled split: "+pickSplit()+". I'm in "+LOC().label+" ("+currentEquipment()+"). I have "+timeBudget().mins+" minutes"+(timeBudget().row?" including a "+(timeBudget().rowMins||10)+" minute row":"")+". Read my week and tell me exactly what to do.";
     const reply=await callAI([{role:"system",content:sys},{role:"user",content:usr}],900);
     if(!reply){
       DB.workout=buildWorkout(); save(); renderWorkoutSheet(DB.workout);
@@ -3374,7 +3461,268 @@ async function restoreFrom(which){
   }catch(e){ toast("That copy is corrupted \u2014 couldn't restore"); }
 }
 
-/* ===== 9. FIRESTORE — history that outlives this phone ===== */
+/* ==========================================================================
+   v28 — WORKOUTX CATALOGUE + TIME-BUDGETED SESSIONS
+   Free tier is 500 req/month at 10 results per call, so we sync the catalogue
+   ONCE into IndexedDB and then run entirely offline. No per-workout API calls.
+   ========================================================================== */
+
+/* ---------- equipment + muscle mapping onto the app's existing model ---------- */
+const WX_EQ={
+  "body weight":"bw","assisted":"bw",
+  "dumbbell":"db","weighted":"db",
+  "kettlebell":"kb",
+  "barbell":"bb","ez barbell":"bb","olympic barbell":"bb","trap bar":"bb","smith machine":"bb",
+  "cable":"mach","leverage machine":"mach","sled machine":"mach","stepmill machine":"mach",
+  "stationary bike":"mach","skierg machine":"mach","upper body ergometer":"mach","elliptical machine":"mach",
+  "resistance band":"band","rope":"band","band":"band",
+  "medicine ball":"other","stability ball":"other","roller":"other","wheel roller":"other","tire":"other","bosu ball":"other"
+};
+const WX_TARGET={
+  "abs":"core","spine":"core","serratus anterior":"core",
+  "biceps":"arms","triceps":"arms","forearms":"arms",
+  "quads":"legs","hamstrings":"legs","glutes":"legs","calves":"legs","adductors":"legs","abductors":"legs",
+  "delts":"shoulders","traps":"shoulders","levator scapulae":"shoulders",
+  "lats":"back","upper back":"back",
+  "pectorals":"chest",
+  "cardiovascular system":"cardio"
+};
+const WX_BODYPART={
+  "waist":"core","chest":"chest","back":"back","shoulders":"shoulders","neck":"shoulders",
+  "upper arms":"arms","lower arms":"arms","upper legs":"legs","lower legs":"legs","cardio":"cardio"
+};
+function wxGear(equipment){ const e=String(equipment||"").toLowerCase().trim(); return WX_EQ[e] || (e?"other":"bw"); }
+function wxMuscles(ex){
+  const out=[];
+  const t=WX_TARGET[String(ex.target||"").toLowerCase()];
+  if(t && t!=="cardio") out.push(t);
+  (ex.secondaryMuscles||[]).forEach(m=>{ const g=WX_TARGET[String(m).toLowerCase()]; if(g&&g!=="cardio"&&out.indexOf(g)<0) out.push(g); });
+  if(!out.length){ const b=WX_BODYPART[String(ex.bodyPart||"").toLowerCase()]; if(b&&b!=="cardio") out.push(b); }
+  return out.length? out.slice(0,3) : ["core"];
+}
+function wxIsTimed(ex){
+  const n=String(ex.name||"").toLowerCase();
+  return /\b(plank|hold|hang|carry|wall sit|isometric|bridge hold|superman hold)\b/.test(n);
+}
+function titleCaseName(s){
+  return String(s||"").trim().replace(/\s+/g," ").replace(/\b[a-z]/g,c=>c.toUpperCase());
+}
+/* One catalogue record, normalised into exactly the shape EX() already returns. */
+function wxNormalise(e){
+  if(!e||!e.name) return null;
+  const name=titleCaseName(e.name);
+  const instr=Array.isArray(e.instructions)? e.instructions : [];
+  return {
+    name, wxId:e.id||null,
+    eq:wxGear(e.equipment),
+    m:wxMuscles(e),
+    timed:wxIsTimed(e),
+    cue:(instr[0]||e.description||"Control every rep \u2014 technique before load.").slice(0,180),
+    steps:instr.slice(0,6),
+    gif:e.gifUrl||null,
+    lvl:String(e.difficulty||"").toLowerCase()||null,
+    mech:String(e.mechanic||"").toLowerCase()||null,
+    force:String(e.force||"").toLowerCase()||null,
+    cal:e.caloriesPerMinute||null,
+    recSets:e.recommendedSets||null, recReps:e.recommendedReps||null,
+    uni:!!e.isUnilateral, pop:e.popularityRank||null,
+    wristAlt:"Neutral grip if the wrist complains"
+  };
+}
+
+/* ---------- the catalogue: lives in IndexedDB, indexed in memory ---------- */
+const WX_KEY="amirpt_wxcat";
+let WXIDX={};                       // name -> record
+function wxCount(){ return Object.keys(WXIDX).length; }
+function wxHas(){ return wxCount()>0; }
+async function wxLoadCatalogue(){
+  try{
+    const raw=await idbGet(WX_KEY);
+    if(raw){ const o=JSON.parse(raw); WXIDX=o.items||{}; }
+  }catch(e){ WXIDX={}; }
+  return wxCount();
+}
+async function wxSaveCatalogue(){
+  try{ await idbSet(JSON.stringify({at:new Date().toISOString(),items:WXIDX}),WX_KEY); }catch(e){ console.warn("wx save",e); }
+}
+
+/* ---------- API client ---------- */
+function wxKey(){ return (DB.wx&&DB.wx.key||"").trim(); }
+function wxOn(){ return !!wxKey() && DB.wx && DB.wx.on!==false; }
+async function wxGet(path,params){
+  const k=wxKey(); if(!k) throw new Error("No WorkoutX key");
+  const qs=new URLSearchParams(params||{}).toString();
+  const url="https://api.workoutxapp.com/v1"+path+(qs?("?"+qs):"");
+  const ctl=new AbortController(); const timer=setTimeout(()=>{try{ctl.abort();}catch(e){}},25000);
+  try{
+    const r=await fetch(url,{headers:{"X-WorkoutX-Key":k},signal:ctl.signal});
+    DB.wx=DB.wx||{};
+    const plan=r.headers.get("X-WorkoutX-Plan"); if(plan) DB.wx.plan=plan;
+    const qr=r.headers.get("X-Quota-Remaining"); if(qr!=null) DB.wx.quotaLeft=+qr;
+    const ql=r.headers.get("X-Quota-Limit"); if(ql!=null) DB.wx.quota=+ql;
+    if(r.status===401) throw new Error("AUTH");
+    if(r.status===403) throw new Error("PLAN");
+    if(r.status===429) throw new Error("QUOTA");
+    if(!r.ok) throw new Error("HTTP "+r.status);
+    return await r.json();
+  } finally { clearTimeout(timer); }
+}
+function wxErrText(e){
+  const m=String(e&&e.message||e);
+  if(m==="AUTH")  return "\u2717 WorkoutX rejected the key. Check it starts with wx_ and was copied whole.";
+  if(m==="PLAN")  return "\u2717 That endpoint needs a paid plan. The app falls back to the free endpoints automatically.";
+  if(m==="QUOTA") return "\u2717 Monthly quota used up (500/month on the free plan). It resets next month \u2014 your downloaded catalogue still works offline.";
+  if(/abort/i.test(m)) return "\u2717 WorkoutX timed out. Try again.";
+  return "\u2717 "+m;
+}
+const WX_PULL=["body weight","dumbbell","barbell","cable","leverage machine","kettlebell",
+               "resistance band","ez barbell","smith machine","olympic barbell","medicine ball","stability ball"];
+/* One-time sync. Pages 10 at a time (the free-plan ceiling), reporting progress. */
+async function wxSync(onProgress,maxRequests){
+  const cap=maxRequests||220;
+  let reqs=0, added=0, updated=0;
+  for(const eq of WX_PULL){
+    let offset=0;
+    for(;;){
+      if(reqs>=cap) { onProgress&&onProgress({done:true,reqs,added,capped:true}); await wxSaveCatalogue(); return {reqs,added,updated,capped:true}; }
+      let page;
+      try{ page=await wxGet("/exercises/equipment/"+encodeURIComponent(eq),{limit:10,offset}); }
+      catch(err){ await wxSaveCatalogue(); throw err; }
+      reqs++;
+      const list=Array.isArray(page)? page : (page&&page.data)||[];
+      list.forEach(raw=>{
+        const rec=wxNormalise(raw); if(!rec) return;
+        if(WXIDX[rec.name]) updated++; else added++;
+        WXIDX[rec.name]=rec;
+      });
+      onProgress&&onProgress({eq,reqs,added,total:wxCount()});
+      if(list.length<10) break;
+      offset+=10;
+    }
+  }
+  await wxSaveCatalogue();
+  DB.wx=DB.wx||{}; DB.wx.synced=new Date().toISOString(); DB.wx.count=wxCount(); save();
+  onProgress&&onProgress({done:true,reqs,added,total:wxCount()});
+  return {reqs,added,updated};
+}
+
+/* ---------- TIME BUDGET ----------
+   How long a session actually takes: rowing warm-up + mobility + the lifting
+   itself (work + rest + changing station) + cool-down. */
+const TIME_DEF={mins:45,row:true,rowMins:10};
+function timeBudget(){
+  const t=Object.assign({},TIME_DEF,DB.timeBudget||{});
+  if(!hasRower()) t.row=false;
+  if(LOC().short) t.rowMins=0;
+  return t;
+}
+function setTimeBudget(mins,row){
+  DB.timeBudget=Object.assign({},timeBudget(),{});
+  if(mins!=null) DB.timeBudget.mins=Math.max(10,Math.min(150,+mins||45));
+  if(row!=null)  DB.timeBudget.row=!!row;
+  DB.workout=null; DB.aiPlan=null; save();
+  try{ ensureWorkout(); }catch(e){}
+  return DB.timeBudget;
+}
+function restSecsFor(ex,sets){
+  const e=EX(ex&&ex.name||ex)||{};
+  if((e.m||[]).indexOf("core")>=0 && e.timed) return 45;
+  const compound = e.mech==="compound" || /squat|deadlift|bench|press|row|pull-?up|chin/i.test(ex&&ex.name||ex||"");
+  return compound? 105 : 70;
+}
+function workSecsFor(ex){
+  const e=EX(ex&&ex.name||ex)||{};
+  return e.timed? 50 : 40;                    // ~10 controlled reps, or a 40-50s hold
+}
+/* Minutes a given session shape would actually take. */
+function estimateMinutes(names,sets,t){
+  t=t||timeBudget();
+  const row = t.row? (t.rowMins||0) : 0;
+  const warm = LOC().short? 3 : 5;
+  const cool = 4;
+  let lift=0;
+  (names||[]).forEach(n=>{
+    const per=workSecsFor(n)+restSecsFor(n,sets);
+    lift += (per*sets)/60;
+    lift += 1;                                 // changing station / setting up
+  });
+  return {row,warm,cool,lift:Math.round(lift),total:Math.round(row+warm+cool+lift)};
+}
+/* Given a time budget, how many exercises and sets fit? */
+function planForTime(pool,t){
+  t=t||timeBudget();
+  const row = t.row? (t.rowMins||0) : 0;
+  const warm = LOC().short? 3 : 5, cool=4;
+  const forLifting = Math.max(4, t.mins - row - warm - cool);
+  let best=null;
+  for(let sets=2; sets<=4; sets++){
+    for(let n=Math.min(pool.length,8); n>=2; n--){
+      const names=pool.slice(0,n);
+      const est=estimateMinutes(names,sets,t);
+      if(est.lift<=forLifting){
+        const waste=forLifting-est.lift;
+        const score = waste + (sets===3?0:1.5) + (n<3?6:0);   // prefer 3 sets, at least 3 moves
+        if(!best||score<best.score) best={names,sets,est,score,waste};
+      }
+    }
+  }
+  if(!best){                                    // not even 2x2 fits — give the shortest honest session
+    const names=pool.slice(0,2);
+    best={names,sets:2,est:estimateMinutes(names,2,t),score:99,waste:0};
+  }
+  return {names:best.names,sets:best.sets,est:best.est,budget:t.mins,forLifting};
+}
+
+/* ---------- Settings handlers ---------- */
+function wxMsg(t){ const el=document.getElementById('wxMsg'); if(el) el.innerHTML=t; }
+function renderWxFields(){
+  const el=document.getElementById('setWxKey'); if(el) el.value=(DB.wx&&DB.wx.key)||"";
+  const n=wxCount();
+  wxMsg(n? ("\u2713 <b>"+n+" exercises</b> on this device"+(DB.wx&&DB.wx.synced?" \u00b7 synced "+new Date(DB.wx.synced).toLocaleDateString('en-GB'):"")+
+            (DB.wx&&DB.wx.quotaLeft!=null?" \u00b7 "+DB.wx.quotaLeft+" API calls left this month":""))
+         : "No catalogue downloaded yet \u2014 the app is using its "+coreExNames().length+" built-in exercises.");
+}
+function saveWxKey(){
+  DB.wx=DB.wx||{}; DB.wx.key=val('setWxKey').trim(); DB.wx.on=true; save();
+  wxMsg(DB.wx.key? "Key saved. Now tap <b>Download exercise catalogue</b>." : "Key cleared.");
+}
+let _wxSyncing=false;
+async function startWxSync(){
+  if(_wxSyncing) return;
+  if(!wxKey()){ wxMsg("\u2717 Add your WorkoutX key first."); return; }
+  _wxSyncing=true;
+  wxMsg("<span class='spin'></span> Downloading\u2026 this runs once.");
+  try{
+    const r=await wxSync(p=>{
+      if(p.done) return;
+      wxMsg("<span class='spin'></span> "+(p.total||0)+" exercises \u00b7 "+p.reqs+" calls \u00b7 "+(p.eq||""));
+    });
+    DB.wx.count=wxCount(); save();
+    try{ ensureWorkout(); renderWorkoutSheet(DB.workout); }catch(e){}
+    wxMsg("\u2713 Done \u2014 <b>"+wxCount()+" exercises</b> stored on this device using "+r.reqs+" API calls."+
+          (r.capped?" (Stopped at the safety cap; tap again to continue.)":"")+
+          " The coach can now program any of them, and it all works offline.");
+  }catch(e){ wxMsg(wxErrText(e)+"<br>Anything already downloaded ("+wxCount()+" exercises) has been kept."); }
+  finally{ _wxSyncing=false; renderWxFields(); }
+}
+/* GIFs: try the plain URL first; if the CDN wants the key, fetch and blob it. */
+const _gifBlob={};
+async function wxGifSrc(name){
+  const e=EX(name); if(!e||!e.gif) return null;
+  if(_gifBlob[name]) return _gifBlob[name];
+  return e.gif;
+}
+async function wxGifAuthed(name){
+  const e=EX(name); if(!e||!e.gif||!wxKey()) return null;
+  try{
+    const r=await fetch(e.gif,{headers:{"X-WorkoutX-Key":wxKey()}});
+    if(!r.ok) return null;
+    const b=await r.blob(); const u=URL.createObjectURL(b);
+    _gifBlob[name]=u; return u;
+  }catch(err){ return null; }
+}
+
+/* ===== 10. FIRESTORE — history that outlives this phone ===== */
 let _fbReady=false,_fs=null,_cloudTimer=null;
 const CLOUD_SKIP=["photos","chat","cloud","ai","workout","_rev"];
 function cloudPayload(){ const o={}; Object.keys(DB).forEach(k=>{ if(CLOUD_SKIP.indexOf(k)<0) o[k]=DB[k]; }); return o; }
@@ -3504,19 +3852,24 @@ function boot(){
   document.getElementById('setName').value=DB.profile.name; document.getElementById('setGoal').value=DB.profile.goal; document.getElementById('setPhase').value=DB.profile.phase;
   document.getElementById('setInjuries').value=DB.profile.injuries; document.getElementById('setRules').value=DB.profile.rules;
   syncCheckinLoc();
+  { const t=timeBudget(); const el=document.getElementById('ciTime'); if(el) el.value=t.mins;
+    const v=document.getElementById('ciTimeV'); if(v) v.textContent=t.mins;
+    const h=document.getElementById('ciTimeHint');
+    if(h) h.textContent = hasRower()&&t.row ? "Includes your "+(t.rowMins||10)+" min row warm-up." : "No rowing warm-up here \u2014 all of it is training."; }
   document.querySelectorAll('#provSeg button').forEach(b=>b.classList.toggle('on',b.dataset.v===DB.ai.provider));
   renderMetrics(); renderItin(); renderStrengthPBs(); renderRowing(); renderRowingLog(); renderPhotos(); renderIntegrations(); updateStreak(); renderNutrition();
   if(typeof scheduleInApp==="function") scheduleInApp();
   const split=pickSplit();
   if(DB.workout){ renderWorkoutSheet(DB.workout); document.getElementById('heroTitle').textContent=DB.workout.title; document.getElementById('heroPhase').textContent="Today · "+DB.workout.tag; }
   else { document.getElementById('heroTitle').textContent = split==="Rest"?"Rest & Recover":split; document.getElementById('heroPhase').textContent="Today · "+LOC().label; }
-  renderWeek(); renderReadiness(); renderEquipFields(); renderCloudFields(); restApplyPos(); renderStorageStatus();
+  renderWeek(); renderReadiness(); renderEquipFields(); renderCloudFields(); restApplyPos(); renderStorageStatus(); renderWxFields();
   { const v=document.getElementById('verLine'); if(v) v.textContent="Amir PT · "+APP_VERSION; }
 }
 boot();
 initRestDrag();
 registerSW();
 loadPhotos();
+wxLoadCatalogue().then(n=>{ if(n){ try{ renderWxFields(); ensureWorkout(); }catch(e){} } });
 restoreIfWiped();
 setTimeout(()=>{ if(DB.cloud&&DB.cloud.on) cloudSyncNow(true); },1200);
 window.addEventListener('resize',()=>{ try{ restClamp(); }catch(e){} });
