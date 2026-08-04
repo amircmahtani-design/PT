@@ -90,6 +90,16 @@ h2.display{font-size:25px;font-weight:800;letter-spacing:-.4px;margin:6px 0;colo
 .powerbox{display:flex;align-items:center;gap:16px;padding:2px 0;}
 .powerbox .num{font-weight:800;font-size:46px;line-height:1;color:var(--orange);letter-spacing:-2px;}
 .powerbox .lab{font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:.8px;color:var(--muted);}
+.tmr{border:1px solid var(--line);border-radius:14px;padding:15px;background:#0d0a07;}
+.tmr .tl{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.7px;color:var(--label);}
+.tmr .tn{font-size:22px;font-weight:800;letter-spacing:-.3px;margin-top:3px;}
+.tmr .tw{font-size:13.5px;color:var(--muted);line-height:1.6;margin-top:8px;}
+.sdot{display:inline-block;width:8px;height:8px;border-radius:50%;margin-right:7px;vertical-align:0px;}
+.splitchip{display:inline-block;border:1px solid;border-radius:999px;padding:5px 12px;font-size:12.5px;font-weight:700;}
+.itin-last{font-size:11px;font-weight:600;color:var(--label);margin-left:9px;}
+.addday{display:block;width:100%;margin-top:12px;padding:12px;border-radius:12px;background:#0d0a07;
+  border:1px dashed var(--line);color:var(--label);font-size:12.5px;font-weight:700;}
+.addday:active{color:var(--orange);}
 .itin-row{display:flex;align-items:center;gap:10px;padding:11px 0;border-bottom:1px solid var(--line);cursor:pointer;}
 .itin-row:last-child{border-bottom:none;}
 .itin-row.today{background:linear-gradient(90deg,#ff8a2b14,transparent);margin:0 -8px;padding-left:8px;padding-right:8px;border-radius:8px;}
@@ -197,7 +207,7 @@ textarea.txtin{min-height:88px;resize:vertical;line-height:1.45;}
 .wkrow{display:grid;grid-template-columns:66px 1fr 66px;align-items:center;gap:9px;}
 .wkrow .g{font-size:13px;font-weight:700;color:#e7d9c8;text-transform:capitalize;}
 .wkrow .tr{height:9px;border-radius:5px;background:#0d0a07;border:1px solid var(--line);overflow:hidden;}
-.wkrow .tr span{display:block;height:100%;border-radius:5px;background:var(--orange);min-width:2px;}
+.wkrow .tr span{display:block;height:100%;border-radius:5px;min-width:2px;}
 .wkrow .v{font-size:11.5px;font-weight:700;color:var(--muted);text-align:right;}
 .wkrow.stale .v{color:var(--gold);}
 .wkrow.stale .tr span{background:#5c3a15;}
@@ -395,6 +405,10 @@ a{color:var(--orange);}
     <button class="btn green mb" onclick="go('checkin')" style="font-size:16px;padding:16px">Start check-in</button>
     <div id="firstRun"></div>
     <div id="readyToday"></div>
+    <div class="card">
+      <div class="card-title"><span>Coach's call for tomorrow</span></div>
+      <div id="tmrBox"></div>
+    </div>
     <div class="card hero tap" onclick="go('workout')">
       <div class="glow"></div>
       <div class="eyebrow" id="heroPhase">Today</div>
@@ -741,7 +755,7 @@ const DEFAULTS = {
   integrations:{"Apple Watch":true,"Concept2 (manual)":true,"Photos":true,"Camera":false,"Notifications":true},
   lib:{}, dayTypes:{}, media:{}, mediaPicked:{}, exMap:{}, progression:{},
   nutrition:{calorieTarget:null, proteinTarget:null, phase:"", log:[]},
-  cardio:null, readiness:null, aiPlan:null, restCall:null, setsOverride:null, completed:{},
+  cardio:null, readiness:null, aiPlan:null, restCall:null, setsOverride:null, completed:{}, tomorrow:null,
   wx:{key:"", on:true, plan:"free", synced:null, count:0, quota:null, quotaLeft:null},
   timeBudget:{mins:45, row:true, rowMins:10},
   cloud:{on:true, config:JSON.stringify(FB_CONFIG,null,2), syncId:FB_SYNC_DEFAULT, last:null, syncKeys:false},
@@ -826,7 +840,7 @@ function go(s){
   if(s==='progress'){ drawChart(); renderRowingLog(); }
   if(s==='history') renderHistory();
   if(s==='workout'){ ensureWorkout(); renderReadiness(); maybeAutoPlan(); }
-  if(s==='today'){ renderNutrition(); renderWeek(); renderReadiness(); renderFirstRun(); }
+  if(s==='today'){ renderNutrition(); renderWeek(); renderReadiness(); renderFirstRun(); renderTomorrow(); }
 }
 function toast(m){const t=document.getElementById('toast');t.textContent=m;t.classList.add('show');setTimeout(()=>t.classList.remove('show'),2600);}
 
@@ -2119,7 +2133,7 @@ function coachSystem(){
 "\n\n"+readinessContext()+
 "\n\n"+trainingContext()+
 "\n\nCONCEPT2 / CARDIO LOG:\n"+rowing;
-  return "You are Amir's personal trainer — the ONLY coach he has. You know him deeply and remember everything. This app stores his data; you are the coaching brain."+mem+"\n\nPERSONALITY: "+(prefs.coachStyle||"Direct, funny, warm, encouraging")+". Never robotic or generic. Challenge him, explain WHY, celebrate wins. Text like a real PT. Keep it tight.\n\nPERMANENT RULES:\n- Goal: "+p.goal+". The physique he wants, NOT bodyweight targets.\n- Klinefelter syndrome — respect recovery/fatigue, patient strength curve.\n- TFCC injury (right wrist) — avoid loaded wrist extension / straight-wrist heavy pressing; prefer neutral-grip. If wrist pain reported, swap immediately.\n- Technique beats weight. Never ego lift. Only add load after current weight is MASTERED with clean form.\n- He never chooses workouts — YOU decide and tell him exactly what to do.\n"+
+  return "You are Amir's personal trainer — the ONLY coach he has. You know him deeply and remember everything. This app stores his data; you are the coaching brain."+mem+"\n\nPERSONALITY: "+(prefs.coachStyle||"Direct, funny, warm, encouraging")+". Never robotic or generic. Challenge him, explain WHY, celebrate wins. Text like a real PT. Keep it tight.\n\nPERMANENT RULES:\n- Goal: "+p.goal+". The physique he wants, NOT bodyweight targets.\n- Klinefelter syndrome — respect recovery/fatigue, patient strength curve.\n- TFCC injury (right wrist) — avoid loaded wrist extension / straight-wrist heavy pressing; prefer neutral-grip. If wrist pain reported, swap immediately.\n- Technique beats weight. Never ego lift. Only add load after current weight is MASTERED with clean form.\n- He never chooses workouts — YOU decide and tell him exactly what to do.\n- You may invent whole session types when his week needs one — Pilates, Core Day, Mobility, HIIT, Arms, Conditioning — with [[CREATE_DAY_TYPE: Name]] then [[SET_WEEKDAY: Monday | Name]]. Don't restrict yourself to push/pull/legs if the gaps say otherwise.\n"+
 (p.rules? "\nHIS OWN STANDING RULES (he wrote these — follow them):\n"+p.rules+"\n":"")+
 (p.injuries? "\nINJURIES AND LIMITATIONS:\n"+p.injuries+"\n":"")+
 (p.coachTone? "\nHOW HE WANTS YOU TO TALK TO HIM — match this voice exactly, it overrides the generic personality line above:\n"+p.coachTone+"\n":"")+
@@ -2803,8 +2817,41 @@ function renderItin(){
   order.forEach(dow=>{ const isToday=dow===todayDow; let split=DB.schedule[dow];
     if(isToday && DB.dayOverride && DB.dayOverride.date===today() && DB.dayOverride.split) split=DB.dayOverride.split;
     const pill= splitPill(split);
-    html+="<div class='itin-row "+(isToday?'today':'')+"' onclick='cycleDay("+dow+")'><div class='itin-day'>"+DOW[dow]+(isToday?" •":"")+"</div><div class='itin-split'><span class='pill "+pill+"'>"+split+"</span></div><div class='itin-edit'>✎</div></div>"; });
-  el.innerHTML=html;
+    const col=splitColour(split);
+    const last=lastDoneOf(split);
+    html+="<div class='itin-row "+(isToday?'today':'')+"' style='border-left:3px solid "+col+"' onclick='cycleDay("+dow+")'>"+
+      "<div class='itin-day'>"+DOW[dow]+(isToday?" •":"")+"</div>"+
+      "<div class='itin-split'><span class='splitchip' style='color:"+col+";border-color:"+col+"44;background:"+col+"1a'>"+split+"</span>"+
+        (last? "<span class='itin-last'>"+last+"</span>" : "")+"</div>"+
+      "<div class='itin-edit'>✎</div></div>"; });
+  el.innerHTML=html+"<button class='addday' onclick='addDayTypePrompt()'>+ Add a session type (Pilates, Core, HIIT…)</button>";
+}
+/* "when did I last actually do this?" \u2014 read from what he logged, not the plan. */
+function lastDoneOf(split){
+  const info=splitInfo(split);
+  if(info.key==="rest") return "";
+  const all=sessionsByDate(null);
+  const dates=Object.keys(all).sort().reverse();
+  for(const d of dates){
+    const cats=all[d].lifts.map(l=>{
+      const m=((EX(l.ex)||guessEx(l.ex)).m||[])[0];
+      return {chest:"push",shoulders:"push",arms:"arms",back:"pull",legs:"legs",core:"core"}[m]||"other";
+    });
+    const hit = cats.includes(info.key) ||
+      (info.key==="upper" && cats.some(c=>["push","pull","arms"].includes(c))) ||
+      (info.key==="full"  && cats.length>=3);
+    if(hit){ const n=daysSince(d); return n===0?"today":n===1?"yesterday":n+"d ago"; }
+  }
+  return "not yet";
+}
+function addDayTypePrompt(){
+  const n=prompt("Name the session type \u2014 e.g. Pilates, Core Day, HIIT, Mobility");
+  if(!n||!n.trim()) return;
+  const name=n.trim();
+  DB.dayTypes=DB.dayTypes||{};
+  if(!DB.dayTypes[name]) DB.dayTypes[name]={main:[],note:""};
+  save(); renderItin();
+  toast("Added \u00b7 "+name+" \u2014 tap a day to assign it");
 }
 function cycleDay(dow){
   const SP=allSplits();
@@ -2812,7 +2859,28 @@ function cycleDay(dow){
   if(dow===new Date().getDay()){ DB.dayOverride={date:today(),split:SP[idx]}; DB.workout=null; const t=document.getElementById('heroTitle'); if(t)t.textContent=SP[idx]; }
   save(); renderItin(); toast(DOW[dow]+" → "+SP[idx]);
 }
-function splitPill(split){ return split==="Rest"?"gray": /push/i.test(split)?"orange":/pull/i.test(split)?"blue":/leg/i.test(split)?"purple":/cardio|row|run|bike/i.test(split)?"cyan":/mobility|recovery|yoga|stretch/i.test(split)?"teal":"green"; }
+/* Categorical colour: the point is telling one session type from another at a
+   glance, so each kind gets its own hue and keeps it everywhere in the app. */
+const SPLIT_COLOURS=[
+  [/rest|off day/i,                       "rest",     "#71614e"],
+  [/leg|quad|hamstring|glute|lower/i,     "legs",     "#ff5a4d"],
+  [/push|chest|press/i,                   "push",     "#ff8a2b"],
+  [/pull|back|row/i,                      "pull",     "#4a9dff"],
+  [/shoulder|arm|bicep|tricep/i,          "arms",     "#e07be0"],
+  [/core|abs|waist/i,                     "core",     "#f0b24a"],
+  [/pilates|yoga|mobility|stretch|recovery|flexib/i, "pilates", "#5fe0cb"],
+  [/cardio|row|run|bike|hiit|conditioning|erg/i,     "cardio",  "#3fd8f0"],
+  [/upper/i,                              "upper",    "#b98bff"],
+  [/full|total/i,                         "full",     "#3fe08a"]
+];
+function splitInfo(split){
+  const s=String(split||"");
+  for(const [re,key,col] of SPLIT_COLOURS){ if(re.test(s)) return {key,col}; }
+  return {key:"other",col:"#9c8f7e"};
+}
+function splitColour(split){ return splitInfo(split).col; }
+function splitDot(split){ return "<i class='sdot' style='background:"+splitColour(split)+"'></i>"; }
+function splitPill(split){ return splitInfo(split).key; }
 
 function drawChart(){
   const wrap=document.getElementById('wtWrap'); if(!wrap) return;
@@ -2896,13 +2964,15 @@ function renderHistory(){
   if(!dates.length){ body.innerHTML="<div class='card'><div class='muted' style='font-size:14px'>Nothing logged yet. Log sets in Train or tell your coach what you lifted.</div></div>"; return; }
   body.innerHTML=dates.slice(0,21).map(d=>{ const g=byDate[d]; const cats=g.lifts.map(l=>catOf(l.ex));
     let label = cats.includes("Push")&&"Push" || cats.includes("Pull")&&"Pull" || cats.includes("Legs")&&"Legs" || (g.rows.length?"Row / Cardio":"Session");
-    const pill = label==="Push"?"orange":label==="Pull"?"blue":label==="Legs"?"purple":"green";
+    const col=splitColour(label);
     const liftLines=g.lifts.map(l=>{ const top=Math.max(...l.sets.map(s=>s.w));
       const reps=l.sets.map(s=>{ const m=effortMeta(effortOf(s)); return (m?"<i class='effdot' style='background:"+m.col+"'></i>":"")+s.w+"×"+s.r; }).join(" ");
       return "<div class='hline'><span class='en'>"+l.ex+" <span class='muted' style='font-weight:600;font-size:12px'>"+reps+"</span></span><span class='ev'>"+top+"kg <button class='del' onclick=\"delStrength('"+l.ex.replace(/'/g,"\\'")+"','"+d+"')\">✕</button></span></div>"; }).join('');
     const rowLines=g.rows.map(r=>"<div class='hline'><span class='en'>🚣 Row "+r.dist+"</span><span class='ev'>"+r.time+"</span></div>").join('');
     const dd=new Date(d).toLocaleDateString('en-GB',{weekday:'short',day:'numeric',month:'short'});
-    return "<div class='card'><div class='hgroup'><div class='hd'><div class='dt'>"+dd+"</div><span class='pill "+pill+"'>"+label+"</span></div>"+liftLines+rowLines+"</div></div>";
+    return "<div class='card' style='border-left:3px solid "+col+"'><div class='hgroup'><div class='hd'><div class='dt'>"+dd+"</div>"+
+      "<span class='splitchip' style='color:"+col+";border-color:"+col+"44;background:"+col+"1a'>"+label+"</span></div>"+
+      liftLines+rowLines+"</div></div>";
   }).join('');
 }
 
@@ -2999,7 +3069,7 @@ function scheduleInApp(){
    v18 ADDITIONS — draggable rest timer · weekly training memory · AI planner
    · Firestore sync
    ========================================================================== */
-const APP_VERSION="v45 · 2026-08-04";
+const APP_VERSION="v46 · 2026-08-04";
 
 /* ===== 1. REST TIMER — drag it anywhere so it never blocks the chat box ===== */
 let _rtDrag=null;
@@ -3107,7 +3177,7 @@ function renderWeek(){
     const stale = n===0 || ds===null || ds>=5;
     const when = ds===null? "never" : ds===0? "today" : ds===1? "1d ago" : ds+"d ago";
     return "<div class='wkrow "+(stale?'stale':'')+"'><div class='g'>"+g+"</div>"+
-      "<div class='tr'><span style='width:"+Math.round((st.sets[g]/max)*100)+"%'></span></div>"+
+      "<div class='tr'><span style='width:"+Math.round((st.sets[g]/max)*100)+"%;background:"+(stale?"#5c3a15":splitColour(g))+"'></span></div>"+
       "<div class='v'>"+n+" sets \u00b7 "+when+"</div></div>";
   }).join('')+"<div class='sm' style='margin-top:4px'>"+st.sessions+" session"+(st.sessions===1?"":"s")+" in 7 days. Red = neglected \u2014 the coach targets those first.</div>";
 }
@@ -4403,6 +4473,75 @@ async function backupCatalogueNow(){
   finally{ _backingUp=false; renderWxFields(); }
 }
 
+/* ===== WHAT SHOULD I DO TOMORROW? =====
+   The coach reads the whole log and makes the call, the way a PT would when
+   you ask on the way out of the gym. */
+let _suggesting=false;
+function tomorrowName(){
+  const d=new Date(Date.now()+864e5);
+  return DOW[d.getDay()];
+}
+function tomorrowDow(){ return new Date(Date.now()+864e5).getDay(); }
+async function suggestTomorrow(){
+  if(_suggesting) return;
+  const box=document.getElementById('tmrBox');
+  if(DB.ai.provider!=="openai"||!DB.ai.key){ if(box) box.innerHTML="<div class='sm'>Add your OpenAI key in Settings and the coach will call this for you.</div>"; return; }
+  _suggesting=true;
+  if(box) box.innerHTML="<div class='sm'><span class='spin'></span> Reading your whole log\u2026</div>";
+  try{
+    const options=allSplits();
+    const sys=coachSystem()+
+"\n\n=== YOU ARE CALLING TOMORROW'S SESSION ===\n"+
+"Look at everything above: what he's trained, what's been neglected, how it felt, his readiness, and how many days he's been at it.\n"+
+"Decide what he should do TOMORROW ("+tomorrowName()+"). Rest is a legitimate and often correct answer \u2014 say so when it is.\n"+
+"If the right session isn't in his current list, invent it (e.g. Pilates, Core Day, Mobility, HIIT, Arms) and create it with [[CREATE_DAY_TYPE: Name]].\n"+
+"HIS CURRENT SESSION TYPES: "+options.join(", ")+"\n"+
+"OUTPUT, exactly:\n"+
+"[[SUGGEST: <session name>]]\n"+
+"then ONE short paragraph (max 40 words) in your own voice saying why \u2014 name the specific muscle group or the fatigue signal that drove it. No lists, no preamble.";
+    const usr="What should I do tomorrow ("+tomorrowName()+")? Be decisive.";
+    const reply=await callAI([{role:"system",content:sys},{role:"user",content:usr}],220);
+    if(!reply){ if(box) box.innerHTML="<div class='sm'>Couldn't reach the coach just now. Tap again.</div>"; return; }
+    let pick=null;
+    const out=String(reply).replace(/\[\[\s*SUGGEST\s*:\s*([^\]]+?)\s*\]\]/i,(m,n)=>{ pick=String(n).trim(); return ""; });
+    applyCoachDirectives(out);                    /* lets it create a new day type */
+    const why=out.replace(/\[\[[\s\S]*?\]\]/g,"").trim();
+    if(!pick){ if(box) box.innerHTML="<div class='coachnote'><div class='who'>\u25c6 Coach</div>"+fmt(why||reply)+"</div>"; return; }
+    DB.tomorrow={date:today(),split:pick,why};
+    save();
+    renderTomorrow();
+  }catch(e){ console.warn(e); if(box) box.innerHTML="<div class='sm'>That broke: "+escapeHtml(String(e&&e.message||e))+"</div>"; }
+  finally{ _suggesting=false; }
+}
+function renderTomorrow(){
+  const box=document.getElementById('tmrBox'); if(!box) return;
+  const t=DB.tomorrow;
+  if(!t || t.date!==today()){
+    box.innerHTML="<button class='btn sec' onclick='suggestTomorrow()'>Ask the coach what I should do tomorrow</button>";
+    return;
+  }
+  const col=splitColour(t.split);
+  const already=DB.schedule[tomorrowDow()]===t.split;
+  box.innerHTML=
+    "<div class='tmr' style='border-color:"+col+"55'>"+
+      "<div class='tl'>"+tomorrowName()+"</div>"+
+      "<div class='tn' style='color:"+col+"'>"+escapeHtml(t.split)+"</div>"+
+      (t.why? "<div class='tw'>"+fmt(escapeHtml(t.why))+"</div>" : "")+
+      (already
+        ? "<div class='sm' style='margin-top:10px'>Already on your plan for "+tomorrowName()+".</div>"
+        : "<button class='btn mt' onclick='acceptTomorrow()'>Put it in my plan</button>")+
+      "<button class='btn link' onclick='suggestTomorrow()'>Ask again</button>"+
+    "</div>";
+}
+function acceptTomorrow(){
+  const t=DB.tomorrow; if(!t) return;
+  const dow=tomorrowDow();
+  DB.schedule[dow]=t.split;
+  if(!allSplits().includes(t.split)){ DB.dayTypes=DB.dayTypes||{}; DB.dayTypes[t.split]={main:[],note:""}; }
+  save(); renderItin(); renderTomorrow();
+  toast(tomorrowName()+" \u2192 "+t.split);
+}
+
 /* ===== CATALOGUE BACKUP =====
    Stored in his own Firestore alongside everything else, split into chunks so it
    can't hit the 1MB document ceiling. Restoring costs zero WorkoutX requests. */
@@ -4817,7 +4956,7 @@ function boot(){
   const split=pickSplit();
   if(DB.workout){ renderWorkoutSheet(DB.workout); document.getElementById('heroTitle').textContent=DB.workout.title; document.getElementById('heroPhase').textContent="Today · "+DB.workout.tag; }
   else { document.getElementById('heroTitle').textContent = split==="Rest"?"Rest & Recover":split; document.getElementById('heroPhase').textContent="Today · "+LOC().label; }
-  renderWeek(); renderReadiness(); renderFirstRun(); renderEquipFields(); renderCloudFields(); restApplyPos(); renderStorageStatus(); renderWxFields();
+  renderWeek(); renderReadiness(); renderFirstRun(); renderTomorrow(); renderEquipFields(); renderCloudFields(); restApplyPos(); renderStorageStatus(); renderWxFields();
   { const v=document.getElementById('verLine'); if(v) v.textContent="Amir PT · "+APP_VERSION; }
 }
 boot();
