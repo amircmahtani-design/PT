@@ -1,12 +1,49 @@
-AMIR PT — v59 · 04/08/2026
+AMIR PT — v60 · 05/08/2026
 ==========================
 
 Deploy exactly as before: index.html, sw.js, manifest.json and the two icons
 in the same folder, at the repo root. Filenames are case-sensitive —
 index.html, never Index.html.
 
-Check it landed: Settings → bottom → "Amir PT · v59 · 04/08/2026".
+Check it landed: Settings → bottom → "Amir PT · v60 · 05/08/2026".
 Nothing in this update touches your data. Every logged set survives.
+
+
+WHAT'S NEW IN v60
+=================
+
+PILATES IS A FLOW NOW, NOT SETS
+  It was being built through the strength template: 5 exercises at 3-4 sets
+  each, with kg and reps boxes. That is not how a mat class works.
+
+  It now builds ELEVEN movements in the classical order, as ONE round — do the
+  movement, move on. No sets, no kg box, no reps box. Each has its own dose and
+  its own timer:
+
+     1. The Hundred            10 breaths · 100 pumps
+     2. Roll-Up                x6
+     3. Roll Over              x6
+     4. Single Leg Circles     x5 each direction
+     5. Rolling Like a Ball    x8
+     6. Single Leg Stretch     x10 each side
+     7. Double Leg Stretch     x8
+     8. Scissors               x10 each side
+     9. Criss-Cross            x10 each side
+    10. Spine Stretch Forward  x5
+    11. Saw                    x5 each side
+
+  The Hundred always opens — it's the warm-up of the class and is never rotated
+  out. The other ten rotate by what you've done least, but are then put BACK
+  into classical order, so the sequence still flows correctly rather than
+  jumping around the repertoire.
+
+THE ROW AT THE END NO LONGER CALLS ITSELF A WARM-UP
+  Since the Concept2 warm-up row got its own block above the first lift (v48),
+  anything in the cardio slot sits AFTER the training. It was still printing
+  "Target Easy warm-up" at the bottom of the page.
+
+  It's now headed "Finisher" instead of "Cardio", and a warm-up target at the
+  end is rewritten to "Easy flush - steady and comfortable".
 
 
 WHAT'S NEW IN v59
