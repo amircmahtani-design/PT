@@ -1,0 +1,238 @@
+WHAT YOUR PT CAN DO — AMIR PT v65
+=================================
+Written as the things you'd SAY. If it's on this list, just say it in the Coach
+tab and it happens in the app. If something you want isn't here, that's the gap
+to tell me about.
+
+Two ways to change anything: say it to the coach, or do it by hand in the app.
+Both are listed.
+
+
+1. TODAY'S SESSION — WHAT'S IN IT
+=================================
+SAY                                          BY HAND
+"make today legs"                            Train → session dropdown at top
+"build me a push session"                    Train → Build today's session
+"add lateral raises"                         —
+"drop the walking lunges"                    —
+"swap bench for incline dumbbell press"      Train → Swap this exercise
+"make everything 4 sets"                     Train → Sets − / + on each exercise
+"give me a rest day"                         Train → dropdown → Rest
+
+
+2. THE ORDER OF EXERCISES
+=========================
+SAY                                          BY HAND
+"put bench press first"                      ⇈ top button on that exercise
+"move the fly up / down"                     ↑ and ↓ buttons
+"do face pulls last"                         ↓ until it's last
+"order: bench, rows, face pulls"             —
+
+Both ways keep any sets you've already logged — those are stored against the
+exercise NAME, not its position. Reordering never rebuilds the session.
+(One guard: if a hold timer is running it refuses, because the timer tracks a
+position and would log your time against the wrong exercise.)
+
+
+3. ONE EXERCISE AT A TIME — THE PRESCRIPTION
+============================================
+All of these change ONE named lift and leave the rest of the session alone.
+
+"make bench 4 sets"                  sets
+"6 to 8 reps on bench"               rep range
+"3 minutes rest on bench"            rest ("90s", "2 min", "180" all work)
+"start bench at 60kg"                today's working load
+"slow the tempo to 3-1-1"            tempo
+"hold the plank for 45 seconds"      turns it into a timed hold
+"superset the curls with pushdowns"  pairs them, moves them together, no rest
+
+BY HAND: sets have − / + buttons. The rest is coach-only for now.
+
+
+4. LOAD AND PROGRESSION
+=======================
+"add 2kg to goblet squat next time"
+"keep the same weight on split squats"
+"deload bench by 10%"                    ← load can go DOWN now, not only up
+"drop the squat 5kg next time"
+"target 40kg x 12,12,12,12 on RDLs"
+
+
+5. WARM-UP, COOL-DOWN, CARDIO
+=============================
+"warm me up with cat-cow and arm circles"
+"add a child's pose cooldown"
+"fix the warm-up icons"
+"30 minutes zone 2 on the rower"
+"8 x 1 minute hard, 1 minute easy"
+"set the cardio pace to easy"
+"HR zone 2"
+
+
+6. LOGGING — SO YOU NEVER RETYPE
+================================
+SAY                                          BY HAND
+"log 40kg for 12 on RDLs"                    kg / reps / Log on the exercise
+"that's the workout done"                    Done card at the bottom
+"rowed 2000m in 8:30"                        Progress → rowing
+"waist is 84, chest 106, arm 37.5"           Progress → Measurements
+"weighed 84.8, slept 10, energy 10"          Home → check-in
+"my right wrist is sore, mild"               Home → check-in → pain
+"readiness is high"                          Readiness card
+
+
+7. YOUR PROGRAMME, GOALS AND LIMITS
+===================================
+"we're switching to a strength block"        phase
+"new goal: bodyweight bench for 5"           goal
+"my left shoulder hurts, no overhead"        injury — REBUILDS today around it
+"shoulder's fine now"                        clears it
+"I've only got 30 minutes"                   REBUILDS today to fit
+"I'm in Greece"                              location
+"bodyweight only this week"                  equipment
+"holiday maintenance mode"                   mode
+
+The injury and time ones rebuild the session automatically — the coach is
+instructed to use them when you mention pain or being short of time, not to
+just sympathise.
+
+
+8. YOUR WEEK
+============
+"Mondays are cardio"
+"set my week: Mon push, Tue pull, Wed legs..."   (his week starts MONDAY)
+"create a mobility day"
+"create a cardio day that's zone 2 rowing"
+"delete the rest day type"
+
+
+9. NUTRITION
+============
+"log 1550 calories and 170g protein"
+"calorie target 1500"
+"protein target 170g"
+"we're on a lean recomp"
+
+
+10. EXERCISE LIBRARY AND DEMOS
+==============================
+SAY                                          BY HAND
+"add seated cable row to my library"         —
+"remove X from my library"                   —
+"find a demo for Copenhagen plank"           Change demo → search
+"use this gif for RDLs: <url>"               Change demo
+"that demo is wrong"                         Change demo → pick → it sticks
+
+
+11. THE APP ITSELF
+==================
+"only show real demos, no icons"
+"turn the exercise gifs on"
+"be more direct and funny"
+"single visual workout format"
+
+
+12. ANYTHING NOT ON THIS LIST
+=============================
+The coach can run real code against the app. If you ask for something with no
+verb, it can still do it — it just has to write the change itself, which is
+less reliable than a proper instruction. If you find yourself using that route
+often for the same thing, tell me and I'll give it a real verb.
+
+
+13. WHEN SOMETHING DOESN'T APPLY
+================================
+It now says so. If it couldn't find the exercise you named it tells you the
+exact name it looked for. If nothing at all applied it says that too, instead
+of replying "done!" over a session that never changed.
+
+
+14. FIXING WHAT YOU ALREADY LOGGED   (new in v65)
+=================================================
+"I did 10, not 12."
+"That weight was wrong — it was 65."
+"Delete that set."
+"That set didn't count, do it again."
+"Undo that."
+
+Set numbers count from 1, or just say "that one" / "the last one".
+These EDIT the set. They no longer add a second one on top of the mistake.
+
+
+15. WHILE YOU'RE ACTUALLY TRAINING   (new in v65)
+=================================================
+"That felt easy — put the next one up 2.5."
+"Too heavy, drop the rest by 10%."
+"I had four left in the tank."
+"My form broke down."
+"Skip the rest of these sets."
+"Skip this exercise."
+"End the workout, I don't feel right."
+
+All of these now CHANGE THE SHEET. Before, the coach would reply with advice
+and the numbers in front of you stayed exactly the same.
+
+
+16. INTENSITY TECHNIQUES   (new in v65)
+=======================================
+"Drop set on the last one."
+"Make the final set AMRAP."
+"Take the last set to failure."
+"Add a burnout."
+"Remove the superset."
+"No intensity techniques today."
+
+These print on the exercise itself, so you see them at set four rather than
+having to remember what was said at set one.
+
+
+17. THINGS THAT OUTLIVE TODAY   (new in v65)
+============================================
+"Don't give me Bulgarian split squats again."
+"Never program that one."
+"From now on use dumbbell bench instead of barbell."
+"Actually, allow those again."
+"Forget all of that."
+
+IMPORTANT: everything else defaults to TODAY ONLY. "Make this two sets"
+changes today's session and nothing more. The coach only makes something
+permanent if you actually say again / always / from now on / never.
+
+A banned exercise is removed from the selection pool itself, so it stops
+appearing when the programme rotates — not just today.
+
+
+18. WHAT KIT YOU ACTUALLY HAVE   (new in v65)
+=============================================
+"The heaviest dumbbells here are 10kg."
+"The bar weighs 20."
+"I've only got these plates: 1.25, 2.5, 5, 10, 20."
+"That weight isn't available."
+
+So it stops recommending loads you physically can't make.
+
+
+19. WHOLE-SESSION MOVES   (new in v65)
+======================================
+"Rebuild it but keep bench press."
+"Make this a deload."
+"Save this workout as a favourite."
+"Give me my Big Push session."
+"Reset back to the original plan."
+
+
+KNOWN GAPS — TELL ME IF ANY OF THESE MATTER
+===========================================
+  - taking or comparing a progress photo by voice
+  - changing the default rest-timer length
+  - switching units (kg/lb, cm/inches)
+  - deleting history or an old workout
+  - reordering the warm-up or cool-down items
+  - moving today's session to tomorrow / merging two days
+  - "do all the cable exercises together" works, but by the coach reasoning it
+    out and reordering — there's no grouping rule it can save
+  - per-set prescriptions ("two warm-up sets then three working sets") — it can
+    describe them, it can't yet lay them out as separate rows
+
+  (Meal planning removed — your nutritionist handles that. Calorie and protein
+   logging still work if you want them; say the word and I'll strip those too.)

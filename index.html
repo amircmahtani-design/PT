@@ -472,6 +472,13 @@ details.sec2[open] .secsum2:after{content:"\2212";}
 .mtable .est{color:var(--gold);font-size:10px;font-weight:800;margin-left:4px;}
 .mtable .up{color:var(--green);} .mtable .dn{color:var(--red);}
 .mscroll{overflow-x:auto;-webkit-overflow-scrolling:touch;}
+.exorder{display:flex;align-items:center;gap:6px;margin-bottom:9px;}
+.exorder .pos{flex:1 1 auto;font-size:11px;font-weight:800;letter-spacing:.5px;
+  text-transform:uppercase;color:var(--label);}
+.exorder .ob{flex:0 0 auto;background:var(--pill);border:1px solid var(--line);color:var(--txt);
+  border-radius:10px;padding:7px 11px;font-size:13px;font-weight:800;min-width:38px;}
+.exorder .ob[disabled]{opacity:.3;}
+.exb.moved{outline:2px solid var(--orange);outline-offset:3px;transition:outline-color .4s;}
 .approxchip{position:absolute;bottom:8px;left:8px;background:#0a0806e6;color:var(--gold);
   font-size:10.5px;font-weight:800;padding:3px 9px;border-radius:9px;border:1px solid var(--line);
   letter-spacing:.3px;pointer-events:none;}
@@ -1033,6 +1040,8 @@ const DEFAULTS = {
   chat:[], streak:0, lastSessionDate:null, workout:null,
   integrations:{"Apple Watch":true,"Concept2 (manual)":true,"Photos":true,"Camera":false,"Notifications":true},
   lib:{}, dayTypes:{}, media:{}, mediaPicked:{}, exMap:{}, progression:{}, deadMedia:{}, demoPick:{},
+  rules:{ banned:{}, prefer:{}, kit:{} },   /* things that outlive today's session */
+  favourites:{},
   nutrition:{calorieTarget:null, proteinTarget:null, phase:"", log:[]},
   cardio:null, readiness:null, aiPlan:null, restCall:null, setsOverride:null, completed:{}, tomorrow:null,
   session:null,
@@ -1606,6 +1615,31 @@ function pickRotated(list,n,key,taken){
 }
 /* Build a session: anchors first so there's always a real lift to progress,
    then accessories rotated underneath. */
+/* ===== v65 · THINGS THAT OUTLIVE TODAY ==================================
+   "Don't give me Bulgarian split squats again" had nowhere to go: every verb
+   in the app changed the session in front of him and nothing else, so the
+   exercise came straight back next time the pool rotated. A ban has to be
+   enforced where exercises are CHOSEN, not where they're displayed. */
+function exBanned(name){
+  const b=(DB.rules&&DB.rules.banned)||{};
+  return !!b[name];
+}
+function exPreferred(name){
+  const pr=(DB.rules&&DB.rules.prefer)||{};
+  const to=pr[name];
+  return (to && !exBanned(to))? to : name;
+}
+/* Applied to every list the builder produces. */
+function applyRules(list){
+  const out=[], seen=new Set();
+  (list||[]).forEach(n=>{
+    if(exBanned(n)) return;
+    const sub=exPreferred(n);
+    if(seen.has(sub)) return;
+    seen.add(sub); out.push(sub);
+  });
+  return out;
+}
 function buildVaried(group,key,total){
   const P=(VPOOLS[key]||VPOOLS.dubai)[group] || (VPOOLS[key]||VPOOLS.dubai).full;
   if(!P) return [];
@@ -1616,6 +1650,13 @@ function buildVaried(group,key,total){
   out=out.concat(pickRotated(P.acc,total-out.length,key,taken));
   /* Short of names (tiny location pool)? Backfill from the other half. */
   if(out.length<total) out=out.concat(pickRotated([...P.anchor,...P.acc],total-out.length,key,taken));
+  out=applyRules(out);
+  /* A ban can leave the session short — top it up from the full pool rather
+     than handing him four exercises because one name was blocked. */
+  if(out.length<total){
+    const spare=applyRules([...P.anchor,...P.acc]).filter(n=>out.indexOf(n)<0);
+    out=out.concat(spare.slice(0,total-out.length));
+  }
   return out;
 }
 const POOLS={
@@ -2071,10 +2112,12 @@ function buildWorkout(){
   else if(/push/i.test(split)) grp="push";
   else if(/upper/i.test(split)) grp="upper";
   main=buildVaried(grp,key,5);
-  if(!main.length) main=(pool[grp]||pool.full).slice();
+  if(!main.length) main=applyRules((pool[grp]||pool.full).slice());
   /* Absolute guard: never program something he can't physically do where he is. */
   main=main.filter(n=>canDoHere(n,key));
-  if(!main.length) main=(POOLS.greece.full).slice();
+  main=applyRules(main);
+  if(!main.length) main=applyRules(POOLS.greece.full.slice());
+  if(!main.length) main=(POOLS.greece.full).slice();   /* every option banned — better something than nothing */
   if(knee){ main=main.map(n=>/squat|lunge|split|step-?up|pistol/i.test(n)? (key==="dubai"?"Romanian Deadlift":key==="madrid"?"DB Romanian Deadlift":"Glute Bridge") : n); main=[...new Set(main)]; }
   const flagged={};
   if(wrist) main.forEach(n=>{ const e=EX(n); if(e&&e.wristAlt&&e.wristAlt!=="Same"&&/press|push|curl|pushdown|bench|pull-?up|dip|plank|row/i.test(n)) flagged[n]=e.wristAlt; });
@@ -2218,7 +2261,7 @@ function poolForKind(kind,total){
   const picked=buildVaried(grp,key,total|| (kind==="pilates"?6:5));
   if(picked.length) return picked;
   const P=POOLS[key]||POOLS.dubai;
-  return (P[grp]||P.full).slice();
+  return applyRules((P[grp]||P.full).slice());
 }
 /* ==========================================================================
    v49 — COMING BACK AFTER TIME OFF
@@ -3168,13 +3211,29 @@ function exBlockHTML(e,i){
   const input = e.timed
     ? "<div class='holdrow'><div class='hold-cd' id='hcd"+i+"'>0:00</div><button class='holdbtn' id='hbtn"+i+"' onclick='toggleHold("+i+")'>▶ Start hold</button></div>"
     : "<div class='logrow'><input id='w"+i+"' inputmode='decimal' placeholder='kg' value='"+(e.rec?e.rec.w:'')+"'><input id='r"+i+"' inputmode='numeric' placeholder='reps'><button onclick='logSet("+i+")'>Log</button></div>";
-  return "<div class='exb' id='exb"+i+"'>"+exImgHTML(e.name,e.muscles)+
+  const total=((DB.workout&&DB.workout.main)||[]).length;
+  const order="<div class='exorder'>"+
+      "<span class='pos'>"+(i+1)+" of "+total+"</span>"+
+      "<button class='ob' onclick='moveExTop("+i+")'"+(i===0?" disabled":"")+" aria-label='move to top'>\u21c8 top</button>"+
+      "<button class='ob' onclick='moveEx("+i+",-1)'"+(i===0?" disabled":"")+" aria-label='move up'>\u2191</button>"+
+      "<button class='ob' onclick='moveEx("+i+",1)'"+(i>=total-1?" disabled":"")+" aria-label='move down'>\u2193</button>"+
+    "</div>";
+  return "<div class='exb' id='exb"+i+"'>"+order+exImgHTML(e.name,e.muscles)+
     "<div class='name'>"+e.name+"</div><div class='scheme'>"+e.scheme+" · rest "+e.rest+"</div>"+
     "<div class='exsets'><span class='l'>Sets</span>"+
       "<button class='st' onclick='setExSets("+i+","+(exSets(e)-1)+")' aria-label='fewer sets'>−</button>"+
       "<span class='n'>"+exSets(e)+"</span>"+
       "<button class='st' onclick='setExSets("+i+","+(exSets(e)+1)+")' aria-label='more sets'>+</button>"+
       "<span class='d'>"+todaySets(e.name).length+" logged</span></div>"+
+    /* v65 — a technique the coach sets has to be VISIBLE, or "drop set on the
+       last one" changes a field and the sheet looks identical. */
+    (e.technique? "<div class='cue' style='color:var(--orange)'><b>\ud83d\udd25 "+escapeHtml(e.technique)+"</b></div>":"")+
+    (e.superset? "<div class='cue' style='color:var(--gold)'><b>\u26a1 Superset:</b> straight into "+escapeHtml(e.superset)+", no rest</div>":"")+
+    (e.supersetOf? "<div class='cue' style='color:var(--gold)'><b>\u26a1 Second half</b> of the superset with "+escapeHtml(e.supersetOf)+"</div>":"")+
+    (e.tempo? "<div class='cue'><b>Tempo:</b> "+escapeHtml(e.tempo)+"</div>":"")+
+    (e.adjNote? "<div class='cue' style='color:var(--gold)'><b>\u2195 Adjusted:</b> "+escapeHtml(e.adjNote)+"</div>":"")+
+    (e.stoppedEarly? "<div class='cue' style='color:var(--muted)'>Stopped early \u2014 that's logged.</div>":"")+
+    (e.skipped? "<div class='cue' style='color:var(--red)'><b>Skipped today</b></div>":"")+
     lastTimeHTML(e.name)+
     "<button class='swapbtn' onclick='swapEx("+i+")'>Swap this exercise</button>"+
     "<button class='swapbtn' style='margin-left:7px' onclick='demoBtn("+i+")'>"+demoBtnLabel(e.name)+"</button>"+
@@ -3185,6 +3244,54 @@ function exBlockHTML(e,i){
     "<div class='setlog' id='sl"+i+"'>"+chips+"</div>"+input+
     "<button class='grouprest' onclick='groupRest("+i+")'>⏱ Rest before next exercise</button>"+
     "<div id='cb"+i+"'></div></div>";
+}
+/* ===== v63.1 · REORDER THE SESSION BY HAND =============================
+   Arrows rather than drag-and-drop: dragging inside a long scrolling sheet is
+   fiddly on a phone and worse with chalk on your hands, and a mis-drag mid-set
+   is far more annoying than one extra tap. "top" is there because moving a
+   main lift from the bottom to the front is the common case and shouldn't take
+   five presses.
+
+   Sets already logged travel with the exercise — they're stored against its
+   NAME, not its position, so nothing is lost by moving it. */
+function moveEx(i,dir){
+  const m=DB.workout&&DB.workout.main; if(!m) return;
+  const j=i+dir;
+  if(j<0||j>=m.length) return;
+  if(!orderGuard(i)) return;
+  const t=m[i]; m[i]=m[j]; m[j]=t;
+  commitOrder(j, m[j].name);
+}
+function moveExTop(i){
+  const m=DB.workout&&DB.workout.main; if(!m||i<=0) return;
+  if(!orderGuard(i)) return;
+  const [ex]=m.splice(i,1);
+  m.unshift(ex);
+  commitOrder(0, ex.name);
+}
+/* A running hold timer is tied to a position, so moving things under it would
+   log the time against the wrong exercise. Stop it first rather than silently
+   mis-recording. */
+function orderGuard(i){
+  if(holdInt){
+    toast("Stop the hold timer first");
+    return false;
+  }
+  return true;
+}
+function commitOrder(newIdx,name){
+  DB.workout.reordered=true;      // so a re-render never quietly re-sorts it
+  save();
+  renderWorkoutSheet(DB.workout);
+  try{
+    const el=document.getElementById('exb'+newIdx);
+    if(el){
+      el.scrollIntoView({behavior:'smooth',block:'center'});
+      el.classList.add('moved');
+      setTimeout(()=>{ try{ el.classList.remove('moved'); }catch(e){} },1200);
+    }
+  }catch(e){}
+  toast(escapeHtml(name)+" \u2192 position "+(newIdx+1));
 }
 let holdInt=null, holdStart=0, holdIdx=-1;
 function toggleHold(i){
@@ -3304,7 +3411,33 @@ function coachSystem(){
   const editBlock=
 "YOU HAVE FULL CONTROL OF THIS APP. When Amir asks for ANYTHING, actually do it by emitting directives — each on its OWN line — then give a short spoken reply. The app applies them instantly and re-renders. Never say you can't change something; use the right directive. Combine as many as needed.\n\n"+
 "TODAY'S WORKOUT (Train tab):\n"+
-"[[SET_DAY: Legs & Core]] · [[SET_WORKOUT: Bench Press, Barbell Row, Plank]] · [[ADD_EX: Lateral Raise]] · [[REMOVE_EX: Walking Lunge]] · [[SWAP_EX: Bench Press -> Incline DB Press]] · [[SET_SETS: 4]]\n\n"+
+"[[SET_DAY: Legs & Core]] · [[SET_WORKOUT: Bench Press, Barbell Row, Plank]] · [[ADD_EX: Lateral Raise]] · [[REMOVE_EX: Walking Lunge]] · [[SWAP_EX: Bench Press -> Incline DB Press]] · [[SET_SETS: 4]]\n"+
+"[[MOVE_EX: Bench Press -> 1]] moves one exercise to that position (1 = first). [[REORDER: Bench Press, Barbell Row, Plank]] sets the whole order at once — it only reorders what is already in the session, it never adds or removes.\n"+
+"If he asks to do something first, earlier, later or last, that is MOVE_EX \u2014 not SET_WORKOUT, which would rebuild the session and lose his logged sets.\n\n"+
+"PER-EXERCISE PRESCRIPTION (use these, NOT SET_WORKOUT, when he changes one lift):\n"+
+"[[SET_EX_SETS: Bench Press | 4]] · [[SET_EX_REPS: Bench Press | 6-8]] · [[SET_EX_REST: Bench Press | 3 min]] · [[SET_EX_LOAD: Bench Press | 60kg]] · [[SET_EX_TEMPO: Bench Press | 3-1-1]] · [[SET_EX_TIMED: Plank | 45s]] · [[SUPERSET: Curl + Pushdown]]\n"+
+"SET_SETS changes EVERY exercise. For one lift always use SET_EX_SETS. \"4 sets of 6 with 3 minutes rest\" is three directives, not a rebuild.\n\n"+
+"LOAD CAN GO DOWN TOO: [[DELOAD: Bench Press | -10%]] or [[DECREASE_LOAD_NEXT_TIME: Squat | -5kg]] \u2014 use these when he is beaten up, in pain, or coming back from a layoff. Do not only ever add weight.\n\n"+
+"HIS PROGRAMME, GOALS AND LIMITS:\n"+
+"[[SET_GOAL: ...]] · [[SET_PHASE: Strength block]] · [[SET_INJURY: left shoulder — no overhead pressing]] · [[CLEAR_INJURY]] · [[SET_TIME_BUDGET: 30 min]]\n"+
+"SET_INJURY and SET_TIME_BUDGET rebuild today's session around the new constraint automatically. If he mentions pain or being short of time, USE THEM rather than just sympathising.\n\n"+
+"BODY DATA:\n"+
+"[[LOG_MEASUREMENT: waist 84 | chest 106 | arm 37.5]] · [[LOG_ROW: 2000m | 8:30]]\n"+
+"Measurements he tells you go straight in \u2014 he should never have to retype them into Progress.\n\n"+
+"FIXING WHAT'S ALREADY LOGGED (he WILL mistype things mid-set):\n"+
+"[[EDIT_SET: Bench Press | last | 60kg | 10]] · [[EDIT_SET: Bench Press | 2 | 10 reps]] · [[DELETE_SET: Bench Press | last]] · [[REPEAT_SET: Bench Press]] · [[UNDO_LAST]]\n"+
+"Set number counts from 1, or use \"last\"/\"first\". \"I did 10 not 12\", \"delete that set\", \"wrong weight\", \"that one didn't count\" \u2014 all of these are EDIT/DELETE, never a new LOG_SET.\n\n"+
+"MID-SET AUTOREGULATION (act on the sheet, don't just say it):\n"+
+"[[ADJUST_NEXT_SET: Bench Press | +2.5kg]] · [[ADJUST_REMAINING: Bench Press | -10%]] · [[SKIP_REMAINING: Bench Press]] · [[SKIP_EX: Cable Fly]] · [[END_SESSION: wrist pain]]\n"+
+"\"That felt easy\", \"I had 4 left in the tank\", \"my form broke down\", \"that was too heavy\" \u2014 all mean CHANGE THE NEXT SET, not just comment on it.\n\n"+
+"INTENSITY TECHNIQUES:\n"+
+"[[SET_EX_TECHNIQUE: Lateral Raise | drop set on the last set]] · [[SET_EX_TECHNIQUE: Bench Press | final set AMRAP]] · [[SET_EX_TECHNIQUE: Curl | none]] · [[REMOVE_SUPERSET: Cable Fly]] · [[CLEAR_TECHNIQUES]]\n\n"+
+"THINGS THAT OUTLIVE TODAY \u2014 only when he says so (\"again\", \"from now on\", \"never\", \"always\"):\n"+
+"[[NEVER_AGAIN: Bulgarian Split Squat | hates them]] · [[ALLOW_AGAIN: X]] · [[PREFER_EX: Barbell Bench Press -> DB Bench Press]] · [[CLEAR_RULES]]\n"+
+"DEFAULT SCOPE IS TODAY ONLY. \"Make this two sets\" changes today. Only reach for NEVER_AGAIN or PREFER_EX if he actually says again/always/from now on/never. Banned exercises are removed from the pool permanently, so do not use it lightly.\n\n"+
+"WHAT KIT HE HAS: [[SET_KIT: dumbbells max 10kg | bar 20kg | plates 1.25,2.5,5,10,20]] \u2014 use it when he says a weight isn't available, then recommend loads he can actually make.\n\n"+
+"WHOLE SESSION:\n"+
+"[[REGENERATE_KEEPING: Bench Press, Barbell Row]] · [[DELOAD_WORKOUT: -20%]] · [[SAVE_FAVOURITE: Big Push]] · [[LOAD_FAVOURITE: Big Push]] · [[RESET_WORKOUT]]\n\n"+
 "WARM-UP / COOL-DOWN & ICONS:\n"+
 "[[SET_WARMUP: Cat-cow ×8 | 🐈 ; Arm circles ×15 | 🔄]] · [[SET_COOLDOWN: Child's pose 60s | 🧘]] · [[SET_ICON: warmup | Cat-cow | 🐈]] · [[FIX_ICONS]]\n\n"+
 "WEEKLY SCHEDULE & DAY TYPES:\n"+
@@ -3753,6 +3886,480 @@ function cardioBlockHTML(c,atEnd){ if(!c) return "";
     "<div id='cardioMsg' class='sm' style='margin-top:8px'></div></div>"; }
 
 /* Parse [[...]] directives out of an AI reply, apply them, return cleaned text + change notes. */
+/* ===== v63.1 · the coach can reorder too =================================
+   It had verbs for swapping, adding and removing but none for ORDER, so
+   "put bench press first" had nowhere to land and it either ignored him or
+   reached for SET_WORKOUT — which rebuilds the session from scratch and
+   throws away sets already logged. These move things without touching
+   anything else. */
+function coachFindExIdx(name){
+  const m=(DB.workout&&DB.workout.main)||[];
+  const q=String(name||"").trim().toLowerCase();
+  if(!q) return -1;
+  let i=m.findIndex(x=>String(x.name).toLowerCase()===q);
+  if(i<0) i=m.findIndex(x=>String(x.name).toLowerCase().indexOf(q)>=0);
+  if(i<0){ const tk=normTokens(q); if(tk.length)
+    i=m.findIndex(x=>{ const t=normTokens(x.name); return tk.every(w=>t.indexOf(w)>=0); }); }
+  return i;
+}
+function coachMoveEx(name,pos){
+  const m=(DB.workout&&DB.workout.main)||[];
+  const i=coachFindExIdx(name);
+  if(i<0||!m.length) return null;
+  let p=String(pos||"").trim().toLowerCase();
+  let j;
+  if(/^(top|first|start|beginning)$/.test(p)) j=0;
+  else if(/^(bottom|last|end)$/.test(p)) j=m.length-1;
+  else { j=parseInt(p,10)-1; }                       // he counts from 1
+  if(isNaN(j)) return null;
+  j=Math.max(0,Math.min(m.length-1,j));
+  const [ex]=m.splice(i,1);
+  m.splice(j,0,ex);
+  DB.workout.reordered=true; save();
+  try{ renderWorkoutSheet(DB.workout); }catch(e){}
+  return {name:ex.name,pos:j+1};
+}
+function coachReorder(list){
+  const m=(DB.workout&&DB.workout.main)||[];
+  if(!m.length) return null;
+  const want=String(list||"").split(/\s*,\s*/).map(x=>x.trim()).filter(Boolean);
+  if(!want.length) return null;
+  const out=[], used=new Set();
+  want.forEach(n=>{
+    const i=coachFindExIdx(n);
+    if(i>=0 && !used.has(i)){ used.add(i); out.push(m[i]); }
+  });
+  /* Anything he didn't name keeps its place at the end. Reordering must never
+     silently drop an exercise he's already logged sets against. */
+  m.forEach((x,i)=>{ if(!used.has(i)) out.push(x); });
+  DB.workout.main=out; DB.workout.reordered=true; save();
+  try{ renderWorkoutSheet(DB.workout); }catch(e){}
+  return out.map(x=>x.name);
+}
+/* ===== v64 · CLOSING THE COACH'S GAPS ==================================
+   Audited by asking a simpler question: if I were his PT and he told me
+   something, is there a verb for it? Fourteen common instructions had none,
+   so the coach either reached for raw JS and guessed at the data shape, or
+   grabbed SET_WORKOUT — which REBUILDS the session and throws away sets he
+   has already logged. Both look like "it didn't understand".
+
+   The single biggest hole: SET_SETS was GLOBAL. "Make bench 4 sets of 6 with
+   3 minutes rest" — the most ordinary sentence a coach says — was impossible
+   to express. */
+function coachEx(name){
+  const i=coachFindExIdx(name);
+  return i<0? null : (DB.workout.main[i]);
+}
+function coachAfterEx(){
+  DB.workout.reordered=DB.workout.reordered||false;
+  save();
+  try{ renderWorkoutSheet(DB.workout); }catch(e){}
+  try{ refreshTimeBar(); }catch(e){}
+}
+/* ---- per-exercise prescription ---- */
+function coachSetExSets(name,n){
+  const e=coachEx(name); if(!e) return null;
+  const v=parseInt(String(n).replace(/[^\d]/g,""),10);
+  if(isNaN(v)||v<1||v>10) return null;
+  e.sets=v;
+  try{ e.scheme=schemeFor(e.name,v); }catch(err){}
+  coachAfterEx(); return {name:e.name,v};
+}
+function coachSetExReps(name,reps){
+  const e=coachEx(name); if(!e) return null;
+  const r=String(reps).trim(); if(!r) return null;
+  const n=exSets(e);
+  /* Keep the app's own "N sets · range" shape so the sheet still reads right. */
+  e.scheme=n+" sets · "+r.replace(/reps?/i,"").trim();
+  e.reps=r;
+  coachAfterEx(); return {name:e.name,r};
+}
+function coachSetExRest(name,rest){
+  const e=coachEx(name); if(!e) return null;
+  let r=String(rest).trim().toLowerCase();
+  const m=r.match(/(\d+(?:\.\d+)?)\s*(m|min|minute|s|sec|second)?/);
+  if(!m) return null;
+  let sec=parseFloat(m[1]);
+  if(/^m/.test(m[2]||"")) sec*=60;
+  sec=Math.round(sec);
+  e.rest=(sec>=120 && sec%60===0)? (sec/60)+" min" : sec+"s";
+  e.restSec=sec;
+  coachAfterEx(); return {name:e.name,r:e.rest};
+}
+function coachSetExLoad(name,load){
+  const e=coachEx(name); if(!e) return null;
+  const txt=String(load).trim(); if(!txt) return null;
+  const kg=parseFloat(txt.replace(",","."));
+  e.rec={w:isNaN(kg)?"":kg, text:txt+(/kg|lb|band|bw/i.test(txt)?"":"kg")+" today."};
+  coachAfterEx(); return {name:e.name,txt};
+}
+function coachSetExTempo(name,tempo){
+  const e=coachEx(name); if(!e) return null;
+  const t=String(tempo).trim(); if(!t) return null;
+  e.tempo=t;
+  e.cue=(e.cue||"").replace(/\s*Tempo [^.]*\./,"").trim()+" Tempo "+t+".";
+  coachAfterEx(); return {name:e.name,t};
+}
+function coachSetExTimed(name,dur){
+  const e=coachEx(name); if(!e) return null;
+  const m=String(dur).match(/(\d+)/); if(!m) return null;
+  let sec=parseInt(m[1],10);
+  if(/m/i.test(String(dur)) && !/s/i.test(String(dur))) sec*=60;
+  e.timed=true; e.holdSec=sec;
+  e.scheme=exSets(e)+" sets · "+sec+"s hold";
+  coachAfterEx(); return {name:e.name,sec};
+}
+function coachSuperset(a,b){
+  const x=coachEx(a), y=coachEx(b);
+  if(!x||!y||x===y) return null;
+  const tag="Superset with "+y.name;
+  x.superset=y.name; y.supersetOf=x.name;
+  x.rest="0s"; x.restSec=0;
+  x.cue=(x.cue||"")+" Straight into "+y.name+", no rest between.";
+  /* Put them next to each other or the pairing is meaningless on the sheet. */
+  const m=DB.workout.main, i=m.indexOf(x), j=m.indexOf(y);
+  if(j!==i+1){ m.splice(j,1); m.splice(m.indexOf(x)+1,0,y); }
+  coachAfterEx(); return {a:x.name,b:y.name,tag};
+}
+/* ---- load can go DOWN, not only up ---- */
+function coachDecreaseLoad(a){
+  const parts=String(a).split("|");
+  const name=(parts[0]||"").trim();
+  let d=(parts[1]||"-5%").trim();
+  if(!/^[-+]/.test(d)) d="-"+d;
+  DB.progression=DB.progression||{};
+  DB.progression[name]={delta:d, note:"deload", at:today()};
+  save();
+  return {n:name,d};
+}
+/* ---- goals, phase, limits: core PT settings with no verb until now ---- */
+function coachSetGoal(v){
+  const t=String(v).trim(); if(!t) return null;
+  DB.profile.goal=t; save();
+  try{ renderItin(); }catch(e){}
+  return t;
+}
+function coachSetPhase(v){
+  const t=String(v).trim(); if(!t) return null;
+  DB.profile.phase=t; DB.workout=null; save();
+  try{ ensureWorkout(); }catch(e){}
+  return t;
+}
+function coachSetInjury(v){
+  const t=String(v).trim();
+  DB.profile.injuries=t? ((DB.profile.injuries||"").trim()? DB.profile.injuries.trim()+" | "+t : t) : "";
+  DB.workout=null; save();
+  try{ ensureWorkout(); }catch(e){}
+  return t;
+}
+function coachClearInjury(){
+  DB.profile.injuries=""; DB.workout=null; save();
+  try{ ensureWorkout(); }catch(e){}
+  return true;
+}
+function coachSetTimeBudget(a){
+  const str=String(a);
+  const m=str.match(/(\d+)/); if(!m) return null;
+  const mins=parseInt(m[1],10);
+  if(mins<5||mins>240) return null;
+  DB.timeBudget=DB.timeBudget||{};
+  DB.timeBudget.mins=mins;
+  if(/no row|without row|skip row/i.test(str)) DB.timeBudget.row=false;
+  if(/with row|include row/i.test(str)) DB.timeBudget.row=true;
+  DB.workout=null; save();
+  try{ ensureWorkout(); }catch(e){}
+  return mins;
+}
+/* ---- body data the coach could see but never write ---- */
+function coachLogMeasurement(a){
+  const rec={t:Date.now(), d:today(), src:"manual"};
+  let any=false;
+  String(a).split("|").forEach(seg=>{
+    const m=seg.trim().match(/^([a-z ]+?)\s*[:=]?\s*(\d+(?:\.\d+)?)\s*(?:cm)?$/i);
+    if(!m) return;
+    const key=m[1].trim().toLowerCase().replace(/\s+/g,"");
+    const map={chest:"chest",waist:"waist",hips:"hips",hip:"hips",shoulders:"shoulders",
+      shoulder:"shoulders",arm:"arm",arms:"arm",bicep:"arm",biceps:"arm",thigh:"thigh",
+      thighs:"thigh",quad:"thigh",calf:"calf",calves:"calf",neck:"neck",height:"height"};
+    const f=map[key]; if(!f) return;
+    if(f==="height"){ DB.profile.height=parseFloat(m[2]); return; }
+    rec[f]=Math.round(parseFloat(m[2])*10)/10; any=true;
+  });
+  if(!any) return null;
+  DB.measures=DB.measures||[];
+  DB.measures=DB.measures.filter(x=>!(x.d===rec.d && (x.src==="manual"||x.src==="ai")));
+  DB.measures.push(rec); save();
+  try{ renderMeasures(); }catch(e){}
+  return Object.keys(rec).filter(k=>!["t","d","src"].includes(k)).length;
+}
+function coachLogRow(a){
+  const parts=String(a).split("|").map(x=>x.trim());
+  const dist=parts[0]||"", time=parts[1]||"";
+  if(!dist&&!time) return null;
+  DB.rowing.push({dist,time,name:parts[2]||"",date:today()});
+  try{ markSession(); }catch(e){}
+  save();
+  try{ renderRowing(); renderRowingLog(); }catch(e){}
+  return dist+(time?" in "+time:"");
+}
+/* ===== v65 · THE FIVE CLUSTERS THAT WERE COMPLETELY ABSENT ==============
+   Working through the things he'd actually say, most were already
+   expressible. These five were not, and they're the ones that come up MID
+   SESSION, when going back to a laptop isn't an option. */
+
+/* ---- 1. EDITING WHAT'S ALREADY LOGGED --------------------------------
+   "I did 10, not 12." "Delete that set." "Wrong weight." There was no way to
+   touch a logged set at all — only ever to add another one. */
+function setsToday(name){
+  const arr=DB.strength&&DB.strength[name];
+  if(!arr) return null;
+  return arr.find(s=>s.date===today())||null;
+}
+function pickSetNo(sess,which){
+  if(!sess||!sess.sets.length) return -1;
+  const w=String(which||"last").trim().toLowerCase();
+  if(/^(last|final|that)$/.test(w)) return sess.sets.length-1;
+  if(/^(first)$/.test(w)) return 0;
+  const n=parseInt(w,10);
+  return (isNaN(n)||n<1||n>sess.sets.length)? -1 : n-1;
+}
+function coachEditSet(a){
+  const P=String(a).split("|").map(x=>x.trim());
+  const name=(coachEx(P[0])||{}).name||P[0];
+  const sess=setsToday(name); if(!sess) return null;
+  const idx=pickSetNo(sess,P[1]); if(idx<0) return null;
+  const st=sess.sets[idx];
+  P.slice(2).forEach(seg=>{
+    const kg=seg.match(/^([\d.]+)\s*kg$/i);
+    const rp=seg.match(/^([\d]+)\s*(?:reps?)?$/i);
+    if(kg) st.w=parseFloat(kg[1]);
+    else if(rp) st.r=parseInt(rp[1],10);
+  });
+  save(); try{ renderStrengthPBs(); if(DB.workout) renderWorkoutSheet(DB.workout); }catch(e){}
+  return {name, no:idx+1, w:st.w, r:st.r};
+}
+function coachDeleteSet(a){
+  const P=String(a).split("|").map(x=>x.trim());
+  const name=(coachEx(P[0])||{}).name||P[0];
+  const sess=setsToday(name); if(!sess) return null;
+  const idx=pickSetNo(sess,P[1]); if(idx<0) return null;
+  const st=sess.sets.splice(idx,1)[0];
+  if(!sess.sets.length) DB.strength[name]=DB.strength[name].filter(x=>x!==sess);
+  save(); try{ renderStrengthPBs(); if(DB.workout) renderWorkoutSheet(DB.workout); }catch(e){}
+  return {name, no:idx+1, w:st.w, r:st.r};
+}
+function coachRepeatSet(a){
+  const name=(coachEx(a)||{}).name||String(a).trim();
+  const sess=setsToday(name); if(!sess||!sess.sets.length) return null;
+  const last=sess.sets[sess.sets.length-1];
+  sess.sets.push({w:last.w,r:last.r,rpe:last.rpe});
+  save(); try{ renderStrengthPBs(); if(DB.workout) renderWorkoutSheet(DB.workout); }catch(e){}
+  return {name,w:last.w,r:last.r};
+}
+
+/* ---- 2. AUTOREGULATION MID-SET ---------------------------------------
+   "That felt easy — put the next one up." "Drop the rest." "Skip the rest of
+   this one." All of it lived only in the coach's spoken reply and changed
+   nothing on the sheet. */
+function parseDelta(txt,base){
+  const t=String(txt).trim();
+  const pct=t.match(/^([-+]?\d+(?:\.\d+)?)\s*%$/);
+  if(pct && base) return Math.round((base*(parseFloat(pct[1])/100))*2)/2;
+  const kg=t.match(/^([-+]?\d+(?:\.\d+)?)/);
+  return kg? parseFloat(kg[1]) : null;
+}
+function coachAdjustSets(a,scope){
+  const P=String(a).split("|").map(x=>x.trim());
+  const e=coachEx(P[0]); if(!e) return null;
+  const sess=setsToday(e.name);
+  const base=(sess&&sess.sets.length)? sess.sets[sess.sets.length-1].w
+            : (e.rec&&parseFloat(e.rec.w))||null;
+  const d=parseDelta(P[1],base);
+  if(d===null||base===null) return null;
+  const target=Math.max(0,Math.round((base+d)*2)/2);
+  e.rec={w:target, text:target+"kg"+(scope==="next"?" for the next set.":" for the rest of these sets.")};
+  e.adjNote=(d>0?"+":"")+d+"kg "+(scope==="next"?"next set":"on remaining sets");
+  save(); try{ renderWorkoutSheet(DB.workout); }catch(e2){}
+  return {name:e.name, target, d};
+}
+function coachSkipRemaining(a){
+  const e=coachEx(a); if(!e) return null;
+  const sess=setsToday(e.name);
+  const done=sess? sess.sets.length : 0;
+  e.sets=Math.max(1,done||1);
+  try{ e.scheme=schemeFor(e.name,e.sets); }catch(err){}
+  e.stoppedEarly=true;
+  save(); try{ renderWorkoutSheet(DB.workout); }catch(err){}
+  return {name:e.name, done};
+}
+function coachSkipEx(a){
+  const e=coachEx(a); if(!e) return null;
+  e.skipped=true;
+  save(); try{ renderWorkoutSheet(DB.workout); }catch(err){}
+  return e.name;
+}
+function coachEndSession(a){
+  const why=String(a||"").trim();
+  DB.workout=DB.workout||{};
+  DB.workout.endedEarly={why, at:new Date().toISOString()};
+  if(why) { DB.checkins=DB.checkins||[];
+            const c=DB.checkins.find(x=>x.date===today());
+            if(c) c.pain=(c.pain? c.pain+" | ":"")+why; }
+  try{ coachWorkoutComplete(); }catch(e){}
+  save();
+  return why||"ended";
+}
+
+/* ---- 3. INTENSITY TECHNIQUES -----------------------------------------
+   Drop sets, AMRAP finishers, burnouts, "last set to failure". The sheet had
+   no way to say any of it, so the coach could only mention it in passing and
+   hope he remembered by set four. */
+function coachSetTechnique(a){
+  const P=String(a).split("|").map(x=>x.trim());
+  const e=coachEx(P[0]); if(!e) return null;
+  const t=P[1]||"";
+  if(!t || /^(none|clear|off)$/i.test(t)){ delete e.technique; }
+  else e.technique=t;
+  save(); try{ renderWorkoutSheet(DB.workout); }catch(err){}
+  return {name:e.name, t:e.technique||"cleared"};
+}
+function coachClearTechniques(){
+  let n=0;
+  ((DB.workout&&DB.workout.main)||[]).forEach(e=>{
+    if(e.technique){ delete e.technique; n++; }
+    if(e.superset){ delete e.superset; n++; }
+  });
+  ((DB.workout&&DB.workout.main)||[]).forEach(e=>{ delete e.supersetOf; });
+  save(); try{ renderWorkoutSheet(DB.workout); }catch(e){}
+  return n;
+}
+function coachRemoveSuperset(a){
+  const e=coachEx(a); if(!e) return null;
+  const partner=e.superset;
+  delete e.superset;
+  ((DB.workout&&DB.workout.main)||[]).forEach(x=>{ if(x.supersetOf===e.name) delete x.supersetOf; });
+  if(!e.restSec) { e.rest="90s"; e.restSec=90; }
+  save(); try{ renderWorkoutSheet(DB.workout); }catch(err){}
+  return {name:e.name, partner};
+}
+
+/* ---- 4. PERSISTENT PREFERENCES ---------------------------------------
+   The scope problem, in the only form that matters day to day: never again,
+   and always use this instead. */
+function coachNeverAgain(a){
+  const P=String(a).split("|").map(x=>x.trim());
+  const name=P[0]; if(!name) return null;
+  DB.rules=DB.rules||{banned:{},prefer:{},kit:{}};
+  DB.rules.banned=DB.rules.banned||{};
+  DB.rules.banned[name]={why:P[1]||"", at:today()};
+  /* Take it out of today too, or he has to ask twice. */
+  const i=coachFindExIdx(name);
+  if(i>=0){ try{ coachRemoveEx(DB.workout.main[i].name); }catch(e){} }
+  save(); try{ if(DB.workout) renderWorkoutSheet(DB.workout); }catch(e){}
+  return name;
+}
+function coachAllowAgain(a){
+  const name=String(a).trim();
+  if(DB.rules&&DB.rules.banned) delete DB.rules.banned[name];
+  save(); return name;
+}
+function coachPreferEx(a,b){
+  const from=String(a).trim(), to=String(b).trim();
+  if(!from||!to) return null;
+  DB.rules=DB.rules||{banned:{},prefer:{},kit:{}};
+  DB.rules.prefer=DB.rules.prefer||{};
+  DB.rules.prefer[from]=to;
+  const i=coachFindExIdx(from);
+  if(i>=0){ try{ coachSwapWorkoutEx(from,to); }catch(e){} }
+  save(); return {from,to};
+}
+function coachClearRules(){
+  DB.rules={banned:{},prefer:{},kit:{}};
+  save(); return true;
+}
+/* ---- 5. WHAT KIT HE ACTUALLY HAS -------------------------------------
+   "The heaviest dumbbells are 10kg." "Round it to the plates I own." The
+   coach was recommending loads it had no way of knowing he couldn't make. */
+function coachSetKitLimit(a){
+  DB.rules=DB.rules||{banned:{},prefer:{},kit:{}};
+  DB.rules.kit=DB.rules.kit||{};
+  let hit=0;
+  String(a).split("|").forEach(seg=>{
+    let m=seg.match(/dumbbell[s]?\s*(?:max)?\s*([\d.]+)/i);
+    if(m){ DB.rules.kit.dbMax=parseFloat(m[1]); hit++; return; }
+    m=seg.match(/bar\s*(?:weighs?)?\s*([\d.]+)/i);
+    if(m){ DB.rules.kit.bar=parseFloat(m[1]); hit++; return; }
+    m=seg.match(/plates?\s*[:=]?\s*([\d.,\s]+)/i);
+    if(m){ DB.rules.kit.plates=m[1].split(/[,\s]+/).map(parseFloat).filter(x=>x>0); hit++; return; }
+  });
+  if(!hit) return null;
+  save(); return DB.rules.kit;
+}
+
+/* ---- whole-workout operations ---------------------------------------- */
+function coachRegenerateKeeping(a){
+  const keep=String(a).split(/\s*,\s*/).map(x=>x.trim()).filter(Boolean);
+  const held=[];
+  keep.forEach(n=>{ const e=coachEx(n); if(e) held.push(e); });
+  DB.workout=null;
+  try{ ensureWorkout(); }catch(e){}
+  if(DB.workout&&DB.workout.main&&held.length){
+    held.slice().reverse().forEach(e=>{
+      DB.workout.main=DB.workout.main.filter(x=>x.name!==e.name);
+      DB.workout.main.unshift(e);
+    });
+    DB.workout.main=DB.workout.main.slice(0,Math.max(held.length, 5));
+  }
+  save(); try{ renderWorkoutSheet(DB.workout); }catch(e){}
+  return held.map(e=>e.name);
+}
+function coachDeloadWorkout(a){
+  const m=(DB.workout&&DB.workout.main)||[];
+  if(!m.length) return null;
+  const pct=parseFloat(String(a||"-20").replace(/[^\d.-]/g,""))||-20;
+  const f=1+(pct>0? -pct:pct)/100;
+  m.forEach(e=>{
+    const base=(e.rec&&parseFloat(e.rec.w))||null;
+    if(base){ const t=Math.round(base*f*2)/2; e.rec={w:t,text:t+"kg — deload."}; }
+    e.sets=Math.max(2,(exSets(e)-1));
+    try{ e.scheme=schemeFor(e.name,e.sets); }catch(err){}
+  });
+  DB.workout.deload=true;
+  save(); try{ renderWorkoutSheet(DB.workout); }catch(e){}
+  return Math.round((1-f)*100);
+}
+function coachSaveFavourite(a){
+  const name=String(a).trim()||("Session "+ukDate());
+  if(!DB.workout||!DB.workout.main) return null;
+  DB.favourites=DB.favourites||{};
+  DB.favourites[name]={at:today(), split:DB.workout.title||"",
+    main:JSON.parse(JSON.stringify(DB.workout.main))};
+  save(); return name;
+}
+function coachLoadFavourite(a){
+  const name=String(a).trim();
+  const f=(DB.favourites||{})[name] ||
+          (DB.favourites||{})[Object.keys(DB.favourites||{}).find(k=>k.toLowerCase()===name.toLowerCase())];
+  if(!f) return null;
+  try{ ensureWorkout(); }catch(e){}
+  if(!DB.workout) return null;
+  DB.workout.main=JSON.parse(JSON.stringify(f.main));
+  save(); try{ renderWorkoutSheet(DB.workout); }catch(e){}
+  return name;
+}
+function coachResetWorkout(){
+  DB.workout=null;
+  try{ ensureWorkout(); }catch(e){}
+  save(); return true;
+}
+function coachUndoLast(){
+  const ids=Object.keys(SNAPS).sort();
+  if(!ids.length) return null;
+  const id=ids[ids.length-1];
+  const label=(SNAPS[id]||{}).label||"change";
+  undoChange(id);
+  return label;
+}
 function applyCoachDirectives(reply){
   try{ return applyCoachDirectivesInner(reply); }
   catch(e){ console.warn("directives",e);
@@ -3768,8 +4375,47 @@ function applyCoachDirectivesInner(reply){
   out=out.replace(/\[\[\s*SET_DAY\s*:\s*([^\]]+)\]\]/ig,(m,a)=>{ const r=applyDayDirective(a); if(r) notes.push("🔁 Switched today → "+r); return ""; });
   out=out.replace(/\[\[\s*SET_WORKOUT\s*:\s*([^\]]+)\]\]/ig,(m,a)=>{ const r=coachSetWorkout(a); if(r) notes.push("📝 New workout → "+r.join(", ")); return ""; });
   out=out.replace(/\[\[\s*SWAP_EX\s*:\s*([^\]]+?)\s*(?:->|→|=>|\bto\b)\s*([^\]]+)\]\]/ig,(m,a,b)=>{ const r=coachSwapWorkoutEx(a,b); if(r) notes.push("⇄ Swapped "+r.from+" → "+r.to+(r.warn||"")); return ""; });
+  out=out.replace(/\[\[\s*MOVE_EX\s*:\s*([^\]]+?)\s*(?:->|→|=>|\bto\b)\s*([^\]]+)\]\]/ig,(m,a,b)=>{ const r=coachMoveEx(a,b); if(r) notes.push("\u21c5 Moved "+r.name+" to position "+r.pos); return ""; });
+  out=out.replace(/\[\[\s*REORDER\s*:\s*([^\]]+)\]\]/ig,(m,a)=>{ const r=coachReorder(a); if(r) notes.push("\u21c5 Reordered \u2192 "+r.join(", ")); return ""; });
   out=out.replace(/\[\[\s*ADD_EX\s*:\s*([^\]]+)\]\]/ig,(m,a)=>{ const r=coachAddEx(a); if(r) notes.push("➕ Added "+r); return ""; });
   out=out.replace(/\[\[\s*REMOVE_EX\s*:\s*([^\]]+)\]\]/ig,(m,a)=>{ const r=coachRemoveEx(a); if(r) notes.push("➖ Removed "+r); return ""; });
+  out=out.replace(/\[\[\s*EDIT_SET\s*:\s*([^\]]+)\]\]/ig,(m,a)=>{ const r=coachEditSet(a); if(r) notes.push("\u270f\ufe0f "+r.name+" set "+r.no+" \u2192 "+r.w+"kg \u00d7 "+r.r); else notes.push("\u26a0\ufe0f Couldn't edit that set \u2014 nothing logged for it today"); return ""; });
+  out=out.replace(/\[\[\s*DELETE_SET\s*:\s*([^\]]+)\]\]/ig,(m,a)=>{ const r=coachDeleteSet(a); if(r) notes.push("\ud83d\uddd1 Deleted "+r.name+" set "+r.no); else notes.push("\u26a0\ufe0f Couldn't delete that set \u2014 nothing logged for it today"); return ""; });
+  out=out.replace(/\[\[\s*REPEAT_SET\s*:\s*([^\]]+)\]\]/ig,(m,a)=>{ const r=coachRepeatSet(a); if(r) notes.push("\u21ba Repeated "+r.name+" \u00b7 "+r.w+"kg \u00d7 "+r.r); return ""; });
+  out=out.replace(/\[\[\s*ADJUST_NEXT_SET\s*:\s*([^\]]+)\]\]/ig,(m,a)=>{ const r=coachAdjustSets(a,"next"); if(r) notes.push("\u2195 "+r.name+" next set \u2192 "+r.target+"kg"); return ""; });
+  out=out.replace(/\[\[\s*ADJUST_REMAINING\s*:\s*([^\]]+)\]\]/ig,(m,a)=>{ const r=coachAdjustSets(a,"rest"); if(r) notes.push("\u2195 "+r.name+" remaining sets \u2192 "+r.target+"kg"); return ""; });
+  out=out.replace(/\[\[\s*SKIP_REMAINING\s*:\s*([^\]]+)\]\]/ig,(m,a)=>{ const r=coachSkipRemaining(a); if(r) notes.push("\u23ed "+r.name+" stopped at "+r.done+" set"+(r.done===1?"":"s")); return ""; });
+  out=out.replace(/\[\[\s*SKIP_EX\s*:\s*([^\]]+)\]\]/ig,(m,a)=>{ const r=coachSkipEx(a); if(r) notes.push("\u23ed Skipped "+r); return ""; });
+  out=out.replace(/\[\[\s*END_SESSION\s*(?::\s*([^\]]*))?\]\]/ig,(m,a)=>{ const r=coachEndSession(a); notes.push("\ud83d\uded1 Session ended"+(a?" \u00b7 "+String(a).trim():"")); return ""; });
+  out=out.replace(/\[\[\s*SET_EX_TECHNIQUE\s*:\s*([^\]]+)\]\]/ig,(m,a)=>{ const r=coachSetTechnique(a); if(r) notes.push("\ud83d\udd25 "+r.name+" \u00b7 "+r.t); else notes.push("\u26a0\ufe0f Couldn't set that \u2014 no such exercise in today's session"); return ""; });
+  out=out.replace(/\[\[\s*CLEAR_TECHNIQUES\s*\]\]/ig,()=>{ const n=coachClearTechniques(); notes.push("\ud83e\uddf9 Cleared "+n+" intensity technique"+(n===1?"":"s")); return ""; });
+  out=out.replace(/\[\[\s*REMOVE_SUPERSET\s*:\s*([^\]]+)\]\]/ig,(m,a)=>{ const r=coachRemoveSuperset(a); if(r) notes.push("\u2702 Superset removed \u00b7 "+r.name); return ""; });
+  out=out.replace(/\[\[\s*NEVER_AGAIN\s*:\s*([^\]]+)\]\]/ig,(m,a)=>{ const r=coachNeverAgain(a); if(r) notes.push("\ud83d\udeab "+r+" \u2014 never programmed again"); return ""; });
+  out=out.replace(/\[\[\s*ALLOW_AGAIN\s*:\s*([^\]]+)\]\]/ig,(m,a)=>{ const r=coachAllowAgain(a); if(r) notes.push("\u2705 "+r+" allowed again"); return ""; });
+  out=out.replace(/\[\[\s*PREFER_EX\s*:\s*([^|\]]+?)\s*(?:->|\u2192|=>)\s*([^\]]+)\]\]/ig,(m,a,b)=>{ const r=coachPreferEx(a,b); if(r) notes.push("\ud83d\udd01 From now on: "+r.from+" \u2192 "+r.to); return ""; });
+  out=out.replace(/\[\[\s*CLEAR_RULES\s*\]\]/ig,()=>{ coachClearRules(); notes.push("\ud83e\uddf9 All never-again and substitution rules cleared"); return ""; });
+  out=out.replace(/\[\[\s*SET_KIT\s*:\s*([^\]]+)\]\]/ig,(m,a)=>{ const r=coachSetKitLimit(a); if(r) notes.push("\ud83c\udfcb Equipment noted"); return ""; });
+  out=out.replace(/\[\[\s*REGENERATE_KEEPING\s*:\s*([^\]]+)\]\]/ig,(m,a)=>{ const r=coachRegenerateKeeping(a); if(r) notes.push("\ud83d\udd04 Rebuilt, kept "+r.join(", ")); return ""; });
+  out=out.replace(/\[\[\s*DELOAD_WORKOUT\s*(?::\s*([^\]]*))?\]\]/ig,(m,a)=>{ const r=coachDeloadWorkout(a); if(r) notes.push("\u2b07 Whole session deloaded "+r+"%"); return ""; });
+  out=out.replace(/\[\[\s*SAVE_FAVOURITE\s*:\s*([^\]]+)\]\]/ig,(m,a)=>{ const r=coachSaveFavourite(a); if(r) notes.push("\u2b50 Saved as \u201c"+r+"\u201d"); return ""; });
+  out=out.replace(/\[\[\s*LOAD_FAVOURITE\s*:\s*([^\]]+)\]\]/ig,(m,a)=>{ const r=coachLoadFavourite(a); if(r) notes.push("\u2b50 Loaded \u201c"+r+"\u201d"); else notes.push("\u26a0\ufe0f No favourite saved by that name"); return ""; });
+  out=out.replace(/\[\[\s*RESET_WORKOUT\s*\]\]/ig,()=>{ coachResetWorkout(); notes.push("\u21ba Back to the original plan for today"); return ""; });
+  out=out.replace(/\[\[\s*UNDO_LAST\s*\]\]/ig,()=>{ const r=coachUndoLast(); notes.push(r? ("\u21a9 Reverted: "+r) : "\u26a0\ufe0f Nothing left to undo"); return ""; });
+  out=out.replace(/\[\[\s*SET_EX_SETS\s*:\s*([^|\]]+?)\s*\|\s*([^\]]+)\]\]/ig,(m,a,b)=>{ const r=coachSetExSets(a,b); if(r) notes.push("\ud83c\udfaf "+r.name+" \u2192 "+r.v+" sets"); else notes.push("\u26a0\ufe0f Couldn't set sets \u2014 no \""+String(a).trim()+"\" in today's session"); return ""; });
+  out=out.replace(/\[\[\s*SET_EX_REPS\s*:\s*([^|\]]+?)\s*\|\s*([^\]]+)\]\]/ig,(m,a,b)=>{ const r=coachSetExReps(a,b); if(r) notes.push("\ud83c\udfaf "+r.name+" \u2192 "+r.r); else notes.push("\u26a0\ufe0f Couldn't set reps \u2014 no \""+String(a).trim()+"\" in today's session"); return ""; });
+  out=out.replace(/\[\[\s*SET_EX_REST\s*:\s*([^|\]]+?)\s*\|\s*([^\]]+)\]\]/ig,(m,a,b)=>{ const r=coachSetExRest(a,b); if(r) notes.push("\u23f1 "+r.name+" \u2192 rest "+r.r); else notes.push("\u26a0\ufe0f Couldn't set rest \u2014 no \""+String(a).trim()+"\" in today's session"); return ""; });
+  out=out.replace(/\[\[\s*SET_EX_LOAD\s*:\s*([^|\]]+?)\s*\|\s*([^\]]+)\]\]/ig,(m,a,b)=>{ const r=coachSetExLoad(a,b); if(r) notes.push("\ud83c\udfcb "+r.name+" \u2192 "+r.txt); else notes.push("\u26a0\ufe0f Couldn't set load \u2014 no \""+String(a).trim()+"\" in today's session"); return ""; });
+  out=out.replace(/\[\[\s*SET_EX_TEMPO\s*:\s*([^|\]]+?)\s*\|\s*([^\]]+)\]\]/ig,(m,a,b)=>{ const r=coachSetExTempo(a,b); if(r) notes.push("\ud83c\udf9a "+r.name+" \u2192 tempo "+r.t); else notes.push("\u26a0\ufe0f Couldn't set tempo \u2014 no \""+String(a).trim()+"\" in today's session"); return ""; });
+  out=out.replace(/\[\[\s*SET_EX_TIMED\s*:\s*([^|\]]+?)\s*\|\s*([^\]]+)\]\]/ig,(m,a,b)=>{ const r=coachSetExTimed(a,b); if(r) notes.push("\u23f1 "+r.name+" \u2192 "+r.sec+"s hold"); else notes.push("\u26a0\ufe0f Couldn't set hold \u2014 no \""+String(a).trim()+"\" in today's session"); return ""; });
+  out=out.replace(/\[\[\s*SUPERSET\s*:\s*([^|\]+]+?)\s*(?:\+|\||with)\s*([^\]]+)\]\]/ig,(m,a,b)=>{ const r=coachSuperset(a,b); if(r) notes.push("\u26a1 Superset \u00b7 "+r.a+" + "+r.b); return ""; });
+  out=out.replace(/\[\[\s*(?:DECREASE_LOAD_NEXT_TIME|DELOAD)\s*:\s*([^\]]+)\]\]/ig,(m,a)=>{ const r=coachDecreaseLoad(a); if(r) notes.push("\u2b07 "+r.n+" "+r.d+" next time"); return ""; });
+  out=out.replace(/\[\[\s*SET_GOAL\s*:\s*([^\]]+)\]\]/ig,(m,a)=>{ const r=coachSetGoal(a); if(r) notes.push("\ud83c\udfaf Goal updated"); return ""; });
+  out=out.replace(/\[\[\s*SET_PHASE\s*:\s*([^\]]+)\]\]/ig,(m,a)=>{ const r=coachSetPhase(a); if(r) notes.push("\ud83d\udcc8 Phase \u2192 "+r); return ""; });
+  out=out.replace(/\[\[\s*SET_INJURY\s*:\s*([^\]]+)\]\]/ig,(m,a)=>{ const r=coachSetInjury(a); if(r) notes.push("\ud83e\ude79 Injury noted \u2014 today's session rebuilt around it"); return ""; });
+  out=out.replace(/\[\[\s*CLEAR_INJURY\s*\]\]/ig,()=>{ coachClearInjury(); notes.push("\u2705 Injury cleared \u2014 back to full programming"); return ""; });
+  out=out.replace(/\[\[\s*SET_TIME_BUDGET\s*:\s*([^\]]+)\]\]/ig,(m,a)=>{ const r=coachSetTimeBudget(a); if(r) notes.push("\u23f3 Session \u2192 "+r+" min"); return ""; });
+  out=out.replace(/\[\[\s*LOG_MEASUREMENT\s*:\s*([^\]]+)\]\]/ig,(m,a)=>{ const r=coachLogMeasurement(a); if(r) notes.push("\ud83d\udccf Logged "+r+" measurement"+(r===1?"":"s")); return ""; });
+  out=out.replace(/\[\[\s*LOG_ROW\s*:\s*([^\]]+)\]\]/ig,(m,a)=>{ const r=coachLogRow(a); if(r) notes.push("\ud83d\udea3 Row logged \u00b7 "+r); return ""; });
   out=out.replace(/\[\[\s*SET_SETS\s*:\s*(\d+)\s*\]\]/ig,(m,a)=>{ const r=coachSetSets(a); if(r) notes.push("🎯 Sets → "+r); return ""; });
   out=out.replace(/\[\[\s*SET_ICON\s*:\s*([^|\]]+?)\s*\|\s*([^|\]]+?)\s*\|\s*([^\]]+?)\s*\]\]/ig,(m,sec,match,emo)=>{ const r=coachSetSectionIcon(sec,match,emo); if(r) notes.push("🎨 "+(r.sec==='warmup'?'Warm-up':'Cool-down')+" icon → "+emo.trim()+" "+r.text); return ""; });
   out=out.replace(/\[\[\s*SET_WARMUP\s*:\s*([^\]]+)\]\]/ig,(m,a)=>{ const r=coachSetSection('warmup',a); if(r) notes.push(" Warm-up updated → "+r.names.join(", ")); return ""; });
@@ -3830,6 +4476,13 @@ function applyCoachDirectivesInner(reply){
   out=out.replace(/\[\[\s*SET_COACH_STYLE\s*:\s*([^\]]+)\]\]/ig,(m,a)=>{ const r=coachSetCoachStyle(a); if(r) notes.push("🗣️ Coach style → "+r); return ""; });
   /* ---- General passthrough ---- */
   out=out.replace(/\[\[\s*APP_ACTION\s*:\s*([^\]]+)\]\]/ig,(m,a)=>{ const r=appAction(a); if(r) notes.push("⚙️ "+r); return ""; });
+  /* A directive that matched its pattern but whose handler returned null used
+     to vanish without a word: the coach would say "done" and nothing had
+     changed. That silence is exactly what "he didn't understand" felt like.
+     Now nothing fails quietly. */
+  const attempted=(String(reply||"").match(/\[\[\s*[A-Z_]{3,}/g)||[]).length;
+  if(attempted>0 && notes.length===0)
+    notes.push("\u26a0\ufe0f I tried to change something and it didn't take \u2014 most often an exercise name that isn't in today's session. Tell me the name exactly as it reads on the sheet.");
   return {cleaned:out.replace(/\n{3,}/g,"\n\n").trim(), notes};
 }
 /* General action router — lets the AI drive anything via one command: [[APP_ACTION: domain | args]] */
@@ -4820,7 +5473,7 @@ function scheduleInApp(){
    v18 ADDITIONS — draggable rest timer · weekly training memory · AI planner
    · Firestore sync
    ========================================================================== */
-const APP_VERSION="v63 · 06/08/2026";
+const APP_VERSION="v65 · 06/08/2026";
 
 /* ===== 1. REST TIMER — drag it anywhere so it never blocks the chat box ===== */
 let _rtDrag=null;
@@ -7848,7 +8501,7 @@ function mergeCloud(r,rev){
   const manualDays=new Set(DB.measures.filter(m=>m.src==="manual").map(m=>m.d));
   DB.measures=DB.measures.filter(m=>!(m.src==="ai" && manualDays.has(m.d)));
   DB.measures.sort((a,b)=>(a.t||0)-(b.t||0));
-  ["lib","dayTypes","media","mediaPicked","exMap","progression","deadMedia","demoPick"].forEach(k=>{ DB[k]=Object.assign({},r[k]||{},DB[k]||{}); });
+  ["lib","dayTypes","media","mediaPicked","exMap","progression","deadMedia","demoPick","favourites"].forEach(k=>{ DB[k]=Object.assign({},r[k]||{},DB[k]||{}); });
   if((rev||0) > (DB._rev||0)){
     ["profile","schedule","prefs","nutrition","cardio","memory","integrations","reminder","weights","dayOverride"].forEach(k=>{ if(r[k]!==undefined) DB[k]=r[k]; });
     if(typeof r.streak==="number") DB.streak=Math.max(DB.streak||0,r.streak);
