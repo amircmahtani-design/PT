@@ -1,4 +1,4 @@
-AMIR PT — v61.4 · 06/08/2026
+AMIR PT — v62.1 · 06/08/2026
 ============================
 
 Deploy exactly as before: index.html, sw.js, manifest.json and the two icons
@@ -17,6 +17,168 @@ DO THIS FIRST — YOU HAVE NO DEMOS RIGHT NOW
 That gets you animated demos back TODAY, for free, without spending a single
 one of your remaining WorkoutX requests. Details below.
 
+
+=============================================================
+v62.1 — REAL PHOTOGRAPHS EVERYWHERE. NO DRAWINGS.
+=============================================================
+
+Upload index.html AND sw.js.
+
+The drawn figure is gone completely — not disabled, deleted. You'd rather see a
+real photo of a RELATED movement than an illustration of the right one, and
+you're right.
+
+WHY THERE WERE GAPS AT ALL
+  I had tuned the matcher to refuse rather than guess, on the reasoning that a
+  wrong demo is worse than none. That was an over-correction. It's true when the
+  app pretends a guess is a certainty; it isn't true when the guess is a real
+  photograph of a related movement and says so.
+
+TWO TIERS NOW
+  STRICT — confident, same movement. Shown plainly, as before.
+  NEAR   — the closest real movement in the pack, used when strict finds
+           nothing. It will NEVER cross muscle groups: a hamstring exercise
+           cannot land on a biceps photo. That one rule is what makes guessing
+           safe enough to do.
+
+  Anything from the near tier, AND anything from the strict tier that only just
+  cleared the bar, is badged on the image: "≈ closest match · tap Change demo".
+  So a wrong one is obvious at a glance rather than mid-set.
+
+  On a 23-exercise test: 19 exact, 4 badged as approximate, ZERO with no photo.
+  Landmine Press is one of the badged ones — it has no exact entry in the pack,
+  so it shows the nearest chest/shoulder press and admits it.
+
+WHAT EVERY TILE HAS NOW
+  A real photograph, animating between the start and end frames, with the
+  start/end label, and the "▶ demo" button in the corner for real video. If the
+  match is uncertain it also carries the approximate badge and one tap changes
+  it — and your choice still overrides everything, permanently.
+
+=============================================================
+v62 — WORKOUTX IS OUT OF THE WAY. THERE IS ALWAYS A PICTURE.
+=============================================================
+
+Upload index.html AND sw.js.
+
+WHAT I DID INSTEAD OF DELETING IT
+  WorkoutX turned out to be threaded through more than the demos: the exercise
+  lookup, the browsable list, and the step-by-step "How to do it" text all read
+  from it. Ripping the code out would have taken the instructions with it.
+
+  So it's switched OFF rather than deleted. Nothing consults it automatically
+  any more — not a session, not a browse list, not a thumbnail. Your key and the
+  code are still there, so when the allowance resets you can switch it back on
+  in Settings if you want the animated clips. Until then it costs you nothing
+  and can't blank anything out.
+
+THE FREE PACK IS NOW A FULL EXERCISE SOURCE, NOT JUST PICTURES
+  It always carried instructions, equipment, muscles and difficulty — I was
+  throwing all of that away on import and keeping only the photographs.
+
+  Now the pack supplies proper step-by-step instructions under "How to do it",
+  the right equipment and muscle groups, and its 800+ movements appear in your
+  browse and swap lists. That's what actually replaces WorkoutX.
+
+THERE IS ALWAYS A PICTURE NOW
+  Three layers, in order:
+    1. a photo from the free pack, animated between start and end
+    2. a clip you chose yourself, which always wins over both
+    3. a DRAWN muscle card
+
+  The third is the one that guarantees it. When there's no photograph the app
+  draws a figure with the worked muscle lit up, plus the equipment. It's an SVG
+  generated on the spot — no network, no key, no quota, nothing to download and
+  nothing that can fail. Blank tiles are now structurally impossible.
+
+  It also appears in the catalogue browse list, so those empty rows are gone.
+
+  The "▶ demo" corner link is still on every tile, drawn ones included, so real
+  video is always one tap away.
+
+HONEST TRADE-OFF
+  WorkoutX had roughly 1,400 movements with true animated GIFs. The free pack
+  has 800+ with two frames each. You lose some obscure variations and you lose
+  real motion. You gain: no quota, no key, no blank tiles, and nothing that
+  stops working on the 500th request of the month.
+
+  Switch WorkoutX back on next month if you miss the animation — everything
+  you've chosen by hand stays exactly as you set it either way.
+
+=============================================================
+v61.6 — BLANK THUMBNAILS IN THE CATALOGUE BROWSER
+=============================================================
+
+Upload index.html AND sw.js.
+
+Different bug from v61.5, on a different screen.
+
+Settings -> Exercise catalogue -> "Browse what you've downloaded" was drawing
+its thumbnails from WorkoutX only. Those URLs need your key, you're out of
+requests for the month, so every one of them 401'd and hid itself. Hence 752
+exercises and almost no pictures. The one row that DID show had its image from
+somewhere else already.
+
+The free pack was never consulted on that screen at all.
+
+FIXED
+  Browse rows now fall back to a free-pack still when WorkoutX can't supply one,
+  and if that image fails too it tries the other mirrors before giving up. Rows
+  with genuinely nothing available still say "no demo" honestly rather than
+  showing a blank gap.
+
+  Thumbnails deliberately never spend a WorkoutX request. A browse list is
+  dozens of rows and each one costs the same as a real demo — that is exactly
+  the kind of thing that drained the allowance in the first place.
+
+AND THE CONFUSING MESSAGE
+  "Your phone already has all the images" was about the FREE PACK demos for the
+  exercises in your own library. It was never about the WorkoutX catalogue
+  browser you were looking at. Two different sets of images, and I'd worded it
+  as though there were only one. It now says which set it means.
+
+WHAT THIS DOESN'T FIX
+  Rows where the free pack has no match will still read "no demo" until your
+  WorkoutX allowance resets. That's honest rather than broken — but if a lot of
+  them are empty, tell me roughly how many and which kinds and I'll look at
+  whether wger fills that particular gap.
+
+=============================================================
+v61.5 — WHY CHANGING THE DEMO DID NOTHING
+=============================================================
+
+Upload index.html AND sw.js.
+
+Your choice was being saved correctly the whole time. The toast said "Demo set
+· Landmine Lateral Raise" and it meant it. The picture was overwritten one line
+later.
+
+WHAT WAS HAPPENING
+  When "Save the matched ones to this phone" ran, it filed the two frames under
+  the EXERCISE NAME — "Landmine Press". The painter that swaps remote images for
+  on-device ones then looked them up by that same name.
+
+  So the sequence was: you pick Landmine Lateral Raise, the tile re-renders
+  correctly with the right photographs, and then the painter immediately
+  replaces them with whatever was cached under "Landmine Press" — the original
+  wrong match.
+
+  A key that can't change can't follow a choice that does. That's the whole bug.
+
+THE FIX
+  Frames are now keyed by the free-pack RECORD, not by the exercise name. Pick a
+  different clip and it reads a different key, so the cache follows your choice
+  instead of fighting it.
+
+  Frames saved by the earlier build are cleared automatically the first time
+  v61.5 starts. Nothing identifies which record they came from, so they can't be
+  migrated — and left alone they would keep overriding you. Re-saving is free and
+  uses no quota: Settings -> Demo GIFs -> "Save the matched ones to this phone".
+
+WHAT YOU SHOULD SEE
+  Open Landmine Press. It will show whatever it matched automatically. Tap
+  "Change demo", pick the right one, and the image changes immediately and stays
+  changed — through a re-render, a reload, and a rebuild of the session.
 
 =============================================================
 v61.4 — THE PACK NOW LOOKS AFTER ITSELF

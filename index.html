@@ -472,6 +472,9 @@ details.sec2[open] .secsum2:after{content:"\2212";}
 .mtable .est{color:var(--gold);font-size:10px;font-weight:800;margin-left:4px;}
 .mtable .up{color:var(--green);} .mtable .dn{color:var(--red);}
 .mscroll{overflow-x:auto;-webkit-overflow-scrolling:touch;}
+.approxchip{position:absolute;bottom:8px;left:8px;background:#0a0806e6;color:var(--gold);
+  font-size:10.5px;font-weight:800;padding:3px 9px;border-radius:9px;border:1px solid var(--line);
+  letter-spacing:.3px;pointer-events:none;}
 .fedphase{position:absolute;top:8px;left:8px;background:#0a0806d9;color:var(--gold);
   font-size:11px;font-weight:800;padding:3px 9px;border-radius:9px;border:1px solid var(--line);
   text-transform:uppercase;letter-spacing:.6px;pointer-events:none;}
@@ -1028,8 +1031,8 @@ const DEFAULTS = {
   nutrition:{calorieTarget:null, proteinTarget:null, phase:"", log:[]},
   cardio:null, readiness:null, aiPlan:null, restCall:null, setsOverride:null, completed:{}, tomorrow:null,
   session:null,
-  wx:{key:"", on:true, plan:"free", synced:null, count:0, quota:null, quotaLeft:null,
-      autoGif:false, reqMonth:null, reqUsed:0},
+  wx:{key:"", on:false, plan:"free", synced:null, count:0, quota:null, quotaLeft:null,
+      autoGif:false, reqMonth:null, reqUsed:0, fedHost:0},
   timeBudget:{mins:45, row:true, rowMins:10},
   cloud:{on:true, config:JSON.stringify(FB_CONFIG,null,2), syncId:FB_SYNC_DEFAULT, last:null, syncKeys:false},
   prefs:{visualMode:"auto", showIcons:true, exerciseGifs:true, workoutFormat:"list", coachStyle:"direct funny concise",
@@ -1637,8 +1640,18 @@ const POOLS={
 
 function latestCheckin(){ return DB.checkins[DB.checkins.length-1] || null; }
 /* ===== Accessors: built-in data + anything the AI has added at runtime ===== */
-function EX(name){ if(!name) return null; return (DB.lib&&DB.lib[name]) || EXDB[name] || PILATES_LIB[name] || EXTRA_LIB[name] || (typeof WXIDX!=="undefined"&&WXIDX[name]) || null; }
-function allExNames(){ return [...new Set([...Object.keys(EXDB), ...Object.keys(PILATES_LIB), ...Object.keys(EXTRA_LIB), ...Object.keys(DB.lib||{}), ...(typeof WXIDX!=="undefined"?Object.keys(WXIDX):[])])]; }
+function EX(name){
+  if(!name) return null;
+  return (DB.lib&&DB.lib[name]) || EXDB[name] || PILATES_LIB[name] || EXTRA_LIB[name] ||
+         (wxEnabled() && typeof WXIDX!=="undefined" && WXIDX[name]) ||
+         (typeof fedEx==="function" && fedEx(name)) || null;
+}
+function allExNames(){
+  return [...new Set([...Object.keys(EXDB), ...Object.keys(PILATES_LIB), ...Object.keys(EXTRA_LIB),
+    ...Object.keys(DB.lib||{}),
+    ...((wxEnabled()&&typeof WXIDX!=="undefined")?Object.keys(WXIDX):[]),
+    ...(typeof fedNames==="function"? fedNames() : [])])];
+}
 /* The built-in set only \u2014 used where a huge list would be unhelpful. */
 function coreExNames(){ return [...new Set([...Object.keys(EXDB), ...Object.keys(DB.lib||{})])]; }
 /* Order matters. A WorkoutX record has a demo made FOR that exact movement;
@@ -1676,7 +1689,7 @@ function catIndex(){
 function catInvalidate(){ _catIdx=null; _catHit={}; }
 /* Best catalogue record for one of our exercise names, or null. */
 function catMatch(name){
-  if(!name||typeof WXIDX==="undefined") return null;
+  if(!name||typeof WXIDX==="undefined"||!wxEnabled()) return null;
   /* A mapping the AI worked out once is authoritative and permanent. */
   const learned=DB.exMap&&DB.exMap[name];
   if(learned && WXIDX[learned]) return WXIDX[learned];
@@ -2427,12 +2440,10 @@ function exImgHTML(name,muscles){
       "<img src='"+attrEsc(src)+"' alt='"+nEsc+"' loading='lazy' onerror=\"mediaFail(this,'"+js+"')\">"+
       "<a class='demoover' href='"+demoSearchURL(name)+"' target='_blank' rel='noopener'>▶ demo</a></div>";
   }
-  /* Nothing metered and nothing cached — try the free public-domain pack
-     before falling back to a bare search link. */
+  /* Nothing cached — the free public-domain pack, and failing that a drawn
+     muscle card. Never a blank space. */
   try{ const fed=fedTileHTML(name); if(fed) return fed; }catch(e){}
-  const dataAttrs = " data-exname='"+nEsc+"'" +
-    (mediaKey() ? (" data-exmedia='"+nEsc+"' data-exq='"+attrEsc(name+" exercise")+"'") : "");
-  return watchTileHTML(name,dataAttrs);
+  return watchTileHTML(name," data-exname='"+nEsc+"'");
 }
 
 function ensureWorkout(){
@@ -4733,7 +4744,7 @@ function scheduleInApp(){
    v18 ADDITIONS — draggable rest timer · weekly training memory · AI planner
    · Firestore sync
    ========================================================================== */
-const APP_VERSION="v61.4 · 06/08/2026";
+const APP_VERSION="v62.1 · 06/08/2026";
 
 /* ===== 1. REST TIMER — drag it anywhere so it never blocks the chat box ===== */
 let _rtDrag=null;
@@ -5832,7 +5843,12 @@ async function wxSaveCatalogue(){
 }
 
 /* ---------- API client ---------- */
-function wxKey(){ return (DB.wx&&DB.wx.key||"").trim(); }
+/* v62 — WorkoutX is now OFF unless he deliberately turns it on. It's metered,
+   it was the source of every blank tile, and the free pack covers the same
+   ground for nothing. The code stays so his allowance is usable again next
+   month; it just isn't consulted on its own any more. */
+function wxEnabled(){ return !!(DB.wx && DB.wx.on && (DB.wx.key||"").trim()); }
+function wxKey(){ return wxEnabled()? (DB.wx.key||"").trim() : ""; }
 function wxOn(){ return !!wxKey() && DB.wx && DB.wx.on!==false; }
 let _wxTimes=[];
 function wxSleep(ms){ return new Promise(r=>setTimeout(r,ms)); }
@@ -6310,13 +6326,13 @@ function fedImgFail(img){
 }
 const FED_KEY="amirpt_freepack";
 var FED=null;              // slim records: {i:id, n:name, e:equipment, m:[muscles], f:frames}
-var _fedIdx=null, _fedHit={};
+var _fedIdx=null, _fedHit={}, _fedScore={};
 function fedHas(){ return !!(FED && FED.length); }
 function fedCount(){ return FED? FED.length : 0; }
 async function fedLoad(){
   try{ const raw=await idbGet(FED_KEY); if(raw){ FED=JSON.parse(raw)||null; } }
   catch(e){ FED=null; }
-  _fedIdx=null; _fedHit={};
+  _fedIdx=null; _fedHit={}; _fedScore={}; _fedByName=null;
   return fedCount();
 }
 async function fedSave(){ try{ await idbSet(JSON.stringify(FED||[]),FED_KEY); return true; }catch(e){ return false; } }
@@ -6397,18 +6413,71 @@ function fedMatch(name){
   });
   const hit=(best && best.score>=0.42)? best.r : null;
   _fedHit[name]=hit;
+  /* Keep the score. A match that only just cleared the bar is still a guess,
+     and presenting a guess as a certainty is what put a bench press on his
+     Landmine Press without a word of warning. */
+  _fedScore[name]=best? best.score : 0;
   return hit;
 }
 /* Both frames as absolute URLs, newest cache first. */
+/* v62 — the free pack carries step-by-step instructions, equipment, muscles
+   and difficulty, not just photographs. Keeping them means it can stand in for
+   the WorkoutX catalogue completely rather than only supplying the pictures.
+   The instructions are the bulk of the file, so they're trimmed to the first
+   six steps: past that it's setup minutiae the app already covers in its cue. */
+function fedSlim(x){
+  return { i:x.id, n:x.name, e:x.equipment||"", m:x.primaryMuscles||[],
+           s:(x.instructions||[]).slice(0,6), f:x.images,
+           lv:x.level||"", fo:x.force||"" };
+}
 function fedRecById(id){ return (FED||[]).find(r=>r.i===id)||null; }
+/* Their vocabulary back into the app's own six groups and kit codes. */
+const FED_EQ_BACK={"body only":"bw","none":"bw","bands":"band","dumbbell":"db","barbell":"bb",
+  "ez curl bar":"bb","kettlebells":"kb","machine":"mach","cable":"mach","medicine ball":"bw",
+  "exercise ball":"bw","foam roll":"bw","other":"other"};
+const FED_M_BACK={quadriceps:"legs",hamstrings:"legs",glutes:"legs",calves:"legs",adductors:"legs",
+  abductors:"legs",abdominals:"core","lower back":"core",lats:"back","middle back":"back",
+  traps:"shoulders",neck:"shoulders",shoulders:"shoulders",chest:"chest",biceps:"arms",
+  triceps:"arms",forearms:"arms"};
+let _fedByName=null;
+function fedNameIdx(){
+  if(_fedByName) return _fedByName;
+  _fedByName={};
+  (FED||[]).forEach(r=>{ _fedByName[String(r.n).toLowerCase()]=r; });
+  return _fedByName;
+}
+/* A pack record in the shape the rest of the app expects from EX(). */
+function fedAsEx(r){
+  if(!r) return null;
+  const groups=[...new Set((r.m||[]).map(m=>FED_M_BACK[String(m).toLowerCase()]).filter(Boolean))];
+  return { name:r.n, eq:FED_EQ_BACK[String(r.e).toLowerCase()]||"other",
+           m:groups.length?groups:["core"], gif:null, timed:false,
+           /* Their first instruction is setup ("wedge the bar into a corner"),
+              which reads badly as a form cue. The full steps sit under "How to
+              do it" a line below, so this stays neutral rather than misleading. */
+           cue:"Control every rep \u2014 full range, no bouncing.",
+           steps:r.s||[], wristAlt:"Neutral grip if the wrist complains", _fed:r.i };
+}
+function fedEx(name){
+  if(!name||!fedHas()) return null;
+  const r=fedNameIdx()[String(name).toLowerCase()];
+  return r? fedAsEx(r) : null;
+}
+function fedNames(){ return (FED||[]).map(r=>r.n); }
+/* A single still from the free pack. The browse lists only need one frame, and
+   asking WorkoutX for a thumbnail costs a request per row — which is how a
+   list of 752 exercises could quietly eat a month's allowance. */
+function fedThumb(name){
+  const id=fedIdFor(name); if(!id) return null;
+  const r=fedRecById(id); if(!r||!r.f||!r.f.length) return null;
+  return fedImgBase()+r.f[0];
+}
+/* What any list should show for an exercise: whatever's free and available. */
+function anyThumb(name){ return mediaFor(name) || fedThumb(name); }
 function fedFrames(name){
-  const pk=demoPick(name);
-  let r;
-  if(pk && pk.s==="fed") r=fedRecById(pk.id);        // his choice
-  else if(pk) return null;                            // he chose something else entirely
-  else r=fedMatch(name);                              // no choice made — guess
-  if(!r||!r.f||!r.f.length) return null;
-  return r.f.map(x=>fedImgBase()+x);
+  const x=fedResolve(name);
+  if(!x||!x.r.f||!x.r.f.length) return null;
+  return x.r.f.map(f=>fedImgBase()+f);
 }
 async function loadFreePack(){
   if(fedHas() && !confirm("The free pack is already on this phone ("+fedCount()+" movements).\n\nDownload a fresh copy?")) return;
@@ -6418,10 +6487,8 @@ async function loadFreePack(){
     if(!Array.isArray(arr)||!arr.length) throw new Error("empty");
     /* Slimmed hard before storing: the instructions are the bulk of that file
        and the app already writes its own cues. */
-    FED=arr.filter(x=>x&&x.images&&x.images.length).map(x=>({
-      i:x.id, n:x.name, e:x.equipment||"", m:x.primaryMuscles||[], f:x.images
-    }));
-    _fedIdx=null; _fedHit={};
+    FED=arr.filter(x=>x&&x.images&&x.images.length).map(fedSlim);
+    _fedIdx=null; _fedHit={}; _fedScore={}; _fedByName=null;
     await fedSave();
     fedBackup().catch(()=>{});
     const covered=fedCoverage();
@@ -6492,8 +6559,9 @@ async function saveFreePackOffline(){
   if(!fedHas()){ fedMsg("✗ Get the free pack first."); return; }
   const names=myExerciseNames().filter(n=>fedFrames(n));
   if(!names.length){ fedMsg("✗ Nothing matched — try downloading the pack again."); return; }
-  const todo=names.filter(n=>!gifSaved(n));
-  if(!todo.length){ fedMsg("✓ All "+names.length+" matched demos are already on this phone."); return; }
+  const todo=names.filter(n=>!fedFramesSaved(n));
+  if(!todo.length){ fedMsg("✓ All "+names.length+" <b>free-pack</b> demos for your own exercises are saved here. "+
+    "(That's separate from the WorkoutX catalogue browser, which shows its own thumbnails and needs your key.)"); return; }
   if(!confirm("Save "+todo.length+" demos ("+(todo.length*2)+" images) onto this phone?\n\nThey're free and public domain — this costs nothing and uses no WorkoutX requests.")) return;
   _fedSaving=true;
   let ok=0,fail=0;
@@ -6501,7 +6569,8 @@ async function saveFreePackOffline(){
     for(let i=0;i<todo.length;i++){
       const n=todo[i];
       fedMsg("<span class='spin'></span> Saving "+(i+1)+" of "+todo.length+" · "+escapeHtml(n));
-      const frames=fedFrames(n); if(!frames){ fail++; continue; }
+      const frames=fedFrames(n); const id=fedIdFor(n);
+      if(!frames||!id){ fail++; continue; }
       let got=0;
       for(let k=0;k<Math.min(2,frames.length);k++){
         try{
@@ -6509,9 +6578,7 @@ async function saveFreePackOffline(){
           if(!r.ok) continue;
           const b=await r.blob();
           if(!b||b.size<200) continue;
-          /* Frame 0 under the exercise name so every existing lookup finds it;
-             frame 1 under a suffix the animator knows about. */
-          if(await gifPut(k===0? n : (n+"\u0000f1"), b, "fed")) got++;
+          if(await gifPut(fedImgKey(id,k), b, "fed")) got++;
         }catch(e){}
       }
       if(got) ok++; else fail++;
@@ -6551,26 +6618,100 @@ function fedAnimStart(){
   }, 800);
 }
 /* Swap the remote frame URLs for on-device ones wherever we already have them. */
+/* Frames are keyed by the free-pack RECORD, never by the exercise name.
+   Keying them by name was the bug behind "I keep changing it and nothing
+   happens": the new tile rendered correctly and was then immediately painted
+   over with the frames cached under that exercise's old, wrong match. A key
+   that can't change can't follow a choice that does. */
+function fedImgKey(id,k){ return "fedimg:"+id+":"+k; }
+/* Closest movement WITHIN the same muscle group. No threshold: if the group
+   exists in the pack — and all six do — this returns something real. */
+function fedNear(name){
+  if(!name||!fedHas()) return null;
+  const q=normTokens(name).map(fedSing);
+  if(!q.length) return null;
+  const qs=new Set(q), head=q[q.length-1]||"";
+  const e=EX(name)||guessEx(name)||{};
+  const wantM=(e.m||[])[0]||"core";
+  const wantEq=e.eq||"bw";
+  let best=null;
+  fedIndex().forEach(c=>{
+    if(!fedMuscleOK(c.r.m,wantM)) return;          // the one line that must hold
+    let shared=0; qs.forEach(w=>{ if(c.set.has(w)) shared++; });
+    let score=shared*0.30;
+    if(c.set.has(head)||c.head===head) score+=0.60;
+    if(fedEqOK(c.r.e,wantEq)) score+=0.40;
+    score-=Math.abs(c.tk.length-q.length)*0.02;     // prefer a comparable name
+    if(!best||score>best.score) best={r:c.r,score};
+  });
+  return best? best.r : null;
+}
+/* One place that decides which record a tile is showing, and whether it's a
+   confident match or a near one. */
+function fedResolve(name){
+  const pk=demoPick(name);
+  if(pk && pk.s==="fed"){ const r=fedRecById(pk.id); return r? {r,approx:false,mine:true} : null; }
+  if(pk) return null;                                // he chose something else
+  const strict=fedMatch(name);
+  /* Comfortably above the bar = state it plainly. Only just over = show the
+     photo but say it's the closest thing, so a wrong one is obvious at a
+     glance instead of mid-set. */
+  if(strict) return {r:strict, approx:((_fedScore[name]||0) < 0.75)};
+  const near=fedNear(name);
+  if(near) return {r:near,approx:true};
+  return null;
+}
+function fedIdFor(name){ const x=fedResolve(name); return x? x.r.i : null; }
+function fedIsApprox(name){ const x=fedResolve(name); return !!(x&&x.approx); }
+function fedFramesSaved(name){
+  const id=fedIdFor(name); if(!id) return false;
+  return !!GIFIDX[fedImgKey(id,0)];
+}
 async function fedPaintCached(){
-  const imgs=[...document.querySelectorAll('img[data-f0][data-f1][data-fedname]')];
+  const imgs=[...document.querySelectorAll('img[data-f0][data-f1][data-fedid]')];
   for(const im of imgs){
-    const n=im.getAttribute('data-fedname'); if(!n) continue;
-    const a=await gifGet(n), b=await gifGet(n+"\u0000f1");
+    const id=im.getAttribute('data-fedid'); if(!id) continue;
+    const a=await gifGet(fedImgKey(id,0)), b=await gifGet(fedImgKey(id,1));
     if(a){ im.setAttribute('data-f0',a); if(im.getAttribute('data-on')!=='1') im.src=a; }
     if(b){ im.setAttribute('data-f1',b); }
   }
 }
+/* v61.5: frames saved by an earlier build sit under the exercise name and will
+   keep overriding his choices. Nothing identifies which record they came from,
+   so they're cleared. Re-saving is free and costs no quota. */
+async function fedPurgeLegacyFrames(){
+  const stale=Object.keys(GIFIDX).filter(k=>GIFIDX[k+"\u0000f1"] || /\u0000f1$/.test(k));
+  if(!stale.length) return 0;
+  for(const k of stale){
+    try{ if(_idb) _idb.transaction(IDB_STORE,"readwrite").objectStore(IDB_STORE).delete(gifStoreKey(k)); }catch(e){}
+    try{ if(GIFURL[k]) URL.revokeObjectURL(GIFURL[k]); }catch(e){}
+    delete GIFURL[k]; delete GIFIDX[k];
+  }
+  await gifIdxSave();
+  return stale.length;
+}
+/* ===== v62.1 · A REAL PHOTOGRAPH, ALWAYS =================================
+   A drawn figure was the wrong answer: he'd rather see a real photo of a
+   RELATED movement than an illustration of the right one. So there are two
+   tiers of matching now.
+
+   Strict: confident, same movement, unchanged.
+   Near:   the closest real movement in the pack — and it will NEVER cross
+           muscle groups, so a hamstring exercise can't land on a biceps photo.
+           It's badged as approximate, because presenting a guess as a certainty
+           is the thing worth avoiding, not the guess itself.  */
 function fedTileHTML(name){
   const frames=fedFrames(name); if(!frames) return null;
-  const nEsc=attrEsc(name);
+  const nEsc=attrEsc(name), idEsc=attrEsc(fedIdFor(name)||"");
   const f0=attrEsc(frames[0]), f1=attrEsc(frames[1]||frames[0]);
   /* The badge is the point. Two photos flipping is ambiguous on its own — you
      can't tell which one is the bottom of the lift. Labelling them removes the
      guesswork this is meant to solve. */
   return "<div class='imgwrap' data-ex='"+nEsc+"' data-exname='"+nEsc+"'>"+
     "<img src='"+f0+"' data-f0='"+f0+"' data-f1='"+f1+"' data-on='0' data-fedname='"+nEsc+"' "+
-    "alt='"+nEsc+"' loading='lazy' onerror='fedImgFail(this)'>"+
+    "data-fedid='"+idEsc+"' alt='"+nEsc+"' loading='lazy' onerror='fedImgFail(this)'>"+
     "<span class='fedphase'>start</span>"+
+    (fedIsApprox(name)? "<span class='approxchip'>\u2248 closest match \u00b7 tap Change demo</span>" : "")+
     "<a class='demoover' href='"+demoSearchURL(name)+"' target='_blank' rel='noopener'>▶ demo</a></div>";
 }
 /* ===== v61.3 · DEMO COVERAGE =============================================
@@ -6648,7 +6789,7 @@ function coverPickerHTML(name){
 }
 function coverChoose(name,id){
   setDemoPick(name,{s:"fed",id});
-  _fedHit={}; _coverOpen=null;
+  _fedHit={}; _fedScore={}; _coverOpen=null;
   renderDemoCoverage();
   try{ if(DB.workout) renderWorkoutSheet(DB.workout); }catch(e){}
   const r=fedRecById(id);
@@ -6693,7 +6834,7 @@ async function fedRestore(){
     i++;
   }
   if(!out.length) return 0;
-  FED=out; _fedIdx=null; _fedHit={};
+  FED=out; _fedIdx=null; _fedHit={}; _fedScore={}; _fedByName=null;
   await fedSave();
   return FED.length;
 }
@@ -6710,9 +6851,8 @@ async function fedEnsure(){
   }catch(e){}
   try{
     const arr=await fedFetchJSON();
-    FED=arr.filter(x=>x&&x.images&&x.images.length).map(x=>({
-      i:x.id, n:x.name, e:x.equipment||"", m:x.primaryMuscles||[], f:x.images }));
-    _fedIdx=null; _fedHit={};
+    FED=arr.filter(x=>x&&x.images&&x.images.length).map(fedSlim);
+    _fedIdx=null; _fedHit={}; _fedScore={}; _fedByName=null;
     await fedSave();
     fedBackup().catch(()=>{});
     try{ if(DB.workout) renderWorkoutSheet(DB.workout); renderGifStatus(); }catch(e){}
@@ -7280,14 +7420,30 @@ function browseMatches(q,locMode,muscle){
 }
 const EQLABEL={bw:"bodyweight",db:"dumbbell",bb:"barbell",mach:"machine",band:"band",bar:"pull-up bar",kb:"kettlebell",other:"other kit"};
 function browseRowHTML(n,withAdd){
-  const e=EX(n)||{}, img=mediaFor(n);
+  const e=EX(n)||{}, img=anyThumb(n);
   const sub=((e.m||[]).join(" \u00b7 ")||"\u2014")+"  \u2014  "+(EQLABEL[e.eq]||"bodyweight");
   return "<div class='brrow'>"+
-    (img? "<img loading='lazy' src='"+attrEsc(img)+"' alt='' onerror=\"wxImgFail(this,'"+jsAttr(n)+"')\"/>" : "<div class='ph'>no demo</div>")+
+    (img? "<img loading='lazy' src='"+attrEsc(img)+"' alt='' onerror=\"brThumbFail(this,'"+jsAttr(n)+"')\"/>" : "<div class='ph'>no demo</div>")+
     "<div class='meta'><div class='n'>"+escapeHtml(n)+"</div>"+
       "<div class='s'>"+sub+"</div></div>"+
     (withAdd? "<button class='addbtn' onclick=\"browseAdd('"+jsAttr(n)+"')\">Add</button>" : "")+
   "</div>";
+}
+/* A catalogue thumbnail that won't load falls back to the free pack rather
+   than vanishing. Never spends a WorkoutX request: a browse list is dozens of
+   rows and each one would cost the same as a real demo. */
+function brThumbFail(img,name){
+  try{
+    img.onerror=null;
+    const alt=fedThumb(name);
+    if(alt && img.src!==alt){ img.onerror=function(){ this.onerror=null; fedImgFail(this); }; img.src=alt; return; }
+    const wrap=img.parentElement;
+    img.remove();
+    if(wrap && !wrap.querySelector('.ph')){
+      const ph=document.createElement('div'); ph.className='ph'; ph.textContent='no demo';
+      wrap.insertBefore(ph,wrap.firstChild);
+    }
+  }catch(e){}
 }
 function renderBrowse(){
   const list=document.getElementById('brList'); if(!list) return;
@@ -7297,7 +7453,7 @@ function renderBrowse(){
     "<button class='mchip"+(brState.m===m?" on":"")+"' onclick=\"brMuscle('"+m+"')\">"+m+"</button>").join('');
   const res=browseMatches(brState.q,brState.loc,brState.m);
   const c=document.getElementById('brCount');
-  const noDemo=res.filter(n=>!mediaFor(n)).length;
+  const noDemo=res.filter(n=>!anyThumb(n)).length;
   if(c) c.innerHTML=res.length+" exercise"+(res.length===1?"":"s")+
     (brState.loc==="here"? " you can do in "+LOC().label : " in total")+
     (wxHas()? "" : " \u2014 download the catalogue in Settings for 1,400 more")+
@@ -7771,7 +7927,8 @@ registerSW();
 loadPhotos();
 /* v61: read the index of demos already on this phone, then repaint whatever is
    on screen with them. Pure IndexedDB — no network, no requests. */
-gifIdxLoad().then(n=>{
+gifIdxLoad().then(async n=>{
+  try{ await fedPurgeLegacyFrames(); }catch(e){}
   try{ renderGifStatus(); }catch(e){}
   if(n){ try{ paintSavedGifs(); }catch(e){} }
 });
