@@ -420,6 +420,61 @@ details.sec2[open] .secsum2:after{content:"\2212";}
 .photocell{position:relative;flex:0 0 auto;}
 .photocell img{height:130px;border-radius:12px;border:1px solid var(--line);object-fit:cover;display:block;}
 .photocell .del{position:absolute;top:6px;right:6px;padding:3px 7px;}
+/* ===== v61 · PHOTO TIMELINE, LIGHTBOX AND COMPARE ===== */
+.phmonth{margin:14px 0 6px;font-size:12px;font-weight:800;letter-spacing:.6px;text-transform:uppercase;color:var(--label);
+  display:flex;align-items:center;gap:9px;}
+.phmonth::after{content:"";flex:1 1 auto;height:1px;background:var(--hair);}
+.phmonth .cnt{color:var(--dim);font-weight:700;letter-spacing:0;text-transform:none;}
+.phcell{position:relative;flex:0 0 auto;cursor:pointer;}
+.phcell img{height:132px;width:98px;border-radius:12px;border:1px solid var(--line);object-fit:cover;display:block;background:#0d0a07;}
+.phcell .cap{margin-top:5px;font-size:11px;font-weight:700;color:var(--muted);text-align:center;line-height:1.25;}
+.phcell .cap b{display:block;color:var(--txt);font-size:11.5px;}
+.phcell .pose{position:absolute;top:6px;left:6px;background:#0a0806cc;color:var(--orange);font-size:10px;font-weight:800;
+  padding:3px 7px;border-radius:8px;border:1px solid var(--line);text-transform:uppercase;letter-spacing:.4px;}
+.phcell .zoom{position:absolute;bottom:6px;right:6px;background:#0a0806cc;color:var(--txt);font-size:11px;
+  padding:2px 6px;border-radius:7px;border:1px solid var(--line);}
+.poseseg{display:flex;gap:6px;overflow-x:auto;padding:2px 0 8px;}
+.poseseg button{flex:0 0 auto;padding:7px 13px;border-radius:11px;background:var(--pill);border:1px solid var(--line);
+  color:var(--muted);font-size:12.5px;font-weight:700;}
+.poseseg button.on{background:#2a1c0e;border-color:var(--orange);color:var(--orange);}
+.lbox{position:fixed;inset:0;z-index:70;background:#050403f2;backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px);
+  display:none;flex-direction:column;padding:calc(10px + var(--safe-top)) 10px calc(10px + var(--safe-bot));}
+.lbox.show{display:flex;}
+.lbox .lbtop{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:8px;}
+.lbox .lbwhen{font-size:14px;font-weight:800;color:var(--txt);}
+.lbox .lbwhen small{display:block;font-size:11.5px;font-weight:700;color:var(--muted);margin-top:2px;}
+.lbox .lbx{background:var(--card2);border:1px solid var(--line);color:var(--txt);border-radius:12px;padding:9px 14px;font-weight:800;font-size:15px;}
+.lbox .lbstage{flex:1 1 auto;min-height:0;display:flex;align-items:center;justify-content:center;position:relative;}
+.lbox .lbstage img{max-width:100%;max-height:100%;object-fit:contain;border-radius:14px;}
+.lbox .lbnav{position:absolute;top:50%;transform:translateY(-50%);background:#15110dcc;border:1px solid var(--line);
+  color:var(--txt);width:44px;height:44px;border-radius:50%;font-size:20px;font-weight:800;}
+.lbox .lbnav.prev{left:2px;} .lbox .lbnav.next{right:2px;}
+.lbox .lbbot{display:flex;gap:8px;align-items:center;margin-top:10px;}
+.lbox .lbbot select{flex:1 1 auto;}
+.lbox .lbcount{text-align:center;font-size:12px;font-weight:700;color:var(--dim);margin-top:6px;}
+.cmpwrap{display:flex;gap:10px;margin-top:10px;}
+.cmpside{flex:1 1 0;min-width:0;}
+.cmpside .lab{font-size:11px;font-weight:800;text-transform:uppercase;letter-spacing:.5px;color:var(--label);margin-bottom:5px;}
+.cmpside img{width:100%;border-radius:12px;border:1px solid var(--line);display:block;background:#0d0a07;}
+.cmpside .when{margin-top:5px;font-size:12px;font-weight:700;color:var(--txt);}
+.cmpside .when span{color:var(--muted);font-weight:600;}
+.cmpgap{text-align:center;font-size:13px;font-weight:800;color:var(--orange);margin-top:10px;}
+.quickcmp{display:flex;gap:6px;overflow-x:auto;padding:2px 0 0;}
+.quickcmp button{flex:0 0 auto;padding:7px 12px;border-radius:11px;background:var(--pill);border:1px solid var(--line);
+  color:var(--muted);font-size:12px;font-weight:700;}
+.mgrid{display:grid;grid-template-columns:1fr 1fr;gap:9px;}
+.mgrid .field{margin-bottom:0;}
+.mtable{width:100%;border-collapse:collapse;font-size:12.5px;margin-top:10px;}
+.mtable th{text-align:left;font-size:10.5px;font-weight:800;letter-spacing:.4px;text-transform:uppercase;color:var(--label);
+  padding:6px 5px;border-bottom:1px solid var(--line);white-space:nowrap;}
+.mtable td{padding:7px 5px;border-bottom:1px solid var(--hair);color:var(--txt);font-weight:600;white-space:nowrap;}
+.mtable td.dt{font-weight:800;}
+.mtable .est{color:var(--gold);font-size:10px;font-weight:800;margin-left:4px;}
+.mtable .up{color:var(--green);} .mtable .dn{color:var(--red);}
+.mscroll{overflow-x:auto;-webkit-overflow-scrolling:touch;}
+.gifchip{display:inline-block;font-size:11px;font-weight:800;padding:3px 8px;border-radius:8px;margin-left:6px;
+  background:var(--pill);border:1px solid var(--line);color:var(--muted);}
+.gifchip.ok{color:var(--green);border-color:#3fe08a44;}
 .hgroup{margin-bottom:6px;}
 .hgroup .hd{display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;}
 .hgroup .hd .dt{font-weight:800;font-size:15px;}
@@ -543,6 +598,12 @@ a{color:var(--orange);}
   <section class="screen" id="s-workout">
     <div class="head"><div><div class="greet">Log as you go</div><h1 class="display">Train</h1></div>
       <button class="btn sec" style="width:auto;padding:11px 14px;font-size:12px" onclick="rerollWorkout()">New exercises</button></div>
+    <div class="card" style="padding:14px 16px">
+      <div class="field" style="margin-bottom:0">
+        <label>Today's session <span class="hint" style="float:right;font-weight:700" id="trainDayNote"></span></label>
+        <select class="txtin" id="trainDaySel" onchange="setTodaySplit(this.value)"></select>
+      </div>
+    </div>
     <button class="btn blue mb" id="planBtn" onclick="aiPlanToday(true)">Build today’s session</button>
     <div id="planOut"></div>
     <div id="workoutSheet"></div>
@@ -563,13 +624,76 @@ a{color:var(--orange);}
     <div class="card"><div class="card-title"><span>Bodyweight</span></div><div id="wtWrap"></div></div>
     <div class="card"><div class="card-title"><span>Your lifts</span><span class="itin-edit">tap one for its chart</span></div><div id="strengthPBs"></div></div>
     <div class="card">
-      <div class="card-title"><span>Physique Photos & AI Check</span></div>
-      <div class="photostrip" id="photoStrip"></div>
-      <label class="photodrop mt" style="display:block;cursor:pointer">+ Add a physique photo
+      <div class="card-title"><span>Physique photos</span><span class="itin-edit" id="photoCount"></span></div>
+      <div class="poseseg" id="poseFilter">
+        <button class="on" data-v="all" onclick="setPoseFilter('all')">All</button>
+        <button data-v="Front" onclick="setPoseFilter('Front')">Front</button>
+        <button data-v="Side" onclick="setPoseFilter('Side')">Side</button>
+        <button data-v="Back" onclick="setPoseFilter('Back')">Back</button>
+        <button data-v="Legs" onclick="setPoseFilter('Legs')">Legs</button>
+        <button data-v="Other" onclick="setPoseFilter('Other')">Other</button>
+      </div>
+      <div id="photoTimeline"></div>
+      <div class="field mt" style="margin-bottom:8px">
+        <label>Which shot is this?</label>
+        <select class="txtin" id="photoPose">
+          <option value="Front">Front</option><option value="Side">Side</option>
+          <option value="Back">Back</option><option value="Legs">Legs</option><option value="Other">Other</option>
+        </select>
+      </div>
+      <label class="photodrop" style="display:block;cursor:pointer">+ Add a physique photo
         <input type="file" accept="image/*" style="display:none" onchange="addPhoto(this)" /></label>
-      <button class="btn blue mt" onclick="analysePhysique()">🔍 Ask coach to analyse my physique</button>
+      <div class="hint mt">Tap any photo to see it full size, change its label or delete it.</div>
+    </div>
+
+    <div class="card" id="compareCard">
+      <div class="card-title"><span>Then &amp; now</span><span class="itin-edit">side by side</span></div>
+      <div class="quickcmp" id="quickCmp">
+        <button onclick="quickCompare(30)">1 month ago</button>
+        <button onclick="quickCompare(90)">3 months</button>
+        <button onclick="quickCompare(180)">6 months</button>
+        <button onclick="quickCompare(0)">First vs latest</button>
+      </div>
+      <div class="mgrid mt">
+        <div class="field"><label>Then</label><select class="txtin" id="cmpA" onchange="setCmp('a',this.value)"></select></div>
+        <div class="field"><label>Now</label><select class="txtin" id="cmpB" onchange="setCmp('b',this.value)"></select></div>
+      </div>
+      <div id="compareOut"></div>
+      <button class="btn sec mt" onclick="aiCompare()">🔍 Ask coach what's changed</button>
+      <div id="compareAiOut"></div>
+    </div>
+
+    <div class="card">
+      <div class="card-title"><span>Coach's read</span></div>
+      <button class="btn blue" onclick="analysePhysique()">🔍 Ask coach to analyse my physique</button>
       <div id="physiqueOut"></div>
     </div>
+
+    <details class="hcard" id="measCard">
+      <summary class="hsum"><span class="t">Measurements</span><span class="chev">›</span></summary>
+      <div class="hbody">
+        <div class="notebox mb">No tape measure? Tap <b>Estimate from my photos</b> and the coach will read them off your latest shots. Those are rough — anything you measure yourself is marked as real and always wins.</div>
+        <button class="btn sec mb" onclick="aiEstimateMeasurements()">📐 Estimate from my photos</button>
+        <div id="measAiOut"></div>
+        <div class="field"><label>Your height <span class="hint" style="float:right;font-weight:700;color:var(--gold)">cm</span></label>
+          <input class="txtin" id="mHeight" inputmode="decimal" placeholder="e.g. 178" />
+          <div class="hint mt">The coach needs this to scale anything it reads off a photo.</div></div>
+        <div class="field"><label>Date of these measurements</label>
+          <input class="txtin" id="mDate" type="date" /></div>
+        <div class="mgrid">
+          <div class="field"><label>Chest <span class="hint">cm</span></label><input class="txtin" id="mChest" inputmode="decimal" /></div>
+          <div class="field"><label>Waist <span class="hint">cm</span></label><input class="txtin" id="mWaist" inputmode="decimal" /></div>
+          <div class="field"><label>Hips <span class="hint">cm</span></label><input class="txtin" id="mHips" inputmode="decimal" /></div>
+          <div class="field"><label>Shoulders <span class="hint">cm</span></label><input class="txtin" id="mShoulders" inputmode="decimal" /></div>
+          <div class="field"><label>Arm (flexed) <span class="hint">cm</span></label><input class="txtin" id="mArm" inputmode="decimal" /></div>
+          <div class="field"><label>Thigh <span class="hint">cm</span></label><input class="txtin" id="mThigh" inputmode="decimal" /></div>
+          <div class="field"><label>Calf <span class="hint">cm</span></label><input class="txtin" id="mCalf" inputmode="decimal" /></div>
+          <div class="field"><label>Neck <span class="hint">cm</span></label><input class="txtin" id="mNeck" inputmode="decimal" /></div>
+        </div>
+        <button class="btn green mt" onclick="saveMeasure()">Log these measurements</button>
+        <div id="measOut"></div>
+      </div>
+    </details>
     <button class="btn sec" onclick="weeklyReview()">📊 Run Weekly Review</button>
     <div id="reviewOut"></div>
   </section>
@@ -614,6 +738,30 @@ a{color:var(--orange);}
       <button class="btn ghost mt" onclick="startWxSync(true)">Force a fresh download</button>
       <div id="wxStatus" class="hint mt" style="font-size:12.5px"></div>
       <div id="wxMsg" class="hint mt" style="font-size:13px"></div>
+    </div>
+
+    <div class="section-h">Demo GIFs — kept on this phone</div>
+    <div class="card">
+      <div class="notebox mb">Every demo GIF used to be re-fetched from WorkoutX <b>each time a session rendered</b> — and each fetch spends one of your 500 monthly requests. They are now <b>saved onto this phone permanently</b> the first time they're pulled. Once a movement is saved it costs nothing ever again and works with no signal.</div>
+      <div id="gifStatus" class="hint mb" style="font-size:13px"></div>
+      <div class="set-row"><span class="k" style="color:var(--txt);font-weight:600">Fetch missing demos automatically</span>
+        <div class="switch" id="autoGifSwitch" onclick="toggleAutoGif(this)"></div></div>
+      <div class="hint" style="margin-top:-4px">Leave this OFF. With it off nothing is ever downloaded unless you press a button below — which is what stopped happening quietly in the background.</div>
+      <button class="btn mt" onclick="downloadSessionDemos()">⤓ Save today's session demos to this phone</button>
+      <div class="hint mt">About one request per movement — roughly 5–11, once each.</div>
+      <button class="btn sec mt" onclick="downloadAllDemos()">⤓ Save demos for every exercise I actually train</button>
+      <button class="btn sec mt" onclick="exportDemoGifs()">Save my saved GIFs to a file</button>
+      <label class="btn ghost mt" style="text-align:center;cursor:pointer">Load GIFs back from a file
+        <input type="file" accept="application/json" onchange="importDemoGifs(this)" style="display:none"></label>
+      <button class="btn ghost mt" onclick="clearDemoGifs()">Delete all saved GIFs</button>
+      <div id="gifMsg" class="hint mt" style="font-size:13px"></div>
+      <div class="field mt" style="margin-bottom:0;border-top:1px solid var(--hair);padding-top:14px">
+        <label>Free demo pack — no key, no quota</label>
+        <div class="notebox mb">800+ public-domain exercise demos from the <b>Free Exercise DB</b>, hosted free on GitHub. Downloaded once, matched to your library, saved on this phone. Each one is a start and end frame that the app <b>animates</b>, so you get the movement, not a still. This never touches your WorkoutX allowance.</div>
+        <button class="btn" onclick="loadFreePack()">⤓ Get the free demo pack</button>
+        <button class="btn sec mt" onclick="saveFreePackOffline()">Save the matched ones to this phone</button>
+        <div id="fedMsg" class="hint mt" style="font-size:13px"></div>
+      </div>
       <div class="field mt" style="margin-bottom:0;border-top:1px solid var(--hair);padding-top:14px">
         <label>Browse what you've downloaded</label>
         <input class="txtin" id="setBrQ" placeholder="Search: squat, chest, dumbbell…" oninput="renderCatList()" />
@@ -763,6 +911,27 @@ a{color:var(--orange);}
   <button class="tab" data-s="history" onclick="goTab('history')"><svg viewBox="0 0 24 24"><path d="M3 12a9 9 0 1 0 3-6.7L3 8m0-5v5h5"/><path d="M12 8v4l3 2"/></svg>History</button>
   <button class="tab" data-s="settings" onclick="goTab('settings')"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M12 3v3M12 18v3M3 12h3M18 12h3M5.6 5.6l2.1 2.1M16.3 16.3l2.1 2.1M18.4 5.6l-2.1 2.1M7.7 16.3l-2.1 2.1"/></svg>Settings</button>
 </nav>
+<div class="lbox" id="lbox">
+  <div class="lbtop">
+    <div class="lbwhen"><span id="lbDate">—</span><small id="lbAgo"></small></div>
+    <button class="lbx" onclick="closePhoto()">✕</button>
+  </div>
+  <div class="lbstage">
+    <button class="lbnav prev" onclick="photoNav(-1)">‹</button>
+    <img id="lbImg" alt="" />
+    <button class="lbnav next" onclick="photoNav(1)">›</button>
+  </div>
+  <div class="lbcount" id="lbCount"></div>
+  <div class="lbbot">
+    <select class="txtin" id="lbPose" onchange="setPhotoPose(this.value)">
+      <option value="Front">Front</option><option value="Side">Side</option>
+      <option value="Back">Back</option><option value="Legs">Legs</option><option value="Other">Other</option>
+    </select>
+    <button class="lbx" onclick="lbSetThen()">Then</button>
+    <button class="lbx" onclick="lbSetNow()">Now</button>
+    <button class="lbx" style="color:var(--red)" onclick="delPhotoFromBox()">Delete</button>
+  </div>
+</div>
 <div class="toast" id="toast"></div>
 <script>
 
@@ -836,14 +1005,15 @@ const DEFAULTS = {
   checkins:[],
   strength:{},
   weights:[],
-  photos:[], rowing:[],
+  photos:[], rowing:[], measures:[],
   chat:[], streak:0, lastSessionDate:null, workout:null,
   integrations:{"Apple Watch":true,"Concept2 (manual)":true,"Photos":true,"Camera":false,"Notifications":true},
   lib:{}, dayTypes:{}, media:{}, mediaPicked:{}, exMap:{}, progression:{},
   nutrition:{calorieTarget:null, proteinTarget:null, phase:"", log:[]},
   cardio:null, readiness:null, aiPlan:null, restCall:null, setsOverride:null, completed:{}, tomorrow:null,
   session:null,
-  wx:{key:"", on:true, plan:"free", synced:null, count:0, quota:null, quotaLeft:null},
+  wx:{key:"", on:true, plan:"free", synced:null, count:0, quota:null, quotaLeft:null,
+      autoGif:false, reqMonth:null, reqUsed:0},
   timeBudget:{mins:45, row:true, rowMins:10},
   cloud:{on:true, config:JSON.stringify(FB_CONFIG,null,2), syncId:FB_SYNC_DEFAULT, last:null, syncKeys:false},
   prefs:{visualMode:"auto", showIcons:true, exerciseGifs:true, workoutFormat:"list", coachStyle:"direct funny concise",
@@ -866,6 +1036,18 @@ async function idbSet(v,key){ try{ if(!_idb)_idb=await idbOpen(); if(!_idb)retur
 async function idbGet(key){ try{ if(!_idb)_idb=await idbOpen(); if(!_idb)return null; return await new Promise(res=>{ const rq=_idb.transaction(IDB_STORE,"readonly").objectStore(IDB_STORE).get(key||STORE_KEY); rq.onsuccess=()=>res(rq.result||null); rq.onerror=()=>res(null); }); }catch(e){return null;} }
 function mergeDefaults(parsed){ const d={...structuredClone(DEFAULTS),...parsed};
   if(!d.schedule) d.schedule=structuredClone(DEFAULTS.schedule); if(!d.dayOverride) d.dayOverride={date:null,split:null};
+  /* v61 — photos gain a real timestamp and a pose label. Older ones only ever
+     had a YYYY-MM-DD, so they're back-filled from that date at midday (so a
+     day's photos still sort in the order they were added) and left unlabelled
+     until he tells us what they are. */
+  if(!Array.isArray(d.measures)) d.measures=[];
+  if(Array.isArray(d.photos)) d.photos.forEach((p,i)=>{
+    if(!p) return;
+    if(!p.t){ const base=p.d? new Date(p.d+"T12:00:00").getTime() : Date.now();
+              p.t = base + (isNaN(base)?0:i*1000); }
+    if(p.pose===undefined) p.pose="";
+  });
+  d.wx=Object.assign(structuredClone(DEFAULTS.wx),d.wx||{});
   d.profile=Object.assign(structuredClone(DEFAULTS.profile),d.profile||{});
   d.prefs=Object.assign(structuredClone(DEFAULTS.prefs),d.prefs||{});
   d.cloud=Object.assign(structuredClone(DEFAULTS.cloud),d.cloud||{});
@@ -1508,8 +1690,16 @@ function catMatch(name){
 function catGif(name){ const r=catMatch(name); return (r&&r.gif)||null; }
 const _gifTried={};
 function mediaFor(name){
+  /* v61: a demo already saved onto the phone beats every remote source. It's
+     the same clip, it renders instantly, and it costs nothing to show. */
+  if(typeof GIFURL!=="undefined" && GIFURL[name]) return GIFURL[name];
   const picked=DB.media&&DB.media[name];
   if(picked && DB.mediaPicked && DB.mediaPicked[name]) return picked;   // he or the coach chose this
+  /* A catalogue URL needs the key to load, so an <img> pointed at it always
+     401s first. Prefer a free public clip when one exists — same movement, and
+     it loads without spending anything. */
+  const free=(!picked && EXIMG[name]) ? EXIMG[name] : null;
+  if(free && !wxAutoGif()) return free;
   return catGif(name) || ((EX(name)||{}).gif) || picked || EXIMG[name] || null;
 }
 /* Forget whatever demo is cached for this exercise and fall back to the best source. */
@@ -2141,23 +2331,42 @@ function mediaFallback(name){
 function mediaFail(img,name){
   try{
     if(img) img.onerror=null;
-    if(_gifTried[name] || !wxKey() || !(catMatch(name)||{}).gif){ mediaFallback(name); return; }
-    _gifTried[name]=1;
-    wxGifAuthed(name).then(url=>{
-      if(url && img && img.isConnected){ img.src=url; }
-      else mediaFallback(name);
+    /* v61 — order matters, and it used to be wrong. The phone is checked
+       FIRST, so a demo already paid for is never bought twice. A free public
+       clip is tried second. Only if both miss, and only if Amir has explicitly
+       switched auto-fetch on, do we spend a WorkoutX request. */
+    gifGet(name).then(saved=>{
+      if(saved && img && img.isConnected){ img.src=saved; return; }
+      const free=EXIMG[name];
+      if(free && img && img.isConnected && img.src.indexOf(free)<0){
+        img.onerror=function(){ this.onerror=null; mediaFallbackOrFetch(img,name); };
+        img.src=free; return;
+      }
+      mediaFallbackOrFetch(img,name);
     }).catch(()=>mediaFallback(name));
   }catch(e){ mediaFallback(name); }
+}
+function mediaFallbackOrFetch(img,name){
+  if(!wxAutoGif()){ mediaFallback(name); return; }
+  if(_gifTried[name] || !wxKey() || !(catMatch(name)||{}).gif || wxReqLeft()<=0){ mediaFallback(name); return; }
+  _gifTried[name]=1;
+  wxGifAuthed(name).then(url=>{
+    if(url && img && img.isConnected){ img.src=url; }
+    else mediaFallback(name);
+  }).catch(()=>mediaFallback(name));
 }
 function exImgHTML(name,muscles){
   const src=mediaFor(name), nEsc=attrEsc(name), js=jsAttr(name);
   if(src){
-    return "<div class='imgwrap' data-ex='"+nEsc+"'>"+
+    return "<div class='imgwrap' data-ex='"+nEsc+"' data-exname='"+nEsc+"'>"+
       "<img src='"+attrEsc(src)+"' alt='"+nEsc+"' loading='lazy' onerror=\"mediaFail(this,'"+js+"')\">"+
       "<a class='demoover' href='"+demoSearchURL(name)+"' target='_blank' rel='noopener'>▶ demo</a></div>";
   }
-  /* No built-in/cached clip. If a web-finder key is set, try to auto-fill inline; either way, always a tappable Watch demo. */
-  const dataAttrs = mediaKey() ? (" data-exmedia='"+nEsc+"' data-exq='"+attrEsc(name+" exercise")+"'") : "";
+  /* Nothing metered and nothing cached — try the free public-domain pack
+     before falling back to a bare search link. */
+  try{ const fed=fedTileHTML(name); if(fed) return fed; }catch(e){}
+  const dataAttrs = " data-exname='"+nEsc+"'" +
+    (mediaKey() ? (" data-exmedia='"+nEsc+"' data-exq='"+attrEsc(name+" exercise")+"'") : "");
   return watchTileHTML(name,dataAttrs);
 }
 
@@ -2348,8 +2557,11 @@ function renderWorkoutSheet(w){
   sheetSec("rec","Recovery notes","","<div class='recovery'>"+w.recovery+"</div>",false)+
   completeBlockHTML(w)+"</div>";
   try{ bindSheetSecs(); }catch(e){}
+  try{ paintSavedGifs(); }catch(e){}
+  try{ fedPaintCached(); fedAnimStart(); }catch(e){}
   try{ hydrateMedia(); }catch(e){}
   try{ updateSyncDot(); }catch(e){}
+  try{ renderTrainDayPick(); }catch(e){}
 }
 
 let audioCtx=null;
@@ -3637,12 +3849,21 @@ async function analysePhysique(){
   if(!DB.photos.length){ toast("Add a photo first"); return; }
   if(DB.ai.provider!=="openai"||!DB.ai.key){ out.innerHTML="<div class='card mt'><div class='coachnote'><div class='who'>◆ Coach</div>To see your photos I need a live OpenAI key on a paid account. Add one in Settings.</div></div>"; return; }
   out.innerHTML="<div class='card mt center muted'><span class='spin'></span> Coach is looking at your photos…</div>";
-  const recent=DB.photos.slice(-3);
-  const content=[{type:"text",text:"My latest physique photos. Honest, encouraging read: estimate body-fat %, which groups are developing well and which to prioritise for the physique I want, and how it fits my phase ("+DB.profile.phase+"). 4-6 sentences, coach tone."}];
+  /* v61 — the photos now know when they were taken and which angle they are, so
+     say so. Without it the coach was reading three shots as if they were one
+     moment, and could not tell a front from a back. */
+  const recent=photosSorted().slice(-3);
+  const when=recent.map(p=>(p.pose||"unlabelled")+" · "+photoWhen(p)+" ("+photoAgo(p)+")").join("; ");
+  const ms=measSorted();
+  const lastM=ms[ms.length-1];
+  const mLine=lastM? ("\nLogged measurements ("+ukDate(lastM.d)+", "+(lastM.src==="ai"?"photo estimate":"measured")+"): "+
+      MEAS_FIELDS.filter(f=>lastM[f[0]]!=null).map(f=>f[1]+" "+lastM[f[0]]+"cm").join(", ")) : "";
+  const content=[{type:"text",text:"My latest physique photos — "+when+"."+mLine+
+    "\nHonest, encouraging read: estimate body-fat %, which groups are developing well and which to prioritise for the physique I want, and how it fits my phase ("+DB.profile.phase+"). 4-6 sentences, coach tone."}];
   recent.forEach(p=>{ const src=photoSrc(p); if(src) content.push({type:"image_url",image_url:{url:src}}); });
   const sys=coachSystem()+"\nYou can see the attached photos. Constructive and specific, never body-shaming; frame around his physique goal and phase.";
   const reply=await callAI([{role:"system",content:sys},{role:"user",content}],450);
-  out.innerHTML="<div class='card mt'><div class='card-title'><span>Coach's Physique Read · "+today()+"</span></div><div class='coachnote'><div class='who'>◆ Coach</div>"+(reply?fmt(reply):"Couldn't reach the AI — check key/model/billing.")+"</div></div>";
+  out.innerHTML="<div class='card mt'><div class='card-title'><span>Coach's Physique Read · "+ukDate()+"</span></div><div class='coachnote'><div class='who'>◆ Coach</div>"+(reply?fmt(reply):"Couldn't reach the AI — check key/model/billing.")+"</div></div>";
 }
 async function weeklyReview(){
   const out=document.getElementById('reviewOut');
@@ -3753,6 +3974,29 @@ function splitSelectHTML(dow,id,cur){
   return "<select class='splitsel' id='"+id+"' onchange='setDaySplit("+dow+",this.value)' "+
          "onclick='event.stopPropagation()'>"+opts+"</select>";
 }
+/* v61 — the Train tab shows today's session type as a real dropdown, so
+   changing it is one tap instead of a trip back to Home's weekly plan. It
+   writes the same day override the weekly plan writes, so the two never
+   disagree, and it rebuilds the sheet immediately. */
+function renderTrainDayPick(){
+  const sel=document.getElementById('trainDaySel'); if(!sel) return;
+  const cur=pickSplit();
+  const list=allSplits();
+  if(!list.includes(cur)) list.unshift(cur);
+  sel.innerHTML=list.map(sp=>"<option value='"+attrEsc(sp)+"'"+(sp===cur?" selected":"")+">"+escapeHtml(sp)+"</option>").join("");
+  const note=document.getElementById('trainDayNote');
+  if(note){
+    const planned=DB.schedule[new Date().getDay()]||"Rest";
+    const over=DB.dayOverride&&DB.dayOverride.date===today()&&DB.dayOverride.split&&DB.dayOverride.split!==planned;
+    note.textContent = over? ("swapped · "+planned+" was planned") : (LOC().label+" · planned");
+    note.style.color = over? "var(--gold)" : "var(--label)";
+  }
+}
+function setTodaySplit(split){
+  if(!split) return;
+  setDaySplit(new Date().getDay(), split);
+  try{ renderTrainDayPick(); }catch(e){}
+}
 function setDaySplit(dow,split){
   if(!split) return;
   const known=allSplits().includes(split);
@@ -3847,6 +4091,66 @@ function addRowing(){
 }
 function delRow(i){ DB.rowing.splice(i,1); save(); renderRowing(); renderRowingLog(); toast("Deleted"); }
 function delStrength(ex,date){ if(!DB.strength[ex])return; DB.strength[ex]=DB.strength[ex].filter(s=>s.date!==date); if(!DB.strength[ex].length) delete DB.strength[ex]; save(); renderStrengthPBs(); renderHistory(); toast("Deleted"); }
+/* ===== v61 · PHOTOS: A TIMELINE, NOT A PILE =====
+   Every shot now carries a real timestamp and a pose label, so they group into
+   months, filter by angle, open full size, and can be put side by side. */
+const POSES=["Front","Side","Back","Legs","Other"];
+let _poseFilter="all";
+let _lbIdx=-1;              // index into the CURRENT filtered list, for the lightbox
+let _cmpA=null,_cmpB=null;  // photo KEYS, so the pick survives a re-sort
+
+/* Identity is the photo's own id, never its timestamp: two shots taken in one
+   session, or a batch restored from a backup, can share a millisecond, and
+   picking "the photo at time T" would then quietly return the wrong one. */
+function pkey(p){ return p? (p.id || ("t"+p.t)) : null; }
+function photoSorted_(){ return (DB.photos||[]).slice().sort((a,b)=>(a.t||0)-(b.t||0)); }
+function photosSorted(){ return photoSorted_(); }
+function photosFiltered(){
+  const all=photosSorted();
+  if(_poseFilter==="all") return all;
+  if(_poseFilter==="Other") return all.filter(p=>!p.pose||p.pose==="Other");
+  return all.filter(p=>p.pose===_poseFilter);
+}
+function poseGroups(){
+  const g={};
+  photosSorted().forEach(p=>{ const k=p.pose||"Other"; (g[k]=g[k]||[]).push(p); });
+  return g;
+}
+function photoByKey(k){ return (DB.photos||[]).find(p=>pkey(p)===String(k))||null; }
+function photoByT(k){ return photoByKey(k); }
+function photoIdx(p){ return (DB.photos||[]).indexOf(p); }
+function photoWhen(p){
+  const d=new Date(p&&p.t? p.t : Date.now());
+  return d.toLocaleDateString('en-GB',{day:'2-digit',month:'2-digit',year:'numeric'});
+}
+function photoWhenLong(p){
+  const d=new Date(p&&p.t? p.t : Date.now());
+  return d.toLocaleDateString('en-GB',{weekday:'short',day:'numeric',month:'long',year:'numeric'});
+}
+function photoAgo(p){
+  const days=Math.round((Date.now()-(p&&p.t?p.t:Date.now()))/864e5);
+  if(days<=0) return "today";
+  if(days===1) return "yesterday";
+  if(days<14) return days+" days ago";
+  if(days<70) return Math.round(days/7)+" weeks ago";
+  const mo=Math.round(days/30.44);
+  if(mo<24) return mo+" month"+(mo===1?"":"s")+" ago";
+  return (days/365.25).toFixed(1)+" years ago";
+}
+function gapWords(ms){
+  const days=Math.round(Math.abs(ms)/864e5);
+  if(days<1) return "the same day";
+  if(days<14) return days+" day"+(days===1?"":"s")+" apart";
+  if(days<70) return Math.round(days/7)+" weeks apart";
+  const mo=Math.round(days/30.44);
+  if(mo<24) return mo+" month"+(mo===1?"":"s")+" apart";
+  return (days/365.25).toFixed(1)+" years apart";
+}
+function setPoseFilter(v){
+  _poseFilter=v;
+  document.querySelectorAll('#poseFilter button').forEach(b=>b.classList.toggle('on',b.dataset.v===v));
+  renderPhotos();
+}
 async function addPhoto(inp){
   const f=inp.files[0]; if(!f) return; inp.value="";
   toast("Processing photo\u2026");
@@ -3854,20 +4158,378 @@ async function addPhoto(inp){
     const src=await downscaleImage(f,1280,0.72);
     const id="ph"+Date.now()+Math.random().toString(36).slice(2,6);
     PHOTOS[id]=src; await savePhotos();
-    DB.photos.push({d:today(),id}); save();
-    renderPhotos(); renderStorageStatus(); toast("Photo added");
+    const pose=val('photoPose')||"Front";
+    /* Real clock time, not just the date — two shots on one morning stay in the
+       order they were taken, and "6 weeks ago" can be worked out honestly. */
+    DB.photos.push({d:today(), t:Date.now(), id, pose});
+    save();
+    renderPhotos(); renderStorageStatus();
+    toast("Photo added · "+pose+" · "+ukDate());
   }catch(e){ console.warn(e); toast("Couldn't read that image"); }
 }
 async function delPhoto(i){
   const p=DB.photos[i]; if(!p) return;
   DB.photos.splice(i,1);
   if(p.id){ delete PHOTOS[p.id]; await savePhotos(); }
+  if(_cmpA===pkey(p)) _cmpA=null;
+  if(_cmpB===pkey(p)) _cmpB=null;
   save(); renderPhotos(); renderStorageStatus(); toast("Photo deleted");
 }
 function renderPhotos(){
-  const s=document.getElementById('photoStrip'); if(!s) return;
-  s.innerHTML=DB.photos.length? DB.photos.map((p,i)=>"<div class='photocell'><img src='"+photoSrc(p)+"' title='"+attrEsc(p.d||"")+"'/><button class='del' onclick='delPhoto("+i+")'>✕</button></div>").join('') : "<span class='muted' style='font-size:14px'>No photos yet — add front / side / back.</span>";
+  const wrap=document.getElementById('photoTimeline');
+  const cnt=document.getElementById('photoCount');
+  const total=(DB.photos||[]).length;
+  if(cnt) cnt.textContent = total? (total+" shot"+(total===1?"":"s")) : "";
+  if(!wrap) return;
+  const list=photosFiltered();
+  if(!list.length){
+    wrap.innerHTML="<div class='muted' style='font-size:14px;padding:8px 0'>"+
+      (total? "Nothing labelled "+escapeHtml(_poseFilter)+" yet. Tap a photo to label it."
+            : "No photos yet — take a front, a side and a back shot today and you've got your baseline.")+"</div>";
+    renderCompareControls(); return;
+  }
+  /* Newest month first, but within a month oldest → newest, so a row reads
+     left-to-right as progress. */
+  const groups={};
+  list.forEach(p=>{
+    const d=new Date(p.t);
+    const k=d.getFullYear()+"-"+String(d.getMonth()+1).padStart(2,"0");
+    (groups[k]=groups[k]||[]).push(p);
+  });
+  const keys=Object.keys(groups).sort().reverse();
+  wrap.innerHTML=keys.map(k=>{
+    const arr=groups[k];
+    const label=new Date(arr[0].t).toLocaleDateString('en-GB',{month:'long',year:'numeric'});
+    const cells=arr.map(p=>{
+      return "<div class='phcell' onclick='openPhoto(\""+pkey(p)+"\")'>"+
+        "<img src='"+photoSrc(p)+"' alt='"+attrEsc(photoWhen(p))+"' loading='lazy'/>"+
+        (p.pose? "<span class='pose'>"+escapeHtml(p.pose)+"</span>" : "")+
+        "<span class='zoom'>⤢</span>"+
+        "<div class='cap'><b>"+photoWhen(p)+"</b>"+photoAgo(p)+"</div></div>";
+    }).join("");
+    return "<div class='phmonth'>"+escapeHtml(label)+"<span class='cnt'>"+arr.length+"</span></div>"+
+           "<div class='photostrip'>"+cells+"</div>";
+  }).join("");
+  renderCompareControls();
 }
+
+/* ----- Lightbox: tap a photo, actually see it ----- */
+function openPhoto(key){
+  const list=photosFiltered();
+  let i=list.findIndex(p=>pkey(p)===String(key));
+  /* Opened from a compare thumbnail while a pose filter hides it? Drop the
+     filter rather than silently doing nothing. */
+  if(i<0){ _poseFilter="all";
+    try{ document.querySelectorAll('#poseFilter button').forEach(b=>b.classList.toggle('on',b.dataset.v==="all")); }catch(e){}
+    renderPhotos();
+    i=photosFiltered().findIndex(p=>pkey(p)===String(key));
+  }
+  if(i<0) return;
+  _lbIdx=i;
+  paintLightbox();
+  const b=document.getElementById('lbox'); if(b) b.classList.add('show');
+  document.body.style.overflow="hidden";
+}
+function paintLightbox(){
+  const list=photosFiltered();
+  const p=list[_lbIdx]; if(!p){ closePhoto(); return; }
+  const img=document.getElementById('lbImg'); if(img) img.src=photoSrc(p);
+  const d=document.getElementById('lbDate'); if(d) d.textContent=photoWhenLong(p);
+  const a=document.getElementById('lbAgo'); if(a) a.textContent=photoAgo(p)+(p.pose?" · "+p.pose:" · not labelled yet");
+  const s=document.getElementById('lbPose'); if(s) s.value=p.pose||"Other";
+  const c=document.getElementById('lbCount'); if(c) c.textContent=(_lbIdx+1)+" of "+list.length+(_poseFilter==="all"?"":" · "+_poseFilter);
+}
+function photoNav(dir){
+  const list=photosFiltered();
+  if(!list.length) return;
+  _lbIdx=(_lbIdx+dir+list.length)%list.length;
+  paintLightbox();
+}
+function closePhoto(){
+  const b=document.getElementById('lbox'); if(b) b.classList.remove('show');
+  document.body.style.overflow="";
+}
+function setPhotoPose(v){
+  const list=photosFiltered(); const p=list[_lbIdx]; if(!p) return;
+  p.pose=v; save();
+  /* Relabelling can move the photo out of the angle he's filtered to — if it
+     does, the lightbox is now pointing at somebody else's photo. Close it
+     rather than silently swapping what's on screen. */
+  const stillHere=photosFiltered().findIndex(x=>pkey(x)===pkey(p));
+  renderPhotos();
+  if(stillHere<0){ closePhoto(); toast("Labelled "+v+" — now filed under "+v); return; }
+  _lbIdx=stillHere; paintLightbox();
+  toast("Labelled "+v);
+}
+function delPhotoFromBox(){
+  const list=photosFiltered(); const p=list[_lbIdx]; if(!p) return;
+  if(!confirm("Delete this photo from "+photoWhen(p)+"?")) return;
+  const gi=photoIdx(p); closePhoto(); delPhoto(gi);
+}
+function lbSetThen(){ const p=photosFiltered()[_lbIdx]; if(!p) return; _cmpA=pkey(p); closePhoto(); renderCompareControls(); toast("Set as Then · "+photoWhen(p)); }
+function lbSetNow(){ const p=photosFiltered()[_lbIdx]; if(!p) return; _cmpB=pkey(p); closePhoto(); renderCompareControls(); toast("Set as Now · "+photoWhen(p)); }
+
+/* ----- Then & now ----- */
+function optListFor(sel,cur){
+  return photosSorted().slice().reverse().map(p=>
+    "<option value='"+attrEsc(pkey(p))+"'"+(pkey(p)===String(cur)?" selected":"")+">"+
+    photoWhen(p)+(p.pose?" · "+escapeHtml(p.pose):"")+"</option>").join("");
+}
+function setCmp(which,v){ if(which==='a') _cmpA=String(v); else _cmpB=String(v); renderCompare(); }
+function renderCompareControls(){
+  const a=document.getElementById('cmpA'), b=document.getElementById('cmpB');
+  if(!a||!b) return;
+  const all=photosSorted();
+  if(all.length<2){
+    a.innerHTML=b.innerHTML="<option>—</option>";
+    const out=document.getElementById('compareOut');
+    if(out) out.innerHTML="<div class='muted' style='font-size:14px;padding:10px 0'>"+
+      (all.length? "One photo so far. Take another in a few weeks and this is where you'll see the difference."
+                 : "Add two photos and they'll appear here side by side.")+"</div>";
+    return;
+  }
+  /* First look: pick the fairest pair rather than blindly oldest-vs-newest,
+     which paired a front shot against a side one and warned about its own
+     choice. Anything he's picked himself is left alone. */
+  if(!photoByKey(_cmpA) || !photoByKey(_cmpB)){
+    const d=bestPair(0);
+    if(d){ _cmpA=pkey(d.then); _cmpB=pkey(d.now); }
+    else { _cmpA=pkey(all[0]); _cmpB=pkey(all[all.length-1]); }
+  }
+  a.innerHTML=optListFor('a',_cmpA);
+  b.innerHTML=optListFor('b',_cmpB);
+  renderCompare();
+}
+/* "Show me a month ago vs now". Compare like with like: a front shot against a
+   front shot. Which angle gets used is decided by which one actually has the
+   history to cover the gap he asked for — not by whichever he happened to add
+   last, which was arbitrary when he shoots three angles in one go. */
+function bestPair(daysBack){
+  const all=photosSorted();
+  if(all.length<2) return null;
+  let pools=[];
+  if(_poseFilter!=="all"){
+    const f=photosFiltered();
+    if(f.length>=2) pools.push(f);
+  } else {
+    const g=poseGroups();
+    Object.keys(g).forEach(k=>{ if(g[k].length>=2) pools.push(g[k]); });
+  }
+  if(!pools.length) pools=[all];
+  let best=null;
+  pools.forEach(pool=>{
+    const now=pool[pool.length-1];
+    const target=daysBack? (now.t-daysBack*864e5) : pool[0].t;
+    const then=pool.slice(0,-1).reduce((b,p)=>
+      (!b || Math.abs(p.t-target)<Math.abs(b.t-target))? p : b, null);
+    if(!then) return;
+    /* Closest to the date he asked for wins; a deeper set of that angle breaks
+       a near-tie, since it's the one he's been shooting consistently. */
+    const score=Math.abs(then.t-target) - pool.length*6e5;
+    if(!best || score<best.score) best={then,now,score};
+  });
+  return best;
+}
+function quickCompare(daysBack){
+  if((DB.photos||[]).length<2){ toast("Need at least two photos"); return; }
+  const best=bestPair(daysBack);
+  if(!best){ toast("Not enough photos of one angle yet"); return; }
+  _cmpA=pkey(best.then); _cmpB=pkey(best.now);
+  renderCompareControls();
+  const off=Math.round(Math.abs((best.now.t-best.then.t)/864e5));
+  if(daysBack && Math.abs(off-daysBack)>10) toast("Nearest I have is "+off+" days back");
+}
+function renderCompare(){
+  const out=document.getElementById('compareOut'); if(!out) return;
+  const A=photoByKey(_cmpA), B=photoByKey(_cmpB);
+  if(!A||!B){ out.innerHTML=""; return; }
+  const mismatch=(A.pose||"")!==(B.pose||"");
+  out.innerHTML="<div class='cmpwrap'>"+
+    "<div class='cmpside'><div class='lab'>Then</div>"+
+      "<img src='"+photoSrc(A)+"' onclick='openPhoto(\""+pkey(A)+"\")'/>"+
+      "<div class='when'>"+photoWhen(A)+"<span> · "+photoAgo(A)+(A.pose?" · "+escapeHtml(A.pose):"")+"</span></div></div>"+
+    "<div class='cmpside'><div class='lab'>Now</div>"+
+      "<img src='"+photoSrc(B)+"' onclick='openPhoto(\""+pkey(B)+"\")'/>"+
+      "<div class='when'>"+photoWhen(B)+"<span> · "+photoAgo(B)+(B.pose?" · "+escapeHtml(B.pose):"")+"</span></div></div></div>"+
+    "<div class='cmpgap'>"+gapWords(B.t-A.t)+"</div>"+
+    (mismatch? "<div class='hint mt' style='text-align:center'>These are different angles — comparing the same pose reads far more honestly.</div>":"")+
+    weightBetween(A.t,B.t);
+}
+/* If he weighed in around both shots, that's the one hard number that belongs
+   next to the pictures. */
+function weightBetween(ta,tb){
+  /* DB.weights is a bare list of numbers with no dates on it — the check-ins
+     are what carry both, so read from there. */
+  const near=t=>{
+    let best=null,gap=1e15;
+    (DB.checkins||[]).forEach(c=>{
+      if(!c||!c.weight||!c.date) return;
+      const wt=new Date(c.date+"T12:00:00").getTime();
+      if(isNaN(wt)) return;
+      const g=Math.abs(wt-t);
+      if(g<gap && g<10*864e5){ gap=g; best=c; }
+    });
+    return best;
+  };
+  const a=near(ta), b=near(tb);
+  if(!a||!b||a===b) return "";
+  const diff=b.weight-a.weight;
+  const sign=diff>0?"+":"";
+  return "<div class='hint mt' style='text-align:center'>Bodyweight around those dates: "+
+    a.weight.toFixed(1)+" kg → "+b.weight.toFixed(1)+" kg ("+sign+diff.toFixed(1)+" kg)</div>";
+}
+/* ===== v61 · MEASUREMENTS =====
+   Two sources, never blended: anything Amir measured himself is the truth, and
+   anything the coach read off a photo is an estimate and is always shown as
+   one. A tape measure beats a guess, so a manual entry on a date replaces an
+   estimate on that date rather than sitting alongside it. */
+const MEAS_FIELDS=[
+  ["chest","Chest"],["waist","Waist"],["hips","Hips"],["shoulders","Shoulders"],
+  ["arm","Arm"],["thigh","Thigh"],["calf","Calf"],["neck","Neck"]
+];
+function measSorted(){ return (DB.measures||[]).slice().sort((a,b)=>(a.t||0)-(b.t||0)); }
+function measNum(v){ const n=parseFloat(v); return isNaN(n)?null:Math.round(n*10)/10; }
+function saveMeasure(){
+  const h=measNum(val('mHeight'));
+  if(h){ DB.profile.height=h; }
+  const dstr=val('mDate')||today();
+  const rec={ t:new Date(dstr+"T12:00:00").getTime()||Date.now(), d:dstr, src:"manual" };
+  let any=false;
+  MEAS_FIELDS.forEach(f=>{
+    const v=measNum(val('m'+f[0].charAt(0).toUpperCase()+f[0].slice(1)));
+    if(v!==null){ rec[f[0]]=v; any=true; }
+  });
+  if(!any){ toast("Fill in at least one measurement"); return; }
+  DB.measures=DB.measures||[];
+  /* One manual record per day — logging again the same day corrects it — and a
+     real measurement retires the photo estimate for that day. */
+  DB.measures=DB.measures.filter(m=>!(m.d===dstr && (m.src==="manual"||m.src==="ai")));
+  DB.measures.push(rec);
+  save();
+  MEAS_FIELDS.forEach(f=>{ const el=document.getElementById('m'+f[0].charAt(0).toUpperCase()+f[0].slice(1)); if(el) el.value=""; });
+  renderMeasures();
+  toast("Measurements logged · "+ukDate(dstr));
+}
+function delMeasure(t){
+  if(!confirm("Delete this set of measurements?")) return;
+  DB.measures=(DB.measures||[]).filter(m=>String(m.t)!==String(t));
+  save(); renderMeasures(); toast("Deleted");
+}
+function renderMeasures(){
+  const hEl=document.getElementById('mHeight');
+  if(hEl && !hEl.value && DB.profile && DB.profile.height) hEl.value=DB.profile.height;
+  const dEl=document.getElementById('mDate'); if(dEl && !dEl.value) dEl.value=today();
+  const out=document.getElementById('measOut'); if(!out) return;
+  const list=measSorted();
+  if(!list.length){
+    out.innerHTML="<div class='hint mt'>Nothing logged yet. Measure what you can, or let the coach estimate it from your photos.</div>";
+    return;
+  }
+  const cols=MEAS_FIELDS.filter(f=>list.some(m=>m[f[0]]!=null));
+  const first=list[0], last=list[list.length-1];
+  const head="<tr><th>Date</th>"+cols.map(c=>"<th>"+c[1]+"</th>").join("")+"<th></th></tr>";
+  const rows=list.slice().reverse().map(m=>
+    "<tr><td class='dt'>"+ukDate(m.d)+(m.src==="ai"?"<span class='est'>EST</span>":"")+"</td>"+
+    cols.map(c=>"<td>"+(m[c[0]]!=null? m[c[0]]+"" : "—")+"</td>").join("")+
+    "<td><button class='del' onclick='delMeasure("+m.t+")'>✕</button></td></tr>").join("");
+  let change="";
+  if(list.length>1){
+    /* Deliberately not colour-coded. Green-for-up would call a bigger waist
+       progress and a smaller one failure, which depends entirely on the phase
+       he's in. The number and its sign say everything that's actually known. */
+    const bits=cols.map(c=>{
+      if(first[c[0]]==null||last[c[0]]==null) return null;
+      const d=Math.round((last[c[0]]-first[c[0]])*10)/10;
+      if(!d) return c[1]+" level";
+      return c[1]+" <b>"+(d>0?"+":"")+d+" cm</b>";
+    }).filter(Boolean);
+    if(bits.length) change="<div class='hint mt'>Since "+ukDate(first.d)+": "+bits.join(" · ")+"</div>";
+  }
+  out.innerHTML="<div class='mscroll'><table class='mtable'>"+head+rows+"</table></div>"+change+
+    (list.some(m=>m.src==="ai")? "<div class='hint mt'><b>EST</b> = read off a photo. Treat those as a direction of travel, not a number to trust to the centimetre.</div>":"");
+}
+/* Photo-based estimates. Honest framing matters more than precision here: a
+   photo gives proportions, not circumferences, so height and bodyweight are
+   handed over as the scale reference and the answer is labelled an estimate
+   everywhere it appears. */
+async function aiEstimateMeasurements(){
+  const out=document.getElementById('measAiOut'); if(!out) return;
+  if(!DB.photos||!DB.photos.length){ out.innerHTML="<div class='hint mt'>Add a photo first — ideally a front and a side shot.</div>"; return; }
+  if(DB.ai.provider!=="openai"||!DB.ai.key){ out.innerHTML="<div class='hint mt'>This needs a live OpenAI key on a paid account. Add one in Settings.</div>"; return; }
+  const h=measNum(val('mHeight'))||DB.profile.height||null;
+  if(h) DB.profile.height=h;
+  if(!h){ out.innerHTML="<div class='hint mt'>Put your height in first — without it there's nothing to scale the photo against and any number would be invented.</div>"; return; }
+  out.innerHTML="<div class='card mt center muted'><span class='spin'></span> Reading your photos…</div>";
+  /* Prefer one of each angle, newest first — a front and a side together give a
+     far better read than three fronts. */
+  const sorted=photosSorted().reverse();
+  const picks=[]; const seen={};
+  sorted.forEach(p=>{ const k=p.pose||"Other"; if(!seen[k]&&picks.length<3){ seen[k]=1; picks.push(p); } });
+  sorted.forEach(p=>{ if(picks.length<3 && picks.indexOf(p)<0) picks.push(p); });
+  const ci=latestCheckin();
+  const bw=(ci&&ci.weight)|| (DB.weights&&DB.weights[DB.weights.length-1]) || null;
+  const content=[{type:"text",text:
+    "Estimate my body measurements in centimetres from these photos.\n"+
+    "Height: "+h+" cm"+(bw? ". Bodyweight: "+bw+" kg":"")+".\n"+
+    "Angles supplied: "+picks.map(p=>(p.pose||"unlabelled")+" ("+photoWhen(p)+")").join(", ")+".\n"+
+    "Use my height as the scale reference. Reply with JSON ONLY, no prose, no markdown fences:\n"+
+    '{"chest":0,"waist":0,"hips":0,"shoulders":0,"arm":0,"thigh":0,"calf":0,"neck":0,"bodyfat":0,"confidence":"low|medium|high","note":"one short sentence"}\n'+
+    "Use null for anything the photos genuinely don't show. Arm is flexed upper arm, waist is at the navel."}];
+  picks.forEach(p=>{ const src=photoSrc(p); if(src) content.push({type:"image_url",image_url:{url:src}}); });
+  const sys="You estimate body measurements from photographs for a training log. "+
+    "You are calibrating against a stated height, so give plausible centimetre figures rather than refusing. "+
+    "Be conservative and state low confidence when the angle or clothing hides a measurement. "+
+    "Output raw JSON and nothing else.";
+  try{
+    const reply=await callAI([{role:"system",content:sys},{role:"user",content}],400);
+    const clean=String(reply||"").replace(/```json|```/g,"").trim();
+    const m=clean.match(/\{[\s\S]*\}/);
+    if(!m) throw new Error("no json");
+    const o=JSON.parse(m[0]);
+    const rec={ t:Date.now(), d:today(), src:"ai", conf:o.confidence||"", note:o.note||"" };
+    let any=false;
+    MEAS_FIELDS.forEach(f=>{ const v=measNum(o[f[0]]); if(v!==null){ rec[f[0]]=v; any=true; } });
+    if(measNum(o.bodyfat)!==null) rec.bf=measNum(o.bodyfat);
+    if(!any) throw new Error("empty");
+    DB.measures=DB.measures||[];
+    const measuredToday=DB.measures.some(x=>x.src==="manual" && x.d===today());
+    if(!measuredToday){
+      DB.measures=DB.measures.filter(x=>!(x.src==="ai" && x.d===today()));
+      DB.measures.push(rec);
+      save(); renderMeasures();
+    }
+    out.innerHTML="<div class='card mt'><div class='coachnote'><div class='who'>◆ Coach · estimate</div>"+
+      MEAS_FIELDS.filter(f=>rec[f[0]]!=null).map(f=>f[1]+" "+rec[f[0]]+" cm").join(" · ")+
+      (rec.bf!=null? "<br>Body fat around "+rec.bf+"%" : "")+
+      "<br><br>Confidence: <b>"+escapeHtml(rec.conf||"low")+"</b>. "+escapeHtml(rec.note||"")+
+      (measuredToday
+        ? "<br><br><i>Not logged — you already measured yourself properly today, and a tape beats a guess. This is just for interest.</i>"
+        : "<br><br><i>These are read off a photo, not measured. They're logged as estimates — useful for watching the trend, not for quoting to the centimetre. If you get hold of a tape, log the real numbers and they'll take over.</i>")+
+      "</div></div>";
+  }catch(e){
+    console.warn(e);
+    out.innerHTML="<div class='hint mt'>Couldn't get a usable read from those photos. A clear front shot and a side shot, arms away from the body, in good light works best.</div>";
+  }
+}
+/* "What's actually changed between these two?" */
+async function aiCompare(){
+  const out=document.getElementById('compareAiOut'); if(!out) return;
+  const A=photoByKey(_cmpA), B=photoByKey(_cmpB);
+  if(!A||!B){ out.innerHTML="<div class='hint mt'>Pick two photos first.</div>"; return; }
+  if(DB.ai.provider!=="openai"||!DB.ai.key){ out.innerHTML="<div class='hint mt'>This needs a live OpenAI key on a paid account.</div>"; return; }
+  out.innerHTML="<div class='card mt center muted'><span class='spin'></span> Comparing…</div>";
+  const content=[{type:"text",text:
+    "Two physique photos of me, "+gapWords(B.t-A.t)+". The FIRST image is the older one ("+photoWhen(A)+"), "+
+    "the SECOND is the recent one ("+photoWhen(B)+").\n"+
+    "What has actually changed? Be specific about which areas have developed, which haven't moved, and what to prioritise next. "+
+    "If the angle or lighting differs enough that you can't tell, say so rather than inventing progress. 4-6 sentences, coach tone."}];
+  [A,B].forEach(p=>{ const s=photoSrc(p); if(s) content.push({type:"image_url",image_url:{url:s}}); });
+  try{
+    const reply=await callAI([{role:"system",content:coachSystem()+"\nYou can see both photos. Constructive and specific, never body-shaming. Honesty about what you can't see beats flattery."},{role:"user",content}],500);
+    out.innerHTML="<div class='card mt'><div class='coachnote'><div class='who'>◆ Coach</div>"+fmt(escapeHtml(String(reply||"")))+"</div></div>";
+  }catch(e){ out.innerHTML="<div class='hint mt'>Couldn't reach the coach just then.</div>"; }
+}
+
 function renderHistory(){
   const byDate={};
   Object.entries(DB.strength).forEach(([ex,arr])=>arr.forEach(s=>{ if(s.date==='prev'||!s.date)return; (byDate[s.date]=byDate[s.date]||{lifts:[],rows:[]}); byDate[s.date].lifts.push({ex,sets:s.sets}); }));
@@ -4001,7 +4663,7 @@ function scheduleInApp(){
    v18 ADDITIONS — draggable rest timer · weekly training memory · AI planner
    · Firestore sync
    ========================================================================== */
-const APP_VERSION="v60 · 04/08/2026";
+const APP_VERSION="v61 · 06/08/2026";
 
 /* ===== 1. REST TIMER — drag it anywhere so it never blocks the chat box ===== */
 let _rtDrag=null;
@@ -4572,6 +5234,8 @@ async function purgePhotos(){
   if(!DB.photos||!DB.photos.length){ toast("No photos to clear"); return; }
   if(!confirm("Remove all "+DB.photos.length+" physique photos from this device? Everything else (lifts, check-ins, history) stays.")) return;
   DB.photos=[]; PHOTOS={}; await savePhotos();
+  _cmpA=null; _cmpB=null; _lbIdx=-1;
+  try{ closePhoto(); }catch(e){}
   if(save()) clearSaveFailure();
   renderPhotos(); renderStorageStatus(); toast("Photos cleared");
 }
@@ -5123,8 +5787,9 @@ async function wxGet(path,params){
   try{
     const r=await fetch(url,{headers:{"X-WorkoutX-Key":k},signal:ctl.signal});
     DB.wx=DB.wx||{};
+    try{ wxCountReq(); }catch(e){}
     const plan=r.headers.get("X-WorkoutX-Plan"); if(plan) DB.wx.plan=plan;
-    const qr=r.headers.get("X-Quota-Remaining"); if(qr!=null) DB.wx.quotaLeft=+qr;
+    const qr=r.headers.get("X-Quota-Remaining"); if(qr!=null){ DB.wx.quotaLeft=+qr; DB.wx.quotaAt=new Date().toISOString(); }
     const ql=r.headers.get("X-Quota-Limit"); if(ql!=null) DB.wx.quota=+ql;
     if(r.status===401) throw new Error("AUTH");
     if(r.status===403) throw new Error("PLAN");
@@ -5347,30 +6012,127 @@ async function runWxSync(){
     wxMsg(wxErrText(e)+"<br>The "+wxCount()+" exercises already downloaded have been kept."+saved);
   }
 }
-/* GIFs: try the plain URL first; if the CDN wants the key, fetch and blob it. */
-const _gifBlob={};
+/* ===== v61 · DEMO GIFS ARE KEPT ON THE PHONE, NOT RE-RENTED EVERY TIME =====
+
+   A catalogue GIF lives behind the WorkoutX key, so a plain <img src> gets a
+   401 and the old code answered that by fetching it properly and caching the
+   blob in a plain object. That object is MEMORY ONLY. Every reload, every cold
+   start, every time iOS evicted the tab, the cache was empty and every GIF on
+   the sheet was bought again — one of the 500 monthly requests each, for a file
+   that had already been paid for a dozen times.
+
+   The bytes now go into IndexedDB, keyed by exercise name, alongside a small
+   index so we know what's there without reading every blob at boot. Once a
+   movement is saved it renders from the phone forever, offline, free.
+
+   And nothing is fetched on its own any more: autoGif is off by default, so a
+   session with 11 unsaved movements costs nothing until Amir asks for it. */
+const GIF_IDX_KEY="amirpt_gifidx";
+/* var, not let, deliberately: mediaFor() guards on `typeof GIFURL` and it runs
+   during the first render. A `let` in its temporal dead zone makes even typeof
+   throw, so the guard would be the thing that broke the sheet. */
+var GIFIDX={};           // name -> {n:bytes, at:iso}   — small, loaded at boot
+var GIFURL={};           // name -> object URL          — this session only
+const _gifBlob={};       // kept: the catalogue picker still uses "cat:" entries
+function gifStoreKey(n){ return "amirpt_gif:"+n; }
+async function gifIdxLoad(){
+  try{ const raw=await idbGet(GIF_IDX_KEY); GIFIDX=raw?(JSON.parse(raw)||{}):{}; }
+  catch(e){ GIFIDX={}; }
+  return Object.keys(GIFIDX).length;
+}
+async function gifIdxSave(){ try{ await idbSet(JSON.stringify(GIFIDX),GIF_IDX_KEY); }catch(e){} }
+async function gifPut(name,blob){
+  if(!name||!blob||!blob.size) return null;
+  try{
+    await idbSet(blob,gifStoreKey(name));
+    GIFIDX[name]={n:blob.size,at:new Date().toISOString()};
+    await gifIdxSave();
+    try{ if(GIFURL[name]) URL.revokeObjectURL(GIFURL[name]); }catch(e){}
+    const u=URL.createObjectURL(blob); GIFURL[name]=u; return u;
+  }catch(e){ console.warn("gif save",e); return null; }
+}
+async function gifGet(name){
+  if(!name) return null;
+  if(GIFURL[name]) return GIFURL[name];
+  if(!GIFIDX[name]) return null;
+  try{
+    const b=await idbGet(gifStoreKey(name));
+    if(!b||!b.size){ delete GIFIDX[name]; gifIdxSave(); return null; }
+    const u=URL.createObjectURL(b); GIFURL[name]=u; return u;
+  }catch(e){ return null; }
+}
+function gifSaved(name){ return !!(GIFURL[name]||GIFIDX[name]); }
+function gifCount(){ return Object.keys(GIFIDX).length; }
+function gifBytes(){ return Object.keys(GIFIDX).reduce((a,k)=>a+((GIFIDX[k]||{}).n||0),0); }
+function fmtMB(b){ return b>=1048576? (b/1048576).toFixed(1)+" MB" : Math.round(b/1024)+" KB"; }
+function wxAutoGif(){ return !!(DB.wx&&DB.wx.autoGif); }
+
+/* Requests are the scarce thing here, so count every one we spend. */
+function wxMonthKey(){ const d=new Date(); return d.getFullYear()+"-"+String(d.getMonth()+1).padStart(2,"0"); }
+function wxCountReq(n){
+  DB.wx=DB.wx||{};
+  const m=wxMonthKey();
+  if(DB.wx.reqMonth!==m){ DB.wx.reqMonth=m; DB.wx.reqUsed=0; }
+  DB.wx.reqUsed=(DB.wx.reqUsed||0)+(n||1);
+  save();
+  try{ renderGifStatus(); }catch(e){}
+}
+function wxReqUsed(){ return (DB.wx&&DB.wx.reqMonth===wxMonthKey())? (DB.wx.reqUsed||0) : 0; }
+/* The API tells us the truth in its own headers whenever we call it. That number
+   beats anything this phone counted, because the quota is per KEY and he may
+   have spent some of it on another device. The local tally is only a stand-in
+   for GIF fetches, which come off a CDN that sends no quota headers. */
+function wxQuotaCap(){ return (DB.wx&&DB.wx.quota)||500; }
+function wxReqLeft(){
+  const local=Math.max(0,wxQuotaCap()-wxReqUsed());
+  /* Only while it's still current. A "380 left" reading from last month must
+     not survive the reset and block him from saving anything in the new one. */
+  const fresh=DB.wx && DB.wx.quotaAt && String(DB.wx.quotaAt).slice(0,7)===wxMonthKey();
+  const server=fresh? DB.wx.quotaLeft : null;
+  return (server==null)? local : Math.max(0,Math.min(local,server));
+}
+
+/* Paint whatever is already on the phone into a freshly rendered sheet.
+   Costs nothing — pure IndexedDB reads. */
+async function paintSavedGifs(){
+  const nodes=[...document.querySelectorAll('[data-exname]')];
+  for(const el of nodes){
+    const name=el.getAttribute('data-exname'); if(!name) continue;
+    if(!gifSaved(name)) continue;
+    const u=await gifGet(name); if(!u) continue;
+    const live=document.querySelector('[data-exname="'+CSS.escape(name)+'"]');
+    if(live) swapMedia(live,u,name);
+  }
+}
 async function wxImgFail(img,name){
   try{ img.onerror=null; }catch(e){}
-  if(!name||_gifTried[name]){ if(img) img.style.visibility="hidden"; return; }
+  if(!name){ if(img) img.style.visibility="hidden"; return; }
+  const saved=await gifGet(name);
+  if(saved && img){ img.src=saved; img.style.visibility=""; return; }
+  if(_gifTried[name] || !wxAutoGif()){ if(img) img.style.visibility="hidden"; return; }
   _gifTried[name]=1;
   const url=await wxGifAuthed(name);
   if(url && img){ img.src=url; img.style.visibility=""; }
   else if(img) img.style.visibility="hidden";
 }
 async function wxGifSrc(name){
+  const saved=await gifGet(name); if(saved) return saved;
   const e=EX(name); if(!e||!e.gif) return null;
-  if(_gifBlob[name]) return _gifBlob[name];
   return e.gif;
 }
 /* Same fetch, but for a catalogue record by its own name (used by the picker). */
 async function catGifAuthed(catName){
   const rec=(typeof WXIDX!=="undefined"&&WXIDX[catName])||null;
   if(!rec||!rec.gif||!wxKey()) return null;
+  const saved=await gifGet("cat:"+catName); if(saved) return saved;
   if(_gifBlob["cat:"+catName]) return _gifBlob["cat:"+catName];
+  if(wxReqLeft()<=0){ return null; }
   try{
     const r=await fetch(rec.gif,{headers:{"X-WorkoutX-Key":wxKey()}});
+    wxCountReq();
     if(!r.ok) return null;
-    const u=URL.createObjectURL(await r.blob());
+    const b=await r.blob();
+    const u=await gifPut("cat:"+catName,b) || URL.createObjectURL(b);
     _gifBlob["cat:"+catName]=u; return u;
   }catch(e){ return null; }
 }
@@ -5379,17 +6141,380 @@ async function pickImgFail(img,catName){
   const u=await catGifAuthed(catName);
   if(u&&img){ img.src=u; } else if(img){ img.style.visibility="hidden"; }
 }
+/* The only place that ever spends a request on a GIF. Checks the phone first. */
 async function wxGifAuthed(name){
+  const saved=await gifGet(name); if(saved) return saved;
   const rec=catMatch(name)||EX(name);
   const src=rec&&rec.gif;
   if(!src||!wxKey()) return null;
-  if(_gifBlob[name]) return _gifBlob[name];
+  if(wxReqLeft()<=0) return null;
   try{
     const r=await fetch(src,{headers:{"X-WorkoutX-Key":wxKey()}});
+    wxCountReq();
     if(!r.ok) return null;
-    const b=await r.blob(); const u=URL.createObjectURL(b);
-    _gifBlob[name]=u; return u;
+    const b=await r.blob();
+    return await gifPut(name,b) || URL.createObjectURL(b);
   }catch(err){ return null; }
+}
+/* Save one movement's demo permanently. Tries the free sources before the
+   metered one, so a fitsmove or Giphy clip never costs a WorkoutX request. */
+async function cacheDemo(name){
+  if(!name) return "already";
+  if(gifSaved(name)) return "already";
+  const rec=catMatch(name)||EX(name);
+  const tries=[];
+  const picked=DB.media&&DB.media[name]; if(picked) tries.push([picked,false]);
+  if(EXIMG[name]) tries.push([EXIMG[name],false]);
+  if(rec&&rec.gif) tries.push([rec.gif,true]);
+  for(const t of tries){
+    const url=t[0], keyed=t[1];
+    if(keyed && (!wxKey() || wxReqLeft()<=0)) continue;
+    try{
+      const r=await fetch(url, keyed? {headers:{"X-WorkoutX-Key":wxKey()}} : {});
+      if(keyed) wxCountReq();
+      if(!r.ok) continue;
+      const b=await r.blob();
+      if(!b||b.size<200) continue;
+      if(await gifPut(name,b)) return keyed?"paid":"free";
+    }catch(e){ /* CORS or offline — just try the next source */ }
+  }
+  return "failed";
+}
+/* ===== v61 · THE FREE DEMO PACK =========================================
+   The WorkoutX catalogue is metered; this one isn't. Free Exercise DB is
+   public domain (Unlicense), 800+ movements, hosted on GitHub raw with no key
+   and no quota. Each exercise ships TWO frames — the start and the end of the
+   movement — so alternating them gives a real demo rather than a still photo.
+   Fetched once, matched to his library, then cached like everything else. */
+const FED_URL="https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/dist/exercises.json";
+const FED_IMG="https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/";
+const FED_KEY="amirpt_freepack";
+var FED=null;              // slim records: {i:id, n:name, e:equipment, m:[muscles], f:frames}
+var _fedIdx=null, _fedHit={};
+function fedHas(){ return !!(FED && FED.length); }
+function fedCount(){ return FED? FED.length : 0; }
+async function fedLoad(){
+  try{ const raw=await idbGet(FED_KEY); if(raw){ FED=JSON.parse(raw)||null; } }
+  catch(e){ FED=null; }
+  _fedIdx=null; _fedHit={};
+  return fedCount();
+}
+async function fedSave(){ try{ await idbSet(JSON.stringify(FED||[]),FED_KEY); return true; }catch(e){ return false; } }
+function fedMsg(t){ const el=document.getElementById('fedMsg'); if(el) el.innerHTML=t; }
+
+/* Their names carry trailing qualifiers — "Barbell Bench Press - Medium Grip" —
+   so the app's usual matcher, which insists the LAST token lines up, would
+   reject almost everything. Cut at the dash, then match on the movement noun
+   appearing anywhere. */
+/* Light singularisation, so "Mountain Climbers" meets "Mountain Climber" and
+   "Curls" meets "Curl". The double-s guard keeps "press" from becoming "pres". */
+function fedSing(w){ return (w.length>3 && w.endsWith("s") && !w.endsWith("ss"))? w.slice(0,-1) : w; }
+function fedTokens(name){
+  return normTokens(String(name||"").split(/\s+[-–]\s+/)[0]).map(fedSing);
+}
+/* Kit words are noise — a name that says "barbell" and one that doesn't are
+   still the same movement. Anything else the candidate adds is a QUALIFIER,
+   and qualifiers change the lift: Romanian Deadlift is not Deadlift, Hammer
+   Curl is not Nordic Curl. Those get penalised. */
+const FED_KITWORDS=new Set(["barbell","dumbbell","cable","machine","bodyweight","body","kettlebell",
+  "band","bands","ez","bar","weighted","smith","lever","sled","plate"]);
+function fedIndex(){
+  if(_fedIdx) return _fedIdx;
+  _fedIdx=[];
+  (FED||[]).forEach(r=>{
+    const tk=fedTokens(r.n);
+    if(tk.length) _fedIdx.push({r,tk,set:new Set(tk),head:tk[tk.length-1]});
+  });
+  return _fedIdx;
+}
+/* His library codes kit as bw/db/bb/mach; the free DB spells it out as
+   "body only" / "dumbbell" / "barbell". Without this bridge the equipment
+   bonus never fires and a dumbbell press can win against a barbell one. */
+const FED_EQ={bw:["body only","none","bands","exercise ball","medicine ball","foam roll"],
+              db:["dumbbell"], bb:["barbell","ez curl bar"], bar:["barbell","ez curl bar","body only"],
+              mach:["machine","cable","other"], band:["bands"], kb:["kettlebells"], other:["other"]};
+/* His six groups against their finer list — "arms" is biceps OR triceps, and
+   "legs" covers four separate entries over there. */
+const FED_M={legs:["quadriceps","hamstrings","glutes","calves","adductors","abductors"],
+             core:["abdominals","lower back"], back:["lats","middle back","traps","lower back"],
+             shoulders:["shoulders","traps"], chest:["chest"], arms:["biceps","triceps","forearms"]};
+function fedEqOK(recEq,code){
+  const want=FED_EQ[code]; if(!want||!recEq) return false;
+  return want.indexOf(String(recEq).toLowerCase())>=0;
+}
+function fedMuscleOK(recM,group){
+  const want=FED_M[group]; if(!want||!recM||!recM.length) return false;
+  return recM.some(x=>want.indexOf(String(x).toLowerCase())>=0);
+}
+function fedMatch(name){
+  if(!name||!fedHas()) return null;
+  if(_fedHit[name]!==undefined) return _fedHit[name];
+  const q=normTokens(name).map(fedSing);
+  if(!q.length){ _fedHit[name]=null; return null; }
+  const qs=new Set(q), head=q[q.length-1];
+  const wantEq=(typeof eqOf==="function")? eqOf(name) : "";
+  const wantM=((EX(name)||guessEx(name)||{}).m||[])[0];
+  let best=null;
+  fedIndex().forEach(c=>{
+    /* The movement noun has to be in there somewhere, or a squat can match a
+       curl on the word "dumbbell" alone. */
+    if(!c.set.has(head) && c.head!==head) return;
+    let shared=0; qs.forEach(w=>{ if(c.set.has(w)) shared++; });
+    const union=new Set([...qs,...c.tk]).size;
+    let score=shared/union + shared*0.02;
+    if(c.head===head) score+=0.12;                        // same movement noun last
+    if(fedEqOK(c.r.e,wantEq)) score+=0.22;                // same kit is a strong signal
+    /* Deliberately a weak nudge. Their muscle tags disagree with mine often
+       enough — they file a conventional deadlift under "lower back", I file it
+       under legs — that letting it outweigh the name would hand "Deadlift" to
+       "Romanian Deadlift" on a hamstring tag. */
+    if(wantM && fedMuscleOK(c.r.m,wantM)) score+=0.08;
+    if(c.tk.length<=q.length+2) score+=0.05;              // prefer the plainer name
+    /* Each unmatched qualifier is evidence this is a DIFFERENT movement. */
+    let extra=0; c.tk.forEach(w=>{ if(!qs.has(w) && !FED_KITWORDS.has(w)) extra++; });
+    score-=extra*0.12;
+    if(!best||score>best.score) best={r:c.r,score};
+  });
+  const hit=(best && best.score>=0.42)? best.r : null;
+  _fedHit[name]=hit;
+  return hit;
+}
+/* Both frames as absolute URLs, newest cache first. */
+function fedFrames(name){
+  const r=fedMatch(name);
+  if(!r||!r.f||!r.f.length) return null;
+  return r.f.map(x=>FED_IMG+x);
+}
+async function loadFreePack(){
+  if(fedHas() && !confirm("The free pack is already on this phone ("+fedCount()+" movements).\n\nDownload a fresh copy?")) return;
+  fedMsg("<span class='spin'></span> Downloading the free exercise pack…");
+  try{
+    const r=await fetch(FED_URL);
+    if(!r.ok) throw new Error("HTTP "+r.status);
+    const arr=await r.json();
+    if(!Array.isArray(arr)||!arr.length) throw new Error("empty");
+    /* Slimmed hard before storing: the instructions are the bulk of that file
+       and the app already writes its own cues. */
+    FED=arr.filter(x=>x&&x.images&&x.images.length).map(x=>({
+      i:x.id, n:x.name, e:x.equipment||"", m:x.primaryMuscles||[], f:x.images
+    }));
+    _fedIdx=null; _fedHit={};
+    await fedSave();
+    const covered=fedCoverage();
+    fedMsg("✅ <b>"+FED.length+" free demos</b> downloaded and saved — <b>zero WorkoutX requests</b>.<br>"+
+      "Matched to <b>"+covered.hit+"</b> of your "+covered.total+" exercises. They animate between the start and end frame.<br>"+
+      "Now tap <b>Save the matched ones to this phone</b> so they work with no signal.");
+    try{ if(DB.workout) renderWorkoutSheet(DB.workout); }catch(e){}
+    try{ renderGifStatus(); }catch(e){}
+  }catch(e){
+    fedMsg("✗ Couldn't download it ("+(e&&e.message||e)+"). It's a plain GitHub file, so this is almost always a connection problem — try again on wifi.");
+  }
+}
+function myExerciseNames(){
+  let names=[];
+  try{ names=coreExNames(); }catch(e){}
+  try{ Object.keys(DB.lib||{}).forEach(n=>names.push(n)); }catch(e){}
+  try{ Object.keys(DB.strength||{}).forEach(n=>names.push(n)); }catch(e){}
+  try{ (DB.workout&&DB.workout.main||[]).forEach(e=>names.push(e.name)); }catch(e){}
+  return [...new Set(names.filter(Boolean))];
+}
+function fedCoverage(){
+  const names=myExerciseNames();
+  let hit=0; names.forEach(n=>{ if(fedMatch(n)) hit++; });
+  return {hit,total:names.length};
+}
+/* Pull both frames of every matched movement into IndexedDB so the pack works
+   on a plane, in a basement gym, anywhere. */
+let _fedSaving=false;
+async function saveFreePackOffline(){
+  if(_fedSaving) return;
+  if(!fedHas()){ fedMsg("✗ Get the free pack first."); return; }
+  const names=myExerciseNames().filter(n=>fedFrames(n));
+  if(!names.length){ fedMsg("✗ Nothing matched — try downloading the pack again."); return; }
+  const todo=names.filter(n=>!gifSaved(n));
+  if(!todo.length){ fedMsg("✓ All "+names.length+" matched demos are already on this phone."); return; }
+  if(!confirm("Save "+todo.length+" demos ("+(todo.length*2)+" images) onto this phone?\n\nThey're free and public domain — this costs nothing and uses no WorkoutX requests.")) return;
+  _fedSaving=true;
+  let ok=0,fail=0;
+  try{
+    for(let i=0;i<todo.length;i++){
+      const n=todo[i];
+      fedMsg("<span class='spin'></span> Saving "+(i+1)+" of "+todo.length+" · "+escapeHtml(n));
+      const frames=fedFrames(n); if(!frames){ fail++; continue; }
+      let got=0;
+      for(let k=0;k<Math.min(2,frames.length);k++){
+        try{
+          const r=await fetch(frames[k]);
+          if(!r.ok) continue;
+          const b=await r.blob();
+          if(!b||b.size<200) continue;
+          /* Frame 0 under the exercise name so every existing lookup finds it;
+             frame 1 under a suffix the animator knows about. */
+          if(await gifPut(k===0? n : (n+"\u0000f1"), b)) got++;
+        }catch(e){}
+      }
+      if(got) ok++; else fail++;
+    }
+    renderGifStatus();
+    fedMsg("✅ <b>"+ok+"</b> demos saved onto this phone"+(fail?(" · "+fail+" couldn't be fetched"):"")+
+           ".<br>They now load instantly with no signal and cost nothing, ever.");
+    try{ if(DB.workout) renderWorkoutSheet(DB.workout); }catch(e){}
+  } finally { _fedSaving=false; }
+}
+/* ----- The animation: flip between the two frames on a shared ticker ----- */
+let _fedTick=null;
+function fedAnimStart(){
+  if(_fedTick) return;
+  _fedTick=setInterval(()=>{
+    const imgs=document.querySelectorAll('img[data-f0][data-f1]');
+    if(!imgs.length){ clearInterval(_fedTick); _fedTick=null; return; }
+    imgs.forEach(im=>{
+      const on1=im.getAttribute('data-on')==='1';
+      const next=on1? im.getAttribute('data-f0') : im.getAttribute('data-f1');
+      im.setAttribute('data-on', on1?'0':'1');
+      if(next) im.src=next;
+    });
+  }, 950);
+}
+/* Swap the remote frame URLs for on-device ones wherever we already have them. */
+async function fedPaintCached(){
+  const imgs=[...document.querySelectorAll('img[data-f0][data-f1][data-fedname]')];
+  for(const im of imgs){
+    const n=im.getAttribute('data-fedname'); if(!n) continue;
+    const a=await gifGet(n), b=await gifGet(n+"\u0000f1");
+    if(a){ im.setAttribute('data-f0',a); if(im.getAttribute('data-on')!=='1') im.src=a; }
+    if(b){ im.setAttribute('data-f1',b); }
+  }
+}
+function fedTileHTML(name){
+  const frames=fedFrames(name); if(!frames) return null;
+  const nEsc=attrEsc(name);
+  const f0=attrEsc(frames[0]), f1=attrEsc(frames[1]||frames[0]);
+  return "<div class='imgwrap' data-ex='"+nEsc+"' data-exname='"+nEsc+"'>"+
+    "<img src='"+f0+"' data-f0='"+f0+"' data-f1='"+f1+"' data-on='0' data-fedname='"+nEsc+"' "+
+    "alt='"+nEsc+"' loading='lazy'>"+
+    "<a class='demoover' href='"+demoSearchURL(name)+"' target='_blank' rel='noopener'>▶ demo</a></div>";
+}
+function gifMsg(t){ const el=document.getElementById('gifMsg'); if(el) el.innerHTML=t; }
+function renderGifStatus(){
+  const el=document.getElementById('gifStatus');
+  const sw=document.getElementById('autoGifSwitch');
+  if(sw) sw.classList.toggle('on',wxAutoGif());
+  if(!el) return;
+  const n=gifCount();
+  const fresh=DB.wx && DB.wx.quotaAt && String(DB.wx.quotaAt).slice(0,7)===wxMonthKey();
+  el.innerHTML = (n? "<b>"+n+" demo"+(n===1?"":"s")+" saved on this phone</b> · "+fmtMB(gifBytes())+" · never downloaded again"
+                   : "<b>Nothing saved yet</b> — demos are still being fetched live every time")+
+    "<br>Requests spent this month, as far as this phone has seen: <b>"+wxReqUsed()+"</b> of "+wxQuotaCap()+"."+
+    (fresh? " WorkoutX last reported <b>"+DB.wx.quotaLeft+"</b> remaining." : "")+
+    (wxReqLeft()<=0? " <span style='color:var(--red)'>Counted out — wait for the monthly reset, then save them once.</span>":"");
+}
+function toggleAutoGif(el){
+  DB.wx=DB.wx||{};
+  DB.wx.autoGif=!DB.wx.autoGif;
+  el.classList.toggle('on',DB.wx.autoGif);
+  save();
+  gifMsg(DB.wx.autoGif
+    ? "⚠️ On — a session with unsaved movements will fetch them, and each one spends a request."
+    : "✓ Off — nothing downloads by itself. Use the buttons below when you want to save demos.");
+}
+/* Today's sheet only: a handful of movements, one request each, once ever. */
+async function downloadSessionDemos(){
+  const names=[...new Set(((DB.workout&&DB.workout.main)||[]).map(e=>e.name).filter(Boolean))];
+  if(!names.length){ gifMsg("✗ No session built yet — open Train first."); return; }
+  const need=names.filter(n=>!gifSaved(n));
+  if(!need.length){ gifMsg("✓ All "+names.length+" movements in today's session are already saved."); return; }
+  if(!confirm("Save demos for "+need.length+" movement"+(need.length===1?"":"s")+"?\n\nUp to "+need.length+
+              " WorkoutX request"+(need.length===1?"":"s")+" — once each, then they're yours for good.")) return;
+  await runDemoDownload(need);
+}
+/* Everything he actually trains: his library plus every movement in every pool,
+   rather than all 1,400 catalogue entries he'll never see. */
+async function downloadAllDemos(){
+  let names=[];
+  try{ names=coreExNames(); }catch(e){ names=[]; }
+  try{ Object.keys(DB.lib||{}).forEach(n=>names.push(n)); }catch(e){}
+  try{ (DB.workout&&DB.workout.main||[]).forEach(e=>names.push(e.name)); }catch(e){}
+  try{ Object.keys(DB.strength||{}).forEach(n=>names.push(n)); }catch(e){}
+  names=[...new Set(names.filter(Boolean))];
+  const need=names.filter(n=>!gifSaved(n));
+  if(!need.length){ gifMsg("✓ Every exercise you train already has its demo saved here."); return; }
+  const left=wxReqLeft();
+  if(!confirm("There are "+need.length+" movements with no demo saved.\n\nThis will spend up to "+
+              Math.min(need.length,left)+" of your remaining "+left+" WorkoutX requests this month — "+
+              "once each, permanently.\n\nGo ahead?")) return;
+  await runDemoDownload(need);
+}
+let _gifRunning=false;
+async function runDemoDownload(list){
+  if(_gifRunning) return; _gifRunning=true;
+  let free=0,paid=0,failed=0;
+  try{
+    for(let i=0;i<list.length;i++){
+      if(wxReqLeft()<=0 && !EXIMG[list[i]] && !(DB.media&&DB.media[list[i]])){ failed++; continue; }
+      gifMsg("<span class='spin'></span> Saving "+(i+1)+" of "+list.length+" · "+escapeHtml(list[i]));
+      const r=await cacheDemo(list[i]);
+      if(r==="free") free++; else if(r==="paid") paid++; else if(r==="failed") failed++;
+    }
+    renderGifStatus();
+    gifMsg("✅ Saved <b>"+(free+paid)+"</b> demo"+((free+paid)===1?"":"s")+" onto this phone"+
+      (paid? " · "+paid+" cost a WorkoutX request" : "")+
+      (free? " · "+free+" came from a free source and cost nothing" : "")+
+      (failed? "<br>"+failed+" couldn't be fetched — either no demo exists for them or you're out of requests. Try those again after the monthly reset." : "")+
+      "<br>They now load instantly, with no signal, and will never be downloaded again.");
+    try{ if(DB.workout) renderWorkoutSheet(DB.workout); }catch(e){}
+  } finally { _gifRunning=false; }
+}
+/* A file he can drop in Dropbox or Drive — the one thing that survives deleting
+   the home-screen app, which is the only event that clears IndexedDB. */
+async function exportDemoGifs(){
+  const keys=Object.keys(GIFIDX);
+  if(!keys.length){ gifMsg("✗ Nothing saved on this phone yet."); return; }
+  gifMsg("<span class='spin'></span> Packing "+keys.length+" demos ("+fmtMB(gifBytes())+")…");
+  const items={};
+  for(const k of keys){
+    try{
+      const b=await idbGet(gifStoreKey(k)); if(!b) continue;
+      items[k]=await new Promise(res=>{ const r=new FileReader(); r.onload=()=>res(r.result); r.onerror=()=>res(null); r.readAsDataURL(b); });
+    }catch(e){}
+  }
+  const blob=new Blob([JSON.stringify({app:"Amir PT demo GIFs",at:new Date().toLocaleString('en-GB'),count:Object.keys(items).length,items})],{type:"application/json"});
+  const a=document.createElement('a');
+  a.href=URL.createObjectURL(blob);
+  a.download="amirpt-demos-"+ukFile()+".json";
+  a.click();
+  gifMsg("✅ Saved <b>"+Object.keys(items).length+" demos</b> to your downloads. Put that file somewhere safe — loading it back costs no requests at all.");
+}
+async function importDemoGifs(inp){
+  const f=inp.files[0]; if(!f) return; inp.value="";
+  gifMsg("<span class='spin'></span> Reading…");
+  try{
+    const txt=await f.text();
+    const o=JSON.parse(txt);
+    const items=o.items||{};
+    let n=0;
+    for(const k of Object.keys(items)){
+      try{
+        const r=await fetch(items[k]);           // data: URL back to a Blob
+        const b=await r.blob();
+        if(await gifPut(k,b)) n++;
+      }catch(e){}
+    }
+    renderGifStatus();
+    gifMsg("✅ Loaded <b>"+n+" demos</b> back onto this phone — <b>no requests used</b>.");
+    try{ if(DB.workout) renderWorkoutSheet(DB.workout); }catch(e){}
+  }catch(e){ gifMsg("✗ That file didn't read as a demo backup."); }
+}
+async function clearDemoGifs(){
+  const n=gifCount(); if(!n){ gifMsg("Nothing to delete."); return; }
+  if(!confirm("Delete all "+n+" saved demo GIFs ("+fmtMB(gifBytes())+") from this phone?\n\nThey'd have to be downloaded again, which costs requests.")) return;
+  for(const k of Object.keys(GIFIDX)){
+    try{ if(_idb) _idb.transaction(IDB_STORE,"readwrite").objectStore(IDB_STORE).delete(gifStoreKey(k)); }catch(e){}
+    try{ if(GIFURL[k]) URL.revokeObjectURL(GIFURL[k]); }catch(e){}
+    delete GIFURL[k];
+  }
+  GIFIDX={}; await gifIdxSave();
+  renderGifStatus(); gifMsg("Deleted.");
 }
 
 /* Resolve every one of his regular lifts against the catalogue, using the AI for
@@ -6036,6 +7161,16 @@ function mergeCloud(r,rev){
   const cd=new Set((DB.checkins||[]).map(c=>c.date));
   (r.checkins||[]).forEach(c=>{ if(!cd.has(c.date)){ DB.checkins.push(c); cd.add(c.date); stat.checkins++; } });
   DB.checkins.sort((a,b)=>String(a.date).localeCompare(String(b.date)));
+  /* v61 — measurements are small and belong on every device. Merged by their
+     timestamp, and a manual reading always beats an estimate for the same day:
+     a tape measure is data, a photo read is a guess. */
+  DB.measures=DB.measures||[];
+  const mk=m=>String(m.t);
+  const mine=new Set(DB.measures.map(mk));
+  (r.measures||[]).forEach(m=>{ if(m&&!mine.has(mk(m))){ DB.measures.push(m); mine.add(mk(m)); stat.measures=(stat.measures||0)+1; } });
+  const manualDays=new Set(DB.measures.filter(m=>m.src==="manual").map(m=>m.d));
+  DB.measures=DB.measures.filter(m=>!(m.src==="ai" && manualDays.has(m.d)));
+  DB.measures.sort((a,b)=>(a.t||0)-(b.t||0));
   ["lib","dayTypes","media","mediaPicked","exMap","progression"].forEach(k=>{ DB[k]=Object.assign({},r[k]||{},DB[k]||{}); });
   if((rev||0) > (DB._rev||0)){
     ["profile","schedule","prefs","nutrition","cardio","memory","integrations","reminder","weights","dayOverride"].forEach(k=>{ if(r[k]!==undefined) DB[k]=r[k]; });
@@ -6191,6 +7326,9 @@ function boot(){
     if(h) h.textContent = hasRower()&&t.row ? "Includes your "+(t.rowMins||10)+" min row warm-up." : "No rowing warm-up here \u2014 all of it is training."; }
   document.querySelectorAll('#provSeg button').forEach(b=>b.classList.toggle('on',b.dataset.v===DB.ai.provider));
   renderMetrics(); renderItin(); renderStrengthPBs(); renderRowing(); renderRowingLog(); renderPhotos(); renderIntegrations(); updateStreak(); renderNutrition();
+  try{ renderMeasures(); }catch(e){}
+  try{ renderGifStatus(); }catch(e){}
+  try{ renderTrainDayPick(); }catch(e){}
   if(typeof scheduleInApp==="function") scheduleInApp();
   const split=pickSplit();
   if(DB.workout){ renderWorkoutSheet(DB.workout); document.getElementById('heroTitle').textContent=DB.workout.title; document.getElementById('heroPhase').textContent="Today · "+DB.workout.tag; }
@@ -6207,6 +7345,17 @@ initRestDrag();
 initSessDrag();
 registerSW();
 loadPhotos();
+/* v61: read the index of demos already on this phone, then repaint whatever is
+   on screen with them. Pure IndexedDB — no network, no requests. */
+gifIdxLoad().then(n=>{
+  try{ renderGifStatus(); }catch(e){}
+  if(n){ try{ paintSavedGifs(); }catch(e){} }
+});
+fedLoad().then(n=>{
+  if(!n) return;
+  try{ _fedHit={}; if(DB.workout) renderWorkoutSheet(DB.workout); }catch(e){}
+  try{ renderGifStatus(); }catch(e){}
+});
 wxLoadCatalogue().then(n=>{
   try{ renderWxFields(); renderCatList(); }catch(e){}
   if(n){ try{ ensureWorkout(); if(DB.workout) renderWorkoutSheet(DB.workout); renderBrowse(); }catch(e){} }
