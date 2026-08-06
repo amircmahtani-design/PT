@@ -1,655 +1,390 @@
-AMIR PT — v60 · 05/08/2026
-==========================
+AMIR PT — v61.4 · 06/08/2026
+============================
 
 Deploy exactly as before: index.html, sw.js, manifest.json and the two icons
-in the same folder, at the repo root. Filenames are case-sensitive —
-index.html, never Index.html.
+in the same folder, at the repo root. Only index.html changed this time.
 
-Check it landed: Settings → bottom → "Amir PT · v60 · 05/08/2026".
+Check it landed: Settings -> bottom -> "Amir PT · v61 · 06/08/2026".
 Nothing in this update touches your data. Every logged set survives.
 
 
-WHAT'S NEW IN v60
-=================
-
-PILATES IS A FLOW NOW, NOT SETS
-  It was being built through the strength template: 5 exercises at 3-4 sets
-  each, with kg and reps boxes. That is not how a mat class works.
-
-  It now builds ELEVEN movements in the classical order, as ONE round — do the
-  movement, move on. No sets, no kg box, no reps box. Each has its own dose and
-  its own timer:
-
-     1. The Hundred            10 breaths · 100 pumps
-     2. Roll-Up                x6
-     3. Roll Over              x6
-     4. Single Leg Circles     x5 each direction
-     5. Rolling Like a Ball    x8
-     6. Single Leg Stretch     x10 each side
-     7. Double Leg Stretch     x8
-     8. Scissors               x10 each side
-     9. Criss-Cross            x10 each side
-    10. Spine Stretch Forward  x5
-    11. Saw                    x5 each side
-
-  The Hundred always opens — it's the warm-up of the class and is never rotated
-  out. The other ten rotate by what you've done least, but are then put BACK
-  into classical order, so the sequence still flows correctly rather than
-  jumping around the repertoire.
-
-THE ROW AT THE END NO LONGER CALLS ITSELF A WARM-UP
-  Since the Concept2 warm-up row got its own block above the first lift (v48),
-  anything in the cardio slot sits AFTER the training. It was still printing
-  "Target Easy warm-up" at the bottom of the page.
-
-  It's now headed "Finisher" instead of "Cardio", and a warm-up target at the
-  end is rewritten to "Easy flush - steady and comfortable".
-
-
-WHAT'S NEW IN v59
-=================
-
-THE TRAIN PAGE IS FOR TRAINING NOW
-  Two things were sitting at the top of Train that pushed the actual workout
-  below the fold:
-
-  READINESS CARD REMOVED FROM TRAIN. "Nothing's flagging / green light / streak"
-  was rendered twice — once on Home and again on Train. It belongs on Home,
-  next to the check-in that produces it. Nothing is lost: its two buttons were
-  volume overrides, and the Train sheet already carries its own sets picker
-  ("2 sets · 8-12 reps") to do the same job in place.
-
-  BROWSE ALL EXERCISES MOVED TO SETTINGS. It now sits at the top of the
-  "Exercise catalogue" section, alongside the WorkoutX sync, importing and
-  exporting — with the rest of the library management, rather than competing
-  with your workout.
-
-  Train now opens straight onto: New exercises · Build today's session · your
-  session. The workout is the first thing you see.
-
-
-WHAT'S NEW IN v58
-=================
-
-"DONE TODAY" ON MONDAY'S ROW, WHEN TODAY IS TUESDAY
-  The label was never about that day. It was a lookback on the SESSION TYPE:
-  "Legs & Core is something you last trained today". On Monday's row, that
-  reads like Monday thinks it's today. Fixed twice over:
-
-    1. It now reads "last time: today" / "last time: 3d ago" / "last time:
-       never" — wording that cannot be mistaken for a claim about that day.
-
-    2. The day column now spells out "today" under the actual current day,
-       instead of a small bullet that was easy to miss.
-
-  So Monday shows "Legs & Core / last time: today" (you trained legs this
-  morning), and the TUE row carries the "today" stamp. Both true, neither
-  confusing.
-
-
-WHAT'S NEW IN v57
-=================
-
-YOUR WEEK STARTS ON MONDAY — THE COACH NOW KNOWS THAT
-  The weekly plan always displayed Mon-first, but the AI was being handed a
-  Sunday-first template in its instructions, so it planned Sunday-first and the
-  logic came out shifted. Every example and the output format now lead with
-  Monday, and it is told explicitly, twice, that the week starts Monday and
-  never to lead with Sunday.
-
-FIXED: "done today" ON THREE UNRELATED DAYS AT ONCE
-  In your screenshot one leg session had marked Monday, Saturday AND Sunday as
-  "done today". Not the week regeneration — the matching was far too loose:
-
-    - It only checked whether a muscle category appeared ANYWHERE in the
-      session, so the Plank in your leg day counted, and a single back or core
-      accessory was enough to mark a Pull Day as done.
-    - "Full Body" matched on nothing more than "3+ categories present", which
-      almost any varied session satisfies.
-
-  Now an exact completed-session title wins outright, and the fallback demands
-  the session's DOMINANT focus actually be that kind. Full Body needs 3+
-  distinct groups including legs plus a push or pull; Upper needs both push and
-  pull and no legs.
-
-  Same scenario, re-run:
-
-    MON  Legs & Core   done today     <- correct, that's what you trained
-    TUE  Push Day      not yet
-    WED  Pilates       not yet
-    THU  Cardio Day    not yet
-    FRI  Rest          (blank)
-    SAT  Full Body     not yet        <- was wrongly "done today"
-    SUN  Pull Day      not yet        <- was wrongly "done today"
-
-  Tuesday reading "not yet" while you trained today is correct: Tuesday is
-  Push Day and you did legs.
-
-DAY NAMES GIVEN REAL CLEARANCE FROM THE COLOUR BARS
-  v56 widened the column but the row still had no left padding, so the text sat
-  hard against the coloured bar. 15px of padding added (23px on today's
-  highlighted row so it lines up).
-
-
-WHAT'S NEW IN v56
-=================
-
-"TODAY" TAB IS NOW "HOME"
-  It holds the whole week, tomorrow's call, your numbers and your streak. It
-  hasn't been just "today" for a while.
-
-FIXED: "today" APPEARING BESIDE TUESDAY, SATURDAY AND SUNDAY
-  Not a bug in the day logic — that text was the LAST DONE marker, meaning
-  "you last did this kind of session today". Those three days share a session
-  type you'd trained that morning, so all three said "today" and it read as if
-  they thought they were today. It now reads "done today" / "done 3d ago" /
-  "not yet", on its own line under the session name.
-
-DAYS NO LONGER CROWD THE COLOUR CHIPS
-  Day column widened, gap increased, row padding up, and the last-done note
-  moved onto its own line instead of being jammed alongside.
-
-ASK THE COACH TO PLAN YOUR WHOLE WEEK
-  New button directly above the weekly plan. It reads what you've ACTUALLY
-  trained (not what the plan claims), then decides all seven days including
-  where the rest days fall, and writes it in. It's told to: never put two heavy
-  sessions for the same group back to back, give you at least one full rest day,
-  respect the Klinefelter recovery load, and include at least one mobility or
-  Pilates day because flexibility is a stated goal. It can invent session types
-  it needs. If the AI can't be reached your plan is left untouched.
-
-HOME COLLAPSES — FAR LESS SCROLLING
-  Tomorrow, Your numbers, Weekly plan and Streak are now collapsible cards.
-  Weekly plan is open by default, the rest closed. Whatever you leave open is
-  remembered.
-
-"REGENERATE" IS NOW "NEW EXERCISES" — AND IT ACTUALLY WORKS
-  You were right to ask. It rebuilt the session for today's split, which was
-  fine when exercises came from a fixed list — but once v53 made selection
-  deterministic rotation, pressing it returned THE IDENTICAL SESSION every
-  time. It looked broken because it was.
-
-  It now rolls the rotation window down the menu, so each press gives you
-  genuinely different movements from the same session type:
-
-    press 1  Back Squat, Front Squat, Bulgarian Split Squat, Walking Lunge...
-    press 2  Front Squat, Deadlift, Walking Lunge, Reverse Lunge, Step-up
-    press 3  Deadlift, Romanian Deadlift, Reverse Lunge, Step-up, Nordic Curl
-
-  If you've already logged sets today it asks first, and explains that your
-  logged sets stay in your history either way.
-
-
-WHAT'S NEW IN v55
-=================
-
-NEW APP ICON — THE PT MARK
----------------------------
-Your orange PT icon is in. Two things were done to it first:
-
-  MADE FULL-BLEED. iOS applies its OWN rounded mask to a home-screen icon. The
-  artwork already had rounded corners with transparency around them, so it would
-  have been rounded twice, with dark corners showing through. It's been cropped
-  19% past its own border so the square is edge-to-edge orange and iOS's mask is
-  the only rounding.
-
-  MADE OPAQUE. Transparency in an apple-touch-icon composites against black on
-  some iOS versions. There is none left.
-
-Supplied at 1024x1024 and 180x180. The browser-tab favicon is a matching PT
-mark drawn inline, so it needs no network.
-
-FILES CHANGED: index.html, apple-touch-icon.png, apple-touch-icon-180.png.
-UPLOAD ALL THREE. The old index.html pointed at an inline barbell drawing
-rather than at the PNGs, so replacing only the images would change nothing.
-
-
-CHANGING THE ICON MEANS DELETING AND RE-ADDING — DO THIS FIRST
----------------------------------------------------------------
-iOS snapshots the icon when the shortcut is created. An existing home-screen
-icon will NOT update, however many times you redeploy. You have to remove it
-and add it again — and removing a home-screen web app on iOS DELETES ITS
-STORAGE, which is every set you have logged on that device.
-
-Do these three, in this order, BEFORE you delete anything:
-
-  1. Settings -> Cloud sync -> WRITE DOWN YOUR SYNC ID.
-     This is the step people skip. A fresh install starts with the DEFAULT id
-     (amir-9k3xq7). If you ever changed yours, the new copy cannot find your
-     data — and you cannot look the old id up, because you just deleted the
-     app that was holding it.
-
-  2. Settings -> Cloud sync -> "Check my cloud backup".
-     "In the cloud" must match "On this device". If it is behind, tap Sync now
-     and check again.
-
-  3. Settings -> Export a backup (JSON).
-     A file on your phone that nothing can evict. Thirty seconds, belt and
-     braces.
-
-THEN:
-  4. Deploy v55 (index.html + both PNGs).
-  5. Delete the home-screen icon.
-  6. Safari -> your site -> Share -> Add to Home Screen. New icon appears.
-  7. Open it. The "Nothing logged on this device" card appears: type your Sync
-     ID, tap "Restore my history". Everything comes back.
-
-Deploy v55 and delete/re-add in one go — that way you pay the cost once and
-pick up everything from v48 to v55 at the same time.
-
-
-WHAT'S NEW IN v54
-=================
-
-EVERY SESSION TYPE, EVERY LOCATION — ALL DEEP ENOUGH TO ROTATE
----------------------------------------------------------------
-v53 added rotation but the menus behind it were uneven. Dubai was fine; Madrid
-and Greece were thin enough that you'd still repeat yourself inside a fortnight.
-Fourteen of the twenty-seven pools were too shallow — Greece arms had six
-movements, Greece pull had seven.
-
-70 new exercises added, weighted towards the places that needed them:
-
-  BODYWEIGHT (Greece)  Cossack Squat, Split Squat, Lateral Lunge, Curtsy Lunge,
-    Shrimp Squat, Single-leg Calf Raise, Skater Jump, Broad Jump, Tuck Jump,
-    Wall Sit March, Nordic Negative, Wide/Incline/Hindu/Pseudo-Planche Push-up,
-    Plank Shoulder Tap, Plank Up-Down, Towel Row, Reverse Plank, Prone Swimmer,
-    Wall Angel, Bicycle Crunch, Leg Raise, V-Up, Russian Twist, Flutter Kick,
-    Side Plank Rotation, Bear Crawl, Hollow Rock, High Knees, Jumping Jacks,
-    Sprawl, Squat Thrust, Shadow Boxing
-
-  DUMBBELL (Madrid)  DB Single-leg RDL, Sumo Deadlift, Lateral Lunge, Calf
-    Raise, Swing, Push Press, Arnold Press, Upright Row, Front Raise, Reverse
-    Fly, Chest Fly, Pullover, Shrug, Concentration Curl, Zottman Curl, Skull
-    Crusher, Kickback, Russian Twist, Side Bend, Suitcase Carry, Windmill,
-    Clean and Press, Single-arm Row
-
-  GYM (Dubai)  Incline Bench, Close-grip Bench, Barbell Curl, Good Morning,
-    Hack Squat, Leg Curl, Leg Extension, Standing Calf Raise, Hip Abduction,
-    Cable Fly, Cable Lateral Raise, Cable Crunch, Chest-supported Row, Ab Wheel,
-    Kettlebell Swing, Box Jump, Dip, Landmine Press
-
-EVERY POOL IS NOW 13-22 MOVEMENTS DEEP. All 27 combinations checked:
-
-                dubai      madrid     greece
-  legs            19          22         21
-  push            21          19         15
-  pull            20          18         14
-  upper           19          18         16
-  full            18          18         17
-  core            19          19         20
-  arms            17          14         13
-  hiit            18          19         17
-  pilates         20          19         19
-
-Four weeks of any type in any location now gives 13-20 DISTINCT exercises.
-
-Every name resolves to a real library entry with its own cue and its own
-wrist-safe (TFCC) alternative — 158 exercises total, all checked, no
-duplicates inside a pool. Location filtering still applies on top, so Greece
-never sees a dumbbell.
-
-
-WHAT'S NEW IN v53
-=================
-
-NO MORE DOING THE SAME FIVE EXERCISES FOREVER
-----------------------------------------------
-Every leg day was Barbell Back Squat, Romanian Deadlift, Bulgarian Split Squat,
-Nordic Curl, Plank. Every single time. Same for push, pull, and every custom
-type — each group was a fixed five-item list that got sliced whole.
-
-Each group is now a DEEP MENU split into anchors (the compound the session is
-built around) and accessories. The session is drawn by ROTATION: whatever
-you've gone longest without doing comes up first, read from what you actually
-logged.
-
-Six consecutive leg days now look like this:
-
-  wk1  Barbell Back Squat, Front Squat, Bulgarian Split Squat, Walking Lunge,
-       Reverse Lunge
-  wk2  Deadlift, Romanian Deadlift, Step-up, Nordic Curl, Single-leg Glute Bridge
-  wk3  Leg Press, Goblet Squat, Calf Raise, Wall Sit, Glute Bridge
-  wk4  Hip Thrust, Barbell Back Squat, Pistol Squat, Jump Squat, Bulgarian Split
-  wk5  Front Squat, Deadlift, Walking Lunge, Reverse Lunge, Step-up
-  wk6  Romanian Deadlift, Leg Press, Nordic Curl, Single-leg Glute Bridge, Calf Raise
-
-You still always get a real compound to progress — the anchors come first, so
-it can't hand you five accessories and no squat. Underneath, it cycles.
-
-
-PILATES IS ACTUALLY PILATES NOW
---------------------------------
-v52 built "Pilates" out of dead bugs and bird dogs. That's generic core work.
-
-The classical mat repertoire is now in the app — 20 movements with proper
-cues: The Hundred, Roll-Up, Roll Over, Single Leg Circles, Rolling Like a Ball,
-Single Leg Stretch, Double Leg Stretch, Scissors, Criss-Cross, Spine Stretch
-Forward, Saw, Swan, Single Leg Kick, Shoulder Bridge, Spine Twist, Teaser,
-Swimming, Side Kick Series, Leg Pull Front, Mermaid Stretch.
-
-Three Pilates sessions in a row:
-
-  1  The Hundred, Roll-Up, Single Leg Stretch, Double Leg Stretch, Criss-Cross,
-     Scissors
-  2  Teaser, The Hundred, Single Leg Circles, Spine Stretch Forward, Saw, Swan
-  3  Roll-Up, The Hundred, Swimming, Shoulder Bridge, Side Kick Series, Spine Twist
-
-The Hundred keeps coming back because it opens every Pilates session — that's
-correct, not a bug.
-
-All wrist-safe (TFCC) alternatives are filled in, and everything is filtered by
-location, so Greece gives you the mat work with no kit required.
-
-THE COACH STILL OVERRIDES ALL OF IT
-  This rotation is the offline backbone — what you get with no internet and no
-  API call. The AI can still rewrite any session, invent movements, and swap
-  exercises on the fly. It just no longer has to, to stop you repeating
-  yourself.
-
-
-WHAT'S NEW IN v52
-=================
-
-FIXED: PILATES, CORE DAY AND HIIT ALL BUILT THE SAME GENERIC SESSION
---------------------------------------------------------------------
-Adding a session type created an empty shell with no exercises. The builder
-only knew three kinds — mobility, cardio, and "strength" — so Pilates, Core Day
-and HIIT all fell through to "strength", and a strength day with no exercise
-list fell back to the FULL BODY pool.
-
-So switching today to Core Day DID rebuild the session. It rebuilt it into
-squat / bench / row / overhead press / plank — the same thing it showed before.
-That's why it looked like nothing happened.
-
-It was NOT because you'd already logged legs, and NOT because the coach didn't
-know. Logged sets live separately from the plan and never block a rebuild, and
-the coach was already being told your custom day types.
-
-NOW RECOGNISED, each with its own exercise pool per location:
-
-  Core Day   Hanging Knee Raise, Plank, Side Plank, Dead Bug, Farmer Carry
-  Pilates    Dead Bug, Hollow Hold, Glute Bridge, Side Plank, Bird Dog
-  HIIT       DB Thruster, Burpee, Jump Squat, Mountain Climber, Farmer Carry
-  Arms       DB Curl, Hammer Curl, Triceps Pushdown, Overhead Ext, Face Pull
-  Mobility   full mobility flow (this one was already working)
-
-Each also gets a note that matches — "bracing and anti-rotation, not endless
-crunches" rather than "custom day your coach built".
-
-The pools resolve PER LOCATION at build time, so the same Core Day gives you
-Hanging Knee Raises and Farmer Carries in Dubai, and floor work in Greece.
-Adding a type now tells you what it will build: "Added · Core Day — builds
-core work".
-
-Matching is on meaning, so "Abs", "Conditioning", "Metcon", "Circuit",
-"Tabata", "Barre" and "Biceps" all land in the right place too.
-
-
-WHAT'S NEW IN v51
-=================
-
-PICK TOMORROW FROM A LIST — NO MORE TAPPING THROUGH
-----------------------------------------------------
-Today tab, above the coach's suggestion: "Tomorrow — what do you fancy?" with
-a dropdown of every session type you have, custom ones included. One tap,
-choose Pilates, done. It writes straight into your weekly plan.
-
-The coach's "what should I do tomorrow" call is still there underneath as an
-opinion you can take or ignore.
-
-THE WEEKLY PLAN USES DROPDOWNS TOO
-  Every day in the plan had to be TAPPED THROUGH one type at a time to reach
-  the one you wanted — six taps to get to Pilates. Each row now has the same
-  dropdown. Changing today rebuilds today's session immediately rather than
-  just relabelling the row.
-
-
-LOCATION — WHAT CHANGES AND WHAT DOESN'T
------------------------------------------
-Set yourself to Madrid and:
-
-  YOUR WEEKLY PLAN DOES NOT CHANGE. Monday is still Push Day. The split is
-  what you're training, and that's independent of where you are.
-
-  THE TODAY TAB DOES SAY MADRID. The title stays "Push Day"; the line under it
-  reads "Today · Madrid · Dumbbells Only" — so you see at a glance which kit
-  the session was built for.
-
-  THE TRAIN TAB REBUILDS FOR THE KIT. Madrid is dumbbells + bodyweight + bands
-  only, so no barbell, no machines, no rower, and the Concept2 block doesn't
-  appear at all. Change location and the session regenerates by itself.
-
-  Greece goes further — no equipment at all, so it's bodyweight, shorter, and
-  AMRAP-style rather than fixed loads.
-
-Same plan, same intent, different tools.
-
-
-WHAT'S NEW IN v50
-=================
-
-DATES ARE DAY-FIRST EVERYWHERE YOU SEE THEM
---------------------------------------------
-Already day-first before this: every date on screen (en-GB throughout).
-Changed now:
-
-  Backup filename      amirpt-backup-04-08-2026.json   (was 2026-08-04)
-  Exercises filename   amirpt-exercises-04-08-2026.json
-  Version stamp        Amir PT · v50 · 04/08/2026
-
-Open a backup file and it now starts with a readable header — when it was
-taken, which app version — plus a "_readable" block listing every session,
-row and finished workout in plain day-first text:
-
-  "04/08/2026: 40kg x 10, 40kg x 10, 40kg x 9"
-
-ONE THING DELIBERATELY LEFT ALONE, AND WHY
-  Inside the data, each session is still keyed YYYY-MM-DD. That is not a
-  displayed date, it is a SORT KEY the app compares as text. Day-first sorts
-  wrongly as text:
-
-     correct  2025-12-31, 2026-01-01, 2026-08-04
-     wrong    01/01/2026, 04/08/2026, 31/12/2025
-
-  Changing it would also break matching (today's sets would stop being found),
-  and — the real danger — your phone and desktop would no longer agree on what
-  a date looks like, so the cloud merge would treat every session as new and
-  DUPLICATE your entire history on whichever device updated second.
-
-  You never see these keys. Every human-facing surface is day-first.
-
-
-WHAT'S NEW IN v49
-=================
-
-0. IT NOW KNOWS YOU'VE BEEN AWAY
----------------------------------
-The load recommendation read your last logged session and never asked WHEN it
-was. Two weeks in Greece still got you "45kg — you mastered 40kg, earned it".
-The number in the box was wrong in the dangerous direction.
-
-THE GAP IS MEASURED FROM YOUR LAST WEIGHT SESSION OF ANY KIND — not from the
-last time you did that particular lift. Training through in Spain means you
-are not detrained, you just haven't squatted lately, and you get your full
-progression. Missing the time entirely is the different thing this catches.
-
-  0-7 days     normal progression, unchanged
-  8-13 days    hold last session's weight, no bump however good it felt
-  14+ days     ~90% of your last top weight, ramp back up
-
-CAPPED AT 14+ DELIBERATELY. There is no 12-week "start from scratch" tier,
-because you don't take breaks like that and a stale log shouldn't be able to
-trigger one. 40 days off gets treated exactly like 14.
-
-Weights round to loadable increments (2.5kg above 20kg, 0.5kg below), so 40kg
-comes back as 35kg rather than an unloadable 36kg.
-
-The exercise shows an amber line — "⚠ Back after 17 days: start about 10%
-under and ramp back up" — and the coach is told in its prompt, so its chat
-advice matches the numbers in the boxes instead of contradicting them.
-
-One trap closed: logging your first lift of the day no longer collapses the
-gap to zero and quietly restores full loads halfway through the session.
-
-
-WHAT'S NEW IN v48
-=================
-
-1. THE SESSION CLOCK
---------------------
-A green "Start training" card now sits directly above the warm-up.
-
-  Start    — begins the clock and logs the session as started
-  Pause    — nothing counts while paused. Use it every time you get pulled away
-  Resume   — picks up exactly where it stopped
-  Finish   — stops the clock and scrolls you to the "Workout complete" button
-
-The clock records timestamps, not a ticking counter, so locking the phone,
-switching apps, or reloading loses nothing — it recalculates from wall-clock
-time whenever you come back.
-
-Forget to press start? Logging any set, hold or row starts it automatically
-rather than silently recording nothing.
-
-A clock left running overnight is discarded, not counted as a 14-hour session.
-
-THE FLOATING PAUSE PILL
-  A round pause button hovers bottom-right, showing the live time, wherever you
-  are on the page. One tap pauses or resumes. Drag it anywhere you like and it
-  stays there. Double-tap it to send it back to its corner.
-
-WHERE THE TIME SHOWS UP
-  - On the completion card: "45 min on the clock · 12 min paused"
-  - In History: a ⏱ chip on each day
-  - In the coach's prompt, so it knows how long you've actually been at it and
-    how that compares to your recent sessions
-
-
-2. CONCEPT2 ROW IS ITS OWN BLOCK
----------------------------------
-It's out of the warm-up entirely. It now sits as its own section between the
-warm-up and the first exercise, with its own stopwatch — start it, stop it, and
-the mm:ss drops straight into the log box. The warm-up no longer duplicates the
-row as its pulse-raiser.
-
-Unchanged: the block only appears where there's actually an erg (not Greece).
-
-
-3. EVERY TAB REMEMBERS WHERE YOU WERE
---------------------------------------
-Leaving Train mid-session to check something and coming back used to dump you
-at the top of the page. Each tab now keeps its own scroll position and puts you
-back exactly where you were.
-
-Tapping the tab you're already on scrolls to the top — the usual gesture.
-
-
-4. COOL-DOWN TIMERS
---------------------
-Every stretch reads its own dose and gets a countdown button. "60s each side"
-runs 60 seconds, beeps, tells you to swap, runs 60 more. Rep-based moves get no
-timer, correctly.
-
-"Run the whole cool-down" walks the entire thing for you, move by move, side by
-side. Tap any running timer again to stop it.
-
-Mobility days and cardio days get the same treatment.
-
-
-5. FLEXIBILITY AND MOBILITY ARE NOW A STATED GOAL
---------------------------------------------------
-Your goal read as physique-only. It now reads strength AND range of motion, and
-the coach has a new permanent rule: program mobility properly, hold real
-durations, track range of motion the way it tracks load, ask about stiff spots,
-and never let mobility be what gets dropped when time is short.
-
-If you had edited your goal text yourself, it's left alone — only the untouched
-default was upgraded. Settings → Profile and rules to change it.
-
-
-6. THREE THINGS FIXED ALONG THE WAY
-------------------------------------
-AUTO CLOUD SYNC ACTUALLY WORKS NOW
-  See the section below — this was the big one.
-
-COMPLETED SESSIONS NOW COME BACK FROM THE CLOUD
-  Your "session complete" receipts were being uploaded but never merged back
-  down on a restore. A fresh install rebuilt every lift and lost every receipt.
-  They now merge by date, keeping whichever record logged more.
-
-THE REST TIMER IS ACTUALLY DRAGGABLE AGAIN
-  The drag code was looking for a grip handle that wasn't in the page, so it
-  silently did nothing. The handle is there now, along with a "–" button to
-  shrink the timer to a small pill.
-
-
-CLOUD SYNC IS NOW ACTUALLY AUTOMATIC
-====================================
-
-You were right that it wasn't. You shouldn't have had to press Sync now.
-
-WHAT WAS WRONG
-  Auto-sync was a single 4-second setTimeout, cleared and restarted on every
-  save. That's a nudge, not a backup, and it failed in four ordinary ways:
-
-    - iOS FREEZES PENDING TIMERS the moment you background or lock the app.
-      The last write of a session — the one that matters most — was usually
-      still sitting in that 4-second window when you put the phone down. It
-      died there and nothing ever retried it. This is almost certainly what
-      happened to you.
-    - A failed push (a moment of bad signal in the gym) was reported once and
-      then forgotten forever. Nothing retried it.
-    - Each save cleared the previous timer, so a busy run of changes could keep
-      pushing the deadline out.
-    - If the startup PULL failed, the startup PUSH was skipped entirely, so one
-      bad moment of signal at launch meant nothing synced all session.
-
-WHAT IT DOES NOW
-  A dirty flag, and a push on every route out of the app:
-
-    - 4s after you stop changing things
-    - a hard 20s ceiling that later saves cannot push out
-    - a 60s sweep as belt and braces
-    - THE MOMENT YOU BACKGROUND, BLUR OR CLOSE THE APP
-    - immediately when you press "Workout complete"
-    - immediately when you come back to the app with anything unsynced
-    - retries on failure at 5s, 15s, 45s, then every 2 min
-    - and the instant the connection comes back
-
-  If a change lands while a push is already in the air, it's pushed again after
-  rather than being wrongly marked as saved.
-
-  Idle app with nothing to send makes no requests at all.
-
-HOW YOU CAN SEE IT
-  A small status line now sits under the "Workout complete" button and in
-  Settings → Cloud sync:
-
-      ● backed up just now      (green — the cloud has everything)
-      ● unsynced — saving…      (amber — a write is pending or retrying)
-
-  Glance at it before you close the app. Green means you can redeploy freely.
-
-TWO THINGS WORTH KNOWING ANYWAY
-  1. Redeploying index.html does NOT touch your data, and never did.
-     localStorage is keyed to your domain, not to the file. Even with sync
-     completely off, a new index.html on the same site keeps every logged set.
-  2. The real risk is deleting the home-screen app on iOS — that deletes its
-     storage with it. That's what cloud sync is for: reinstall, same Sync ID,
-     "Restore from cloud". The app pulls before it pushes and refuses to upload
-     from a device with no history, so an empty reinstall can't overwrite you.
-
-  Settings → Cloud sync → "Check my cloud backup" still gives you the full
-  picture: the cloud count and the device count should match.
-
-  Not synced deliberately: photos and chat (too big for one Firestore doc),
-  your API keys unless you opt in, and the live session clock (device state).
-  The clock's RESULT — the duration on the finished session — is synced.
-
-
-EVERYTHING FROM v47 STILL APPLIES
-=================================
-The exercise catalogue, demo matching, coach tone, colour coding, time-budgeted
-sessions, the tomorrow call and the storage advice are all unchanged. Keep the
-v47 notes for those.
+DO THIS FIRST — YOU HAVE NO DEMOS RIGHT NOW
+===========================================
+  1. Deploy v61.
+  2. Settings -> Demo GIFs -> "Get the free demo pack".
+  3. Settings -> Demo GIFs -> "Save the matched ones to this phone".
+
+That gets you animated demos back TODAY, for free, without spending a single
+one of your remaining WorkoutX requests. Details below.
+
+
+=============================================================
+v61.4 — THE PACK NOW LOOKS AFTER ITSELF
+=============================================================
+
+UPLOAD BOTH index.html AND sw.js THIS TIME. The service worker cache name
+changed, which is what forces the phone to pick up the new build.
+
+FIRST, A CORRECTION I OWE YOU
+  I said "you already hold all 800 on your phone". That was wrong to state as
+  fact. Two reasons it may not be true:
+
+  iOS DOES NOT KEEP INDEXEDDB FOREVER. Safari evicts script-writable storage
+  from sites you haven't opened in a while, and deleting the home-screen icon
+  clears it outright. "Saved on this phone" was never a promise I could keep,
+  and I shouldn't have phrased it as one.
+
+  AND THE IMAGES NEVER NEEDED TO BE ON THE PHONE ANYWAY. They're public URLs
+  that stream on demand, like any web image. Saving them locally only buys you
+  offline use. So if nothing is appearing, storage was never the problem —
+  something was stopping them LOADING.
+
+WHAT ACTUALLY GOES IN FIREBASE
+  The INDEX — the list that maps your exercises to the right photographs. That's
+  about 120 KB, and it now sits in Firestore next to your workout data, in the
+  same collection your existing rules already cover. It restores itself
+  silently on any device, so an eviction costs you nothing.
+
+  The photographs themselves stay on the CDN. 800 movements x 2 frames is
+  ~65 MB, far past what Firestore will hold, and there would be no point —
+  they're free public files that load on demand. What has to survive is the
+  index, and now it does.
+
+THREE MIRRORS INSTEAD OF ONE
+  Everything came from raw.githubusercontent.com, which is exactly the kind of
+  host that gets throttled or blocked on some networks. When it failed,
+  NOTHING rendered — which looks identical to "the pack isn't on my phone".
+
+  The same public-domain files are now pulled from GitHub raw, jsDelivr or
+  githack, whichever answers. It switches automatically, remembers the one
+  that worked, and even a single failed image retries on another mirror.
+
+NO MORE HUNTING FOR A BUTTON
+  If the pack is missing at startup the app now restores it from Firebase, or
+  failing that downloads it from a mirror, on its own. Both are free and
+  neither touches your WorkoutX allowance, so there was nothing to ask about.
+
+"CHECK WHAT'S WORKING"  (Settings -> Demo GIFs)
+  Tells you plainly which part is broken instead of leaving you to guess:
+  whether the index is on the phone, how many frames are saved, which of the
+  three mirrors are reachable, whether Firebase is connected and backed up,
+  and how many of your exercises matched.
+
+  Run this first if demos are still missing, and send me what it says.
+
+=============================================================
+v61.3 — DEMO COVERAGE: SEE EVERY GAP AND EVERY WRONG MATCH
+=============================================================
+
+ABOUT "CAN YOU FIND MORE GIFS LIKE THE BENCH PRESS ONE"
+
+That Bench Press image IS the free pack. The photographic style you like is
+Free Exercise DB, and you already hold the entire thing — 800+ movements — on
+your phone. There is no larger collection of that style to go and find,
+because that dataset is the collection. It came out of one source set
+(wrkout/exercises.json) and nobody has published a bigger free one in the
+same style.
+
+So the useful question isn't "where are more" — it's "which of my exercises
+didn't get matched to one", and "which got matched to the wrong one". That's
+what this adds.
+
+SETTINGS -> DEMO GIFS -> "WHICH OF MY EXERCISES HAVE NO DEMO?"
+
+  Every movement you train, listed with the demo currently attached to it and
+  where that demo came from: your own choice, a saved clip, the free pack,
+  WorkoutX, or nothing at all.
+
+  A wrong match is now visible in a list BEFORE you meet it mid-set, instead
+  of after. Landmine Press showing a bench press would have been obvious here.
+
+  Every row has a button. Gaps say "Find one", the rest say "Change". Both
+  open a search across all 800+ free-pack movements right there in the row —
+  you don't have to wait until that exercise turns up in a session.
+
+  Anything you set here is stored as YOUR choice and is never overwritten by
+  the automatic matcher, same as in Train.
+
+  The counter at the top tells you where you stand: how many exercises, how
+  many gaps, how many you've picked yourself.
+
+WHY THE MATCHER LEAVES GAPS ON PURPOSE
+  It's tuned to refuse rather than guess, because a hamstring exercise showing
+  a biceps demo is worse than showing nothing. That means some exercises come
+  up empty even when a decent clip exists in the pack under a name it couldn't
+  connect. Searching by hand finds those — "landmine" will surface every
+  landmine movement even when the matcher wouldn't commit to one.
+
+IF THE FREE PACK GENUINELY LACKS SOMETHING
+  wger (wger.de) is the other free option: open source, CC-BY-SA, free API,
+  no key. Two honest caveats — its image coverage is patchy because it's
+  community-contributed, so many exercises have no picture at all, and the
+  ones that do are a mix of photos and line drawings rather than the
+  consistent style you liked. It's a gap-filler, not a replacement. Tell me
+  which exercises are still empty after you've been through the coverage list
+  and I'll see whether it covers them before wiring anything in.
+
+=============================================================
+v61.2 — "WRONG DEMO?" NOW ACTUALLY LETS YOU CHANGE IT
+=============================================================
+
+You were right that it was overriding you. Two separate faults.
+
+FAULT ONE: THE FIRST PRESS DIDN'T OPEN A CHOOSER
+  It ran the automatic matcher again — wiping any mapping you had and
+  re-guessing. The chooser only appeared on the SECOND press, and the flag
+  tracking that lived in memory, so every reload put you back to square one.
+  In practice you could press it forever and only ever get another guess.
+
+  Now: ONE press opens the list. Auto-matching is a button INSIDE the list
+  ("Let the coach find it for me"), so it only ever runs because you asked.
+
+FAULT TWO: THE LIST ONLY HELD WORKOUTX CLIPS
+  Landmine Press is coming from the free pack, and the free pack wasn't in the
+  picker at all. Worse, with no WorkoutX catalogue on the device the picker
+  refused to open — so exactly when you most need to fix a demo, you were
+  locked out of the only tool for fixing it.
+
+  Now the list shows BOTH sources, labelled, with thumbnails. It opens with
+  the free pack alone. Type "landmine" and you get every landmine movement in
+  it.
+
+YOUR CHOICE IS NOW A FACT, NOT A HINT
+  Whatever you pick is stored against that exercise and consulted BEFORE every
+  automatic source. Nothing displaces it: not a re-match, not a fresh
+  catalogue sync, not a failed remote clip, not the free pack matcher.
+
+  The button reads "Change demo" once you've set one, and the panel gains an
+  "Undo my choice" option that hands it back to the matcher — your call, not
+  the app's.
+
+  "Use no demo" is also a real choice now and sticks the same way.
+
+=============================================================
+v61.1 — WHY EVERY DEMO WAS A FROZEN PHOTOGRAPH
+=============================================================
+
+My fault, and the cause was the fix itself: pressing "Save the matched ones to
+this phone" is what BROKE the animation.
+
+The free pack stores TWO frames per movement. The save routine filed frame 0
+under the exercise name — and the app's normal image lookup then found "a demo
+already saved for this exercise" and rendered it on its own. One still. Frozen.
+Frame 2 was sitting on your phone the whole time, downloaded and unused.
+
+FIXED FOUR WAYS
+
+  1. Saved free-pack frames are now TAGGED as a pair, so the ordinary image
+     path leaves them alone and hands them to the animator. Frames saved by
+     v61 have no tag, so the companion frame is used as the giveaway instead —
+     nothing needs re-downloading.
+
+  2. When a remote clip fails to load and the free pack covers that movement,
+     the tile is now REPLACED with the animated pair rather than settling for
+     one frozen frame. That was the specific path your Bench Press hit.
+
+  3. A remote clip that has already failed once is REMEMBERED, so the sheet
+     stops requesting a dead URL and flashing a broken tile on every render.
+     Only ever recorded when the free pack can actually cover it. "Wrong demo?"
+     clears it and gives the original another go.
+
+  4. The flip is faster (0.8s), frame 2 is PRELOADED so the first flip isn't a
+     blank box, and each frame is now LABELLED "start" / "end" in the corner.
+     Two photos alternating is ambiguous on its own — you can't tell which one
+     is the bottom of the lift. The label is the thing that makes it readable.
+
+ALSO FIXED: "LAST TIME (NaNd AGO)"
+  Seeded history carries the date "prev" rather than a real one, and that came
+  out of the arithmetic as NaN. It now reads "Last time (last session)" when
+  there's no real date — no date means no claim about when.
+
+HONEST LIMIT
+  This is still two photographs alternating, not a true GIF. It shows you the
+  start and the end of the movement, labelled. It does not show the path
+  between them. For anything you're unsure of, the "▶ demo" corner link still
+  opens real video. When your WorkoutX allowance resets, the proper animated
+  clips can be saved permanently with one button and this becomes the fallback
+  rather than the main event.
+
+
+1. WHY YOUR 500 REQUESTS DISAPPEARED
+=====================================
+This was a real bug, and it was worse than "I kept retrieving them".
+
+A catalogue GIF sits behind your WorkoutX key. An <img src> tag cannot send a
+header, so every one of them failed with a 401 on load. The app caught that
+failure and re-fetched the file properly with the key — and cached the result
+in a plain JavaScript object.
+
+That object was MEMORY ONLY. Every reload, every cold start, every time iOS
+evicted the tab, it was empty again and every GIF on the sheet was bought a
+second time. An eleven-exercise session cost eleven requests. Open Train twice
+in a day, twenty-two. A full catalogue sync is about 120 of your 500 — the
+other ~380 went on re-buying files you had already paid for.
+
+Nothing was ever downloaded INTO the app. You were renting the same files over
+and over.
+
+WHAT CHANGES
+  The bytes now go into IndexedDB on the phone, keyed by exercise name, with a
+  small index so a cold start knows what it has without reading every blob.
+  Once a movement is saved it renders from the phone forever, offline, free.
+
+  AND NOTHING IS FETCHED ON ITS OWN ANY MORE. "Fetch missing demos
+  automatically" is OFF by default. A session with eleven unsaved movements now
+  costs nothing until you press a button. Leave it off.
+
+  Order of preference when a demo is needed, cheapest first:
+    1. already on this phone      (free, instant, works offline)
+    2. a free public source       (free)
+    3. the free demo pack         (free — see section 2)
+    4. WorkoutX with your key     (costs one request — only if you allowed it)
+
+  Requests are counted and shown in Settings. The counter reads WorkoutX's own
+  quota header when it has one, but ignores a reading from a previous month —
+  otherwise last month's "0 remaining" would lock you out after the reset.
+
+BACKUP
+  IndexedDB survives redeploys. It does NOT survive deleting the home-screen
+  app. "Save my saved GIFs to a file" gives you a file to keep in Dropbox or
+  Drive; loading it back costs nothing.
+
+
+2. THE FREE DEMO PACK — 800+ MOVEMENTS, NO KEY, NO QUOTA
+=========================================================
+Free Exercise DB is a public-domain dataset (Unlicense) of 800+ exercises,
+hosted free on GitHub. No key, no account, no monthly allowance, ever.
+
+Each exercise ships TWO frames — the start and the end of the movement. The app
+alternates them about once a second, so you get the actual movement rather than
+a still photograph. It is not as slick as a real GIF. It is free, and it is
+there right now.
+
+It is downloaded once, matched against your library by name, equipment and
+muscle group, and then cached like anything else.
+
+MATCHING WAS TUNED TO REFUSE RATHER THAN GUESS. On a 36-exercise test it placed
+33 correctly and missed 3. The two it originally got WRONG were the important
+ones:
+
+  "Deadlift"    was landing on "Romanian Deadlift"
+  "Nordic Curl" was landing on "Hammer Curls"
+
+A hamstring exercise showing a biceps demo is worse than showing nothing. Two
+rules fixed it: equipment words in a name are treated as noise ("Barbell
+Squat" and "Squat" are the same lift), but any OTHER extra word is a qualifier
+that changes the movement and counts against the match. Both now resolve
+correctly or honestly refuse.
+
+Anything it can't place still gets the tappable "Watch demo" link, and you can
+override any demo yourself as before.
+
+
+3. PHOTOS — A TIMELINE, NOT A PILE
+===================================
+TAP A PHOTO AND ACTUALLY SEE IT
+  Full-screen viewer with the date, how long ago it was, arrows to move through
+  your shots, a label picker and a delete button.
+
+DATES AND FOLDERS
+  Every photo now carries a real timestamp and an angle: Front / Side / Back /
+  Legs / Other. They group into months, newest month first, and filter by angle
+  along the top. Each thumbnail shows its date day-first and "4 weeks ago".
+
+  Your existing photos are migrated automatically. They keep their dates and
+  start out unlabelled — tap one and set the angle.
+
+THEN & NOW
+  Two photos side by side with the gap spelled out. Quick buttons for 1 month,
+  3 months, 6 months and first-vs-latest.
+
+  It compares like with like: a front shot against a front shot. Which angle it
+  uses is chosen by which one actually has the history to cover the gap you
+  asked for — not by whichever photo you happened to add last, which is
+  arbitrary when you shoot three angles in one go. If there's no photo on the
+  exact date it takes the nearest and tells you how far off it is.
+
+  Your bodyweight around both dates is shown underneath when a check-in exists
+  near enough to each.
+
+  "Ask coach what's changed" sends both to the AI, oldest first, and is told to
+  say so if the lighting or angle differs too much to tell — rather than
+  inventing progress.
+
+
+4. MEASUREMENTS
+================
+A collapsible panel under the photos. Chest, waist, hips, shoulders, arm,
+thigh, calf, neck — with a history table, and the change since your first entry
+next to it.
+
+ESTIMATES FROM PHOTOS
+  "Estimate from my photos" reads your latest shots and gives circumferences
+  and a body-fat figure. It needs your height first and refuses without it —
+  there is nothing to scale a photograph against otherwise, and any number
+  would be invented.
+
+  Those entries are tagged EST everywhere they appear. They are a direction of
+  travel, not numbers to quote to the centimetre. A measurement you take
+  yourself on the same day replaces the estimate rather than sitting beside it.
+
+  The change column is deliberately NOT colour-coded. Green-for-bigger would
+  call a wider waist progress and a narrower one failure, which depends
+  entirely on the phase you're in. The number and its sign say everything that
+  is actually known.
+
+Measurements sync across your devices. Photos still don't — too big for a
+Firestore document.
+
+
+5. TRAIN — TODAY'S SESSION IS A DROPDOWN
+=========================================
+At the top of Train, above "Build today's session". One tap to swap Push Day
+for Pilates without going back to Home.
+
+It writes the same day override the weekly plan writes, so the two can't
+disagree, and it rebuilds the sheet immediately. The line beside it tells you
+when you've swapped away from what was planned.
+
+
+6. ABOUT THE RENPHO TAPE
+=========================
+No live link is possible, and it isn't a limitation of your app:
+
+  - iOS Safari has no Web Bluetooth at all, so a home-screen web app cannot
+    talk to the tape directly.
+  - Apple Health has no web API. Only a native app can read it.
+  - Renpho has no official public API. The unofficial ones need your Renpho
+    password sitting in your page source and break whenever Renpho ships an
+    update.
+
+The route that works is the export: measure -> it syncs to the Renpho app over
+Bluetooth -> Trends -> Circumference -> clock icon -> select data -> export as
+CSV -> import into Amir PT. An importer is not in v61 yet; send me one exported
+file once the tape arrives and I'll build the parser against the real format
+rather than guessing at it.
+
+TWO THINGS ON DAY ONE
+  Hold [M] for about a second to switch from straight-line to CIRCUMFERENCE
+  mode. There is a 2.1 cm difference between the two, because the tape has to
+  feed into the receptacle when measuring a circumference. In the wrong mode
+  every number you log is 2.1 cm out.
+
+  Set it to CENTIMETRES. That's what the measurement store uses.
+
+
+7. WHAT WAS FOUND AND FIXED WHILE TESTING
+==========================================
+PHOTO IDENTITY WAS A TIMESTAMP. Two photos added in the same session could
+share one, so "the photo at time T" silently returned the wrong one. Identity
+is now the photo's own id.
+
+A VARIABLE IN THE TEMPORAL DEAD ZONE. The saved-GIF lookup guards on
+"typeof GIFURL", and it runs during the first render. With `let`, even typeof
+throws — the guard would have been the thing that broke your session sheet.
+
+RELABELLING A PHOTO OUT OF THE CURRENT FILTER left the viewer pointing at
+somebody else's photo. It now closes instead of silently swapping.
+
+THE DEFAULT COMPARISON paired a front shot against a side one, then printed a
+warning about its own choice.

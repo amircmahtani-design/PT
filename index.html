@@ -475,6 +475,14 @@ details.sec2[open] .secsum2:after{content:"\2212";}
 .fedphase{position:absolute;top:8px;left:8px;background:#0a0806d9;color:var(--gold);
   font-size:11px;font-weight:800;padding:3px 9px;border-radius:9px;border:1px solid var(--line);
   text-transform:uppercase;letter-spacing:.6px;pointer-events:none;}
+.coverlist{max-height:60vh;overflow-y:auto;margin-top:10px;-webkit-overflow-scrolling:touch;}
+.coverrow{padding:9px 2px;border-bottom:1px solid var(--hair);display:grid;
+  grid-template-columns:1fr auto;gap:4px 10px;align-items:center;}
+.coverrow .cn{font-size:13.5px;font-weight:700;color:var(--txt);}
+.coverrow .cl{grid-column:1/2;font-size:11.5px;color:var(--muted);font-weight:600;}
+.coverrow .swapbtn{grid-column:2/3;grid-row:1/3;width:auto;padding:7px 12px;font-size:12px;}
+.coverrow.gap .cl{color:var(--gold);}
+.coverrow .altpick{grid-column:1/3;}
 .gifchip{display:inline-block;font-size:11px;font-weight:800;padding:3px 8px;border-radius:8px;margin-left:6px;
   background:var(--pill);border:1px solid var(--line);color:var(--muted);}
 .gifchip.ok{color:var(--green);border-color:#3fe08a44;}
@@ -764,6 +772,11 @@ a{color:var(--orange);}
         <button class="btn" onclick="loadFreePack()">⤓ Get the free demo pack</button>
         <button class="btn sec mt" onclick="saveFreePackOffline()">Save the matched ones to this phone</button>
         <div id="fedMsg" class="hint mt" style="font-size:13px"></div>
+        <button class="btn ghost mt" onclick="fedDiagnose()">Check what's working</button>
+        <button class="btn ghost mt" onclick="fedBackupBtn()">Back the pack up to Firebase</button>
+        <button class="btn ghost mt" onclick="fedRestoreBtn()">Restore the pack from Firebase</button>
+        <button class="btn ghost mt" onclick="renderDemoCoverage()">Which of my exercises have no demo?</button>
+        <div id="coverOut"></div>
       </div>
       <div class="field mt" style="margin-bottom:0;border-top:1px solid var(--hair);padding-top:14px">
         <label>Browse what you've downloaded</label>
@@ -1011,7 +1024,7 @@ const DEFAULTS = {
   photos:[], rowing:[], measures:[],
   chat:[], streak:0, lastSessionDate:null, workout:null,
   integrations:{"Apple Watch":true,"Concept2 (manual)":true,"Photos":true,"Camera":false,"Notifications":true},
-  lib:{}, dayTypes:{}, media:{}, mediaPicked:{}, exMap:{}, progression:{}, deadMedia:{},
+  lib:{}, dayTypes:{}, media:{}, mediaPicked:{}, exMap:{}, progression:{}, deadMedia:{}, demoPick:{},
   nutrition:{calorieTarget:null, proteinTarget:null, phase:"", log:[]},
   cardio:null, readiness:null, aiPlan:null, restCall:null, setsOverride:null, completed:{}, tomorrow:null,
   session:null,
@@ -1692,7 +1705,22 @@ function catMatch(name){
 }
 function catGif(name){ const r=catMatch(name); return (r&&r.gif)||null; }
 const _gifTried={};
+/* ===== v61.2 · A CHOICE HE MAKES IS A FACT, NOT A HINT =====
+   "Wrong demo?" used to re-run the automatic matcher, which is how it ended up
+   overriding him. An explicit pick is now stored and consulted before every
+   automatic source, and nothing clears it except him. */
+function demoPick(name){ return ((DB.demoPick||{})[name])||null; }
+function setDemoPick(name,p){
+  DB.demoPick=DB.demoPick||{};
+  if(p) DB.demoPick[name]=p; else delete DB.demoPick[name];
+  if(DB.deadMedia) delete DB.deadMedia[name];
+  delete _gifTried[name];
+  catInvalidate(); save();
+}
 function mediaFor(name){
+  const pk=demoPick(name);
+  /* He said no demo, or he picked a free-pack clip that the animator renders. */
+  if(pk && (pk.s==="none" || pk.s==="fed")) return null;
   /* v61: a demo already saved onto the phone beats every remote source. It's
      the same clip, it renders instantly, and it costs nothing to show. */
   if(typeof GIFURL!=="undefined" && GIFURL[name] && !gifIsFed(name)) return GIFURL[name];
@@ -1711,6 +1739,7 @@ function mediaFor(name){
 /* Forget whatever demo is cached for this exercise and fall back to the best source. */
 function refreshDemo(i){
   const e=DB.workout&&DB.workout.main[i]; if(!e) return;
+  if(demoPick(e.name)){ toast("You picked this one \u2014 use the list to change it"); return; }
   if(DB.media) delete DB.media[e.name];
   if(DB.mediaPicked) delete DB.mediaPicked[e.name];
   if(DB.deadMedia) delete DB.deadMedia[e.name];   // give the remote source another chance
@@ -2386,7 +2415,13 @@ function mediaFallbackOrFetch(img,name){
   }).catch(()=>mediaFallback(name));
 }
 function exImgHTML(name,muscles){
-  const src=mediaFor(name), nEsc=attrEsc(name), js=jsAttr(name);
+  const nEsc=attrEsc(name), js=jsAttr(name);
+  const pk=demoPick(name);
+  if(pk && pk.s==="none") return watchTileHTML(name," data-exname='"+nEsc+"'");
+  if(pk && pk.s==="fed"){
+    try{ const fed=fedTileHTML(name); if(fed) return fed; }catch(e){}
+  }
+  const src=mediaFor(name);
   if(src){
     return "<div class='imgwrap' data-ex='"+nEsc+"' data-exname='"+nEsc+"'>"+
       "<img src='"+attrEsc(src)+"' alt='"+nEsc+"' loading='lazy' onerror=\"mediaFail(this,'"+js+"')\">"+
@@ -4698,7 +4733,7 @@ function scheduleInApp(){
    v18 ADDITIONS — draggable rest timer · weekly training memory · AI planner
    · Firestore sync
    ========================================================================== */
-const APP_VERSION="v61.1 · 06/08/2026";
+const APP_VERSION="v61.4 · 06/08/2026";
 
 /* ===== 1. REST TIMER — drag it anywhere so it never blocks the chat box ===== */
 let _rtDrag=null;
@@ -6233,8 +6268,46 @@ async function cacheDemo(name){
    and no quota. Each exercise ships TWO frames — the start and the end of the
    movement — so alternating them gives a real demo rather than a still photo.
    Fetched once, matched to his library, then cached like everything else. */
-const FED_URL="https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/dist/exercises.json";
-const FED_IMG="https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/";
+/* Three mirrors of the SAME public-domain repo. raw.githubusercontent is the
+   canonical one, but it's the sort of host that gets throttled or blocked on
+   some networks, and when it fails nothing renders at all — which looks
+   exactly like "the pack isn't on my phone". jsDelivr and githack serve the
+   identical files, so a blocked host is now a switch rather than a dead end. */
+const FED_HOSTS=[
+  {n:"GitHub raw", json:"https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/dist/exercises.json",
+                   img:"https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/"},
+  {n:"jsDelivr",   json:"https://cdn.jsdelivr.net/gh/yuhonas/free-exercise-db@main/dist/exercises.json",
+                   img:"https://cdn.jsdelivr.net/gh/yuhonas/free-exercise-db@main/exercises/"},
+  {n:"githack",    json:"https://rawcdn.githack.com/yuhonas/free-exercise-db/main/dist/exercises.json",
+                   img:"https://rawcdn.githack.com/yuhonas/free-exercise-db/main/exercises/"}
+];
+function fedHostIdx(){ const i=(DB.wx&&DB.wx.fedHost)|0; return (i>=0&&i<FED_HOSTS.length)? i : 0; }
+function fedSetHost(i){ DB.wx=DB.wx||{}; DB.wx.fedHost=i; save(); }
+function fedImgBase(){ return FED_HOSTS[fedHostIdx()].img; }
+/* Same file on the next mirror, so one dead image can retry elsewhere. */
+function fedSwapHost(url){
+  for(let a=0;a<FED_HOSTS.length;a++){
+    if(url.indexOf(FED_HOSTS[a].img)===0){
+      const rel=url.slice(FED_HOSTS[a].img.length);
+      const b=(a+1)%FED_HOSTS.length;
+      return {url:FED_HOSTS[b].img+rel, host:b, wrapped:b===0};
+    }
+  }
+  return null;
+}
+function fedImgFail(img){
+  try{
+    const tries=(+img.getAttribute('data-try')||0)+1;
+    if(tries>=FED_HOSTS.length){ img.onerror=null; img.style.visibility="hidden"; return; }
+    const alt=fedSwapHost(img.src); if(!alt){ img.onerror=null; return; }
+    img.setAttribute('data-try',tries);
+    fedSetHost(alt.host);                    // remember the one that works
+    const f0=img.getAttribute('data-f0'), f1=img.getAttribute('data-f1');
+    if(f0){ const a=fedSwapHost(f0); if(a) img.setAttribute('data-f0',a.url); }
+    if(f1){ const a=fedSwapHost(f1); if(a) img.setAttribute('data-f1',a.url); }
+    img.src=alt.url;
+  }catch(e){ try{ img.onerror=null; }catch(e2){} }
+}
 const FED_KEY="amirpt_freepack";
 var FED=null;              // slim records: {i:id, n:name, e:equipment, m:[muscles], f:frames}
 var _fedIdx=null, _fedHit={};
@@ -6327,18 +6400,21 @@ function fedMatch(name){
   return hit;
 }
 /* Both frames as absolute URLs, newest cache first. */
+function fedRecById(id){ return (FED||[]).find(r=>r.i===id)||null; }
 function fedFrames(name){
-  const r=fedMatch(name);
+  const pk=demoPick(name);
+  let r;
+  if(pk && pk.s==="fed") r=fedRecById(pk.id);        // his choice
+  else if(pk) return null;                            // he chose something else entirely
+  else r=fedMatch(name);                              // no choice made — guess
   if(!r||!r.f||!r.f.length) return null;
-  return r.f.map(x=>FED_IMG+x);
+  return r.f.map(x=>fedImgBase()+x);
 }
 async function loadFreePack(){
   if(fedHas() && !confirm("The free pack is already on this phone ("+fedCount()+" movements).\n\nDownload a fresh copy?")) return;
   fedMsg("<span class='spin'></span> Downloading the free exercise pack…");
   try{
-    const r=await fetch(FED_URL);
-    if(!r.ok) throw new Error("HTTP "+r.status);
-    const arr=await r.json();
+    const arr=await fedFetchJSON(t=>fedMsg("<span class='spin'></span> Trying "+t+"…"));
     if(!Array.isArray(arr)||!arr.length) throw new Error("empty");
     /* Slimmed hard before storing: the instructions are the bulk of that file
        and the app already writes its own cues. */
@@ -6347,15 +6423,53 @@ async function loadFreePack(){
     }));
     _fedIdx=null; _fedHit={};
     await fedSave();
+    fedBackup().catch(()=>{});
     const covered=fedCoverage();
-    fedMsg("✅ <b>"+FED.length+" free demos</b> downloaded and saved — <b>zero WorkoutX requests</b>.<br>"+
+    fedMsg("✅ <b>"+FED.length+" free demos</b> downloaded, saved on this phone and copied to Firebase — <b>zero WorkoutX requests</b>.<br>"+
       "Matched to <b>"+covered.hit+"</b> of your "+covered.total+" exercises. They animate between the start and end frame.<br>"+
       "Now tap <b>Save the matched ones to this phone</b> so they work with no signal.");
     try{ if(DB.workout) renderWorkoutSheet(DB.workout); }catch(e){}
     try{ renderGifStatus(); }catch(e){}
   }catch(e){
-    fedMsg("✗ Couldn't download it ("+(e&&e.message||e)+"). It's a plain GitHub file, so this is almost always a connection problem — try again on wifi.");
+    fedMsg("✗ Couldn't reach any of the three mirrors ("+(e&&e.message||e)+"). "+
+      "Try again on wifi, or tap <b>Check what's working</b> below to see which part is failing.");
   }
+}
+/* Walk the mirrors until one answers. */
+async function fedFetchJSON(onTry){
+  let lastErr="no mirror answered";
+  for(let i=0;i<FED_HOSTS.length;i++){
+    const h=FED_HOSTS[i];
+    try{
+      onTry&&onTry(h.n);
+      const r=await fetch(h.json,{cache:"no-store"});
+      if(!r.ok){ lastErr="HTTP "+r.status+" from "+h.n; continue; }
+      const arr=await r.json();
+      if(Array.isArray(arr)&&arr.length){ fedSetHost(i); return arr; }
+      lastErr="empty reply from "+h.n;
+    }catch(e){ lastErr=(e&&e.message||"failed")+" on "+h.n; }
+  }
+  throw new Error(lastErr);
+}
+async function fedBackupBtn(){
+  if(!fedHas()){ fedMsg("✗ Nothing to back up — get the pack first."); return; }
+  fedMsg("<span class='spin'></span> Copying the pack to Firebase…");
+  try{
+    const n=await fedBackup();
+    fedMsg(n? ("✅ Pack backed up to Firebase in "+n+" part"+(n===1?"":"s")+". It will restore itself on any device, even if this phone clears its storage.")
+            : "✗ Couldn't reach Firebase. Check sync is on in Settings.");
+  }catch(e){ fedMsg("✗ Firebase error: "+(e&&e.message||e)); }
+}
+async function fedRestoreBtn(){
+  fedMsg("<span class='spin'></span> Restoring from Firebase…");
+  try{
+    const n=await fedRestore();
+    if(!n){ fedMsg("✗ No pack found in Firebase yet. Get the pack, then back it up."); return; }
+    renderGifStatus();
+    const cov=fedCoverage();
+    fedMsg("✅ <b>"+n+"</b> movements restored from Firebase — no download needed. Matched to <b>"+cov.hit+"</b> of your "+cov.total+" exercises.");
+    try{ if(DB.workout) renderWorkoutSheet(DB.workout); }catch(e){}
+  }catch(e){ fedMsg("✗ Firebase error: "+(e&&e.message||e)); }
 }
 function myExerciseNames(){
   let names=[];
@@ -6455,9 +6569,178 @@ function fedTileHTML(name){
      guesswork this is meant to solve. */
   return "<div class='imgwrap' data-ex='"+nEsc+"' data-exname='"+nEsc+"'>"+
     "<img src='"+f0+"' data-f0='"+f0+"' data-f1='"+f1+"' data-on='0' data-fedname='"+nEsc+"' "+
-    "alt='"+nEsc+"' loading='lazy'>"+
+    "alt='"+nEsc+"' loading='lazy' onerror='fedImgFail(this)'>"+
     "<span class='fedphase'>start</span>"+
     "<a class='demoover' href='"+demoSearchURL(name)+"' target='_blank' rel='noopener'>▶ demo</a></div>";
+}
+/* ===== v61.3 · DEMO COVERAGE =============================================
+   "Find me more of that style" has no answer, because that style IS the free
+   pack and he already holds all of it. The useful question is the other one:
+   WHICH of his exercises came up empty, and which got matched to the wrong
+   thing. This lists every movement he trains with the demo currently attached
+   to it, so a wrong match is visible before he meets it mid-set rather than
+   after. Every row is fixable on the spot. */
+function demoSourceOf(name){
+  const pk=demoPick(name);
+  if(pk && pk.s==="none") return {tag:"none",label:"no demo \u2014 your choice",mine:true};
+  if(pk && pk.s==="fed"){ const r=fedRecById(pk.id); return {tag:"ok",label:(r&&r.n)||"free pack",mine:true,src:"free pack"}; }
+  if(pk && pk.s==="wx") return {tag:"ok",label:pk.k,mine:true,src:"WorkoutX"};
+  if(gifSaved(name) && !gifIsFed(name)) return {tag:"ok",label:"saved clip",src:"on this phone"};
+  const cm=(typeof catMatch==="function")? catMatch(name) : null;
+  if(cm && cm.gif && !(DB.deadMedia&&DB.deadMedia[name])) return {tag:"ok",label:cm.name,src:"WorkoutX"};
+  const fm=fedMatch(name);
+  if(fm) return {tag:"ok",label:fm.n,src:"free pack"};
+  if(EXIMG[name] && !(DB.deadMedia&&DB.deadMedia[name])) return {tag:"ok",label:"built-in clip",src:"built in"};
+  return {tag:"gap",label:"nothing found"};
+}
+let _coverOpen=null;
+function renderDemoCoverage(){
+  const box=document.getElementById('coverOut'); if(!box) return;
+  if(box.dataset.open==="1" && !_coverOpen){ box.innerHTML=""; box.dataset.open="0"; return; }
+  box.dataset.open="1";
+  const names=myExerciseNames().sort((a,b)=>a.localeCompare(b));
+  if(!names.length){ box.innerHTML="<div class='hint mt'>No exercises in your library yet.</div>"; return; }
+  const gaps=[], mine=[], auto=[];
+  const rows=names.map(n=>{
+    const d=demoSourceOf(n);
+    if(d.tag==="gap") gaps.push(n); else if(d.mine) mine.push(n); else auto.push(n);
+    const chip = d.tag==="gap"? "<span class='gifchip'>none</span>"
+               : d.mine? "<span class='gifchip ok'>yours</span>"
+               : "<span class='gifchip'>"+escapeHtml(d.src||"auto")+"</span>";
+    return "<div class='coverrow"+(d.tag==="gap"?" gap":"")+"'>"+
+      "<div class='cn'>"+escapeHtml(n)+"</div>"+
+      "<div class='cl'>"+escapeHtml(d.label)+chip+"</div>"+
+      "<button class='swapbtn' onclick=\"coverPick('"+jsAttr(n)+"')\">"+(d.tag==="gap"?"Find one":"Change")+"</button>"+
+      (_coverOpen===n? coverPickerHTML(n) : "")+
+    "</div>";
+  }).join("");
+  box.innerHTML="<div class='notebox mt'><b>"+names.length+"</b> exercises \u00b7 "+
+      "<b>"+gaps.length+"</b> with no demo \u00b7 <b>"+mine.length+"</b> you've chosen yourself \u00b7 "+
+      auto.length+" matched automatically.<br>"+
+      (gaps.length? "The ones marked <b>none</b> are the gaps. Tap <b>Find one</b> and search the free pack \u2014 it holds 800+ movements, far more than the matcher will place on its own."
+                  : "Every exercise you train has a demo attached.")+
+      "</div><div class='coverlist'>"+rows+"</div>";
+}
+let _coverTerm={};
+function coverPick(name){
+  _coverOpen=(_coverOpen===name)? null : name;
+  if(_coverOpen && _coverTerm[name]===undefined){
+    const tk=normTokens(name); _coverTerm[name]=tk[tk.length-1]||"";
+  }
+  renderDemoCoverage();
+}
+function coverPickerHTML(name){
+  if(!fedHas()) return "<div class='altpick'><div class='sm'>Get the free demo pack first.</div></div>";
+  const term=_coverTerm[name]||"";
+  const list=fedCandidates(name,term);
+  const pk=demoPick(name);
+  const rows=list.map(o=>
+    "<button class='demorow"+((pk&&pk.s==='fed'&&pk.id===o.id)?" on":"")+"' onclick=\"coverChoose('"+jsAttr(name)+"','"+jsAttr(o.id)+"')\">"+
+      "<img loading='lazy' src='"+attrEsc(fedImgBase()+o.r.f[0])+"' onerror='fedImgFail(this)' alt=''>"+
+      "<span class='dm'><span class='dn'>"+escapeHtml(o.label)+"</span>"+
+        "<span class='ds'>"+((o.r.m||[]).join(" \u00b7 "))+"</span></span>"+
+    "</button>").join("");
+  return "<div class='altpick'>"+
+    "<input class='txtin' id='cq' value='"+attrEsc(term)+"' placeholder='landmine, press, row\u2026' "+
+      "oninput=\"_coverTerm['"+jsAttr(name)+"']=this.value; renderDemoCoverage(); setTimeout(()=>{var e=document.getElementById('cq'); if(e){e.focus(); e.setSelectionRange(e.value.length,e.value.length);}},0);\">"+
+    "<div class='demolist'>"+(rows||"<div class='sm' style='padding:10px 2px'>Nothing matches that word. Try something shorter.</div>")+"</div>"+
+    "</div>";
+}
+function coverChoose(name,id){
+  setDemoPick(name,{s:"fed",id});
+  _fedHit={}; _coverOpen=null;
+  renderDemoCoverage();
+  try{ if(DB.workout) renderWorkoutSheet(DB.workout); }catch(e){}
+  const r=fedRecById(id);
+  toast("Demo set \u00b7 "+((r&&r.n)||"free pack"));
+}
+/* ===== v61.4 · THE PACK LIVES IN FIREBASE TOO ==========================
+   IndexedDB on iOS is not permanent. Safari evicts script-writable storage
+   from sites you haven't opened in a while, and deleting the home-screen icon
+   clears it outright — so "saved on this phone" was never a promise I could
+   keep. The INDEX now goes to Firestore alongside the workout data, in the
+   same collection his existing rules already cover. It restores itself
+   silently on any device.
+
+   The photographs themselves stay on the CDN. 800 movements x 2 frames is
+   ~65 MB, which is far past what Firestore will hold, and there'd be no point:
+   they're public URLs that stream on demand. What has to survive is the index
+   that maps his exercises to them, and that's ~120 KB. */
+const FED_CHUNK=400;
+function fedDocRef(i){ return _fs.collection("amirpt").doc(String((DB.cloud.syncId||"amir-pt")).trim()+"__fed"+i); }
+async function fedBackup(){
+  if(!fedHas()) return 0;
+  if(!(await cloudInit())) return 0;
+  const chunks=[];
+  for(let i=0;i<FED.length;i+=FED_CHUNK) chunks.push(FED.slice(i,i+FED_CHUNK));
+  for(let i=0;i<chunks.length;i++){
+    await fedDocRef(i).set({i,total:chunks.length,count:chunks[i].length,
+      updated:new Date().toISOString(), data:JSON.stringify(chunks[i])});
+  }
+  DB.wx=DB.wx||{}; DB.wx.fedCloud={at:new Date().toISOString(),count:FED.length};
+  save();
+  return chunks.length;
+}
+async function fedRestore(){
+  if(!(await cloudInit())) return 0;
+  let i=0,total=1,out=[];
+  while(i<total && i<20){
+    const snap=await fedDocRef(i).get();
+    if(!snap.exists) break;
+    const d=snap.data()||{};
+    total=d.total||1;
+    try{ out=out.concat(JSON.parse(d.data||"[]")); }catch(e){}
+    i++;
+  }
+  if(!out.length) return 0;
+  FED=out; _fedIdx=null; _fedHit={};
+  await fedSave();
+  return FED.length;
+}
+/* Boot: phone first, then the cloud, then the mirrors. He shouldn't have to
+   find a button for something that is free and that the app needs anyway. */
+let _fedAuto=false;
+async function fedEnsure(){
+  if(_fedAuto) return fedCount();
+  _fedAuto=true;
+  if(fedHas()) return fedCount();
+  try{
+    const n=await fedRestore();
+    if(n){ try{ if(DB.workout) renderWorkoutSheet(DB.workout); renderGifStatus(); }catch(e){} return n; }
+  }catch(e){}
+  try{
+    const arr=await fedFetchJSON();
+    FED=arr.filter(x=>x&&x.images&&x.images.length).map(x=>({
+      i:x.id, n:x.name, e:x.equipment||"", m:x.primaryMuscles||[], f:x.images }));
+    _fedIdx=null; _fedHit={};
+    await fedSave();
+    fedBackup().catch(()=>{});
+    try{ if(DB.workout) renderWorkoutSheet(DB.workout); renderGifStatus(); }catch(e){}
+    return FED.length;
+  }catch(e){ return 0; }
+}
+/* Say plainly which part is broken, rather than leaving him to guess. */
+async function fedDiagnose(){
+  const out=[];
+  out.push("Pack index on this phone: <b>"+(fedHas()? fedCount()+" movements" : "EMPTY")+"</b>");
+  out.push("Saved demo frames on this phone: <b>"+gifCount()+"</b>");
+  fedMsg("<span class='spin'></span> Testing the mirrors…");
+  for(const h of FED_HOSTS){
+    try{
+      const r=await fetch(h.img+"Air_Bike/0.jpg",{cache:"no-store"});
+      out.push(h.n+": <b style='color:"+(r.ok?"var(--green)":"var(--red)")+"'>"+(r.ok?"reachable":"HTTP "+r.status)+"</b>");
+    }catch(e){ out.push(h.n+": <b style='color:var(--red)'>blocked or offline</b>"); }
+  }
+  try{
+    const ok=await cloudInit();
+    out.push("Firebase: <b>"+(ok? "connected" : "not connected")+"</b>"+
+      ((DB.wx&&DB.wx.fedCloud)? " \u00b7 pack backed up "+ukDate((DB.wx.fedCloud.at||"").slice(0,10)) : " \u00b7 pack not backed up yet"));
+  }catch(e){ out.push("Firebase: <b>error</b>"); }
+  const cov=fedHas()? fedCoverage() : {hit:0,total:0};
+  out.push("Your exercises matched: <b>"+cov.hit+"</b> of "+cov.total);
+  fedMsg(out.join("<br>")+
+    "<br><br>"+(fedHas()? "" : "The index is empty \u2014 tap <b>Get the free demo pack</b>.")+
+    (cov.hit&&!gifCount()? " Images are streaming from the mirror rather than sitting on the phone. That's fine with signal; tap <b>Save the matched ones</b> for offline." : ""));
 }
 function gifMsg(t){ const el=document.getElementById('gifMsg'); if(el) el.innerHTML=t; }
 function renderGifStatus(){
@@ -6694,17 +6977,39 @@ function demoCandidates(exName,term){
 let _pickTerm={};
 /* First press: let the coach have a go. Second press: show him the list. */
 const _demoAsked={};
-function demoBtnLabel(name){ return _demoAsked[name]? "Still wrong? Pick from the list" : "Wrong demo?"; }
+/* v61.2 — one press, straight to the list. It used to spend the first press
+   re-running the matcher, which is precisely the thing he was pressing the
+   button to escape, and the "now you may choose" flag lived in memory so a
+   reload put him back to square one. Auto-matching is now a button INSIDE the
+   list, where it's his call. */
+function demoBtnLabel(name){ return demoPick(name)? "Change demo" : "Wrong demo?"; }
 function demoBtn(i){
   const ex=DB.workout&&DB.workout.main[i]; if(!ex) return;
   const box=document.getElementById('demo'+i);
   if(box && box.dataset.open==="1"){ box.innerHTML=""; box.dataset.open="0"; return; }
-  if(!_demoAsked[ex.name]){
-    _demoAsked[ex.name]=1;
-    refreshDemo(i);
-    return;
-  }
   openDemoPicker(i);
+}
+/* Free-pack candidates, so the list isn't empty when WorkoutX is unavailable
+   or out of quota — which is exactly when he most needs to fix a demo. */
+function fedCandidates(name,term){
+  if(!fedHas()) return [];
+  const typed=String(term||"").trim();
+  const words=typed? normTokens(typed) : [];
+  const q=normTokens(name).map(fedSing);
+  const head=q[q.length-1]||"";
+  const wantEq=(typeof eqOf==="function")? eqOf(name) : "";
+  const wantM=((EX(name)||guessEx(name)||{}).m||[])[0];
+  return (FED||[]).map(r=>{
+    const tk=fedTokens(r.n);
+    if(typed && !words.every(w=>tk.some(x=>x.indexOf(w)>=0))) return null;
+    let sc=0;
+    if(tk[tk.length-1]===head) sc+=5;
+    q.forEach(w=>{ if(tk.indexOf(w)>=0) sc+=2; });
+    if(fedEqOK(r.e,wantEq)) sc+=2;
+    if(wantM && fedMuscleOK(r.m,wantM)) sc+=2;
+    if(!typed && sc<3) return null;
+    return {id:r.i,label:r.n,r,sc};
+  }).filter(Boolean).sort((a,b)=>b.sc-a.sc || a.label.localeCompare(b.label)).slice(0,40);
 }
 function openDemoPicker(i){
   const ex=DB.workout&&DB.workout.main[i]; if(!ex) return;
@@ -6720,12 +7025,17 @@ function openDemoPicker(i){
 function renderDemoPicker(i){
   const ex=DB.workout&&DB.workout.main[i]; if(!ex) return;
   const box=document.getElementById('demo'+i); if(!box) return;
-  if(!wxHas()){
-    box.innerHTML="<div class='altpick'><div class='sm'>No exercise catalogue on this device yet. Settings \u2192 Exercise catalogue \u2192 Get my exercises.</div></div>";
+  /* No hard stop on the WorkoutX catalogue any more — the free pack alone is
+     enough to choose from, and being locked out of the picker was half the
+     reason a wrong demo felt permanent. */
+  if(!wxHas() && !fedHas()){
+    box.innerHTML="<div class='altpick'><div class='sm'>Nothing to choose from yet. Settings \u2192 Demo GIFs \u2192 <b>Get the free demo pack</b> (free, no quota), or download the WorkoutX catalogue.</div></div>";
     return;
   }
   const term=_pickTerm[i]||"";
-  const list=demoCandidates(ex.name,term);
+  const list=wxHas()? demoCandidates(ex.name,term) : [];
+  const flist=fedCandidates(ex.name,term);
+  const pk=demoPick(ex.name);
   const cur=(DB.exMap&&DB.exMap[ex.name])||"";
   const rows=list.map(o=>
     "<button class='demorow"+(cur===o.k?" on":"")+"' onclick=\"chooseDemo("+i+",'"+jsAttr(o.k)+"')\">"+
@@ -6734,20 +7044,69 @@ function renderDemoPicker(i){
         "<span class='ds'>"+((o.r.m||[]).join(" \u00b7 "))+"  \u2014  "+(EQLABEL[o.r.eq]||"bodyweight")+"</span></span>"+
       (cur===o.k? "<span class='dc'>\u2713</span>":"")+
     "</button>").join('');
+  const frows=flist.map(o=>
+    "<button class='demorow"+((pk&&pk.s==='fed'&&pk.id===o.id)?" on":"")+"' onclick=\"chooseFedDemo("+i+",'"+jsAttr(o.id)+"')\">"+
+      "<img loading='lazy' src='"+attrEsc(fedImgBase()+o.r.f[0])+"' onerror='fedImgFail(this)' alt=''>"+
+      "<span class='dm'><span class='dn'>"+escapeHtml(o.label)+"</span>"+
+        "<span class='ds'>"+((o.r.m||[]).join(" \u00b7 "))+"  \u2014  free pack</span></span>"+
+      ((pk&&pk.s==='fed'&&pk.id===o.id)? "<span class='dc'>\u2713</span>":"")+
+    "</button>").join('');
+  const total=list.length+flist.length;
+  let curTxt="";
+  if(pk&&pk.s==='fed'){ const r=fedRecById(pk.id); curTxt=r? r.n+" (free pack)" : "a free-pack clip"; }
+  else if(pk&&pk.s==='none') curTxt="no demo";
+  else if(cur) curTxt=cur;
   box.innerHTML=
     "<div class='altpick'>"+
-      "<div class='sm' style='margin-bottom:8px'>Pick the clip that matches <b>"+escapeHtml(ex.name)+"</b>:</div>"+
-      "<input class='txtin' id='dq"+i+"' value='"+attrEsc(term)+"' placeholder='squat, press, row\u2026' "+
+      "<div class='sm' style='margin-bottom:8px'>Pick the clip that matches <b>"+escapeHtml(ex.name)+"</b>. Whatever you choose here sticks \u2014 nothing will overwrite it.</div>"+
+      "<input class='txtin' id='dq"+i+"' value='"+attrEsc(term)+"' placeholder='landmine, squat, press\u2026' "+
         "oninput=\"_pickTerm["+i+"]=this.value; renderDemoPicker("+i+"); setTimeout(()=>{var e=document.getElementById('dq"+i+"'); if(e){e.focus(); e.setSelectionRange(e.value.length,e.value.length);} },0);\">"+
-      "<div class='demolist'>"+(rows||"<div class='sm' style='padding:10px 2px'>Nothing in the catalogue matches that word. Try a shorter one \u2014 'squat' rather than 'back squat'.</div>")+"</div>"+
-      "<div class='sm' style='margin-top:8px'>"+list.length+" clip"+(list.length===1?"":"s")+" shown"+
-        (cur? " \u00b7 currently using <b>"+escapeHtml(cur)+"</b>" : "")+"</div>"+
-      (cur? "<button class='swapbtn mt' onclick='clearDemo("+i+")'>Use no demo</button>":"")+
+      "<div class='demolist'>"+
+        (rows||"")+
+        (frows? ((rows?"<div class='sm' style='padding:8px 2px 4px'>\u25c6 Free pack</div>":"")+frows) : "")+
+        ((!rows&&!frows)? "<div class='sm' style='padding:10px 2px'>Nothing matches that word. Try a shorter one \u2014 'landmine' rather than 'landmine press'.</div>" : "")+
+      "</div>"+
+      "<div class='sm' style='margin-top:8px'>"+total+" clip"+(total===1?"":"s")+" shown"+
+        (curTxt? " \u00b7 currently using <b>"+escapeHtml(curTxt)+"</b>" : "")+"</div>"+
+      "<button class='swapbtn mt' onclick='autoDemo("+i+")'>Let the coach find it for me</button>"+
+      "<button class='swapbtn mt' onclick='clearDemo("+i+")'>Use no demo</button>"+
+      (pk? "<button class='swapbtn mt' onclick='resetDemo("+i+")'>Undo my choice</button>":"")+
     "</div>";
+}
+/* Choose a free-pack clip. Recorded as HIS pick, so no later match displaces it. */
+function chooseFedDemo(i,id){
+  const ex=DB.workout&&DB.workout.main[i]; if(!ex) return;
+  setDemoPick(ex.name,{s:"fed",id});
+  _fedHit={};
+  if(DB.media) delete DB.media[ex.name];
+  if(DB.mediaPicked) delete DB.mediaPicked[ex.name];
+  const el=document.getElementById('exb'+i); if(el) el.outerHTML=exBlockHTML(ex,i);
+  try{ fedPaintCached(); fedAnimStart(); }catch(e){}
+  const r=fedRecById(id);
+  toast("Demo set \u00b7 "+((r&&r.n)||"free pack"));
+}
+/* Hand it back to the automatic matcher, but only because he asked. */
+function autoDemo(i){
+  const ex=DB.workout&&DB.workout.main[i]; if(!ex) return;
+  setDemoPick(ex.name,null);
+  _fedHit={};
+  const box=document.getElementById('demo'+i); if(box){ box.innerHTML=""; box.dataset.open="0"; }
+  refreshDemo(i);
+}
+function resetDemo(i){
+  const ex=DB.workout&&DB.workout.main[i]; if(!ex) return;
+  setDemoPick(ex.name,null);
+  _fedHit={};
+  if(DB.exMap) delete DB.exMap[ex.name];
+  catInvalidate(); save();
+  const el=document.getElementById('exb'+i); if(el) el.outerHTML=exBlockHTML(ex,i);
+  try{ fedPaintCached(); fedAnimStart(); }catch(e){}
+  toast("Back to the automatic match");
 }
 function chooseDemo(i,catName){
   const ex=DB.workout&&DB.workout.main[i]; if(!ex) return;
   DB.exMap=DB.exMap||{}; DB.exMap[ex.name]=catName;
+  setDemoPick(ex.name,{s:"wx",k:catName});
   if(DB.media) delete DB.media[ex.name];
   if(DB.mediaPicked) delete DB.mediaPicked[ex.name];
   delete _gifTried[ex.name]; delete _gifBlob[ex.name];
@@ -6759,6 +7118,7 @@ function chooseDemo(i,catName){
 function clearDemo(i){
   const ex=DB.workout&&DB.workout.main[i]; if(!ex) return;
   DB.exMap=DB.exMap||{}; DB.exMap[ex.name]="\u2205";
+  setDemoPick(ex.name,{s:"none"});
   catInvalidate(); save();
   const el=document.getElementById('exb'+i); if(el) el.outerHTML=exBlockHTML(ex,i);
   toast("Demo cleared");
@@ -7235,7 +7595,7 @@ function mergeCloud(r,rev){
   const manualDays=new Set(DB.measures.filter(m=>m.src==="manual").map(m=>m.d));
   DB.measures=DB.measures.filter(m=>!(m.src==="ai" && manualDays.has(m.d)));
   DB.measures.sort((a,b)=>(a.t||0)-(b.t||0));
-  ["lib","dayTypes","media","mediaPicked","exMap","progression","deadMedia"].forEach(k=>{ DB[k]=Object.assign({},r[k]||{},DB[k]||{}); });
+  ["lib","dayTypes","media","mediaPicked","exMap","progression","deadMedia","demoPick"].forEach(k=>{ DB[k]=Object.assign({},r[k]||{},DB[k]||{}); });
   if((rev||0) > (DB._rev||0)){
     ["profile","schedule","prefs","nutrition","cardio","memory","integrations","reminder","weights","dayOverride"].forEach(k=>{ if(r[k]!==undefined) DB[k]=r[k]; });
     if(typeof r.streak==="number") DB.streak=Math.max(DB.streak||0,r.streak);
@@ -7416,9 +7776,14 @@ gifIdxLoad().then(n=>{
   if(n){ try{ paintSavedGifs(); }catch(e){} }
 });
 fedLoad().then(n=>{
-  if(!n) return;
-  try{ _fedHit={}; if(DB.workout) renderWorkoutSheet(DB.workout); }catch(e){}
-  try{ renderGifStatus(); }catch(e){}
+  if(n){
+    try{ _fedHit={}; if(DB.workout) renderWorkoutSheet(DB.workout); }catch(e){}
+    try{ renderGifStatus(); }catch(e){}
+    return;
+  }
+  /* Nothing on the phone: pull it from Firebase, or failing that from a
+     mirror. Both are free, so there's nothing to ask permission for. */
+  setTimeout(()=>{ fedEnsure().catch(()=>{}); }, 1200);
 });
 wxLoadCatalogue().then(n=>{
   try{ renderWxFields(); renderCatList(); }catch(e){}
