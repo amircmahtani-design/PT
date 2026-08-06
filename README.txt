@@ -1,4 +1,4 @@
-AMIR PT — v62.1 · 06/08/2026
+AMIR PT — v62.2 · 06/08/2026
 ============================
 
 Deploy exactly as before: index.html, sw.js, manifest.json and the two icons
@@ -17,6 +17,53 @@ DO THIS FIRST — YOU HAVE NO DEMOS RIGHT NOW
 That gets you animated demos back TODAY, for free, without spending a single
 one of your remaining WorkoutX requests. Details below.
 
+
+=============================================================
+v62.2 — THE "66 WITH NO IMAGES" WAS MY REPORTING BUG
+=============================================================
+
+Upload index.html AND sw.js.
+
+Those 66 mostly DO have photographs. The coverage report was asking the STRICT
+matcher — the one deliberately built to refuse rather than guess — while the
+actual workout tiles use the near-match tier added in v62.1. So the report was
+counting exercises your session was already showing a picture for.
+
+It now asks the same resolver the tiles use, and splits the answer three ways:
+
+  confident   the right movement, no caveat
+  ≈ closest   a real photo, but of a RELATED movement in the same muscle group
+  none        genuinely nothing
+
+On a Pilates-heavy test set of 15: 7 confident, 8 closest, ZERO with nothing.
+Your 66 will resolve mostly into the middle column.
+
+THE LIST IS NOW SORTED BY WHAT NEEDS ATTENTION
+  Gaps first, then approximations, then everything settled. A 200-row list is
+  useless if the eight worth fixing are scattered alphabetically through it.
+
+"COPY THE LIST TO FIX"
+  A button that puts the exact names on your clipboard, each marked NONE or
+  closest, with what it matched to. Paste that to me.
+
+WHY I'M NOT JUST FETCHING 66 IMAGES MYSELF
+  Because almost every exercise GIF on the web is copyrighted. GymVisual sells
+  them, MuscleWiki is proprietary, and most of the rest are scraped copies of
+  one of those two. Hardcoding 66 of them into your app would be putting
+  someone else's licensed material in your product, and hotlinks like that rot
+  within months anyway.
+
+  Free Exercise DB is public domain, which is exactly why I used it. Its
+  weakness is that it's a bodybuilding dataset — thin on Pilates, mobility and
+  carries, which is almost certainly where your gaps are concentrated.
+
+  There are two other legitimately free sources worth checking for those:
+  wger (CC-BY-SA, free API) and Wikimedia Commons (CC-licensed, and genuinely
+  better on yoga and mobility than anything else free).
+
+  Send me the copied list and I'll go through it name by name against those
+  two. Targeted and legal beats me guessing at 66 URLs and getting most of
+  them wrong.
 
 =============================================================
 v62.1 — REAL PHOTOGRAPHS EVERYWHERE. NO DRAWINGS.

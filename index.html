@@ -485,6 +485,8 @@ details.sec2[open] .secsum2:after{content:"\2212";}
 .coverrow .cl{grid-column:1/2;font-size:11.5px;color:var(--muted);font-weight:600;}
 .coverrow .swapbtn{grid-column:2/3;grid-row:1/3;width:auto;padding:7px 12px;font-size:12px;}
 .coverrow.gap .cl{color:var(--gold);}
+.coverrow.approx .cl{color:var(--gold);opacity:.85;}
+.gifchip.warn{color:var(--gold);border-color:#f0a83a44;}
 .coverrow .altpick{grid-column:1/3;}
 .gifchip{display:inline-block;font-size:11px;font-weight:800;padding:3px 8px;border-radius:8px;margin-left:6px;
   background:var(--pill);border:1px solid var(--line);color:var(--muted);}
@@ -4744,7 +4746,7 @@ function scheduleInApp(){
    v18 ADDITIONS — draggable rest timer · weekly training memory · AI planner
    · Firestore sync
    ========================================================================== */
-const APP_VERSION="v62.1 · 06/08/2026";
+const APP_VERSION="v62.2 · 06/08/2026";
 
 /* ===== 1. REST TIMER — drag it anywhere so it never blocks the chat box ===== */
 let _rtDrag=null;
@@ -6729,8 +6731,12 @@ function demoSourceOf(name){
   if(gifSaved(name) && !gifIsFed(name)) return {tag:"ok",label:"saved clip",src:"on this phone"};
   const cm=(typeof catMatch==="function")? catMatch(name) : null;
   if(cm && cm.gif && !(DB.deadMedia&&DB.deadMedia[name])) return {tag:"ok",label:cm.name,src:"WorkoutX"};
-  const fm=fedMatch(name);
-  if(fm) return {tag:"ok",label:fm.n,src:"free pack"};
+  /* v62.2 — this used to ask the STRICT matcher only, so it reported gaps for
+     exercises the session view was already showing a photo for. It now asks the
+     same resolver the tiles use, and distinguishes a confident match from a
+     near one instead of lumping them together. */
+  const fx=fedResolve(name);
+  if(fx) return {tag:fx.approx?"approx":"ok", label:fx.r.n, src:"free pack"};
   if(EXIMG[name] && !(DB.deadMedia&&DB.deadMedia[name])) return {tag:"ok",label:"built-in clip",src:"built in"};
   return {tag:"gap",label:"nothing found"};
 }
@@ -6741,14 +6747,25 @@ function renderDemoCoverage(){
   box.dataset.open="1";
   const names=myExerciseNames().sort((a,b)=>a.localeCompare(b));
   if(!names.length){ box.innerHTML="<div class='hint mt'>No exercises in your library yet.</div>"; return; }
-  const gaps=[], mine=[], auto=[];
-  const rows=names.map(n=>{
-    const d=demoSourceOf(n);
-    if(d.tag==="gap") gaps.push(n); else if(d.mine) mine.push(n); else auto.push(n);
+  const gaps=[], approx=[], mine=[], auto=[];
+  const scored=names.map(n=>{ const d=demoSourceOf(n);
+    if(d.tag==="gap") gaps.push(n);
+    else if(d.mine) mine.push(n);
+    else if(d.tag==="approx") approx.push(n);
+    else auto.push(n);
+    return {n,d};
+  });
+  /* Anything needing attention floats to the top. A list of 200 exercises is
+     useless if the eight worth fixing are scattered through it alphabetically. */
+  const rank=x=> x.d.tag==="gap"? 0 : x.d.tag==="approx"? 1 : x.d.mine? 3 : 2;
+  scored.sort((a,b)=>rank(a)-rank(b) || a.n.localeCompare(b.n));
+  const rows=scored.map(x=>{
+    const n=x.n, d=x.d;
     const chip = d.tag==="gap"? "<span class='gifchip'>none</span>"
                : d.mine? "<span class='gifchip ok'>yours</span>"
-               : "<span class='gifchip'>"+escapeHtml(d.src||"auto")+"</span>";
-    return "<div class='coverrow"+(d.tag==="gap"?" gap":"")+"'>"+
+               : d.tag==="approx"? "<span class='gifchip warn'>\u2248 closest</span>"
+               : "<span class='gifchip ok'>match</span>";
+    return "<div class='coverrow"+(d.tag==="gap"?" gap":(d.tag==="approx"?" approx":""))+"'>"+
       "<div class='cn'>"+escapeHtml(n)+"</div>"+
       "<div class='cl'>"+escapeHtml(d.label)+chip+"</div>"+
       "<button class='swapbtn' onclick=\"coverPick('"+jsAttr(n)+"')\">"+(d.tag==="gap"?"Find one":"Change")+"</button>"+
@@ -6756,11 +6773,32 @@ function renderDemoCoverage(){
     "</div>";
   }).join("");
   box.innerHTML="<div class='notebox mt'><b>"+names.length+"</b> exercises \u00b7 "+
-      "<b>"+gaps.length+"</b> with no demo \u00b7 <b>"+mine.length+"</b> you've chosen yourself \u00b7 "+
-      auto.length+" matched automatically.<br>"+
-      (gaps.length? "The ones marked <b>none</b> are the gaps. Tap <b>Find one</b> and search the free pack \u2014 it holds 800+ movements, far more than the matcher will place on its own."
-                  : "Every exercise you train has a demo attached.")+
-      "</div><div class='coverlist'>"+rows+"</div>";
+      "<b>"+(auto.length+mine.length)+"</b> with a confident photo \u00b7 "+
+      "<b>"+approx.length+"</b> showing the closest match \u00b7 "+
+      "<b>"+gaps.length+"</b> with nothing.<br>"+
+      (approx.length? "The <b>\u2248 closest</b> ones do have a real photo, but of a related movement rather than that exact lift. They're listed first \u2014 tap <b>Change</b> to search the pack yourself if one looks wrong. " : "")+
+      (gaps.length? "The <b>none</b> rows have nothing at all; the free pack simply doesn't cover them." : "")+
+      (!approx.length&&!gaps.length? "Every exercise has a confident photo." : "")+
+      "</div>"+
+      ((approx.length+gaps.length)? "<button class='swapbtn mt' onclick='copyGapList()'>Copy the list of "+(approx.length+gaps.length)+" to fix</button>" : "")+
+      "<div class='coverlist'>"+rows+"</div>";
+}
+/* So he can hand me the exact list rather than a count. */
+function copyGapList(){
+  const out=myExerciseNames().map(n=>({n,d:demoSourceOf(n)}))
+    .filter(x=>x.d.tag==="gap"||x.d.tag==="approx")
+    .sort((a,b)=>a.n.localeCompare(b.n))
+    .map(x=>(x.d.tag==="gap"? "NONE     " : "closest  ")+x.n+(x.d.tag==="approx"? "   -> "+x.d.label : ""))
+    .join("\n");
+  const txt="Amir PT \u2014 exercises needing a demo ("+ukDate()+")\n\n"+out;
+  try{
+    navigator.clipboard.writeText(txt);
+    toast("Copied \u2014 paste it to me and I'll look at each one");
+  }catch(e){
+    const box=document.getElementById('coverOut');
+    if(box) box.insertAdjacentHTML('afterbegin',
+      "<textarea class='txtin' rows='10' style='margin-top:10px' readonly>"+escapeHtml(txt)+"</textarea>");
+  }
 }
 let _coverTerm={};
 function coverPick(name){
