@@ -472,6 +472,9 @@ details.sec2[open] .secsum2:after{content:"\2212";}
 .mtable .est{color:var(--gold);font-size:10px;font-weight:800;margin-left:4px;}
 .mtable .up{color:var(--green);} .mtable .dn{color:var(--red);}
 .mscroll{overflow-x:auto;-webkit-overflow-scrolling:touch;}
+.fedphase{position:absolute;top:8px;left:8px;background:#0a0806d9;color:var(--gold);
+  font-size:11px;font-weight:800;padding:3px 9px;border-radius:9px;border:1px solid var(--line);
+  text-transform:uppercase;letter-spacing:.6px;pointer-events:none;}
 .gifchip{display:inline-block;font-size:11px;font-weight:800;padding:3px 8px;border-radius:8px;margin-left:6px;
   background:var(--pill);border:1px solid var(--line);color:var(--muted);}
 .gifchip.ok{color:var(--green);border-color:#3fe08a44;}
@@ -1008,7 +1011,7 @@ const DEFAULTS = {
   photos:[], rowing:[], measures:[],
   chat:[], streak:0, lastSessionDate:null, workout:null,
   integrations:{"Apple Watch":true,"Concept2 (manual)":true,"Photos":true,"Camera":false,"Notifications":true},
-  lib:{}, dayTypes:{}, media:{}, mediaPicked:{}, exMap:{}, progression:{},
+  lib:{}, dayTypes:{}, media:{}, mediaPicked:{}, exMap:{}, progression:{}, deadMedia:{},
   nutrition:{calorieTarget:null, proteinTarget:null, phase:"", log:[]},
   cardio:null, readiness:null, aiPlan:null, restCall:null, setsOverride:null, completed:{}, tomorrow:null,
   session:null,
@@ -1692,7 +1695,10 @@ const _gifTried={};
 function mediaFor(name){
   /* v61: a demo already saved onto the phone beats every remote source. It's
      the same clip, it renders instantly, and it costs nothing to show. */
-  if(typeof GIFURL!=="undefined" && GIFURL[name]) return GIFURL[name];
+  if(typeof GIFURL!=="undefined" && GIFURL[name] && !gifIsFed(name)) return GIFURL[name];
+  /* A remote clip that has already failed once, where the free pack can cover
+     it, is not tried again. */
+  if(DB.deadMedia && DB.deadMedia[name]) return null;
   const picked=DB.media&&DB.media[name];
   if(picked && DB.mediaPicked && DB.mediaPicked[name]) return picked;   // he or the coach chose this
   /* A catalogue URL needs the key to load, so an <img> pointed at it always
@@ -1707,6 +1713,7 @@ function refreshDemo(i){
   const e=DB.workout&&DB.workout.main[i]; if(!e) return;
   if(DB.media) delete DB.media[e.name];
   if(DB.mediaPicked) delete DB.mediaPicked[e.name];
+  if(DB.deadMedia) delete DB.deadMedia[e.name];   // give the remote source another chance
   save();
   const el=document.getElementById('exb'+i); if(el) el.outerHTML=exBlockHTML(e,i);
   if(DB.exMap) delete DB.exMap[e.name];
@@ -2328,9 +2335,32 @@ function mediaFallback(name){
     w.innerHTML="<a class='watchlink' href='"+demoSearchURL(name)+"' target='_blank' rel='noopener'>"+watchInner(name)+"</a>";
   }catch(e){}
 }
+/* Swap a dead tile for the animated free-pack pair, in place. */
+function replaceWithFed(img,name){
+  try{
+    const html=fedTileHTML(name); if(!html) return false;
+    let host=null;
+    try{ host=img&&img.closest? img.closest('.imgwrap') : null; }catch(e){}
+    if(!host) host=document.querySelector('.imgwrap[data-exname="'+CSS.escape(name)+'"]');
+    if(!host) return false;
+    host.outerHTML=html;
+    fedPaintCached(); fedAnimStart();
+    return true;
+  }catch(e){ return false; }
+}
 function mediaFail(img,name){
   try{
     if(img) img.onerror=null;
+    /* The free pack covers this movement? Hand over to the two-frame animator
+       rather than settling for one frozen frame. */
+    if(fedFrames(name) && replaceWithFed(img,name)){
+      /* Remember it failed, so the next render goes straight to the free pack
+         instead of requesting a dead URL and flashing a broken tile every
+         single time the sheet is drawn. Only ever recorded when there IS a
+         working alternative, and "Wrong demo?" clears it. */
+      try{ DB.deadMedia=DB.deadMedia||{}; if(!DB.deadMedia[name]){ DB.deadMedia[name]=1; save(); } }catch(e){}
+      return;
+    }
     /* v61 — order matters, and it used to be wrong. The phone is checked
        FIRST, so a demo already paid for is never bought twice. A free public
        clip is tried second. Only if both miss, and only if Amir has explicitly
@@ -2957,6 +2987,11 @@ function lastTimeHTML(name){
   const timed=!!(EX(name)||{}).timed;
   const txt=(s.sets||[]).map(x=>timed?(x.r+"s"):(x.w+"kg\u00d7"+x.r)).join("  \u00b7  ");
   const ago=daysSince(s.date);
+  /* Seeded history carries the date "prev" rather than a real one, and that
+     came out of the arithmetic as "NaNd ago". No date means no claim about
+     when — say nothing rather than something wrong. */
+  const agoTxt = (ago===null||isNaN(ago))? "last session"
+               : ago===0? "earlier today" : ago===1? "yesterday" : ago+"d ago";
   const L=layoffInfo();
   const backNote = L.tier
     ? "<div class='cue' style='color:var(--gold)'><b>\u26a0 Back after "+L.gap+" days:</b> "+
@@ -2964,7 +2999,7 @@ function lastTimeHTML(name){
                  : "start about 10% under and ramp back up. You'll be back on it within a couple of sessions.")+
       "</div>" : "";
   const top=timed? Math.max(...s.sets.map(x=>x.r||0))+"s" : Math.max(...s.sets.map(x=>x.w||0))+"kg";
-  return "<div class='cue'><b>Last time ("+(ago===0?"earlier today":ago===1?"yesterday":ago+"d ago")+"):</b> "+txt+" \u2014 top "+top+"</div>"+backNote;
+  return "<div class='cue'><b>Last time ("+agoTxt+"):</b> "+txt+" \u2014 top "+top+"</div>"+backNote;
 }
 /* Sets are per exercise. DB.workout.sets is only the default for new ones. */
 function exSets(e){
@@ -4663,7 +4698,7 @@ function scheduleInApp(){
    v18 ADDITIONS — draggable rest timer · weekly training memory · AI planner
    · Firestore sync
    ========================================================================== */
-const APP_VERSION="v61 · 06/08/2026";
+const APP_VERSION="v61.1 · 06/08/2026";
 
 /* ===== 1. REST TIMER — drag it anywhere so it never blocks the chat box ===== */
 let _rtDrag=null;
@@ -6041,11 +6076,11 @@ async function gifIdxLoad(){
   return Object.keys(GIFIDX).length;
 }
 async function gifIdxSave(){ try{ await idbSet(JSON.stringify(GIFIDX),GIF_IDX_KEY); }catch(e){} }
-async function gifPut(name,blob){
+async function gifPut(name,blob,srcTag){
   if(!name||!blob||!blob.size) return null;
   try{
     await idbSet(blob,gifStoreKey(name));
-    GIFIDX[name]={n:blob.size,at:new Date().toISOString()};
+    GIFIDX[name]={n:blob.size,at:new Date().toISOString(),src:srcTag||"clip"};
     await gifIdxSave();
     try{ if(GIFURL[name]) URL.revokeObjectURL(GIFURL[name]); }catch(e){}
     const u=URL.createObjectURL(blob); GIFURL[name]=u; return u;
@@ -6062,6 +6097,17 @@ async function gifGet(name){
   }catch(e){ return null; }
 }
 function gifSaved(name){ return !!(GIFURL[name]||GIFIDX[name]); }
+/* A saved FREE-PACK frame is one still out of a PAIR. Handing it to the normal
+   image path renders it alone and frozen — which is exactly why every demo
+   looked static. These have to go to the two-frame animator instead.
+   The companion "#f1" entry is the giveaway, so entries saved by the previous
+   build (which carried no source tag) are still recognised. */
+function gifIsFed(name){
+  if(!name) return false;
+  const rec=GIFIDX[name];
+  if(rec && rec.src==="fed") return true;
+  return !!GIFIDX[name+"\u0000f1"];
+}
 function gifCount(){ return Object.keys(GIFIDX).length; }
 function gifBytes(){ return Object.keys(GIFIDX).reduce((a,k)=>a+((GIFIDX[k]||{}).n||0),0); }
 function fmtMB(b){ return b>=1048576? (b/1048576).toFixed(1)+" MB" : Math.round(b/1024)+" KB"; }
@@ -6099,6 +6145,7 @@ async function paintSavedGifs(){
   for(const el of nodes){
     const name=el.getAttribute('data-exname'); if(!name) continue;
     if(!gifSaved(name)) continue;
+    if(gifIsFed(name)) continue;          // two-frame pair — fedPaintCached owns it
     const u=await gifGet(name); if(!u) continue;
     const live=document.querySelector('[data-exname="'+CSS.escape(name)+'"]');
     if(live) swapMedia(live,u,name);
@@ -6350,7 +6397,7 @@ async function saveFreePackOffline(){
           if(!b||b.size<200) continue;
           /* Frame 0 under the exercise name so every existing lookup finds it;
              frame 1 under a suffix the animator knows about. */
-          if(await gifPut(k===0? n : (n+"\u0000f1"), b)) got++;
+          if(await gifPut(k===0? n : (n+"\u0000f1"), b, "fed")) got++;
         }catch(e){}
       }
       if(got) ok++; else fail++;
@@ -6363,7 +6410,16 @@ async function saveFreePackOffline(){
 }
 /* ----- The animation: flip between the two frames on a shared ticker ----- */
 let _fedTick=null;
+const _fedPre={};
 function fedAnimStart(){
+  /* Pull the second frame into the browser cache up front. Without it the very
+     first flip is a blank box, which reads as broken. */
+  try{
+    document.querySelectorAll('img[data-f1]').forEach(im=>{
+      const u=im.getAttribute('data-f1');
+      if(u && !_fedPre[u]){ _fedPre[u]=1; const pre=new Image(); pre.src=u; }
+    });
+  }catch(e){}
   if(_fedTick) return;
   _fedTick=setInterval(()=>{
     const imgs=document.querySelectorAll('img[data-f0][data-f1]');
@@ -6372,9 +6428,13 @@ function fedAnimStart(){
       const on1=im.getAttribute('data-on')==='1';
       const next=on1? im.getAttribute('data-f0') : im.getAttribute('data-f1');
       im.setAttribute('data-on', on1?'0':'1');
-      if(next) im.src=next;
+      if(next && im.src!==next) im.src=next;
+      try{
+        const b=im.parentElement && im.parentElement.querySelector('.fedphase');
+        if(b) b.textContent = on1? "start" : "end";
+      }catch(e){}
     });
-  }, 950);
+  }, 800);
 }
 /* Swap the remote frame URLs for on-device ones wherever we already have them. */
 async function fedPaintCached(){
@@ -6390,9 +6450,13 @@ function fedTileHTML(name){
   const frames=fedFrames(name); if(!frames) return null;
   const nEsc=attrEsc(name);
   const f0=attrEsc(frames[0]), f1=attrEsc(frames[1]||frames[0]);
+  /* The badge is the point. Two photos flipping is ambiguous on its own — you
+     can't tell which one is the bottom of the lift. Labelling them removes the
+     guesswork this is meant to solve. */
   return "<div class='imgwrap' data-ex='"+nEsc+"' data-exname='"+nEsc+"'>"+
     "<img src='"+f0+"' data-f0='"+f0+"' data-f1='"+f1+"' data-on='0' data-fedname='"+nEsc+"' "+
     "alt='"+nEsc+"' loading='lazy'>"+
+    "<span class='fedphase'>start</span>"+
     "<a class='demoover' href='"+demoSearchURL(name)+"' target='_blank' rel='noopener'>▶ demo</a></div>";
 }
 function gifMsg(t){ const el=document.getElementById('gifMsg'); if(el) el.innerHTML=t; }
@@ -7171,7 +7235,7 @@ function mergeCloud(r,rev){
   const manualDays=new Set(DB.measures.filter(m=>m.src==="manual").map(m=>m.d));
   DB.measures=DB.measures.filter(m=>!(m.src==="ai" && manualDays.has(m.d)));
   DB.measures.sort((a,b)=>(a.t||0)-(b.t||0));
-  ["lib","dayTypes","media","mediaPicked","exMap","progression"].forEach(k=>{ DB[k]=Object.assign({},r[k]||{},DB[k]||{}); });
+  ["lib","dayTypes","media","mediaPicked","exMap","progression","deadMedia"].forEach(k=>{ DB[k]=Object.assign({},r[k]||{},DB[k]||{}); });
   if((rev||0) > (DB._rev||0)){
     ["profile","schedule","prefs","nutrition","cardio","memory","integrations","reminder","weights","dayOverride"].forEach(k=>{ if(r[k]!==undefined) DB[k]=r[k]; });
     if(typeof r.streak==="number") DB.streak=Math.max(DB.streak||0,r.streak);
