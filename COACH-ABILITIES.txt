@@ -1,4 +1,4 @@
-WHAT YOUR PT CAN DO — AMIR PT v65
+WHAT YOUR PT CAN DO — AMIR PT v66
 =================================
 Written as the things you'd SAY. If it's on this list, just say it in the Coach
 tab and it happens in the app. If something you want isn't here, that's the gap
@@ -219,6 +219,30 @@ So it stops recommending loads you physically can't make.
 "Save this workout as a favourite."
 "Give me my Big Push session."
 "Reset back to the original plan."
+
+
+20. HOW IT DECIDES TO ADD WEIGHT   (v66)
+========================================
+The load does NOT change between sets. Same weight for all of them.
+
+It goes up next session only when you completed every set at that weight, the
+reps held up, and it felt about right or easier. "About right" is the weight
+to repeat, not to jump from. Anything less and it holds — and a hold is a good
+session, not a failure.
+
+Adjust the standard in Settings -> Progression ("Sets to master", default 4).
+
+You can still overrule it any time:
+  "add 2.5kg to bench next time"      "keep the same weight"
+  "deload bench 10%"                  "start at 60kg today"
+
+
+21. REST   (v65.2)
+==================
+Settings -> Rest timers sets your two defaults (between sets, between
+exercises). Any exercise can override its own on the Train sheet with − / +.
+On a running timer, −15 and +15 adjust it AND remember it for next time.
+Or just say "3 minutes rest on bench".
 
 
 KNOWN GAPS — TELL ME IF ANY OF THESE MATTER

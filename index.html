@@ -472,6 +472,10 @@ details.sec2[open] .secsum2:after{content:"\2212";}
 .mtable .est{color:var(--gold);font-size:10px;font-weight:800;margin-left:4px;}
 .mtable .up{color:var(--green);} .mtable .dn{color:var(--red);}
 .mscroll{overflow-x:auto;-webkit-overflow-scrolling:touch;}
+.grpband{display:inline-block;margin-bottom:8px;background:#2a1c0e;border:1px solid var(--gold);
+  color:var(--gold);font-size:11px;font-weight:800;letter-spacing:.5px;text-transform:uppercase;
+  padding:4px 10px;border-radius:9px;}
+.exb.grouped{border-left:3px solid var(--gold);padding-left:13px;}
 .exorder{display:flex;align-items:center;gap:6px;margin-bottom:9px;}
 .exorder .pos{flex:1 1 auto;font-size:11px;font-weight:800;letter-spacing:.5px;
   text-transform:uppercase;color:var(--label);}
@@ -613,6 +617,18 @@ a{color:var(--orange);}
           <button data-v="Maybe" onclick="segPick(this)">Maybe</button><button data-v="Rest" onclick="segPick(this)">Rest</button></div></div>
       <div class="field"><label>Pain / injuries flaring? <span class="hint">(optional)</span></label>
         <input class="txtin" id="ciPain" placeholder="e.g. right wrist, left knee, none" /></div>
+      <div class="field" style="margin-bottom:6px"><label>What you actually ate <span class="hint" style="float:right;font-weight:700">optional \u00b7 your nutritionist owns the plan</span></label>
+        <div class="mgrid">
+          <div class="field" style="margin-bottom:0"><label>Calories</label>
+            <input class="txtin" id="ciKcal" inputmode="numeric" placeholder="1500" /></div>
+          <div class="field" style="margin-bottom:0"><label>Protein <span class="hint">g</span></label>
+            <input class="txtin" id="ciProt" inputmode="numeric" placeholder="e.g. 170" /></div>
+          <div class="field" style="margin-bottom:0"><label>Carbs <span class="hint">g</span></label>
+            <input class="txtin" id="ciCarb" inputmode="numeric" placeholder="optional" /></div>
+          <div class="field" style="margin-bottom:0"><label>Fat <span class="hint">g</span></label>
+            <input class="txtin" id="ciFat" inputmode="numeric" placeholder="optional" /></div>
+        </div>
+        <div class="hint mt">The coach uses these to decide how hard to push you and when to back off \u2014 not to comment on your diet.</div></div>
     </div>
     <button class="btn green" id="ciSubmit" onclick="submitCheckin()">Analyse My Day</button>
     <div id="ciResult"></div>
@@ -667,6 +683,18 @@ a{color:var(--orange);}
       <label class="photodrop" style="display:block;cursor:pointer">+ Add a physique photo
         <input type="file" accept="image/*" style="display:none" onchange="addPhoto(this)" /></label>
       <div class="hint mt">Tap any photo to see it full size, change its label or delete it.</div>
+    </div>
+
+    <div class="card" id="phaseCard">
+      <div class="card-title"><span>The plan</span><span class="itin-edit" id="phaseTag"></span></div>
+      <div id="phaseBody"></div>
+    </div>
+
+    <div class="card">
+      <div class="card-title"><span>Week in review</span><span class="itin-edit">what a coach actually does</span></div>
+      <div class="notebox mb">Your logged volume against the landmarks, what's stalling, what's under-trained, and what changes next week. It reads your numbers, not the calendar — and it will make the case for a deload before you have to ask.</div>
+      <button class="btn blue" onclick="weeklyReview()">Review my week</button>
+      <div id="reviewOut"></div>
     </div>
 
     <div class="card" id="compareCard">
@@ -764,6 +792,30 @@ a{color:var(--orange);}
       <button class="btn ghost mt" onclick="startWxSync(true)">Force a fresh download</button>
       <div id="wxStatus" class="hint mt" style="font-size:12.5px"></div>
       <div id="wxMsg" class="hint mt" style="font-size:13px"></div>
+    </div>
+
+    <div class="section-h">Progression</div>
+    <div class="card">
+      <div class="notebox mb">The load stays the same for every set of an exercise, and only goes up once you've completed the full number of sets at that weight with the reps holding up and it feeling about right or easier. "About right" is the weight to repeat, not to jump from.</div>
+      <div class="exsets"><span class="l">Sets to master</span>
+        <button class="st" onclick="setMasterySets(-1)">−</button>
+        <span class="n" id="masteryVal" style="min-width:70px">4 sets</span>
+        <button class="st" onclick="setMasterySets(1)">+</button></div>
+      <div class="hint mt">Complete this many sets at one weight, feeling about right or easier, and the coach adds load next session. Anything less and it holds.</div>
+    </div>
+
+    <div class="section-h">Rest timers</div>
+    <div class="card">
+      <div class="notebox mb">These are the defaults. Any exercise can override its own between-sets rest on the Train sheet, and the coach can change either when it has a reason to — but nothing is fixed any more.</div>
+      <div class="exsets"><span class="l">Between sets</span>
+        <button class="st" onclick="setDefaultRest('sets',-15)">−</button>
+        <span class="n" id="restSetsVal" style="min-width:70px">90s</span>
+        <button class="st" onclick="setDefaultRest('sets',15)">+</button></div>
+      <div class="exsets" style="margin-top:8px"><span class="l">Between exercises</span>
+        <button class="st" onclick="setDefaultRest('ex',-15)">−</button>
+        <span class="n" id="restExVal" style="min-width:70px">2 min 30s</span>
+        <button class="st" onclick="setDefaultRest('ex',15)">+</button></div>
+      <div class="hint mt">While a timer is running, <b>−15</b> and <b>+15</b> on the timer itself adjust it <i>and</i> remember it for next time.</div>
     </div>
 
     <div class="section-h">Exercise demos</div>
@@ -925,6 +977,8 @@ a{color:var(--orange);}
 <div class="resttimer" id="restTimer">
   <div class="grip" id="restGrip">⋮⋮</div>
   <div class="rt-main"><div class="lab" id="restLab">Rest</div><div class="cd" id="restCd">1:30</div></div>
+  <button class="x" onclick="bumpRunningRest(-15)" aria-label="15 seconds less">−15</button>
+  <button class="x" onclick="bumpRunningRest(15)" aria-label="15 seconds more">+15</button>
   <button class="x" id="restMiniBtn" onclick="restToggleMini()">–</button>
   <button class="x rt-skip" onclick="stopRest()">Skip</button>
 </div>
@@ -1023,8 +1077,8 @@ const FB_CONFIG={
 };
 const FB_SYNC_DEFAULT="amir-9k3xq7";
 const DEFAULTS = {
-  profile:{name:"Amir", location:"dubai",
-    goal:"Build the physique I want — not chase bodyweight. Just as important: get genuinely more flexible and mobile. Strength AND range of motion, not weights alone.", phase:"Lean Recomp / mini-cut", coachTone:"",
+  profile:{name:"Amir", location:"dubai", height:187, weightKg:83.7,
+    goal:"Build real muscle while getting lean — a recomp, not a bulk and not just maintenance. The target look is lean and athletic: visible abs, clear shoulder-to-waist taper, obviously trained. NOT a bodybuilder and not bulky — shape and leanness over size. Just as important: genuinely more flexible and mobile. Strength AND range of motion, not weights alone. Judge progress by the mirror, photos, waist and the loads on the bar — not by bodyweight.", phase:"Lean Recomp / mini-cut", coachTone:"",
     equip:{dubai:"",madrid:"",greece:""},
     equipment:"Adjustable dumbbells, barbell + plates, bench, pull-up bar, Concept2 rower, resistance bands",
     injuries:"TFCC injury (right wrist) — avoid loaded wrist extension & heavy pressing on straight wrist. Klinefelter syndrome — manage recovery/fatigue, prioritise consistent progressive overload.",
@@ -1042,12 +1096,17 @@ const DEFAULTS = {
   lib:{}, dayTypes:{}, media:{}, mediaPicked:{}, exMap:{}, progression:{}, deadMedia:{}, demoPick:{},
   rules:{ banned:{}, prefer:{}, kit:{} },   /* things that outlive today's session */
   favourites:{},
-  nutrition:{calorieTarget:null, proteinTarget:null, phase:"", log:[]},
+  /* His nutritionist owns these. They live here only so the coach can see what
+     the deficit is doing to his RECOVERY and program around it. */
+  nutrition:{calorieTarget:1500, proteinTarget:null, phase:"Lean recomp — nutritionist-led", log:[]},
   cardio:null, readiness:null, aiPlan:null, restCall:null, setsOverride:null, completed:{}, tomorrow:null,
   session:null,
   wx:{key:"", on:false, plan:"free", synced:null, count:0, quota:null, quotaLeft:null,
       autoGif:false, reqMonth:null, reqUsed:0, fedHost:0},
   timeBudget:{mins:45, row:true, rowMins:10},
+  /* v65.2 — rest was 90s between sets from the exercise record and a HARDCODED
+     150s between exercises that nothing could change. Both are settings now. */
+  rest:{ sets:90, ex:150 },
   cloud:{on:true, config:JSON.stringify(FB_CONFIG,null,2), syncId:FB_SYNC_DEFAULT, last:null, syncKeys:false},
   prefs:{visualMode:"auto", showIcons:true, exerciseGifs:true, workoutFormat:"list", coachStyle:"direct funny concise",
          autoPlan:true, restPos:null, restMini:false, sessPos:null}
@@ -1086,6 +1145,17 @@ function mergeDefaults(parsed){ const d={...structuredClone(DEFAULTS),...parsed}
      WorkoutX out would never reach his phone. Done once, and the switch in
      Settings puts it back whenever he wants. */
   if(!d.wx.v62){ d.wx.v62=true; d.wx.on=false; }
+  /* v69 — his stated numbers, so the coach can program for the deficit and
+     scale anything it reads off a photo. Only filled if never set. */
+  if(!d.profile.height) d.profile.height=187;
+  /* v69 — he showed me the target physique and confirmed he still wants to
+     build. Replace the old vague goal, but never overwrite one he wrote. */
+  if(!d.profile.goalV69 && /physique I want/i.test(d.profile.goal||"")){
+    d.profile.goal=DEFAULTS.profile.goal; d.profile.goalV69=true;
+  }
+  if(!d.profile.weightKg) d.profile.weightKg=83.7;
+  d.nutrition=d.nutrition||{};
+  if(d.nutrition.calorieTarget==null) d.nutrition.calorieTarget=1500;
   d.profile=Object.assign(structuredClone(DEFAULTS.profile),d.profile||{});
   d.prefs=Object.assign(structuredClone(DEFAULTS.prefs),d.prefs||{});
   d.cloud=Object.assign(structuredClone(DEFAULTS.cloud),d.cloud||{});
@@ -2160,7 +2230,7 @@ function buildWorkout(){
     });
   }
   const estF=estimateMinutes(main,sets,tb);
-  return {title: split, tag: L.tag, loc:key, mins:tb.mins, est:estF,
+  const _built={title: split, tag: L.tag, loc:key, mins:tb.mins, est:estF,
     phase: DB.profile.phase, note, reps: travel? "AMRAP-ish \u00b7 2 in reserve" : "8\u201312 reps", sets, warmup, travel,
     main: main.map(n=>{
       const e=EX(n)||{m:["core"],cue:"Control the rep.",wristAlt:"Same"};
@@ -2168,6 +2238,7 @@ function buildWorkout(){
         scheme: travel? (sets+" sets \u00b7 "+(e.m.includes('core')?"40\u201360s hold":"12\u201320 reps")) : (sets+" sets \u00b7 "+(e.timed?"30\u201360s hold":"8\u201312")),
         rest: travel? "45\u201360s":"90s", rec: e.timed?null:recommendLoad(n)};}),
     cooldown:coolFor, recovery: travel?"Hydrate between drinks \ud83d\ude04. Grab some protein when you can. You're maintaining beautifully \u2014 don't stress the holiday.":"Hydrate (aim 3L). 30\u201340g protein within the hour. Lights out by 11. Recovery builds the physique."};
+  return _built;
 }
 function buildCustomDay(name,ctx){
   const dt=DB.dayTypes[name]||{}; const travel=ctx.travel; const kind=(dt.kind||inferDayKind(name)).toLowerCase();
@@ -2344,24 +2415,92 @@ function recommendLoadRaw(ex){
   }
   if(!h||!h.length) return null;
   const last=h[h.length-1], sets=last.sets||[]; if(!sets.length) return null;
-  const topW=Math.max(...sets.map(s=>s.w)), allReps=sets.map(s=>s.r);
-  const bump=topW<20?1:2.5;
-  /* If he told me how it felt, that beats inferring effort from rep counts. */
+  const topW=Math.max(...sets.map(s=>s.w));
+  const bump=loadStep(ex,topW);
+  /* ===== v66 · MASTERY BEFORE LOAD ====================================
+     The old rule bumped as soon as ONE set at the top weight hit 10+ reps
+     and felt "about right". But "about right" is the state to REPEAT, not
+     to jump from — and one good set out of four is not a mastered weight.
+
+     The rule now: he must complete the full number of sets AT THE SAME
+     WEIGHT, with reps holding up across them, feeling about right or
+     easier. Only then does it go up. Anything less and it stays put. */
+  const need=masterySets();
+  const atTop=sets.filter(s=>s.w===topW);
+  const reps=atTop.map(s=>s.r||0);
+  const lo=reps.length?Math.min(...reps):0, hi=reps.length?Math.max(...reps):0;
+  const repsHeld = reps.length>0 && (hi-lo)<=3;        /* didn't collapse set to set */
+  const fullSets = atTop.length>=need;
   const eff=sessionEffort(sets);
+
   if(eff!==null){
-    const topReps=Math.max(...sets.filter(s=>s.w===topW).map(s=>s.r||0));
-    if(eff<=1.5) return {text:(topW+bump*2)+"kg — "+topW+"kg felt easy across the board last time. Take the proper jump.",up:true,w:topW+bump*2};
-    if(eff<=2.4){
-      if(topReps>=10) return {text:(topW+bump)+"kg — "+topW+"kg was about right for "+topReps+" reps. Earned the bump.",up:true,w:topW+bump};
-      return {text:"Stay at "+topW+"kg — it sat about right, but get to 10+ clean reps before we add.",up:false,w:topW};
+    if(eff>3.3){
+      const back=Math.max(0,Math.round((topW*0.92)/0.5)*0.5);
+      return {text:back+"kg — you were grinding at "+topW+". Back off, rebuild clean reps, come back stronger.",up:false,w:back};
     }
-    if(eff<=3.3) return {text:"Stay at "+topW+"kg — it was hard last time. Own it before we add load.",up:false,w:topW};
-    const back=Math.max(0,Math.round((topW*0.92)/0.5)*0.5);
-    return {text:back+"kg — you were grinding at "+topW+". Back off, rebuild clean reps, come back stronger.",up:false,w:back};
+    if(eff>2.4) return {text:"Stay at "+topW+"kg — it was hard last time. Own it before we add load.",up:false,w:topW};
+    /* about right or easier — but only a COMPLETE, consistent session earns it */
+    if(!fullSets)
+      return {text:"Stay at "+topW+"kg — "+atTop.length+" of "+need+" sets at that weight so far. Get all "+need+" before we add.",up:false,w:topW};
+    if(!repsHeld)
+      return {text:"Stay at "+topW+"kg — reps fell away from "+hi+" to "+lo+" across the sets. Even them out first.",up:false,w:topW};
+    if(eff<=1.5) return earnedIt(ex,topW,bump*2,need,true,lo);
+    return earnedIt(ex,topW,bump,need,false,lo);
   }
-  const mastered=sets.filter(s=>s.w===topW).length>=Math.min(3,sets.length) && allReps.every(r=>r>=12);
-  if(mastered) return {text:(topW+bump)+"kg — you mastered "+topW+"kg with clean reps. Earned it.",up:true,w:topW+bump};
+  if(fullSets && repsHeld && lo>=10) return earnedIt(ex,topW,bump,need,false,lo);
   return {text:"Stay at "+topW+"kg. Master it with excellent form before we add load. No ego lifting.",up:false,w:topW};
+}
+/* ===== v67.1 · LOADS HE CAN ACTUALLY MAKE ==============================
+   It was recommending "+1kg" on a dumbbell press. He owns no 1kg increment,
+   so that instruction is impossible to follow — the number was invented from
+   a rule of thumb (1kg under 20kg, 2.5kg over) rather than from his kit.
+
+   Now the step comes from the equipment. And when the smallest jump he can
+   actually make is a big relative leap — which it always is on light dumbbell
+   work — the answer is NOT to force it. It's to keep the weight and add reps,
+   which is exactly what a coach does when the next dumbbell is too far away. */
+function kitInfo(){
+  const k=(DB.rules&&DB.rules.kit)||{};
+  return { dbStep:k.dbStep||2, dbMax:k.dbMax||null,
+           bar:k.bar||20, plates:(k.plates&&k.plates.length)? k.plates.slice().sort((a,b)=>a-b) : [1.25,2.5,5,10,20] };
+}
+function loadStep(name,current){
+  const k=kitInfo();
+  const e=EX(name)||{};
+  const eq=e.eq||"";
+  if(eq==="db"||eq==="kb") return k.dbStep;              /* per dumbbell */
+  if(eq==="bb"||eq==="bar") return k.plates[0]*2;        /* a plate each side */
+  if(eq==="mach") return 2.5;
+  return (current&&current<20)? 2 : 2.5;
+}
+/* Reps beat an impossible jump. */
+function earnedIt(name,topW,step,need,easy,loReps){
+  const next=Math.round((topW+step)*2)/2;
+  const jump=topW>0? (step/topW)*100 : 100;
+  const repCap=18;
+  /* A jump over ~12% isn't progression, it's a different exercise. Hold the
+     weight and chase reps instead — unless he's already at the top of the
+     range, in which case take it. */
+  if(jump>12 && loReps && loReps<repCap){
+    const target=Math.min(repCap, loReps+2);
+    return {w:topW, up:false, addReps:true,
+      text:"Stay at "+topW+"kg and go for "+target+" reps — the next weight up is "+next+
+           "kg, a "+Math.round(jump)+"% jump you'd be grinding. Earn it with reps first."};
+  }
+  return {w:next, up:true,
+    text:next+"kg — "+need+" clean sets at "+topW+"kg"+(easy?", all easy":", all about right")+". That's mastered. Earned it."};
+}
+function masterySets(){
+  const n=(DB.prefs&&DB.prefs.masterySets)|0;
+  return (n>=1&&n<=8)? n : 4;
+}
+function setMasterySets(d){
+  DB.prefs=DB.prefs||{};
+  let n=masterySets()+d;
+  n=Math.max(1,Math.min(8,n));
+  DB.prefs.masterySets=n; save();
+  const el=document.getElementById('masteryVal'); if(el) el.textContent=n+" sets";
+  try{ if(DB.workout) renderWorkoutSheet(DB.workout); }catch(e){}
 }
 
 /* ===== PREP & MOBILITY — warm-ups and cool-downs that match the actual session =====
@@ -2765,6 +2904,73 @@ function beep(){ try{ unlockAudio(); const c=audioCtx; if(!c) return; const o=c.
 function beeps(){ beep(); setTimeout(beep,300); setTimeout(beep,600); }
 function fmtTime(sec){ sec=Math.max(0,Math.round(sec)); return Math.floor(sec/60)+":"+String(sec%60).padStart(2,'0'); }
 function restSeconds(str){ const m=String(str).match(/\d+/); return m?parseInt(m[0]):90; }
+/* One place decides how long a rest is, so a hand adjustment, a coach
+   instruction and the default can't disagree with each other.
+   Order: what he set on THIS exercise > what the exercise came with > his
+   default > 90. */
+function restDefaults(){
+  const r=(DB.prefs&&DB.prefs.rest)||DB.rest||{};
+  return { sets:(r.sets|0)||90, ex:(r.ex|0)||150 };
+}
+function restForEx(e){
+  if(!e) return restDefaults().sets;
+  /* Only restSec counts as an override, and it is ONLY ever written when he
+     or the coach deliberately sets one. The builder stamps rest:"90s" onto
+     every exercise it makes, so reading that string would make every exercise
+     look overridden and changing the default would appear to do nothing. */
+  if(e.restSec>0) return e.restSec;
+  return restDefaults().sets;
+}
+function restBetweenEx(){
+  const d=restDefaults().ex;
+  /* Travelling with dumbbells only — shorter rests keep the session inside the
+     time he actually has. */
+  return (DB.workout&&DB.workout.travel)? Math.min(90,d) : d;
+}
+function fmtRest(sec){
+  sec=Math.max(0,Math.round(sec));
+  return (sec>=120 && sec%60===0)? (sec/60)+" min" : (sec>=60? Math.floor(sec/60)+"m"+(sec%60? " "+(sec%60)+"s":"") : sec+"s");
+}
+/* Hand adjustment on the exercise itself. */
+function bumpExRest(i,delta){
+  const e=DB.workout&&DB.workout.main[i]; if(!e) return;
+  let sec=restForEx(e)+delta;
+  sec=Math.max(15,Math.min(600,Math.round(sec/15)*15));
+  e.restSec=sec; e.rest=fmtRest(sec);
+  save();
+  const el=document.getElementById('exb'+i); if(el) el.outerHTML=exBlockHTML(e,i);
+  try{ paintDemos(); }catch(err){}
+  toast(e.name+" · rest "+fmtRest(sec));
+}
+function setDefaultRest(kind,delta){
+  DB.prefs=DB.prefs||{};
+  DB.prefs.rest=Object.assign({sets:90,ex:150}, DB.prefs.rest||DB.rest||{});
+  let v=DB.prefs.rest[kind]+delta;
+  v=Math.max(15,Math.min(600,Math.round(v/15)*15));
+  DB.prefs.rest[kind]=v; save();
+  try{ renderRestPrefs(); }catch(e){}
+  try{ renderPhaseCard(); }catch(e){}
+  try{ const mv=document.getElementById('masteryVal'); if(mv) mv.textContent=masterySets()+" sets"; }catch(e){}
+  try{ if(DB.workout) renderWorkoutSheet(DB.workout); }catch(e){}
+}
+function renderRestPrefs(){
+  const d=restDefaults();
+  const a=document.getElementById('restSetsVal'); if(a) a.textContent=fmtRest(d.sets);
+  const b=document.getElementById('restExVal'); if(b) b.textContent=fmtRest(d.ex);
+}
+/* +/- on the running timer, and it remembers rather than being a one-off. */
+function bumpRunningRest(delta){
+  if(!restActive) return;
+  restEnd+=delta*1000;
+  if(_restCtx.kind==="ex"){ setDefaultRest('ex',delta); }
+  else if(_restCtx.idx!=null){
+    const e=DB.workout&&DB.workout.main[_restCtx.idx];
+    if(e){ const sec=Math.max(15,Math.min(600,restForEx(e)+delta)); e.restSec=sec; e.rest=fmtRest(sec); save(); }
+  }
+  try{ restTick(); }catch(e){}
+  toast((delta>0?"+":"")+delta+"s · remembered for next time");
+}
+let _restCtx={kind:null,idx:null};
 let restInt=null, restEnd=0, restActive=false, restBeeped=false;
 /* Keep the screen awake during a timer so mobile browsers don't suspend us. */
 let wakeLock=null;
@@ -2979,39 +3185,64 @@ function sessClamp(){
   f.style.left=x+"px"; f.style.top=y+"px";
 }
 let _sfDrag=null;
+/* v65.1 — the pill would not stay where it was put.
+   _sfDrag was created without x0/y0/moved, so the move handler's test
+   `Math.abs(nx - _sfDrag.x0) > 4` was comparing against undefined: NaN > 4 is
+   always FALSE, so `moved` never became true. Every drag was therefore treated
+   as a TAP on release, and the tap branch calls sessApplyPos(), which puts it
+   straight back in its corner.
+
+   The rest timer never had this bug because it just sets moved=true on any
+   movement. Same approach here, plus the start point is now recorded in the
+   same coordinate space it's compared against. */
 function initSessDrag(){
   const f=document.getElementById('sessFloat'); if(!f) return;
-  const h=document.getElementById('sessFloatT'); if(!h) return;
-  h.addEventListener('pointerdown',ev=>{
-    const r=f.getBoundingClientRect();
-    _sfDrag={dx:ev.clientX-r.left, dy:ev.clientY-r.top, id:ev.pointerId};
-    f.classList.add('drag','moved'); f.style.left=r.left+"px"; f.style.top=r.top+"px";
-    try{ h.setPointerCapture(ev.pointerId); }catch(e){}
-    ev.preventDefault();
-  });
-  h.addEventListener('pointermove',ev=>{
-    if(!_sfDrag||ev.pointerId!==_sfDrag.id) return;
-    const nx=ev.clientX-_sfDrag.dx, ny=ev.clientY-_sfDrag.dy;
-    if(Math.abs(nx-_sfDrag.x0)>4||Math.abs(ny-_sfDrag.y0)>4) _sfDrag.moved=true;
-    f.style.left=nx+"px"; f.style.top=ny+"px";
-    ev.preventDefault();
-  });
+  /* The whole pill drags except the pause button — a 19px time label was a
+     small target with wet hands. */
+  const handles=[document.getElementById('sessFloatT'), f.querySelector('.sfd')].filter(Boolean);
+  if(!handles.length) return;
   let lastTap=0;
-  const up=ev=>{
-    if(!_sfDrag||ev.pointerId!==_sfDrag.id) return;
-    const moved=_sfDrag.moved; _sfDrag=null; f.classList.remove('drag');
-    if(moved){
-      sessClamp();
-      DB.prefs=DB.prefs||{}; DB.prefs.sessPos={x:parseFloat(f.style.left)||0,y:parseFloat(f.style.top)||0}; save();
-      return;
-    }
-    /* Didn't move it — treat as a tap. Two quick taps sends it back to its corner. */
-    sessApplyPos();
-    const n=Date.now();
-    if(n-lastTap<420){ DB.prefs=DB.prefs||{}; DB.prefs.sessPos=null; save(); sessApplyPos(); toast("Pill back to its corner"); lastTap=0; }
-    else lastTap=n;
-  };
-  h.addEventListener('pointerup',up); h.addEventListener('pointercancel',up);
+  handles.forEach(h=>{
+    h.addEventListener('pointerdown',ev=>{
+      const r=f.getBoundingClientRect();
+      _sfDrag={dx:ev.clientX-r.left, dy:ev.clientY-r.top, id:ev.pointerId,
+               x0:ev.clientX, y0:ev.clientY, moved:false};
+      f.classList.add('drag','moved');
+      f.style.left=r.left+"px"; f.style.top=r.top+"px";
+      try{ h.setPointerCapture(ev.pointerId); }catch(e){}
+      ev.preventDefault();
+    });
+    h.addEventListener('pointermove',ev=>{
+      if(!_sfDrag||ev.pointerId!==_sfDrag.id) return;
+      if(Math.abs(ev.clientX-_sfDrag.x0)>4 || Math.abs(ev.clientY-_sfDrag.y0)>4) _sfDrag.moved=true;
+      const w=f.offsetWidth, hh=f.offsetHeight;
+      let x=ev.clientX-_sfDrag.dx, y=ev.clientY-_sfDrag.dy;
+      /* Clamp live, not just on release, so it can't be dragged off-screen. */
+      x=Math.max(6,Math.min(window.innerWidth-w-6,x));
+      y=Math.max(6,Math.min(window.innerHeight-hh-6,y));
+      f.style.left=x+"px"; f.style.top=y+"px";
+      ev.preventDefault();
+    });
+    const up=ev=>{
+      if(!_sfDrag||ev.pointerId!==_sfDrag.id) return;
+      const moved=_sfDrag.moved; _sfDrag=null; f.classList.remove('drag');
+      if(moved){
+        sessClamp();
+        DB.prefs=DB.prefs||{};
+        DB.prefs.sessPos={x:parseFloat(f.style.left)||0, y:parseFloat(f.style.top)||0};
+        save();
+        return;
+      }
+      /* A real tap. Two quick ones send it back to its corner. */
+      const n=Date.now();
+      if(n-lastTap<420){
+        DB.prefs=DB.prefs||{}; DB.prefs.sessPos=null; save();
+        sessApplyPos(); toast("Pill back to its corner"); lastTap=0;
+      } else { lastTap=n; sessApplyPos(); }
+    };
+    h.addEventListener('pointerup',up);
+    h.addEventListener('pointercancel',up);
+  });
 }
 
 /* ==========================================================================
@@ -3077,8 +3308,31 @@ document.addEventListener('visibilitychange',function(){ if(!document.hidden) re
 window.addEventListener('focus',resyncTimers);
 function afterLog(i){
   const ex=DB.workout.main[i]; const done=todaySets(ex.name).length; const target=exSets(ex);
-  if(done>=target){ const next=DB.workout.main[i+1]; const exRest=DB.workout.travel?90:150; startRest(exRest, next? ("Rest before "+next.name) : "Last exercise done — nice work"); }
-  else { startRest(restSeconds(ex.rest), ex.name+" · next set in"); }
+  /* A superset is defined by NOT resting between its exercises. The old code
+     ran a full rest after every set regardless, which quietly turned any
+     superset back into two ordinary exercises. */
+  if(ex.grp){
+    const nxt=grpNextUp(ex);
+    if(nxt && nxt!==ex){
+      const gap=(DB.prefs&&DB.prefs.rest&&DB.prefs.rest.pair)||10;
+      _restCtx={kind:"pair",idx:i};
+      startRest(gap, "Straight into "+nxt.name);
+      return;
+    }
+    if(done<target){
+      _restCtx={kind:"set",idx:i};
+      startRest(restForEx(ex), grpLabel(ex.grp)+" · round "+(done+1)+" of "+target+" in");
+      return;
+    }
+  }
+  if(done>=target){
+    const next=DB.workout.main[i+1];
+    _restCtx={kind:"ex",idx:i};
+    startRest(restBetweenEx(), next? ("Rest before "+next.name) : "Last exercise done — nice work");
+  } else {
+    _restCtx={kind:"set",idx:i};
+    startRest(restForEx(ex), ex.name+" · next set in");
+  }
 }
 function exObject(name){
   ensureLibEntry(name);
@@ -3133,8 +3387,9 @@ function chooseSwap(i,j){
 }
 /* Manual rest between exercise groups (#1) — longer than the between-set rest. */
 function groupRest(i){
-  const travel=DB.workout&&DB.workout.travel; const next=DB.workout&&DB.workout.main[i+1];
-  startRest(travel?90:150, next? ("Rest before "+next.name) : "Rest — last exercise");
+  const next=DB.workout&&DB.workout.main[i+1];
+  _restCtx={kind:"ex",idx:i};
+  startRest(restBetweenEx(), next? ("Rest before "+next.name) : "Rest — last exercise");
 }
 /* "What did I lift last time?" — answered on the exercise itself, not three taps away. */
 function lastSessionOf(name){
@@ -3212,22 +3467,30 @@ function exBlockHTML(e,i){
     ? "<div class='holdrow'><div class='hold-cd' id='hcd"+i+"'>0:00</div><button class='holdbtn' id='hbtn"+i+"' onclick='toggleHold("+i+")'>▶ Start hold</button></div>"
     : "<div class='logrow'><input id='w"+i+"' inputmode='decimal' placeholder='kg' value='"+(e.rec?e.rec.w:'')+"'><input id='r"+i+"' inputmode='numeric' placeholder='reps'><button onclick='logSet("+i+")'>Log</button></div>";
   const total=((DB.workout&&DB.workout.main)||[]).length;
-  const order="<div class='exorder'>"+
+  const grpTag = e.grp? ("<div class='grpband'>\u26a1 "+escapeHtml(grpLabel(e.grp))+
+        " \u00b7 "+(grpPosition(e).idx+1)+" of "+grpPosition(e).size+"</div>") : "";
+  const order=grpTag+"<div class='exorder'>"+
       "<span class='pos'>"+(i+1)+" of "+total+"</span>"+
       "<button class='ob' onclick='moveExTop("+i+")'"+(i===0?" disabled":"")+" aria-label='move to top'>\u21c8 top</button>"+
       "<button class='ob' onclick='moveEx("+i+",-1)'"+(i===0?" disabled":"")+" aria-label='move up'>\u2191</button>"+
       "<button class='ob' onclick='moveEx("+i+",1)'"+(i>=total-1?" disabled":"")+" aria-label='move down'>\u2193</button>"+
     "</div>";
-  return "<div class='exb' id='exb"+i+"'>"+order+exImgHTML(e.name,e.muscles)+
+  return "<div class='exb"+(e.grp?" grouped":"")+"' id='exb"+i+"'>"+order+exImgHTML(e.name,e.muscles)+
     "<div class='name'>"+e.name+"</div><div class='scheme'>"+e.scheme+" · rest "+e.rest+"</div>"+
     "<div class='exsets'><span class='l'>Sets</span>"+
       "<button class='st' onclick='setExSets("+i+","+(exSets(e)-1)+")' aria-label='fewer sets'>−</button>"+
       "<span class='n'>"+exSets(e)+"</span>"+
       "<button class='st' onclick='setExSets("+i+","+(exSets(e)+1)+")' aria-label='more sets'>+</button>"+
       "<span class='d'>"+todaySets(e.name).length+" logged</span></div>"+
+    "<div class='exsets'><span class='l'>Rest</span>"+
+      "<button class='st' onclick='bumpExRest("+i+",-15)' aria-label='less rest'>\u2212</button>"+
+      "<span class='n' style='min-width:62px'>"+fmtRest(restForEx(e))+"</span>"+
+      "<button class='st' onclick='bumpExRest("+i+",15)' aria-label='more rest'>+</button>"+
+      "<span class='d'>between sets</span></div>"+
     /* v65 — a technique the coach sets has to be VISIBLE, or "drop set on the
        last one" changes a field and the sheet looks identical. */
     (e.technique? "<div class='cue' style='color:var(--orange)'><b>\ud83d\udd25 "+escapeHtml(e.technique)+"</b></div>":"")+
+    grpNoteHTML(e)+
     (e.superset? "<div class='cue' style='color:var(--gold)'><b>\u26a1 Superset:</b> straight into "+escapeHtml(e.superset)+", no rest</div>":"")+
     (e.supersetOf? "<div class='cue' style='color:var(--gold)'><b>\u26a1 Second half</b> of the superset with "+escapeHtml(e.supersetOf)+"</div>":"")+
     (e.tempo? "<div class='cue'><b>Tempo:</b> "+escapeHtml(e.tempo)+"</div>":"")+
@@ -3324,9 +3587,24 @@ async function logSet(i){
   showEffortPrompt(i,ex);
   refreshDoneCard();
   const cb=document.getElementById('cb'+i); if(cb) cb.innerHTML="<div class='coachbubble'><div class='who'>◆ Coach <span class='typing'><i></i><i></i><i></i></span></div></div>";
-  const exObj={name:ex.name,cue:ex.cue,rec:ex.rec,target:DB.workout.sets,sets:todaySets(ex.name)};
+  /* v65.2 — target was DB.workout.sets, the GLOBAL number, so an exercise set
+     to 3 was judged against a default of 4 and the coach asked for a set that
+     didn't exist. It's the per-exercise count that matters. */
+  const done=todaySets(ex.name).length, target=exSets(ex);
+  const nextEx=DB.workout.main[i+1];
+  const exObj={name:ex.name, cue:ex.cue, rec:ex.rec, target, sets:todaySets(ex.name),
+               finished:done>=target, nextName:(nextEx&&nextEx.name)||null};
   const reply=await coachSetReply(exObj,{w,r});
-  const cb2=document.getElementById('cb'+i); if(cb2) cb2.innerHTML="<div class='coachbubble'><div class='who'>◆ Coach</div>"+reply+"</div>";
+  /* The mid-set reply never went through the directive parser, so anything the
+     coach emitted was printed at him raw AND never applied. Both halves of
+     that were wrong. */
+  let shown=reply, notes=[];
+  try{ const res=applyCoachDirectives(reply); shown=res.cleaned; notes=res.notes||[]; }catch(e){}
+  const cb2=document.getElementById('cb'+i);
+  if(cb2) cb2.innerHTML="<div class='coachbubble'><div class='who'>◆ Coach</div>"+
+    (shown||"")+
+    (notes.length? "<div class='cue' style='margin-top:8px;color:var(--gold)'>"+notes.join("<br>")+"</div>" : "")+
+    "</div>";
 }
 function saveSet(ex,set){
   if(!DB.strength[ex]) DB.strength[ex]=[];
@@ -3337,9 +3615,15 @@ function saveSet(ex,set){
 async function coachSetReply(ex,set){
   const setNo=ex.sets.length,target=ex.target;
   if(DB.ai.provider==="openai"&&DB.ai.key){
-    const sys=coachSystem()+"\nYou are mid-set in a LIVE workout. Reply like texting — 1-3 short punchy lines. Give: verdict, load call for next set, ONE technique cue, and rest time. No fluff.";
+    const sys=coachSystem()+"\nYou are mid-set in a LIVE workout. Reply like texting — 1-3 short punchy lines. No fluff."+
+      (ex.finished
+        ? "\nTHAT WAS HIS LAST SET OF THIS EXERCISE. Do NOT ask for another set and do NOT call a load for a next set — there isn't one. Give the verdict on the exercise as a whole, then point him at what's next."
+        : "\nHOLD THE WEIGHT. He works a weight for all "+(ex.target||4)+" sets before it ever goes up — same load every set. Do NOT suggest adding weight mid-exercise, and do NOT congratulate him into a jump. The ONLY reason to change it now is that it's genuinely too heavy: form broke down, or he ground out far short of the rep target. Otherwise the call is 'same again'.\nGive: a short verdict, 'same weight' (or a drop if it's too heavy), ONE technique cue, and the rest time.");
     const eff=sessionEffort(ex.sets), word=effortWord(eff);
-    const usr="Exercise: "+ex.name+". Just logged set "+setNo+"/"+target+": "+set.w+"kg × "+set.r+"."+
+    const usr="Exercise: "+ex.name+". Just logged set "+setNo+" of "+target+": "+set.w+"kg × "+set.r+"."+
+      (ex.finished? " THAT COMPLETES THIS EXERCISE ("+target+" of "+target+" sets done)."+
+                    (ex.nextName? " Next up is "+ex.nextName+"." : " That was the last exercise of the session.")
+                  : " "+(target-setNo)+" set"+((target-setNo)===1?"":"s")+" still to go.")+
       (word? " Sets so far have felt "+word+" (avg RPE ~"+effortRPE(eff)+")." : " He hasn't rated effort yet.")+
       " History start: "+(ex.rec?ex.rec.text:'n/a')+". Cue: "+ex.cue+".";
     const out=await callAI([{role:"system",content:sys},{role:"user",content:usr}],120);
@@ -3361,7 +3645,13 @@ async function submitCheckin(){
   const weight=parseFloat(val('ciWeight'));
   if(ciLocPick && ciLocPick!==locKey()) setLocation(ciLocPick);
   { const m=parseInt(val('ciTime')); if(!isNaN(m)) setTimeBudget(m,null); }
-  const ci={date:today(),weight:isNaN(weight)?null:weight,sleep:+val('ciSleep'),energy:+val('ciEnergy'),plan:planPick,pain:val('ciPain').trim(),loc:locKey()};
+  const num=id=>{ const n=parseFloat(val(id)); return isNaN(n)? null : n; };
+  const ci={date:today(),weight:isNaN(weight)?null:weight,sleep:+val('ciSleep'),energy:+val('ciEnergy'),plan:planPick,pain:val('ciPain').trim(),loc:locKey(),
+            kcal:num('ciKcal'), protein:num('ciProt'), carbs:num('ciCarb'), fat:num('ciFat')};
+  /* Weight moves, and the coach scales photo estimates and recovery maths off
+     it \u2014 so the latest check-in updates the profile rather than leaving a
+     figure from months ago in place. */
+  if(ci.weight) DB.profile.weightKg=ci.weight;
   DB.checkins=DB.checkins.filter(c=>c.date!==ci.date);
   DB.checkins.push(ci);
   if(ci.weight){ DB.weights.push(ci.weight); if(DB.weights.length>400) DB.weights=DB.weights.slice(-400); }
@@ -3394,6 +3684,344 @@ async function analyseCheckin(ci){
   return bits.join(" ");
 }
 
+/* ===== v68 · THE METHODOLOGY LAYER =====================================
+   "Study what other coaches do" can't be done literally — the coach has no
+   live access and nothing it read would persist. But that isn't what makes
+   elite coaches good. They apply a known body of methodology consistently and
+   adapt it to one person. That framework is what this app has been missing,
+   so it's encoded here as data the coach reads every time it speaks.
+
+   Volume landmarks below are the standard hypertrophy framework (minimum
+   effective volume / maximum adaptive volume / maximum recoverable volume)
+   used by essentially every evidence-based coach. Numbers are hard SETS per
+   muscle group per week. */
+/* v69 - retuned for the physique he actually showed me: lean, athletic,
+   visible abs, clearly trained but NOT a bodybuilder and not bulky.
+
+   That is a SHAPE AND LEANNESS target, not a size target, and the two want
+   different programmes. Max-hypertrophy volume - which is what the previous
+   landmarks pointed at - builds a thicker, blockier body than the one he
+   wants, and costs recovery he hasn't got spare while dieting.
+
+   So the ceilings come down deliberately: enough to build and hold the shape,
+   not so much that he grows into a frame he never asked for. */
+const VOL_LANDMARKS={
+  chest:     {mev:6,  mav:12, mrv:16},
+  back:      {mev:8,  mav:14, mrv:18},
+  shoulders: {mev:8,  mav:16, mrv:20},
+  arms:      {mev:4,  mav:10, mrv:14},
+  legs:      {mev:6,  mav:12, mrv:16},
+  core:      {mev:6,  mav:12, mrv:16}
+};
+/* ===== v69 · THE ACTUAL TARGET =========================================
+   He showed me the physique he's after: lean, athletic, visible abs, clear
+   shoulder-to-waist taper. Explicitly NOT a bodybuilder and not bulky.
+
+   That is a SHAPE problem, not a SIZE problem, and it changes the programming
+   completely. The volume landmarks below were pointed at maximum hypertrophy,
+   which over a year builds a heavier, thicker, blockier body than the one in
+   that photo. The look he wants comes from three things in this order:
+     1. body fat low enough for abs and separation (roughly 10-12%)
+     2. shoulder and upper-back width, so the waist looks small by comparison
+     3. moderate, even muscle everywhere else — enough to look trained,
+        not enough to lose the lines
+   Chasing maximum volume on everything actively works against 1 and 3. */
+/* The look is a set of RATIOS, not a set of measurements. */
+const PHYSIQUE_PRIORITY={
+  shoulders:"side delts. The whole look is shoulder-to-waist ratio and this is the only end of it he can grow. Highest priority and the one group worth pushing toward its ceiling.",
+  back:"lats for the taper, upper back for square posture. WIDTH over sheer thickness - he does not want a slab back.",
+  chest:"upper chest for the line under the collarbone. Moderate volume; heavy lower-chest mass reads blocky in clothes and is not the look.",
+  arms:"visible and hard, not big. Triceps over biceps for the line of the arm. This is the group most likely to be OVER-trained chasing a look that does not need it.",
+  legs:"strong and proportionate, enough to carry the frame and hold posture. Deliberately NOT a mass priority - heavy leg volume costs recovery he needs elsewhere and adds bulk he does not want.",
+  core:"visible abs come from leanness, not from thousands of sit-ups. Train it for bracing and control. AVOID heavy loaded side-bends and weighted oblique work - a thicker waist ruins the exact ratio he is after."
+};
+/* Training in a real deficit is a different job from training to grow.
+   The nutrition is his nutritionist's; what it does to RECOVERY is mine. */
+/* ===== v70 · THE PLAN HAS TWO PHASES, AND THEY WANT DIFFERENT TRAINING ==
+   Phase 1 (now): hold 1500 kcal, strip the fat, get to a flat stomach.
+   Training exists to KEEP every gram of muscle he has and add what the deficit
+   allows \u2014 the fat loss is the diet's job, not the workout's.
+   Phase 2 (later): calories come up and the same training framework goes to
+   work building. Same doctrine, different fuel.
+
+   The coach needs to know which phase it is programming for, because "should
+   I add volume here?" has opposite answers in each. */
+function renderPhaseCard(){
+  const b=document.getElementById('phaseBody'); if(!b) return;
+  const ph=trainingPhase();
+  const t=document.getElementById('phaseTag'); if(t) t.textContent="Phase "+ph+" of 2";
+  const a=intakeAvg(7), en=energyContext();
+  b.innerHTML=
+    "<div class='notebox mb'>"+
+      (ph===1
+        ? "<b>Phase 1 \u2014 strip the fat.</b> Hold the deficit until the stomach is flat. Training exists to keep every gram of muscle you have and add what it can on top. The diet does the fat loss; the workout never becomes cardio to chase calories."
+        : "<b>Phase 2 \u2014 build.</b> Calories are up and the same framework goes to work adding muscle. Volume climbs on the groups that build your shape; the waist is the thing to watch.")+
+    "</div>"+
+    (en? "<div class='hint mb'>Target "+en.kcal+" kcal against roughly "+en.maint+" maintenance at 187cm / "+((DB.profile&&DB.profile.weightKg)||"?")+"kg \u2014 about a "+en.pct+"% deficit.</div>" : "")+
+    (a? "<div class='hint mb'>Logged, last "+a.days+" day"+(a.days===1?"":"s")+": "+
+        (a.kcal!=null? a.kcal+" kcal":"kcal not logged")+
+        (a.protein!=null? " \u00b7 "+a.protein+"g protein":"")+
+        (a.carbs!=null? " \u00b7 "+a.carbs+"g carbs":"")+
+        (a.fat!=null? " \u00b7 "+a.fat+"g fat":"")+"</div>"
+      : "<div class='hint mb'>No daily intake logged yet \u2014 there are fields on the check-in. The coach uses them to decide how hard to push you, not to comment on your diet.</div>")+
+    "<button class='btn sec' onclick='setTrainingPhase("+(ph===1?2:1)+")'>"+
+      (ph===1? "Phase 1 is done \u2014 switch to building" : "Back to phase 1 \u2014 stripping fat")+"</button>"+
+    "<div class='hint mt'>The milestone is the mirror and the waist, not a bodyweight. Ask the coach if you're close.</div>";
+}
+function trainingPhase(){
+  const n=(DB.plan&&DB.plan.phase)|0;
+  return (n===2)? 2 : 1;
+}
+function setTrainingPhase(n){
+  DB.plan=DB.plan||{};
+  DB.plan.phase=(n===2)?2:1;
+  DB.plan.changed=today();
+  save();
+  try{ renderPhaseCard(); }catch(e){}
+  return DB.plan.phase;
+}
+/* What he's actually been eating, from the check-ins, over the last week. */
+function intakeAvg(days){
+  const cut=new Date(Date.now()-(days||7)*864e5).toISOString().slice(0,10);
+  const rows=(DB.checkins||[]).filter(c=>c.date>=cut && (c.kcal||c.protein));
+  if(!rows.length) return null;
+  const avg=k=>{ const v=rows.map(r=>r[k]).filter(x=>x!=null&&!isNaN(x));
+                 return v.length? Math.round(v.reduce((a,b)=>a+b,0)/v.length) : null; };
+  return {days:rows.length, kcal:avg('kcal'), protein:avg('protein'), carbs:avg('carbs'), fat:avg('fat')};
+}
+/* ===== v71 · CAN HIS FAT STORES ACTUALLY FUND THE BUILD? ===============
+   He is right about the mechanism: stored fat can fund muscle growth, which
+   is exactly why recomp works and why body fat level is the single biggest
+   predictor of who manages it. The question is one of RATE, not principle.
+
+   Fat cannot be liberated at any speed you like. The usable figure from the
+   literature is roughly 30 kcal per kg of FAT MASS per day \u2014 a man carrying
+   20kg of fat can draw on ~600 kcal/day from it, one carrying 8kg only ~240.
+   Push the deficit past that ceiling and the remainder comes from somewhere
+   else, and some of that somewhere else is muscle.
+
+   So this works out what his fat can plausibly supply and compares it with
+   the deficit he is actually running. It is the honest answer to "surely I
+   can build off my stored fat" \u2014 sometimes yes, sometimes the sums don't
+   reach, and he deserves the real number rather than encouragement. */
+function latestBodyFat(){
+  const ms=(DB.measures||[]).filter(m=>m.bf!=null).sort((a,b)=>(a.t||0)-(b.t||0));
+  if(ms.length) return {pct:ms[ms.length-1].bf, src:ms[ms.length-1].src==="ai"?"photo estimate":"logged"};
+  return null;
+}
+function fatFuelContext(){
+  const kg=(DB.profile&&DB.profile.weightKg)||null;
+  const en=energyContext();
+  if(!kg||!en) return null;
+  const bf=latestBodyFat();
+  if(!bf) return {unknown:true, deficit:en.gap};
+  const fatKg=Math.round(kg*(bf.pct/100)*10)/10;
+  const supply=Math.round(fatKg*30);           /* kcal/day his fat can realistically give up */
+  const gap=en.gap-supply;
+  return {
+    bfPct:bf.pct, src:bf.src, fatKg, supply, deficit:en.gap,
+    covered: gap<=0,
+    shortfall: Math.max(0,gap),
+    verdict: gap<=0
+      ? "his fat can cover the whole deficit \u2014 building while leaning out is genuinely on the table"
+      : "the deficit runs about "+gap+" kcal/day beyond what his fat can supply, so the rest is coming from elsewhere \u2014 expect to HOLD muscle rather than add it, and treat any gain as a bonus"
+  };
+}
+function energyContext(){
+  const kcal=(DB.nutrition&&DB.nutrition.calorieTarget)||null;
+  const kg=(DB.profile&&DB.profile.weightKg)||null;
+  const cm=(DB.profile&&DB.profile.height)||null;
+  if(!kcal||!kg||!cm) return null;
+  const bmr=10*kg+6.25*cm-5*45+5;
+  const maint=Math.round(bmr*1.5);
+  const gap=maint-kcal;
+  return {kcal,maint,gap,pct:Math.round((gap/maint)*100),steep:(gap/maint)>=0.25};
+}
+/* Sets per week that produce THAT physique — not the maximums that produce
+   the biggest possible one. */
+const PHYSIQUE_TARGET={ shoulders:16, back:15, chest:11, arms:10, legs:11, core:10 };
+function volumeStatus(days){
+  const v=weeklyVolume(days||7);
+  const out={};
+  Object.keys(VOL_LANDMARKS).forEach(g=>{
+    const L=VOL_LANDMARKS[g], n=v[g]||0;
+    const goal=PHYSIQUE_TARGET[g]||L.mav;
+    /* Judged against the target for HIS physique, not against the maximum a
+       bodybuilder would chase. Overshooting isn't a win here — it's building
+       a body he didn't ask for and spending recovery he needs elsewhere. */
+    out[g]={sets:n, goal, ...L,
+      state: n<L.mev? "BELOW MINIMUM \u2014 not growing"
+           : (n>L.mrv? "OVER MAX RECOVERABLE"
+           : (n>goal+4? "ABOVE what this physique needs"
+           : (n<goal-3? "under target" : "on target"))),
+      need: Math.max(0, Math.round(goal-n))};
+  });
+  return out;
+}
+function volumeDoctrineText(){
+  const st=volumeStatus(7);
+  return Object.keys(st).map(g=>{
+    const x=st[g];
+    return "  "+g+": "+x.sets+" sets \u2014 target "+x.goal+" for his physique (floor "+x.mev+", ceiling "+x.mrv+") \u2014 "+x.state+
+           (x.need>0? " \u2014 "+x.need+" short this week" : "");
+  }).join("\n");
+}
+/* ===== IS HE ACTUALLY RECOVERING? =====================================
+   A deload on the calendar is a guess. A deload triggered by his own numbers
+   going backwards is coaching. This reads performance, not the date. */
+function fatigueSignals(){
+  const out=[];
+  /* 1. lifts going backwards */
+  let down=0, checked=0;
+  Object.keys(DB.strength||{}).forEach(name=>{
+    const h=(DB.strength[name]||[]).filter(x=>x.date&&x.date!=='prev');
+    if(h.length<2) return;
+    const a=h[h.length-2], b=h[h.length-1];
+    const top=x=>Math.max(...(x.sets||[]).map(s=>s.w||0),0);
+    const vol=x=>(x.sets||[]).reduce((t,s)=>t+(s.w||0)*(s.r||0),0);
+    checked++;
+    if(top(b)<top(a) || vol(b)<vol(a)*0.9) down++;
+  });
+  if(checked>=3 && down/checked>=0.5) out.push(down+" of "+checked+" lifts went backwards last session");
+  /* 2. how it's felt */
+  const recent=[];
+  Object.values(DB.strength||{}).forEach(arr=>{
+    (arr||[]).slice(-2).forEach(sess=>{ const e=sessionEffort(sess.sets); if(e!=null) recent.push(e); });
+  });
+  if(recent.length>=4){
+    const avg=recent.reduce((a,b)=>a+b,0)/recent.length;
+    if(avg>3.0) out.push("recent sets averaging '"+effortWord(avg)+"' — effort is creeping up at the same loads");
+  }
+  /* 3. sleep and energy */
+  const ck=(DB.checkins||[]).slice(-4).filter(c=>c.sleep||c.energy);
+  if(ck.length>=3){
+    const s=ck.reduce((a,c)=>a+(+c.sleep||0),0)/ck.length;
+    const e=ck.reduce((a,c)=>a+(+c.energy||0),0)/ck.length;
+    if(s<=5) out.push("sleep averaging "+s.toFixed(1)+"/10 across recent check-ins");
+    if(e<=5) out.push("energy averaging "+e.toFixed(1)+"/10 across recent check-ins");
+  }
+  /* 4. volume above what he can recover from */
+  const st=volumeStatus(7);
+  Object.keys(st).forEach(g=>{ if(st[g].state==="OVER MAX RECOVERABLE")
+    out.push(g+" at "+st[g].sets+" sets, above the "+st[g].mrv+" he can recover from"); });
+  /* 5. how long since he last backed off */
+  const wk=weeksSinceDeload();
+  if(wk>=6) out.push(wk+" weeks since the last deload");
+  return {reasons:out, deloadCase: out.length>=2};
+}
+function weeksSinceDeload(){
+  const d=DB.lastDeload;
+  if(!d) return 0;
+  return Math.floor((Date.now()-new Date(d+"T12:00:00").getTime())/(7*864e5));
+}
+function markDeload(){ DB.lastDeload=today(); save(); }
+
+/* ===== THE DOCTRINE THE COACH WORKS FROM ============================== */
+function coachingDoctrine(){
+  const f=fatigueSignals();
+  const en=energyContext();
+  return "\n=== HOW YOU PROGRAM \u2014 THE METHODOLOGY, NOT VIBES ===\n"+
+"You are not a chatbot that suggests exercises. You are the coach responsible for this man's physique, and you work from a framework.\n\n"+
+"=== THE BODY HE IS ACTUALLY AFTER ===\n"+
+"187cm, "+((DB.profile&&DB.profile.weightKg)||"?")+"kg. He has shown you the target and it is specific: LEAN AND ATHLETIC. Visible abs, clear shoulder-to-waist taper, obviously trained, looks good in a t-shirt and better without one.\n"+
+"He has said plainly: NOT a bodybuilder, NOT bulky. Take that literally.\n"+
+"That is a SHAPE AND LEANNESS target, not a size target, and it changes everything:\n"+
+"  \u2022 The look is a RATIO. Shoulders and lats at one end, a tight waist at the other. Widening the top half is the whole job; thickening the middle undoes it.\n"+
+"  \u2022 More muscle is NOT automatically better. Volume beyond what the shape needs makes him blockier, not better, and costs recovery.\n"+
+"  \u2022 Do not chase mass on legs, lower chest or biceps. Strong and proportionate is the target there, and that is a lower ceiling than a hypertrophy programme would set.\n"+
+"  \u2022 The abs come from being lean, not from ab volume. Never load the obliques heavily \u2014 a thicker waist directly ruins the ratio.\n"+
+"  \u2022 At his height, 187cm, a little muscle goes a long way visually. He does not need much size to look like that photo; he needs the right distribution and low body fat.\n"+
+"If he ever asks for something that would make him bulkier than that target, say so before doing it.\n\n"+
+"=== THE PLAN HAS TWO PHASES. YOU ARE PROGRAMMING FOR PHASE "+trainingPhase()+" ===\n"+
+"PHASE 1 (now): hold the deficit and strip the fat until the stomach is flat. Training exists to KEEP every gram of muscle he has, and add whatever the deficit allows on top. The diet does the fat loss \u2014 the workout does not, and you never turn a session into cardio to chase calories.\n"+
+"PHASE 2 (after that): calories come up and the same framework goes to work BUILDING. Same doctrine, more fuel, higher volumes.\n"+
+"He is in phase "+trainingPhase()+". Program for that one and say which phase a decision belongs to when it matters.\n\n"+
+(trainingPhase()===1 ? (
+"PHASE 1 RULES:\n"+
+"  \u2022 HIS POSITION, IN HIS WORDS: he is happy to MAINTAIN muscle while the fat comes off, and hopes to build off his fat stores on top. That is the right expectation \u2014 maintenance is the floor, building is the upside. Program so the floor is guaranteed and the upside is possible.\n"+
+(function(){ const f=fatFuelContext(); if(!f) return "";
+  if(f.unknown) return "  \u2022 FAT AS FUEL: he is right in principle \u2014 stored fat can fund growth, which is why recomp works at all. Whether it can fund HIS deficit depends on how much fat he is carrying, and that is not logged yet. Ask him to log a body-fat estimate (Progress \u2192 Measurements) and you can give him a real answer instead of encouragement.\n";
+  return "  \u2022 FAT AS FUEL, WITH THE ACTUAL NUMBERS: at "+f.bfPct+"% body fat ("+f.src+") he carries about "+f.fatKg+"kg of fat, which can realistically give up around "+f.supply+" kcal a day. His deficit is about "+f.deficit+". "+f.verdict+".\n"+
+    (f.covered? "" : "    Tell him this plainly if it comes up. It is not a reason to train less \u2014 the training is what decides whether he keeps what he has \u2014 but he should not be surprised when the loads hold flat instead of climbing, and he should not read that as failure.\n"); })()+
+"  \u2022 PROTECT MUSCLE FIRST. Heavy loads, full range, working sets that mean something. Muscle is lost when the stimulus disappears, not when calories are low.\n"+
+"  \u2022 KEEP ENOUGH VOLUME TO GROW where he can. Sit between the minimum and the target figure. Do NOT scrape down to the minimum \u2014 that is how people finish a cut smaller and softer.\n"+
+"  \u2022 NEVER TRADE LOAD FOR SWEAT. Higher reps with lighter weight to 'burn more' is the single worst thing you could do to him right now.\n"+
+"  \u2022 CUT JUNK BEFORE WORK. If recovery is short, remove filler exercises \u2014 not working sets on the movements that hold his shape.\n"+
+"  \u2022 THE STOMACH IS THE MILESTONE, not a bodyweight. Waist measurement and photos decide when phase 1 is done, and you should tell him when you think he is close.\n"+
+"  \u2022 EXPECT FLAT WEEKS. Holding the same loads while the waist drops IS the win \u2014 name it as one, because on the scale it looks like nothing is happening.\n"
+) : (
+"PHASE 2 RULES:\n"+
+"  \u2022 The brake is off. Push volume toward the target and ceiling figures on the groups that build his shape.\n"+
+"  \u2022 Progressive overload is now the main event \u2014 expect the loads to move most weeks and chase that.\n"+
+"  \u2022 He still does not want bulky. Bias to shoulders, back and upper chest; hold legs and arms at proportionate rather than maximal.\n"+
+"  \u2022 Watch the waist. If it starts thickening, that is the signal the surplus is too large \u2014 flag it once and let his nutritionist handle it.\n"
+))+"\n"+
+(en? ("=== WHAT HE IS ACTUALLY RUNNING ON ===\n"+
+"Target "+en.kcal+" kcal against roughly "+en.maint+" maintenance for 187cm / "+((DB.profile&&DB.profile.weightKg)||"?")+"kg \u2014 about a "+en.pct+"% deficit"+(en.steep?", a steep one":"")+".\n"+
+(function(){ const a=intakeAvg(7);
+  return a? ("LOGGED INTAKE, last "+a.days+" day"+(a.days===1?"":"s")+": "+(a.kcal!=null?a.kcal+" kcal":"kcal not logged")+
+    (a.protein!=null? ", "+a.protein+"g protein ("+(Math.round((a.protein/((DB.profile&&DB.profile.weightKg)||83.7))*10)/10)+"g per kg)":"")+
+    (a.carbs!=null? ", "+a.carbs+"g carbs":"")+(a.fat!=null? ", "+a.fat+"g fat":"")+"\n"+
+    "Use this to decide HOW HARD TO PUSH, not to comment on his diet. A run of very low-carb days is a reason to keep session volume sensible, not a reason to lecture.\n")
+  : "He has not logged daily intake yet \u2014 there is a place for it on the check-in if he wants the coach reading it.\n"; })()+
+"His nutritionist owns the diet and you do NOT advise on it. The ONE exception: if lifts fall away sharply for two weeks, or sleep and energy stay low, or protein looks persistently low for his bodyweight, say once that it is worth raising with his nutritionist \u2014 then stop.\n"+
+"JUDGE PROGRESS BY: the mirror, the photos, the waist, and the loads on the bar. Not bodyweight.\n\n") : "")+
+"WEEKLY VOLUME \u2014 hard sets per muscle group. Ceilings are set for a LEAN ATHLETIC build rather than maximum mass. Aim for the TARGET figure on the groups that build his shape; the minimum is a floor to stay above, not a place to sit:\n"+
+volumeDoctrineText()+"\n"+
+"Below the minimum means that muscle is not being maintained, let alone built \u2014 fix that before adding anything anywhere else. Above the ceiling is not dedication, it is fatigue he cannot recover from and size he does not want; cut it back.\n\n"+
+"WHAT BUILDS THE SHAPE HE WANTS \u2014 bias volume toward these, do not spread it evenly:\n"+
+Object.keys(PHYSIQUE_PRIORITY).map(g=>"  "+g+": "+PHYSIQUE_PRIORITY[g]).join("\n")+"\n\n"+
+"EXERCISE SELECTION, in the order that matters:\n"+
+"  1. Does it train the target muscle in a LENGTHENED position under load? That is where most of the growth stimulus lives. Prefer stretched-position work over peak-contraction work when choosing between two options.\n"+
+"  2. Can he add load to it over weeks? If not it is a finisher, not a driver.\n"+
+"  3. Is it stable enough that the limiting factor is the muscle, not his balance?\n"+
+"  4. Does it respect the wrist? Neutral grip and landmine/dumbbell variants over straight-wrist barbell pressing.\n\n"+
+"REP RANGES \u2014 by what he's trying to cause, not by habit:\n"+
+"  3-6   heavy compounds, strength and tendon/connective work. Long rests.\n"+
+"  6-12  the bulk of hypertrophy work.\n"+
+"  12-20 isolation, joint-friendly work, and anything the wrist dislikes loaded heavy.\n"+
+"  20+   metabolite work and finishers only.\n\n"+
+"EFFORT: most working sets 1-3 reps in reserve. Taking every set to failure buys very little extra growth and costs a great deal of recovery \u2014 reserve true failure for the last set of an isolation exercise.\n\n"+
+"HIS TWO GOALS ARE ONE PROGRAMME, NOT TWO: he wants the physique AND genuine range of motion. Loaded stretch work is where those meet \u2014 deep ROM on every rep, full lengthening under load, and mobility that earns its place in the session rather than being a cooldown afterthought. If a session is short on mobility, that is a programming failure, not a missing extra.\n\n"+
+"FATIGUE AND DELOADS \u2014 read the numbers, not the calendar:\n"+
+(f.reasons.length? ("  CURRENT SIGNALS: "+f.reasons.join("; ")+"\n"+
+  (f.deloadCase? "  Two or more signals are showing. Make the case for a deload week \u2014 same movements, roughly half the sets, 60-70% of the loads \u2014 and use [[DELOAD_WORKOUT: -30%]] if he agrees. Do not wait for him to raise it.\n" : "  One signal only. Watch it, mention it if it persists, do not overreact.\n"))
+ : "  No fatigue signals right now \u2014 he is recovering from what he is doing. Keep pushing.\n")+
+"\n"+
+"WHAT SEPARATES A GOOD COACH FROM AN EXERCISE LIST:\n"+
+"  \u2022 You notice things he hasn't mentioned. A lift stalling three sessions running, a muscle group quietly under-trained for a fortnight, sleep dropping while loads climb \u2014 say so, unprompted.\n"+
+"  \u2022 You explain WHY in one line. Not a lecture, but never a bare instruction either.\n"+
+"  \u2022 You hold the long view. One session matters far less than the trend; do not chase a bad day with a harder session.\n"+
+"  \u2022 You tell him when to do less. Anyone can add volume. Knowing when to take it away is the actual skill.\n"+
+"  \u2022 You are specific. 'Great work' is worth nothing; '10 clean reps at 45 when it was 8 a fortnight ago' is worth something.\n";
+}
+/* The weekly review a real coach does and an app never does. */
+async function weeklyReview(){
+  const out=document.getElementById('reviewOut'); if(!out) return;
+  if(DB.ai.provider!=="openai"||!DB.ai.key){ out.innerHTML="<div class='hint mt'>This needs a live OpenAI key.</div>"; return; }
+  out.innerHTML="<div class='card mt center muted'><span class='spin'></span> Reviewing your week…</div>";
+  const st=volumeStatus(7), f=fatigueSignals();
+  const lifts=Object.keys(DB.strength||{}).map(n=>{
+    const h=(DB.strength[n]||[]).filter(x=>x.date&&x.date!=='prev').slice(-3);
+    if(!h.length) return null;
+    return n+": "+h.map(s=>s.date.slice(5)+" "+(s.sets||[]).map(x=>x.w+"×"+x.r).join("/")).join(" | ");
+  }).filter(Boolean).join("\n");
+  const usr="Review my training week as my coach.\n\nVOLUME (hard sets, 7 days):\n"+volumeDoctrineText()+
+    "\n\nFATIGUE SIGNALS: "+(f.reasons.join("; ")||"none")+
+    "\n\nRECENT SESSIONS PER LIFT:\n"+(lifts||"(nothing logged)")+
+    "\n\nGive me: what actually went well (be specific, use the numbers), the single biggest problem with the week, "+
+    "what you're changing for next week and why, and whether I need a deload. Be direct. No cheerleading. "+
+    "If you're changing the programme, emit the directives to do it.";
+  try{
+    const reply=await callAI([{role:"system",content:coachSystem()},{role:"user",content:usr}],700);
+    let shown=reply, notes=[];
+    try{ const r=applyCoachDirectives(reply); shown=r.cleaned; notes=r.notes||[]; }catch(e){}
+    out.innerHTML="<div class='card mt'><div class='card-title'><span>Week in review · "+ukDate()+"</span></div>"+
+      "<div class='coachnote'><div class='who'>◆ Coach</div>"+fmt(shown||"")+
+      (notes.length? "<div class='cue' style='margin-top:10px;color:var(--gold)'>"+notes.join("<br>")+"</div>":"")+
+      "</div></div>";
+  }catch(e){ out.innerHTML="<div class='hint mt'>Couldn't reach the coach.</div>"; }
+}
 function coachSystem(){
   const p=DB.profile;
   const recentCk=DB.checkins.slice(-5).map(c=>"  "+c.date+": wt "+(c.weight||'—')+"kg, sleep "+c.sleep+", energy "+c.energy+", pain "+(c.pain||'none')).join("\n")||"  (none yet)";
@@ -3414,11 +4042,33 @@ function coachSystem(){
 "[[SET_DAY: Legs & Core]] · [[SET_WORKOUT: Bench Press, Barbell Row, Plank]] · [[ADD_EX: Lateral Raise]] · [[REMOVE_EX: Walking Lunge]] · [[SWAP_EX: Bench Press -> Incline DB Press]] · [[SET_SETS: 4]]\n"+
 "[[MOVE_EX: Bench Press -> 1]] moves one exercise to that position (1 = first). [[REORDER: Bench Press, Barbell Row, Plank]] sets the whole order at once — it only reorders what is already in the session, it never adds or removes.\n"+
 "If he asks to do something first, earlier, later or last, that is MOVE_EX \u2014 not SET_WORKOUT, which would rebuild the session and lose his logged sets.\n\n"+
+coachingDoctrine()+
+"\n=== YOU DECIDE THE STRUCTURE \u2014 FROM HIS ANATOMY, NOT FROM A RULE ===\n"+
+"LAST 14 DAYS for trend: "+volumeSummary(14).text+"\n\n"+
+"Straight sets are the DEFAULT and most sessions should be exactly that. Do not superset by habit and never because the clock is tight alone \u2014 that is scheduling, not coaching.\n"+
+"Reach for a superset or circuit when the ANATOMY calls for it:\n"+
+"\u2022 A muscle group is behind for the week and there isn\u2019t room to add it as straight sets \u2014 pair it in against something that doesn\u2019t compete with it.\n"+
+"\u2022 A small muscle he keeps under-training (rear delts, calves, core, forearms) can be paired with a big movement at no real cost.\n"+
+"\u2022 A genuine conditioning finisher, or a travel session with almost no kit \u2014 a circuit of 3-4.\n"+
+"He wants the physique described in his goal. Think about which muscles BUILD that shape and whether the week is actually delivering them, then program accordingly. Use every tool \u2014 straight sets, supersets, circuits, drop sets, holds \u2014 and choose which one this session needs. He should never have to ask for a technique; that is your job.\n"+
+"[[SUPERSET: Lateral Raise + Triceps Pushdown]] \u00b7 [[CIRCUIT: Goblet Squat, Push-up, Plank]] \u00b7 [[BREAK_GROUP: Lateral Raise]]\n"+
+"RULES YOU DO NOT BREAK: never superset two heavy compounds \u2014 the main lift is always straight sets. Never pair two movements on the same muscle, that is not a rest. Never pair two that both load the wrist (his TFCC). ALWAYS say in one short line WHICH muscle group you\u2019re catching up and why \u2014 he wants the reasoning, not just the pairing.\n"+
+"The app handles the timing: no rest inside a superset or circuit, full rest once the round is done.\n\n"+
+"=== LOADS HE CAN ACTUALLY MAKE ===\n"+
+"His kit: "+JSON.stringify(kitInfo())+". Never recommend a jump his equipment cannot produce \u2014 a \"+1kg\" call on dumbbells is useless to him. If the next available weight is a big relative leap, KEEP THE WEIGHT AND ADD REPS instead, and say that\u2019s why. The app computes this and prints it as \"Load:\" \u2014 state that number.\n\n"
+"=== HOW HE PROGRESSES \u2014 THIS OVERRIDES YOUR INSTINCTS ===\n"+
+"He works a weight until he OWNS it, then moves up. Concretely:\n"+
+"1. The load does NOT change between sets of the same exercise. Four sets at the same weight, then done. Never talk him up mid-exercise.\n"+
+"2. It goes up between SESSIONS, and only when he completed every set at that weight with the reps holding up and it felt about right or easier. \"About right\" is the weight to REPEAT, not to jump from.\n"+
+"3. If it felt hard, or the reps fell away, or he didn\u2019t finish the sets \u2014 same weight next time. Say so plainly; that is a good session, not a failure.\n"+
+"4. Adding weight because a single set looked good is exactly the ego lifting he asked you to prevent.\n"+
+"The app already computes the correct call and shows it as \"Load:\" on the exercise. STATE THAT NUMBER. Do not invent a different one.\n\n"+
 "PER-EXERCISE PRESCRIPTION (use these, NOT SET_WORKOUT, when he changes one lift):\n"+
 "[[SET_EX_SETS: Bench Press | 4]] · [[SET_EX_REPS: Bench Press | 6-8]] · [[SET_EX_REST: Bench Press | 3 min]] · [[SET_EX_LOAD: Bench Press | 60kg]] · [[SET_EX_TEMPO: Bench Press | 3-1-1]] · [[SET_EX_TIMED: Plank | 45s]] · [[SUPERSET: Curl + Pushdown]]\n"+
 "SET_SETS changes EVERY exercise. For one lift always use SET_EX_SETS. \"4 sets of 6 with 3 minutes rest\" is three directives, not a rebuild.\n\n"+
 "LOAD CAN GO DOWN TOO: [[DELOAD: Bench Press | -10%]] or [[DECREASE_LOAD_NEXT_TIME: Squat | -5kg]] \u2014 use these when he is beaten up, in pain, or coming back from a layoff. Do not only ever add weight.\n\n"+
 "HIS PROGRAMME, GOALS AND LIMITS:\n"+
+"[[SET_TRAINING_PHASE: 2]] moves him from stripping fat to building — ONLY when he says phase 1 is done, or when you made the case and he agreed.\n"+
 "[[SET_GOAL: ...]] · [[SET_PHASE: Strength block]] · [[SET_INJURY: left shoulder — no overhead pressing]] · [[CLEAR_INJURY]] · [[SET_TIME_BUDGET: 30 min]]\n"+
 "SET_INJURY and SET_TIME_BUDGET rebuild today's session around the new constraint automatically. If he mentions pain or being short of time, USE THEM rather than just sympathising.\n\n"+
 "BODY DATA:\n"+
@@ -4010,16 +4660,11 @@ function coachSetExTimed(name,dur){
   coachAfterEx(); return {name:e.name,sec};
 }
 function coachSuperset(a,b){
-  const x=coachEx(a), y=coachEx(b);
-  if(!x||!y||x===y) return null;
-  const tag="Superset with "+y.name;
-  x.superset=y.name; y.supersetOf=x.name;
-  x.rest="0s"; x.restSec=0;
-  x.cue=(x.cue||"")+" Straight into "+y.name+", no rest between.";
-  /* Put them next to each other or the pairing is meaningless on the sheet. */
-  const m=DB.workout.main, i=m.indexOf(x), j=m.indexOf(y);
-  if(j!==i+1){ m.splice(j,1); m.splice(m.indexOf(x)+1,0,y); }
-  coachAfterEx(); return {a:x.name,b:y.name,tag};
+  /* Routed through the same grouping the builder uses, so a superset he asks
+     for behaves identically to one the coach programmed. */
+  const r=coachMakeCircuit([a,b].join(","));
+  if(!r) return null;
+  return {a:r.names[0], b:r.names[1], tag:"Superset"};
 }
 /* ---- load can go DOWN, not only up ---- */
 function coachDecreaseLoad(a){
@@ -4175,7 +4820,8 @@ function coachAdjustSets(a,scope){
   const base=(sess&&sess.sets.length)? sess.sets[sess.sets.length-1].w
             : (e.rec&&parseFloat(e.rec.w))||null;
   const d=parseDelta(P[1],base);
-  if(d===null||base===null) return null;
+  if(base===null) return {noBase:true, name:e.name};
+  if(d===null) return null;
   const target=Math.max(0,Math.round((base+d)*2)/2);
   e.rec={w:target, text:target+"kg"+(scope==="next"?" for the next set.":" for the rest of these sets.")};
   e.adjNote=(d>0?"+":"")+d+"kg "+(scope==="next"?"next set":"on remaining sets");
@@ -4287,6 +4933,8 @@ function coachSetKitLimit(a){
   String(a).split("|").forEach(seg=>{
     let m=seg.match(/dumbbell[s]?\s*(?:max)?\s*([\d.]+)/i);
     if(m){ DB.rules.kit.dbMax=parseFloat(m[1]); hit++; return; }
+    m=seg.match(/dumbbell[s]?\s*(?:step|increment|jump)s?\s*(?:of)?\s*([\d.]+)/i);
+    if(m){ DB.rules.kit.dbStep=parseFloat(m[1]); hit++; return; }
     m=seg.match(/bar\s*(?:weighs?)?\s*([\d.]+)/i);
     if(m){ DB.rules.kit.bar=parseFloat(m[1]); hit++; return; }
     m=seg.match(/plates?\s*[:=]?\s*([\d.,\s]+)/i);
@@ -4325,6 +4973,7 @@ function coachDeloadWorkout(a){
     try{ e.scheme=schemeFor(e.name,e.sets); }catch(err){}
   });
   DB.workout.deload=true;
+  markDeload();
   save(); try{ renderWorkoutSheet(DB.workout); }catch(e){}
   return Math.round((1-f)*100);
 }
@@ -4360,6 +5009,129 @@ function coachUndoLast(){
   undoChange(id);
   return label;
 }
+/* ===== v67 · SUPERSETS AND CIRCUITS, PROGRAMMED NOT JUST PERMITTED ======
+   A superset was only ever something Amir could ASK for, and even then the
+   app didn't know what to do with it: it still ran a full rest after the
+   first exercise, which is the one thing a superset is defined by not doing.
+
+   Grouping is now real structure. Two exercises sharing a group id are a
+   superset; three or more are a circuit. The rest logic reads the group, so
+   you go straight into the partner and only rest once the round is done —
+   which is what makes it a superset rather than two exercises in a row.
+
+   Pairing rules are the ones a decent coach uses, not "any two adjacent":
+     - never pair two heavy compounds; the main lift is always straight sets
+     - pair muscles that don't compete — push with pull, upper with lower
+     - never pair two movements that both load the wrist (his TFCC) */
+function grpNoteHTML(e){
+  if(!e||!e.grp) return "";
+  const {idx,size,members}=grpPosition(e);
+  if(idx<0||size<2) return "";
+  const others=members.filter(x=>x!==e).map(x=>x.name);
+  const last=idx===size-1;
+  return "<div class='cue' style='color:var(--gold)'><b>\u26a1 "+escapeHtml(grpLabel(e.grp))+"</b> with "+
+    escapeHtml(others.join(" + "))+" \u2014 "+
+    (last? "finish the round, then take the full rest." : "no rest, straight into "+escapeHtml(members[idx+1].name)+".")+
+    "</div>";
+}
+function grpMembers(g){
+  if(!g||!DB.workout||!DB.workout.main) return [];
+  return DB.workout.main.filter(e=>e.grp===g);
+}
+function grpLabel(g){
+  const n=grpMembers(g).length;
+  return n>=3? "Circuit" : "Superset";
+}
+function grpPosition(e){
+  const m=grpMembers(e.grp);
+  return {idx:m.indexOf(e), size:m.length, members:m};
+}
+/* The next exercise in the round that still has sets outstanding. */
+function grpNextUp(e){
+  const {idx,members}=grpPosition(e);
+  if(idx<0) return null;
+  for(let k=1;k<=members.length;k++){
+    const c=members[(idx+k)%members.length];
+    if(todaySets(c.name).length < exSets(c)) return c;
+  }
+  return null;
+}
+const COMPOUND=/squat|deadlift|bench press|overhead press|military|row$|barbell row|pull-?up|chin-?up|dip|clean|snatch|hip thrust|leg press/i;
+function isCompound(name){ return COMPOUND.test(String(name||"")); }
+const WRISTY=/press|push-?up|dip|plank|front rack|clean/i;
+function pairable(a,b){
+  if(isCompound(a.name)||isCompound(b.name)) return false;
+  const ma=(a.muscles||[])[0], mb=(b.muscles||[])[0];
+  if(!ma||!mb) return false;
+  if(ma===mb) return false;                       /* same muscle = not a rest */
+  if(WRISTY.test(a.name)&&WRISTY.test(b.name)) return false;   /* TFCC */
+  if(a.timed&&b.timed) return false;
+  return true;
+}
+let _grpSeq=1;
+function newGrpId(){ return "g"+(_grpSeq++)+"_"+Math.random().toString(36).slice(2,5); }
+/* v67.1 — the builder no longer pairs anything on its own.
+   It used to superset the tail of the session whenever the clock was under 40
+   minutes, plus a random roll otherwise. That produced supersets constantly
+   and for no reason a coach would recognise. Structure is a judgement about
+   HIS BODY — which muscles are behind, what the week has actually covered —
+   and that judgement belongs to the coach, which can see all of it. The
+   pairing RULES below stay, as a guard on what the coach is allowed to pair. */
+
+/* ===== WHAT HIS WEEK HAS ACTUALLY COVERED ==============================
+   Hard numbers, so the coach isn't guessing at what's been neglected. Sets
+   are counted per muscle group from what he logged, not from what was
+   programmed — a session written and skipped trained nothing. */
+function weeklyVolume(days){
+  const span=days||7;
+  const cut=new Date(Date.now()-span*864e5).toISOString().slice(0,10);
+  const vol={chest:0,back:0,shoulders:0,arms:0,legs:0,core:0};
+  Object.keys(DB.strength||{}).forEach(name=>{
+    const groups=((EX(name)||guessEx(name)||{}).m)||[];
+    (DB.strength[name]||[]).forEach(sess=>{
+      if(!sess.date||sess.date==='prev'||sess.date<cut) return;
+      const n=(sess.sets||[]).length;
+      if(!n) return;
+      /* Direct work counts full for the first group, half for secondary —
+         a row trains back AND biceps, but not equally. */
+      groups.forEach((g,i)=>{ if(vol[g]!=null) vol[g]+= i===0? n : n/2; });
+    });
+  });
+  Object.keys(vol).forEach(k=>vol[k]=Math.round(vol[k]*10)/10);
+  return vol;
+}
+function volumeSummary(days){
+  const v=weeklyVolume(days||7);
+  const entries=Object.entries(v).sort((a,b)=>a[1]-b[1]);
+  const lagging=entries.filter(e=>e[1]<8).map(e=>e[0]);
+  return {
+    line:entries.map(e=>e[0]+" "+e[1]).join(", "),
+    lagging,
+    text:entries.map(e=>e[0]+" "+e[1]+" sets").join(" · ")
+  };
+}
+function coachMakeCircuit(a){
+  const names=String(a).split(/\s*,\s*/).map(x=>x.trim()).filter(Boolean);
+  if(names.length<2) return null;
+  const got=names.map(n=>coachEx(n)).filter(Boolean);
+  if(got.length<2) return null;
+  const g=newGrpId();
+  got.forEach(e=>{ e.grp=g; delete e.superset; delete e.supersetOf; });
+  /* Move them together, in the order he named them. */
+  const m=DB.workout.main;
+  got.forEach(e=>{ const i=m.indexOf(e); if(i>=0) m.splice(i,1); });
+  const at=m.length? Math.min(...got.map(()=>m.length)) : 0;
+  got.forEach((e,k)=>m.splice(at+k,0,e));
+  save(); try{ renderWorkoutSheet(DB.workout); }catch(e){}
+  return {n:got.length, label:got.length>=3?"circuit":"superset", names:got.map(e=>e.name)};
+}
+function coachBreakGroup(a){
+  const e=coachEx(a); if(!e||!e.grp) return null;
+  const g=e.grp, members=grpMembers(g);
+  members.forEach(x=>{ delete x.grp; });
+  save(); try{ renderWorkoutSheet(DB.workout); }catch(err){}
+  return members.map(x=>x.name);
+}
 function applyCoachDirectives(reply){
   try{ return applyCoachDirectivesInner(reply); }
   catch(e){ console.warn("directives",e);
@@ -4382,13 +5154,15 @@ function applyCoachDirectivesInner(reply){
   out=out.replace(/\[\[\s*EDIT_SET\s*:\s*([^\]]+)\]\]/ig,(m,a)=>{ const r=coachEditSet(a); if(r) notes.push("\u270f\ufe0f "+r.name+" set "+r.no+" \u2192 "+r.w+"kg \u00d7 "+r.r); else notes.push("\u26a0\ufe0f Couldn't edit that set \u2014 nothing logged for it today"); return ""; });
   out=out.replace(/\[\[\s*DELETE_SET\s*:\s*([^\]]+)\]\]/ig,(m,a)=>{ const r=coachDeleteSet(a); if(r) notes.push("\ud83d\uddd1 Deleted "+r.name+" set "+r.no); else notes.push("\u26a0\ufe0f Couldn't delete that set \u2014 nothing logged for it today"); return ""; });
   out=out.replace(/\[\[\s*REPEAT_SET\s*:\s*([^\]]+)\]\]/ig,(m,a)=>{ const r=coachRepeatSet(a); if(r) notes.push("\u21ba Repeated "+r.name+" \u00b7 "+r.w+"kg \u00d7 "+r.r); return ""; });
-  out=out.replace(/\[\[\s*ADJUST_NEXT_SET\s*:\s*([^\]]+)\]\]/ig,(m,a)=>{ const r=coachAdjustSets(a,"next"); if(r) notes.push("\u2195 "+r.name+" next set \u2192 "+r.target+"kg"); return ""; });
-  out=out.replace(/\[\[\s*ADJUST_REMAINING\s*:\s*([^\]]+)\]\]/ig,(m,a)=>{ const r=coachAdjustSets(a,"rest"); if(r) notes.push("\u2195 "+r.name+" remaining sets \u2192 "+r.target+"kg"); return ""; });
+  out=out.replace(/\[\[\s*ADJUST_NEXT_SET\s*:\s*([^\]]+)\]\]/ig,(m,a)=>{ const r=coachAdjustSets(a,"next"); if(r&&r.noBase) notes.push("\u26a0\ufe0f No weight logged for "+r.name+" yet \u2014 log a set first and I can adjust from it"); else if(r) notes.push("\u2195 "+r.name+" next set \u2192 "+r.target+"kg"); else notes.push("\u26a0\ufe0f Couldn't adjust that \u2014 no such exercise in today's session"); return ""; });
+  out=out.replace(/\[\[\s*ADJUST_REMAINING\s*:\s*([^\]]+)\]\]/ig,(m,a)=>{ const r=coachAdjustSets(a,"rest"); if(r&&r.noBase) notes.push("\u26a0\ufe0f No weight logged for "+r.name+" yet \u2014 log a set first and I can adjust from it"); else if(r) notes.push("\u2195 "+r.name+" remaining sets \u2192 "+r.target+"kg"); else notes.push("\u26a0\ufe0f Couldn't adjust that \u2014 no such exercise in today's session"); return ""; });
   out=out.replace(/\[\[\s*SKIP_REMAINING\s*:\s*([^\]]+)\]\]/ig,(m,a)=>{ const r=coachSkipRemaining(a); if(r) notes.push("\u23ed "+r.name+" stopped at "+r.done+" set"+(r.done===1?"":"s")); return ""; });
   out=out.replace(/\[\[\s*SKIP_EX\s*:\s*([^\]]+)\]\]/ig,(m,a)=>{ const r=coachSkipEx(a); if(r) notes.push("\u23ed Skipped "+r); return ""; });
   out=out.replace(/\[\[\s*END_SESSION\s*(?::\s*([^\]]*))?\]\]/ig,(m,a)=>{ const r=coachEndSession(a); notes.push("\ud83d\uded1 Session ended"+(a?" \u00b7 "+String(a).trim():"")); return ""; });
   out=out.replace(/\[\[\s*SET_EX_TECHNIQUE\s*:\s*([^\]]+)\]\]/ig,(m,a)=>{ const r=coachSetTechnique(a); if(r) notes.push("\ud83d\udd25 "+r.name+" \u00b7 "+r.t); else notes.push("\u26a0\ufe0f Couldn't set that \u2014 no such exercise in today's session"); return ""; });
   out=out.replace(/\[\[\s*CLEAR_TECHNIQUES\s*\]\]/ig,()=>{ const n=coachClearTechniques(); notes.push("\ud83e\uddf9 Cleared "+n+" intensity technique"+(n===1?"":"s")); return ""; });
+  out=out.replace(/\[\[\s*CIRCUIT\s*:\s*([^\]]+)\]\]/ig,(m,a)=>{ const r=coachMakeCircuit(a); if(r) notes.push("\u26a1 "+r.label.charAt(0).toUpperCase()+r.label.slice(1)+" \u00b7 "+r.names.join(" + ")); else notes.push("\u26a0\ufe0f Couldn't group those \u2014 check the names are in today's session"); return ""; });
+  out=out.replace(/\[\[\s*BREAK_GROUP\s*:\s*([^\]]+)\]\]/ig,(m,a)=>{ const r=coachBreakGroup(a); if(r) notes.push("\u2702 Split back into straight sets \u00b7 "+r.join(", ")); return ""; });
   out=out.replace(/\[\[\s*REMOVE_SUPERSET\s*:\s*([^\]]+)\]\]/ig,(m,a)=>{ const r=coachRemoveSuperset(a); if(r) notes.push("\u2702 Superset removed \u00b7 "+r.name); return ""; });
   out=out.replace(/\[\[\s*NEVER_AGAIN\s*:\s*([^\]]+)\]\]/ig,(m,a)=>{ const r=coachNeverAgain(a); if(r) notes.push("\ud83d\udeab "+r+" \u2014 never programmed again"); return ""; });
   out=out.replace(/\[\[\s*ALLOW_AGAIN\s*:\s*([^\]]+)\]\]/ig,(m,a)=>{ const r=coachAllowAgain(a); if(r) notes.push("\u2705 "+r+" allowed again"); return ""; });
@@ -4410,6 +5184,7 @@ function applyCoachDirectivesInner(reply){
   out=out.replace(/\[\[\s*SUPERSET\s*:\s*([^|\]+]+?)\s*(?:\+|\||with)\s*([^\]]+)\]\]/ig,(m,a,b)=>{ const r=coachSuperset(a,b); if(r) notes.push("\u26a1 Superset \u00b7 "+r.a+" + "+r.b); return ""; });
   out=out.replace(/\[\[\s*(?:DECREASE_LOAD_NEXT_TIME|DELOAD)\s*:\s*([^\]]+)\]\]/ig,(m,a)=>{ const r=coachDecreaseLoad(a); if(r) notes.push("\u2b07 "+r.n+" "+r.d+" next time"); return ""; });
   out=out.replace(/\[\[\s*SET_GOAL\s*:\s*([^\]]+)\]\]/ig,(m,a)=>{ const r=coachSetGoal(a); if(r) notes.push("\ud83c\udfaf Goal updated"); return ""; });
+  out=out.replace(/\[\[\s*SET_TRAINING_PHASE\s*:\s*(\d)\s*\]\]/ig,(m,a)=>{ const r=setTrainingPhase(+a); notes.push("\ud83d\udcc8 Now programming for phase "+r); return ""; });
   out=out.replace(/\[\[\s*SET_PHASE\s*:\s*([^\]]+)\]\]/ig,(m,a)=>{ const r=coachSetPhase(a); if(r) notes.push("\ud83d\udcc8 Phase \u2192 "+r); return ""; });
   out=out.replace(/\[\[\s*SET_INJURY\s*:\s*([^\]]+)\]\]/ig,(m,a)=>{ const r=coachSetInjury(a); if(r) notes.push("\ud83e\ude79 Injury noted \u2014 today's session rebuilt around it"); return ""; });
   out=out.replace(/\[\[\s*CLEAR_INJURY\s*\]\]/ig,()=>{ coachClearInjury(); notes.push("\u2705 Injury cleared \u2014 back to full programming"); return ""; });
@@ -5473,7 +6248,7 @@ function scheduleInApp(){
    v18 ADDITIONS — draggable rest timer · weekly training memory · AI planner
    · Firestore sync
    ========================================================================== */
-const APP_VERSION="v65 · 06/08/2026";
+const APP_VERSION="v71 · 06/08/2026";
 
 /* ===== 1. REST TIMER — drag it anywhere so it never blocks the chat box ===== */
 let _rtDrag=null;
@@ -8658,6 +9433,7 @@ function boot(){
   renderMetrics(); renderItin(); renderStrengthPBs(); renderRowing(); renderRowingLog(); renderPhotos(); renderIntegrations(); updateStreak(); renderNutrition();
   try{ renderMeasures(); }catch(e){}
   try{ renderGifStatus(); }catch(e){}
+  try{ renderRestPrefs(); }catch(e){}
   try{ renderTrainDayPick(); }catch(e){}
   if(typeof scheduleInApp==="function") scheduleInApp();
   const split=pickSplit();
