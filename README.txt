@@ -1,5 +1,60 @@
-AMIR PT — v71 · 06/08/2026
+AMIR PT — v72 · 06/08/2026
 ==========================
+
+Upload index.html AND sw.js.
+
+
+1. TODAY'S BENCH DIDN'T APPEAR — AND WHY
+========================================
+Your old seeded history carries the literal date "prev". The problem is that
+"prev" sorts AFTER every real date alphabetically, because "p" comes after "2".
+
+So anything that grabbed "the last entry" from a lift's history, or sorted by
+date, picked up the placeholder instead of the session you logged an hour ago.
+That's exactly why Bench Press showed "40x8 40x8 40x8 40x8 · prev" while
+Overhead Press correctly showed 6 Aug — Overhead Press had no seeded entry to
+outrank it.
+
+It was worse than a display bug. The same wrong entry was feeding your LOAD
+RECOMMENDATIONS, so the coach was calculating your next bench weight from
+seeded placeholder data rather than what you actually lifted.
+
+Fixed everywhere that reads your history: the lift list, the "last time" line
+on the exercise, the load recommendation, the fatigue detection and the coach's
+prompt. Nothing takes array order on trust any more — sessions are ordered by
+real date with the placeholder pinned to the front where it belongs.
+
+Verified against your exact data shape: the old code returned "prev / 40x8",
+the fix returns today's 45x8, and the load call now reads from the right one.
+
+
+2. HISTORY IS GROUPED BY WORKOUT TYPE
+=====================================
+Push with push, pull with pull, legs with legs, row separately.
+
+Each section is collapsible and shows how many sessions it holds and when the
+last one was, so comparing this week's push to the previous one no longer means
+scrolling through everything you did in between. Sections remember whether you
+left them open.
+
+There's a toggle at the top if you ever want the old single chronological list
+back — it's one tap either way.
+
+
+3. CHECK-IN FORMATTING
+======================
+The intake fields were a mess: "\u00b7" and "\u2014" printing as literal text,
+and the four boxes overlapping their own labels.
+
+Two causes. Those escape codes only work inside JavaScript strings and I'd
+written them into raw HTML, where they mean nothing. And the grid inherited
+styling from a form layout it was never designed for — the labels float, which
+is why they piled up on top of the inputs.
+
+The intake block now has its own layout instead of borrowing one: four even
+cells, labels above their fields, nothing overlapping. I also swept the rest of
+the markup for the same escape-code mistake — there were three, all gone.
+
 
 Upload index.html AND sw.js.
 
