@@ -1,5 +1,43 @@
-AMIR PT — v73 · 06/08/2026
-==========================
+AMIR PT — v73.1 · 06/08/2026
+============================
+
+Upload index.html AND sw.js.
+
+
+1. YOU COULDN'T TYPE DECIMALS
+=============================
+The intake boxes were set to a whole-number keypad, so iOS never showed you a
+decimal point. All eight of them — the four on Home and the four on the
+check-in — now bring up the decimal keypad.
+
+Decimals also survive the maths now. 167.5g of protein stays 167.5g, and
+adding a 28.5g meal to it gives 196g rather than a rounded guess at each step.
+
+One related fix: the display formatter rounds anything over 100 to a whole
+number, which is correct for a barbell and wrong for protein. Nutrition uses
+its own formatter that keeps the decimal only when there is one — so you see
+167.5g, but plain 168g when it's actually 168.
+
+
+2. "NUTRITION TODAY" DIDN'T UPDATE
+==================================
+Same class of bug I hit yesterday, and I only fixed half of it.
+
+There were two places storing today's food. The "Nutrition today" line summed
+DB.nutrition.log, while the Home card, the coach, the Plan card and the weekly
+averages all read the day's check-in. Saving on the Home card wrote to the
+check-in, so the line above it sat frozen at zero.
+
+I'd already pointed the COACH at the check-in in v73. I missed this one.
+Everything reads the check-in now, so there is exactly one place today's food
+lives and nothing can disagree with anything else.
+
+The line also shows carbs and fat now, not just calories and protein.
+
+TESTED: 1487.5 kcal / 167.5g protein / 118.4g carbs / 44.2g fat saved on the
+Home card, and the Nutrition today line reads them back with the decimals
+intact — then a 312.5 kcal meal added on top, and both views agree at 1800.
+
 
 Upload index.html AND sw.js.
 

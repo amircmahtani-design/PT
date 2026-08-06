@@ -590,13 +590,13 @@ a{color:var(--orange);}
         <div id="intakeNow"></div>
         <div class="intgrid mt">
           <div class="intcell"><span class="k">Calories</span>
-            <input class="txtin" id="nKcal" inputmode="numeric" placeholder="1500" /></div>
+            <input class="txtin" id="nKcal" inputmode="decimal" placeholder="1500" /></div>
           <div class="intcell"><span class="k">Protein (g)</span>
-            <input class="txtin" id="nProt" inputmode="numeric" placeholder="170" /></div>
+            <input class="txtin" id="nProt" inputmode="decimal" placeholder="170" /></div>
           <div class="intcell"><span class="k">Carbs (g)</span>
-            <input class="txtin" id="nCarb" inputmode="numeric" placeholder="—" /></div>
+            <input class="txtin" id="nCarb" inputmode="decimal" placeholder="—" /></div>
           <div class="intcell"><span class="k">Fat (g)</span>
-            <input class="txtin" id="nFat" inputmode="numeric" placeholder="—" /></div>
+            <input class="txtin" id="nFat" inputmode="decimal" placeholder="—" /></div>
         </div>
         <button class="btn green mt" onclick="saveIntake('set')">Save today’s totals</button>
         <button class="btn sec mt" onclick="saveIntake('add')">Add this to today</button>
@@ -661,13 +661,13 @@ a{color:var(--orange);}
         <div class="hint" style="margin:-4px 0 10px">Optional. Your nutritionist owns the plan — the coach reads these only to decide how hard to push you.</div>
         <div class="intgrid">
           <div class="intcell"><span class="k">Calories</span>
-            <input class="txtin" id="ciKcal" inputmode="numeric" placeholder="1500" /></div>
+            <input class="txtin" id="ciKcal" inputmode="decimal" placeholder="1500" /></div>
           <div class="intcell"><span class="k">Protein (g)</span>
-            <input class="txtin" id="ciProt" inputmode="numeric" placeholder="170" /></div>
+            <input class="txtin" id="ciProt" inputmode="decimal" placeholder="170" /></div>
           <div class="intcell"><span class="k">Carbs (g)</span>
-            <input class="txtin" id="ciCarb" inputmode="numeric" placeholder="—" /></div>
+            <input class="txtin" id="ciCarb" inputmode="decimal" placeholder="—" /></div>
           <div class="intcell"><span class="k">Fat (g)</span>
-            <input class="txtin" id="ciFat" inputmode="numeric" placeholder="—" /></div>
+            <input class="txtin" id="ciFat" inputmode="decimal" placeholder="—" /></div>
         </div>
       </div>
     </div>
@@ -3851,11 +3851,13 @@ function saveIntake(mode){
   const c=todayCheckin(true);
   Object.keys(got).forEach(k=>{
     if(got[k]==null) return;
-    c[k] = (mode==='add' && typeof c[k]==='number') ? Math.round((c[k]+got[k])*10)/10 : got[k];
+    const v = (mode==='add' && typeof c[k]==='number') ? c[k]+got[k] : got[k];
+    c[k] = Math.round(v*10)/10;          /* one decimal, so 167.5g stays 167.5 */
   });
   save();
   ['nKcal','nProt','nCarb','nFat'].forEach(id=>{ const e=document.getElementById(id); if(e) e.value=""; });
   renderIntake();
+  try{ renderNutrition(); }catch(e){}
   try{ renderPhaseCard(); }catch(e){}
   toast(mode==='add'? "Added to today" : "Today\u2019s food saved");
 }
@@ -3864,6 +3866,7 @@ function clearIntakeToday(){
   if(!confirm("Clear today\u2019s food log?")) return;
   ['kcal','protein','carbs','fat'].forEach(k=>{ delete c[k]; });
   save(); renderIntake();
+  try{ renderNutrition(); }catch(e){}
   try{ renderPhaseCard(); }catch(e){}
   toast("Cleared");
 }
@@ -4640,13 +4643,30 @@ function coachSetVisualMode(v){ const s=String(v||"").toLowerCase(); DB.prefs.vi
 function coachSetPref(k,v){ DB.prefs[k]=v; save(); if(DB.workout)finalizeCoachEdit(); return v; }
 function coachSetCoachStyle(v){ DB.prefs.coachStyle=String(v||"").trim(); save(); return DB.prefs.coachStyle; }
 /* Nutrition render (Today) */
-function renderNutrition(){ const el=document.getElementById('nutriLine'); if(!el) return; const n=DB.nutrition;
-  const todayLog=(n&&n.log?n.log:[]).filter(x=>x.date===today()); const cal=todayLog.reduce((a,b)=>a+(b.calories||0),0); const pro=todayLog.reduce((a,b)=>a+(b.protein||0),0);
-  if(!n || (!n.calorieTarget&&!n.proteinTarget&&!cal&&!pro&&!n.phase)){ el.style.display="none"; el.innerHTML=""; return; }
-  el.style.display=""; const parts=[];
-  if(n.calorieTarget||cal) parts.push("<b>🍽️ "+(cal||0)+(n.calorieTarget?" / "+n.calorieTarget:"")+"</b> kcal");
-  if(n.proteinTarget||pro) parts.push("<b>🥩 "+(pro||0)+(n.proteinTarget?" / "+n.proteinTarget:"")+"g</b> protein");
-  el.innerHTML="<div class='card'><div class='card-title'><span>Nutrition today"+(n.phase?" · "+n.phase:"")+"</span></div><div class='nutri'>"+parts.join(" &nbsp;·&nbsp; ")+"</div></div>"; }
+/* v73.1 \u2014 this summed DB.nutrition.log while everything else reads the day's
+   check-in, so saving food on the Home card left this line frozen at zero.
+   One fact, one place: it reads the check-in, same as the card, the coach and
+   the weekly averages. */
+function renderNutrition(){
+  const el=document.getElementById('nutriLine'); if(!el) return;
+  const n=DB.nutrition||{};
+  const c=(typeof todayCheckin==="function"? todayCheckin(false) : null)||{};
+  const cal=(c.kcal!=null)? c.kcal : null;
+  const pro=(c.protein!=null)? c.protein : null;
+  if(!n.calorieTarget && !n.proteinTarget && cal==null && pro==null && !n.phase){
+    el.style.display="none"; el.innerHTML=""; return;
+  }
+  el.style.display="";
+  const parts=[];
+  if(n.calorieTarget||cal!=null)
+    parts.push("<b>\ud83c\udf7d\ufe0f "+(cal!=null?fmtG(cal):"\u2013")+(n.calorieTarget?" / "+n.calorieTarget:"")+"</b> kcal");
+  if(n.proteinTarget||pro!=null)
+    parts.push("<b>\ud83e\udd69 "+(pro!=null?fmtG(pro):"\u2013")+(n.proteinTarget?" / "+n.proteinTarget:"")+"g</b> protein");
+  if(c.carbs!=null) parts.push("<b>"+fmtG(c.carbs)+"g</b> carbs");
+  if(c.fat!=null)   parts.push("<b>"+fmtG(c.fat)+"g</b> fat");
+  el.innerHTML="<div class='card'><div class='card-title'><span>Nutrition today"+(n.phase?" \u00b7 "+n.phase:"")+"</span></div>"+
+    "<div class='nutri'>"+(parts.join(" &nbsp;\u00b7&nbsp; ")||"Nothing logged yet")+"</div></div>";
+}
 /* Cardio session logging (Train) */
 function addCardioLog(){ const c=DB.cardio||{name:"Cardio"}; const t=(val('cardioTime')||"").trim(); if(!t){ toast("Enter a time e.g. 30:00"); return; }
   DB.rowing.push({dist:(c.duration||""),time:t,name:c.name,date:today()}); markSession(); save();
@@ -6446,7 +6466,7 @@ function scheduleInApp(){
    v18 ADDITIONS — draggable rest timer · weekly training memory · AI planner
    · Firestore sync
    ========================================================================== */
-const APP_VERSION="v73 · 06/08/2026";
+const APP_VERSION="v73.1 · 06/08/2026";
 
 /* ===== 1. REST TIMER — drag it anywhere so it never blocks the chat box ===== */
 let _rtDrag=null;
@@ -7042,6 +7062,14 @@ function computeStreak(){
 /* ===== D. CHARTS — the numbers you actually care about ===== */
 let _cgId=0;
 function fmtNum(v){ v=Number(v)||0; return (Math.abs(v)>=100? Math.round(v) : Math.round(v*10)/10).toString(); }
+/* fmtNum rounds anything over 100 to a whole number, which is right for a
+   barbell and wrong for 167.5g of protein. This keeps the decimal only when
+   there actually is one. */
+function fmtG(v){
+  const n=Number(v); if(isNaN(n)) return "\u2013";
+  const r=Math.round(n*10)/10;
+  return (r%1===0)? String(Math.round(r)) : r.toFixed(1);
+}
 function shortDate(d){
   if(!d) return "";
   const x=new Date(String(d)+"T12:00:00");
