@@ -583,6 +583,28 @@ a{color:var(--orange);}
       <div class="sub" id="heroSub">Tap to open your session — log sets right on the exercise.</div>
       <button class="cta" onclick="event.stopPropagation();generateWorkout()">Open Today's Workout</button>
     </div>
+    <details class="hcard" data-hk="intake">
+      <summary class="hsum"><span class="t">Today’s food</span><span class="chev">›</span></summary>
+      <div class="hbody">
+        <div class="hint mb">Your nutritionist owns the plan. Log it here whenever you like — the coach reads it to decide how hard to push you, and you can come back and update it all day.</div>
+        <div id="intakeNow"></div>
+        <div class="intgrid mt">
+          <div class="intcell"><span class="k">Calories</span>
+            <input class="txtin" id="nKcal" inputmode="numeric" placeholder="1500" /></div>
+          <div class="intcell"><span class="k">Protein (g)</span>
+            <input class="txtin" id="nProt" inputmode="numeric" placeholder="170" /></div>
+          <div class="intcell"><span class="k">Carbs (g)</span>
+            <input class="txtin" id="nCarb" inputmode="numeric" placeholder="—" /></div>
+          <div class="intcell"><span class="k">Fat (g)</span>
+            <input class="txtin" id="nFat" inputmode="numeric" placeholder="—" /></div>
+        </div>
+        <button class="btn green mt" onclick="saveIntake('set')">Save today’s totals</button>
+        <button class="btn sec mt" onclick="saveIntake('add')">Add this to today</button>
+        <div class="hint mt">“Add” is for logging meal by meal as you go. “Save totals” replaces the day with what’s in the boxes.</div>
+        <div id="intakeMsg"></div>
+      </div>
+    </details>
+
     <details class="hcard" data-hk="metrics">
       <summary class="hsum"><span class="t">Your numbers</span><span class="chev">›</span></summary>
       <div class="hbody"><div class="grid" id="metricGrid"></div></div>
@@ -2969,6 +2991,7 @@ function setDefaultRest(kind,delta){
   DB.prefs.rest[kind]=v; save();
   try{ renderRestPrefs(); }catch(e){}
   try{ renderPhaseCard(); }catch(e){}
+  try{ renderIntake(); }catch(e){}
   try{ const mv=document.getElementById('masteryVal'); if(mv) mv.textContent=masterySets()+" sets"; }catch(e){}
   try{ if(DB.workout) renderWorkoutSheet(DB.workout); }catch(e){}
 }
@@ -3670,8 +3693,13 @@ async function submitCheckin(){
      it \u2014 so the latest check-in updates the profile rather than leaving a
      figure from months ago in place. */
   if(ci.weight) DB.profile.weightKg=ci.weight;
-  DB.checkins=DB.checkins.filter(c=>c.date!==ci.date);
-  DB.checkins.push(ci);
+  /* v73 — this used to REPLACE the day's record outright, so any food logged
+     before the check-in was silently destroyed. Merge instead: check-in fields
+     win, anything already there that the check-in didn't mention survives. */
+  const prior=DB.checkins.find(c=>c.date===ci.date);
+  if(prior){ Object.keys(ci).forEach(k=>{ if(ci[k]!=null && ci[k]!=="") prior[k]=ci[k]; }); delete prior.foodOnly; }
+  else DB.checkins.push(ci);
+  const merged=DB.checkins.find(c=>c.date===ci.date)||ci;
   if(ci.weight){ DB.weights.push(ci.weight); if(DB.weights.length>400) DB.weights=DB.weights.slice(-400); }
   if(ci.plan==="Rest"){ DB.dayOverride={date:today(),split:"Rest"}; }
   DB.workout=null; DB.aiPlan=null; save();
@@ -3799,6 +3827,70 @@ function setTrainingPhase(n){
   return DB.plan.phase;
 }
 /* What he's actually been eating, from the check-ins, over the last week. */
+/* ===== v73 · FOOD IS LOGGED WHEN HE KNOWS IT, NOT AT 7AM ===============
+   Intake lived only on the check-in, which he does first thing \u2014 before he
+   has eaten anything. So the fields were either blank or a guess, and there
+   was no way back in to correct them once the day was actually over.
+
+   Same storage (the day's check-in record, so the coach and the averages keep
+   working), but reachable and editable all day. It creates the day's record if
+   he hasn't checked in yet, so logging food never depends on having done so. */
+function todayCheckin(create){
+  DB.checkins=DB.checkins||[];
+  let c=DB.checkins.find(x=>x.date===today());
+  if(!c && create){
+    c={date:today(), weight:null, sleep:null, energy:null, plan:null, pain:"", loc:locKey(), foodOnly:true};
+    DB.checkins.push(c);
+  }
+  return c||null;
+}
+function saveIntake(mode){
+  const num=id=>{ const v=(val(id)||"").trim(); if(!v) return null; const n=parseFloat(v); return isNaN(n)?null:n; };
+  const got={kcal:num('nKcal'), protein:num('nProt'), carbs:num('nCarb'), fat:num('nFat')};
+  if(Object.values(got).every(v=>v==null)){ toast("Nothing to save"); return; }
+  const c=todayCheckin(true);
+  Object.keys(got).forEach(k=>{
+    if(got[k]==null) return;
+    c[k] = (mode==='add' && typeof c[k]==='number') ? Math.round((c[k]+got[k])*10)/10 : got[k];
+  });
+  save();
+  ['nKcal','nProt','nCarb','nFat'].forEach(id=>{ const e=document.getElementById(id); if(e) e.value=""; });
+  renderIntake();
+  try{ renderPhaseCard(); }catch(e){}
+  toast(mode==='add'? "Added to today" : "Today\u2019s food saved");
+}
+function clearIntakeToday(){
+  const c=todayCheckin(false); if(!c) return;
+  if(!confirm("Clear today\u2019s food log?")) return;
+  ['kcal','protein','carbs','fat'].forEach(k=>{ delete c[k]; });
+  save(); renderIntake();
+  try{ renderPhaseCard(); }catch(e){}
+  toast("Cleared");
+}
+function renderIntake(){
+  const el=document.getElementById('intakeNow'); if(!el) return;
+  const c=todayCheckin(false)||{};
+  const has=['kcal','protein','carbs','fat'].some(k=>c[k]!=null);
+  const target=(DB.nutrition&&DB.nutrition.calorieTarget)||null;
+  if(!has){
+    el.innerHTML="<div class='notebox'>Nothing logged for today yet."+
+      (target? " Your target is <b>"+target+" kcal</b>." : "")+"</div>";
+    return;
+  }
+  const kg=(DB.profile&&DB.profile.weightKg)||null;
+  const perKg=(c.protein!=null&&kg)? (Math.round((c.protein/kg)*10)/10) : null;
+  const left=(target&&c.kcal!=null)? target-c.kcal : null;
+  el.innerHTML="<div class='notebox'>"+
+    "<b style='font-size:16px'>"+(c.kcal!=null? c.kcal+" kcal" : "kcal not logged")+"</b>"+
+    (left!=null? " <span style='color:"+(left<0?"var(--gold)":"var(--muted)")+"'>"+
+       (left>=0? left+" left of "+target : Math.abs(left)+" over "+target)+"</span>" : "")+
+    "<div style='margin-top:6px;font-size:13px;color:var(--muted)'>"+
+      (c.protein!=null? "Protein "+c.protein+"g"+(perKg? " ("+perKg+"g/kg)":"") : "Protein not logged")+
+      (c.carbs!=null? " \u00b7 Carbs "+c.carbs+"g":"")+
+      (c.fat!=null? " \u00b7 Fat "+c.fat+"g":"")+
+    "</div></div>"+
+    "<button class='swapbtn mt' onclick='clearIntakeToday()'>Clear today</button>";
+}
 function intakeAvg(days){
   const cut=new Date(Date.now()-(days||7)*864e5).toISOString().slice(0,10);
   const rows=(DB.checkins||[]).filter(c=>c.date>=cut && (c.kcal||c.protein));
@@ -4091,7 +4183,8 @@ coachingDoctrine()+
 "SET_INJURY and SET_TIME_BUDGET rebuild today's session around the new constraint automatically. If he mentions pain or being short of time, USE THEM rather than just sympathising.\n\n"+
 "BODY DATA:\n"+
 "[[LOG_MEASUREMENT: waist 84 | chest 106 | arm 37.5]] · [[LOG_ROW: 2000m | 8:30]]\n"+
-"Measurements he tells you go straight in \u2014 he should never have to retype them into Progress.\n\n"+
+"Measurements he tells you go straight in \u2014 he should never have to retype them into Progress.\n"+
+"[[LOG_NUTRITION: calories 1520 | protein 168 | carbs 120 | fat 45]] writes to TODAY, at any hour, and overwrites whatever was there. He checks in first thing before he has eaten, so food nearly always arrives later in the day \u2014 just log it.\n\n"+
 "FIXING WHAT'S ALREADY LOGGED (he WILL mistype things mid-set):\n"+
 "[[EDIT_SET: Bench Press | last | 60kg | 10]] · [[EDIT_SET: Bench Press | 2 | 10 reps]] · [[DELETE_SET: Bench Press | last]] · [[REPEAT_SET: Bench Press]] · [[UNDO_LAST]]\n"+
 "Set number counts from 1, or use \"last\"/\"first\". \"I did 10 not 12\", \"delete that set\", \"wrong weight\", \"that one didn't count\" \u2014 all of these are EDIT/DELETE, never a new LOG_SET.\n\n"+
@@ -4501,8 +4594,28 @@ function coachLogPain(raw){ const painStr=String(raw||"").split('|').map(x=>x.tr
   DB.workout=null; save(); ensureWorkout(); updateStatus(); return painStr; }
 function coachSetReadiness(v){ DB.readiness=String(v||"").trim(); const ci=latestCheckin(); if(ci&&ci.date===today())ci.readiness=DB.readiness; save(); return DB.readiness; }
 /* Nutrition */
-function coachLogNutrition(raw){ const s=String(raw||""); const gc=s.match(/cal(?:orie)?s?\s*([0-9]+)/i); const gp=s.match(/protein\s*([0-9]+)/i);
-  const e={date:today(),calories:gc?+gc[1]:null,protein:gp?+gp[1]:null}; DB.nutrition.log.push(e); save(); renderNutrition(); return e; }
+/* v73 — the coach used to write food into its own list while the Home card
+   and the averages read the day's check-in. Two stores for one fact means one
+   of them is always wrong. Everything writes to the check-in now. */
+function coachLogNutrition(raw){
+  const str=String(raw||"");
+  const g=(re)=>{ const m=str.match(re); return m? +m[1] : null; };
+  const e={date:today(),
+    calories:g(/cal(?:orie)?s?\s*[:=]?\s*([0-9.]+)/i),
+    protein: g(/protein\s*[:=]?\s*([0-9.]+)/i),
+    carbs:   g(/carb(?:ohydrate)?s?\s*[:=]?\s*([0-9.]+)/i),
+    fat:     g(/fats?\s*[:=]?\s*([0-9.]+)/i)};
+  if(e.calories==null&&e.protein==null&&e.carbs==null&&e.fat==null) return null;
+  const c=todayCheckin(true);
+  if(e.calories!=null) c.kcal=e.calories;
+  if(e.protein!=null)  c.protein=e.protein;
+  if(e.carbs!=null)    c.carbs=e.carbs;
+  if(e.fat!=null)      c.fat=e.fat;
+  DB.nutrition.log=DB.nutrition.log||[]; DB.nutrition.log.push(e);
+  save();
+  try{ renderNutrition(); }catch(err){}
+  try{ renderIntake(); renderPhaseCard(); }catch(err){}
+  return e; }
 function coachSetCalorieTarget(v){ DB.nutrition.calorieTarget=parseInt(String(v||"").replace(/[^0-9]/g,''))||null; save(); renderNutrition(); return DB.nutrition.calorieTarget; }
 function coachSetProteinTarget(v){ DB.nutrition.proteinTarget=parseInt(String(v||"").replace(/[^0-9]/g,''))||null; save(); renderNutrition(); return DB.nutrition.proteinTarget; }
 function coachSetDietPhase(v){ DB.nutrition.phase=String(v||"").trim(); DB.profile.phase=DB.nutrition.phase; save(); renderNutrition(); if(DB.workout)finalizeCoachEdit(); return DB.nutrition.phase; }
@@ -6333,7 +6446,7 @@ function scheduleInApp(){
    v18 ADDITIONS — draggable rest timer · weekly training memory · AI planner
    · Firestore sync
    ========================================================================== */
-const APP_VERSION="v72 · 06/08/2026";
+const APP_VERSION="v73 · 06/08/2026";
 
 /* ===== 1. REST TIMER — drag it anywhere so it never blocks the chat box ===== */
 let _rtDrag=null;
@@ -8403,13 +8516,23 @@ function coverChoose(name,id){
    ~65 MB, which is far past what Firestore will hold, and there'd be no point:
    they're public URLs that stream on demand. What has to survive is the index
    that maps his exercises to them, and that's ~120 KB. */
-const FED_CHUNK=400;
+/* Chunked by BYTES, not by record count. Firestore caps a document at 1 MiB
+   and instruction lengths vary wildly across the pack — a fixed count of 400
+   is fine on average and would blow the limit on an unlucky run of long
+   entries, failing the backup with nothing to show for it. 600 KB leaves room
+   for the field names and Firestore's own overhead. */
+const FED_DOC_BYTES=600*1024;
 function fedDocRef(i){ return _fs.collection("amirpt").doc(String((DB.cloud.syncId||"amir-pt")).trim()+"__fed"+i); }
 async function fedBackup(){
   if(!fedHas()) return 0;
   if(!(await cloudInit())) return 0;
-  const chunks=[];
-  for(let i=0;i<FED.length;i+=FED_CHUNK) chunks.push(FED.slice(i,i+FED_CHUNK));
+  const chunks=[]; let cur=[], curBytes=0;
+  FED.forEach(r=>{
+    const n=JSON.stringify(r).length+2;
+    if(cur.length && curBytes+n>FED_DOC_BYTES){ chunks.push(cur); cur=[]; curBytes=0; }
+    cur.push(r); curBytes+=n;
+  });
+  if(cur.length) chunks.push(cur);
   for(let i=0;i<chunks.length;i++){
     await fedDocRef(i).set({i,total:chunks.length,count:chunks[i].length,
       updated:new Date().toISOString(), data:JSON.stringify(chunks[i])});
@@ -8421,7 +8544,7 @@ async function fedBackup(){
 async function fedRestore(){
   if(!(await cloudInit())) return 0;
   let i=0,total=1,out=[];
-  while(i<total && i<20){
+  while(i<total && i<40){
     const snap=await fedDocRef(i).get();
     if(!snap.exists) break;
     const d=snap.data()||{};

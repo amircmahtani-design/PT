@@ -1,5 +1,104 @@
-AMIR PT — v72 · 06/08/2026
+AMIR PT — v73 · 06/08/2026
 ==========================
+
+Upload index.html AND sw.js.
+
+
+LOG YOUR FOOD WHEN YOU ACTUALLY KNOW IT
+=======================================
+You were right that this was broken by design. Intake lived only on the
+check-in, which you do first thing — before you've eaten anything. So the
+fields were either blank or a guess, and there was no way back in to correct
+them once the day was over.
+
+HOME -> "TODAY'S FOOD"
+  Calories, protein, carbs, fat. Open it any time, as often as you like.
+
+  SAVE TODAY'S TOTALS — replaces the day with what's in the boxes.
+  ADD THIS TO TODAY   — adds to the running total, for logging meal by meal.
+
+  It shows what you've logged so far, how much is left against your target,
+  and your protein in g per kg of bodyweight — which is the number that
+  actually matters for holding muscle in a deficit. There's a Clear button if
+  you get it wrong.
+
+  You do NOT need to have checked in. If there's no record for today it
+  creates one, so logging food never depends on anything else.
+
+OR JUST TELL THE COACH
+  "1520 calories, 168 protein, 120 carbs, 45 fat" — any time of day. It writes
+  to today and overwrites whatever was there.
+
+
+TWO BUGS FOUND WHILE BUILDING IT
+================================
+1. CHECKING IN WOULD HAVE WIPED YOUR FOOD.
+   The check-in REPLACED the whole day's record rather than updating it. So
+   log breakfast and lunch, then check in, and everything you'd logged was
+   silently gone. It merges now: check-in fields win, and anything already
+   there that the check-in doesn't mention survives untouched.
+
+   Tested exactly that sequence — 1500 kcal and 170g protein logged across
+   three meals, then a full check-in — and the food is still there afterwards,
+   alongside the weight, sleep and energy.
+
+2. THE COACH WAS WRITING TO A DIFFERENT PLACE.
+   [[LOG_NUTRITION]] wrote into its own list while the Home card and the
+   weekly averages read the day's check-in. Two stores for one fact means one
+   of them is always wrong, and the coach's own reporting would have
+   contradicted the card. Everything writes to the check-in now, so the card,
+   the coach, the Plan card and the averages can't disagree.
+
+   It also reads carbs and fat now, not just calories and protein.
+
+
+Upload index.html AND sw.js.
+
+
+FIRESTORE: NOTHING TO CHANGE
+============================
+Your rules are already correct and you don't need to touch them.
+
+Everything the app writes goes to the amirpt collection:
+
+    <syncid>            your training data
+    <syncid>__cat0..N   the exercise catalogue
+    <syncid>__fed0..N   the free demo pack index   (added in v61.4)
+
+Your rule is:
+
+    match /amirpt/{docId} {
+      allow read, write: if request.auth != null;
+    }
+
+The {docId} wildcard covers all three patterns, so the demo pack backup was
+already permitted without you doing anything.
+
+And every field added since — the never-again rules, favourites, the two-phase
+plan, measurements, demo picks, rest preferences, daily intake — lives INSIDE
+the main synced document. No new collections, no new rules, ever.
+
+
+BUT CHECKING THAT FOUND A REAL BUG
+==================================
+The demo pack was being split into Firestore documents by RECORD COUNT — 400
+per document. That was fine when the pack held only names and image paths.
+
+In v69 I started keeping the exercise instructions too, which made each record
+roughly four times bigger and varies wildly between exercises. At 400 records
+a document, an unlucky run of long entries would have crossed Firestore's 1 MiB
+per-document limit and the backup would have failed — quietly, with nothing to
+show for it, until the day you needed it back.
+
+It now splits by ACTUAL BYTES with a 600 KB ceiling per document.
+
+Tested against a deliberately worst-case pack (800 exercises, every one with
+maximum-length instructions): 4 documents, largest 610 KB, comfortably under
+the limit. A typical pack fits in a single 393 KB document.
+
+Restore also raised its part limit to match, so a pack split across more
+documents comes back whole.
+
 
 Upload index.html AND sw.js.
 
