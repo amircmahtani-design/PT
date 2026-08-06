@@ -1,599 +1,115 @@
-AMIR PT — v62.2 · 06/08/2026
-============================
+AMIR PT — v63 · 06/08/2026
+==========================
 
-Deploy exactly as before: index.html, sw.js, manifest.json and the two icons
-in the same folder, at the repo root. Only index.html changed this time.
+Upload index.html AND sw.js. Nothing you've logged is touched.
 
-Check it landed: Settings -> bottom -> "Amir PT · v61 · 06/08/2026".
-Nothing in this update touches your data. Every logged set survives.
 
+WHAT WAS ACTUALLY WRONG
+=======================
+Eight patches, a new fault each time. That pattern was the real symptom: I was
+fixing the thing in front of me instead of the structure underneath it.
 
-DO THIS FIRST — YOU HAVE NO DEMOS RIGHT NOW
-===========================================
-  1. Deploy v61.
-  2. Settings -> Demo GIFs -> "Get the free demo pack".
-  3. Settings -> Demo GIFs -> "Save the matched ones to this phone".
+There were TWO image systems in the app that didn't know about each other.
 
-That gets you animated demos back TODAY, for free, without spending a single
-one of your remaining WorkoutX requests. Details below.
+  The single-clip path:  mediaFor -> mediaFail -> mediaFallback -> swapMedia
+                         built for one animated WorkoutX GIF.
+  The two-frame path:    fedResolve -> fedTileHTML -> fedPaintCached
+                         built for the free pack's start/end pair.
 
+Every fault you hit was at the seam, one painting over the other's work:
 
-=============================================================
-v62.2 — THE "66 WITH NO IMAGES" WAS MY REPORTING BUG
-=============================================================
+  - a saved free-pack FRAME resolved as if it were a finished clip, so it
+    rendered alone and frozen                                    (the "static image")
+  - the painter looked frames up by EXERCISE NAME, so changing your pick
+    read the same key and the old picture came straight back      (the "it does nothing")
+  - the coverage report asked the strict matcher while the tile beside it used
+    the near matcher, so it invented gaps that weren't there      (the "66 exercises")
+  - the browse list asked WorkoutX only and hid everything on 401 (the blank rows)
+  - swapMedia wrote its own markup with no data-exname, so nothing
+    could ever repaint that tile afterwards
 
-Upload index.html AND sw.js.
+And while collapsing them I found FIVE DUPLICATE FUNCTION DECLARATIONS — two
+mediaFail, two mediaFallback, two paintSavedGifs, two fedPaintCached, two
+anyThumb. In JavaScript the LAST one wins, and in every case the last one was
+the old version. v62.2 would have shipped with the new logic present but
+completely inert. That is the sort of thing that keeps a bug alive across
+several "fixes".
 
-Those 66 mostly DO have photographs. The coverage report was asking the STRICT
-matcher — the one deliberately built to refuse rather than guess — while the
-actual workout tiles use the near-match tier added in v62.1. So the report was
-counting exercises your session was already showing a picture for.
 
-It now asks the same resolver the tiles use, and splits the answer three ways:
+WHAT IT IS NOW
+==============
+ONE function decides what an exercise shows. ONE renders it. ONE handles a
+failure. Nothing else touches the image.
 
-  confident   the right movement, no caveat
-  ≈ closest   a real photo, but of a RELATED movement in the same muscle group
-  none        genuinely nothing
+The order is the whole policy, in your stated priority:
 
-On a Pilates-heavy test set of 15: 7 confident, 8 closest, ZERO with nothing.
-Your 66 will resolve mostly into the middle column.
-
-THE LIST IS NOW SORTED BY WHAT NEEDS ATTENTION
-  Gaps first, then approximations, then everything settled. A 200-row list is
-  useless if the eight worth fixing are scattered alphabetically through it.
+  1. WHAT YOU CHOSE YOURSELF   always wins, never overwritten by anything
+  2. A REAL ANIMATED GIF       saved on the phone, or live from a working source
+  3. START/END FRAMES          a real photograph from the free pack, animated
+  4. A LINK TO A VIDEO         only when all of the above are genuinely absent
 
-"COPY THE LIST TO FIX"
-  A button that puts the exact names on your clipboard, each marked NONE or
-  closest, with what it matched to. Paste that to me.
+A failure no longer does bespoke DOM surgery. It records the dead source and
+re-renders through the same renderer, so a broken clip simply steps DOWN the
+ladder — to frames, not to a blank.
 
-WHY I'M NOT JUST FETCHING 66 IMAGES MYSELF
-  Because almost every exercise GIF on the web is copyrighted. GymVisual sells
-  them, MuscleWiki is proprietary, and most of the rest are scraped copies of
-  one of those two. Hardcoding 66 of them into your app would be putting
-  someone else's licensed material in your product, and hotlinks like that rot
-  within months anyway.
+Every tile carries the "> demo" button. Every one, including the frames and the
+link tiles. Tap it any time to check the movement is the one you think it is.
 
-  Free Exercise DB is public domain, which is exactly why I used it. Its
-  weakness is that it's a bodybuilding dataset — thin on Pilates, mobility and
-  carries, which is almost certainly where your gaps are concentrated.
 
-  There are two other legitimately free sources worth checking for those:
-  wger (CC-BY-SA, free API) and Wikimedia Commons (CC-licensed, and genuinely
-  better on yoga and mobility than anything else free).
+VERIFIED, NOT ASSUMED
+=====================
+  precedence      pack match / near match / chosen clip / your pick / "no demo"
+                  — correct in all five cases
+  demo button     present on gif, frames AND link tiles
+  changing a pick image changes immediately, and SURVIVES a re-match attempt
+  a dead clip     steps down to frames — never blanks
+  the report      agrees with the tile beside it on every exercise
 
-  Send me the copied list and I'll go through it name by name against those
-  two. Targeted and legal beats me guessing at 66 URLs and getting most of
-  them wrong.
 
-=============================================================
-v62.1 — REAL PHOTOGRAPHS EVERYWHERE. NO DRAWINGS.
-=============================================================
-
-Upload index.html AND sw.js.
-
-The drawn figure is gone completely — not disabled, deleted. You'd rather see a
-real photo of a RELATED movement than an illustration of the right one, and
-you're right.
-
-WHY THERE WERE GAPS AT ALL
-  I had tuned the matcher to refuse rather than guess, on the reasoning that a
-  wrong demo is worse than none. That was an over-correction. It's true when the
-  app pretends a guess is a certainty; it isn't true when the guess is a real
-  photograph of a related movement and says so.
-
-TWO TIERS NOW
-  STRICT — confident, same movement. Shown plainly, as before.
-  NEAR   — the closest real movement in the pack, used when strict finds
-           nothing. It will NEVER cross muscle groups: a hamstring exercise
-           cannot land on a biceps photo. That one rule is what makes guessing
-           safe enough to do.
-
-  Anything from the near tier, AND anything from the strict tier that only just
-  cleared the bar, is badged on the image: "≈ closest match · tap Change demo".
-  So a wrong one is obvious at a glance rather than mid-set.
-
-  On a 23-exercise test: 19 exact, 4 badged as approximate, ZERO with no photo.
-  Landmine Press is one of the badged ones — it has no exact entry in the pack,
-  so it shows the nearest chest/shoulder press and admits it.
-
-WHAT EVERY TILE HAS NOW
-  A real photograph, animating between the start and end frames, with the
-  start/end label, and the "▶ demo" button in the corner for real video. If the
-  match is uncertain it also carries the approximate badge and one tap changes
-  it — and your choice still overrides everything, permanently.
-
-=============================================================
-v62 — WORKOUTX IS OUT OF THE WAY. THERE IS ALWAYS A PICTURE.
-=============================================================
-
-Upload index.html AND sw.js.
-
-WHAT I DID INSTEAD OF DELETING IT
-  WorkoutX turned out to be threaded through more than the demos: the exercise
-  lookup, the browsable list, and the step-by-step "How to do it" text all read
-  from it. Ripping the code out would have taken the instructions with it.
-
-  So it's switched OFF rather than deleted. Nothing consults it automatically
-  any more — not a session, not a browse list, not a thumbnail. Your key and the
-  code are still there, so when the allowance resets you can switch it back on
-  in Settings if you want the animated clips. Until then it costs you nothing
-  and can't blank anything out.
-
-THE FREE PACK IS NOW A FULL EXERCISE SOURCE, NOT JUST PICTURES
-  It always carried instructions, equipment, muscles and difficulty — I was
-  throwing all of that away on import and keeping only the photographs.
-
-  Now the pack supplies proper step-by-step instructions under "How to do it",
-  the right equipment and muscle groups, and its 800+ movements appear in your
-  browse and swap lists. That's what actually replaces WorkoutX.
-
-THERE IS ALWAYS A PICTURE NOW
-  Three layers, in order:
-    1. a photo from the free pack, animated between start and end
-    2. a clip you chose yourself, which always wins over both
-    3. a DRAWN muscle card
-
-  The third is the one that guarantees it. When there's no photograph the app
-  draws a figure with the worked muscle lit up, plus the equipment. It's an SVG
-  generated on the spot — no network, no key, no quota, nothing to download and
-  nothing that can fail. Blank tiles are now structurally impossible.
-
-  It also appears in the catalogue browse list, so those empty rows are gone.
-
-  The "▶ demo" corner link is still on every tile, drawn ones included, so real
-  video is always one tap away.
-
-HONEST TRADE-OFF
-  WorkoutX had roughly 1,400 movements with true animated GIFs. The free pack
-  has 800+ with two frames each. You lose some obscure variations and you lose
-  real motion. You gain: no quota, no key, no blank tiles, and nothing that
-  stops working on the 500th request of the month.
-
-  Switch WorkoutX back on next month if you miss the animation — everything
-  you've chosen by hand stays exactly as you set it either way.
-
-=============================================================
-v61.6 — BLANK THUMBNAILS IN THE CATALOGUE BROWSER
-=============================================================
-
-Upload index.html AND sw.js.
-
-Different bug from v61.5, on a different screen.
-
-Settings -> Exercise catalogue -> "Browse what you've downloaded" was drawing
-its thumbnails from WorkoutX only. Those URLs need your key, you're out of
-requests for the month, so every one of them 401'd and hid itself. Hence 752
-exercises and almost no pictures. The one row that DID show had its image from
-somewhere else already.
-
-The free pack was never consulted on that screen at all.
-
-FIXED
-  Browse rows now fall back to a free-pack still when WorkoutX can't supply one,
-  and if that image fails too it tries the other mirrors before giving up. Rows
-  with genuinely nothing available still say "no demo" honestly rather than
-  showing a blank gap.
-
-  Thumbnails deliberately never spend a WorkoutX request. A browse list is
-  dozens of rows and each one costs the same as a real demo — that is exactly
-  the kind of thing that drained the allowance in the first place.
-
-AND THE CONFUSING MESSAGE
-  "Your phone already has all the images" was about the FREE PACK demos for the
-  exercises in your own library. It was never about the WorkoutX catalogue
-  browser you were looking at. Two different sets of images, and I'd worded it
-  as though there were only one. It now says which set it means.
-
-WHAT THIS DOESN'T FIX
-  Rows where the free pack has no match will still read "no demo" until your
-  WorkoutX allowance resets. That's honest rather than broken — but if a lot of
-  them are empty, tell me roughly how many and which kinds and I'll look at
-  whether wger fills that particular gap.
-
-=============================================================
-v61.5 — WHY CHANGING THE DEMO DID NOTHING
-=============================================================
-
-Upload index.html AND sw.js.
-
-Your choice was being saved correctly the whole time. The toast said "Demo set
-· Landmine Lateral Raise" and it meant it. The picture was overwritten one line
-later.
-
-WHAT WAS HAPPENING
-  When "Save the matched ones to this phone" ran, it filed the two frames under
-  the EXERCISE NAME — "Landmine Press". The painter that swaps remote images for
-  on-device ones then looked them up by that same name.
-
-  So the sequence was: you pick Landmine Lateral Raise, the tile re-renders
-  correctly with the right photographs, and then the painter immediately
-  replaces them with whatever was cached under "Landmine Press" — the original
-  wrong match.
-
-  A key that can't change can't follow a choice that does. That's the whole bug.
-
-THE FIX
-  Frames are now keyed by the free-pack RECORD, not by the exercise name. Pick a
-  different clip and it reads a different key, so the cache follows your choice
-  instead of fighting it.
-
-  Frames saved by the earlier build are cleared automatically the first time
-  v61.5 starts. Nothing identifies which record they came from, so they can't be
-  migrated — and left alone they would keep overriding you. Re-saving is free and
-  uses no quota: Settings -> Demo GIFs -> "Save the matched ones to this phone".
-
-WHAT YOU SHOULD SEE
-  Open Landmine Press. It will show whatever it matched automatically. Tap
-  "Change demo", pick the right one, and the image changes immediately and stays
-  changed — through a re-render, a reload, and a rebuild of the session.
-
-=============================================================
-v61.4 — THE PACK NOW LOOKS AFTER ITSELF
-=============================================================
-
-UPLOAD BOTH index.html AND sw.js THIS TIME. The service worker cache name
-changed, which is what forces the phone to pick up the new build.
-
-FIRST, A CORRECTION I OWE YOU
-  I said "you already hold all 800 on your phone". That was wrong to state as
-  fact. Two reasons it may not be true:
-
-  iOS DOES NOT KEEP INDEXEDDB FOREVER. Safari evicts script-writable storage
-  from sites you haven't opened in a while, and deleting the home-screen icon
-  clears it outright. "Saved on this phone" was never a promise I could keep,
-  and I shouldn't have phrased it as one.
-
-  AND THE IMAGES NEVER NEEDED TO BE ON THE PHONE ANYWAY. They're public URLs
-  that stream on demand, like any web image. Saving them locally only buys you
-  offline use. So if nothing is appearing, storage was never the problem —
-  something was stopping them LOADING.
-
-WHAT ACTUALLY GOES IN FIREBASE
-  The INDEX — the list that maps your exercises to the right photographs. That's
-  about 120 KB, and it now sits in Firestore next to your workout data, in the
-  same collection your existing rules already cover. It restores itself
-  silently on any device, so an eviction costs you nothing.
-
-  The photographs themselves stay on the CDN. 800 movements x 2 frames is
-  ~65 MB, far past what Firestore will hold, and there would be no point —
-  they're free public files that load on demand. What has to survive is the
-  index, and now it does.
-
-THREE MIRRORS INSTEAD OF ONE
-  Everything came from raw.githubusercontent.com, which is exactly the kind of
-  host that gets throttled or blocked on some networks. When it failed,
-  NOTHING rendered — which looks identical to "the pack isn't on my phone".
-
-  The same public-domain files are now pulled from GitHub raw, jsDelivr or
-  githack, whichever answers. It switches automatically, remembers the one
-  that worked, and even a single failed image retries on another mirror.
-
-NO MORE HUNTING FOR A BUTTON
-  If the pack is missing at startup the app now restores it from Firebase, or
-  failing that downloads it from a mirror, on its own. Both are free and
-  neither touches your WorkoutX allowance, so there was nothing to ask about.
-
-"CHECK WHAT'S WORKING"  (Settings -> Demo GIFs)
-  Tells you plainly which part is broken instead of leaving you to guess:
-  whether the index is on the phone, how many frames are saved, which of the
-  three mirrors are reachable, whether Firebase is connected and backed up,
-  and how many of your exercises matched.
-
-  Run this first if demos are still missing, and send me what it says.
-
-=============================================================
-v61.3 — DEMO COVERAGE: SEE EVERY GAP AND EVERY WRONG MATCH
-=============================================================
-
-ABOUT "CAN YOU FIND MORE GIFS LIKE THE BENCH PRESS ONE"
-
-That Bench Press image IS the free pack. The photographic style you like is
-Free Exercise DB, and you already hold the entire thing — 800+ movements — on
-your phone. There is no larger collection of that style to go and find,
-because that dataset is the collection. It came out of one source set
-(wrkout/exercises.json) and nobody has published a bigger free one in the
-same style.
-
-So the useful question isn't "where are more" — it's "which of my exercises
-didn't get matched to one", and "which got matched to the wrong one". That's
-what this adds.
-
-SETTINGS -> DEMO GIFS -> "WHICH OF MY EXERCISES HAVE NO DEMO?"
-
-  Every movement you train, listed with the demo currently attached to it and
-  where that demo came from: your own choice, a saved clip, the free pack,
-  WorkoutX, or nothing at all.
-
-  A wrong match is now visible in a list BEFORE you meet it mid-set, instead
-  of after. Landmine Press showing a bench press would have been obvious here.
-
-  Every row has a button. Gaps say "Find one", the rest say "Change". Both
-  open a search across all 800+ free-pack movements right there in the row —
-  you don't have to wait until that exercise turns up in a session.
-
-  Anything you set here is stored as YOUR choice and is never overwritten by
-  the automatic matcher, same as in Train.
-
-  The counter at the top tells you where you stand: how many exercises, how
-  many gaps, how many you've picked yourself.
-
-WHY THE MATCHER LEAVES GAPS ON PURPOSE
-  It's tuned to refuse rather than guess, because a hamstring exercise showing
-  a biceps demo is worse than showing nothing. That means some exercises come
-  up empty even when a decent clip exists in the pack under a name it couldn't
-  connect. Searching by hand finds those — "landmine" will surface every
-  landmine movement even when the matcher wouldn't commit to one.
-
-IF THE FREE PACK GENUINELY LACKS SOMETHING
-  wger (wger.de) is the other free option: open source, CC-BY-SA, free API,
-  no key. Two honest caveats — its image coverage is patchy because it's
-  community-contributed, so many exercises have no picture at all, and the
-  ones that do are a mix of photos and line drawings rather than the
-  consistent style you liked. It's a gap-filler, not a replacement. Tell me
-  which exercises are still empty after you've been through the coverage list
-  and I'll see whether it covers them before wiring anything in.
-
-=============================================================
-v61.2 — "WRONG DEMO?" NOW ACTUALLY LETS YOU CHANGE IT
-=============================================================
-
-You were right that it was overriding you. Two separate faults.
-
-FAULT ONE: THE FIRST PRESS DIDN'T OPEN A CHOOSER
-  It ran the automatic matcher again — wiping any mapping you had and
-  re-guessing. The chooser only appeared on the SECOND press, and the flag
-  tracking that lived in memory, so every reload put you back to square one.
-  In practice you could press it forever and only ever get another guess.
-
-  Now: ONE press opens the list. Auto-matching is a button INSIDE the list
-  ("Let the coach find it for me"), so it only ever runs because you asked.
-
-FAULT TWO: THE LIST ONLY HELD WORKOUTX CLIPS
-  Landmine Press is coming from the free pack, and the free pack wasn't in the
-  picker at all. Worse, with no WorkoutX catalogue on the device the picker
-  refused to open — so exactly when you most need to fix a demo, you were
-  locked out of the only tool for fixing it.
-
-  Now the list shows BOTH sources, labelled, with thumbnails. It opens with
-  the free pack alone. Type "landmine" and you get every landmine movement in
-  it.
-
-YOUR CHOICE IS NOW A FACT, NOT A HINT
-  Whatever you pick is stored against that exercise and consulted BEFORE every
-  automatic source. Nothing displaces it: not a re-match, not a fresh
-  catalogue sync, not a failed remote clip, not the free pack matcher.
-
-  The button reads "Change demo" once you've set one, and the panel gains an
-  "Undo my choice" option that hands it back to the matcher — your call, not
-  the app's.
-
-  "Use no demo" is also a real choice now and sticks the same way.
-
-=============================================================
-v61.1 — WHY EVERY DEMO WAS A FROZEN PHOTOGRAPH
-=============================================================
-
-My fault, and the cause was the fix itself: pressing "Save the matched ones to
-this phone" is what BROKE the animation.
-
-The free pack stores TWO frames per movement. The save routine filed frame 0
-under the exercise name — and the app's normal image lookup then found "a demo
-already saved for this exercise" and rendered it on its own. One still. Frozen.
-Frame 2 was sitting on your phone the whole time, downloaded and unused.
-
-FIXED FOUR WAYS
-
-  1. Saved free-pack frames are now TAGGED as a pair, so the ordinary image
-     path leaves them alone and hands them to the animator. Frames saved by
-     v61 have no tag, so the companion frame is used as the giveaway instead —
-     nothing needs re-downloading.
-
-  2. When a remote clip fails to load and the free pack covers that movement,
-     the tile is now REPLACED with the animated pair rather than settling for
-     one frozen frame. That was the specific path your Bench Press hit.
-
-  3. A remote clip that has already failed once is REMEMBERED, so the sheet
-     stops requesting a dead URL and flashing a broken tile on every render.
-     Only ever recorded when the free pack can actually cover it. "Wrong demo?"
-     clears it and gives the original another go.
-
-  4. The flip is faster (0.8s), frame 2 is PRELOADED so the first flip isn't a
-     blank box, and each frame is now LABELLED "start" / "end" in the corner.
-     Two photos alternating is ambiguous on its own — you can't tell which one
-     is the bottom of the lift. The label is the thing that makes it readable.
-
-ALSO FIXED: "LAST TIME (NaNd AGO)"
-  Seeded history carries the date "prev" rather than a real one, and that came
-  out of the arithmetic as NaN. It now reads "Last time (last session)" when
-  there's no real date — no date means no claim about when.
-
-HONEST LIMIT
-  This is still two photographs alternating, not a true GIF. It shows you the
-  start and the end of the movement, labelled. It does not show the path
-  between them. For anything you're unsure of, the "▶ demo" corner link still
-  opens real video. When your WorkoutX allowance resets, the proper animated
-  clips can be saved permanently with one button and this becomes the fallback
-  rather than the main event.
-
-
-1. WHY YOUR 500 REQUESTS DISAPPEARED
-=====================================
-This was a real bug, and it was worse than "I kept retrieving them".
-
-A catalogue GIF sits behind your WorkoutX key. An <img src> tag cannot send a
-header, so every one of them failed with a 401 on load. The app caught that
-failure and re-fetched the file properly with the key — and cached the result
-in a plain JavaScript object.
-
-That object was MEMORY ONLY. Every reload, every cold start, every time iOS
-evicted the tab, it was empty again and every GIF on the sheet was bought a
-second time. An eleven-exercise session cost eleven requests. Open Train twice
-in a day, twenty-two. A full catalogue sync is about 120 of your 500 — the
-other ~380 went on re-buying files you had already paid for.
-
-Nothing was ever downloaded INTO the app. You were renting the same files over
-and over.
-
-WHAT CHANGES
-  The bytes now go into IndexedDB on the phone, keyed by exercise name, with a
-  small index so a cold start knows what it has without reading every blob.
-  Once a movement is saved it renders from the phone forever, offline, free.
-
-  AND NOTHING IS FETCHED ON ITS OWN ANY MORE. "Fetch missing demos
-  automatically" is OFF by default. A session with eleven unsaved movements now
-  costs nothing until you press a button. Leave it off.
-
-  Order of preference when a demo is needed, cheapest first:
-    1. already on this phone      (free, instant, works offline)
-    2. a free public source       (free)
-    3. the free demo pack         (free — see section 2)
-    4. WorkoutX with your key     (costs one request — only if you allowed it)
-
-  Requests are counted and shown in Settings. The counter reads WorkoutX's own
-  quota header when it has one, but ignores a reading from a previous month —
-  otherwise last month's "0 remaining" would lock you out after the reset.
-
-BACKUP
-  IndexedDB survives redeploys. It does NOT survive deleting the home-screen
-  app. "Save my saved GIFs to a file" gives you a file to keep in Dropbox or
-  Drive; loading it back costs nothing.
-
-
-2. THE FREE DEMO PACK — 800+ MOVEMENTS, NO KEY, NO QUOTA
+HOW TO MAKE SURE THE RIGHT IMAGE IS ON THE RIGHT EXERCISE
 =========================================================
-Free Exercise DB is a public-domain dataset (Unlicense) of 800+ exercises,
-hosted free on GitHub. No key, no account, no monthly allowance, ever.
+SETUP, ONCE
+  1. Settings -> Exercise catalogue -> check "Use WorkoutX" is OFF.
+     It's forced off by this build. Your key stays saved; switch it back on
+     next month if you want its animated clips and have requests left.
+  2. Settings -> Exercise demos -> "Get the free demo pack".
+     Free, no key, no limit. Also copies itself to Firebase so it comes back
+     on its own if the phone clears its storage.
+  3. "Save the matched ones to this phone"  — for offline use in the gym.
 
-Each exercise ships TWO frames — the start and the end of the movement. The app
-alternates them about once a second, so you get the actual movement rather than
-a still photograph. It is not as slick as a real GIF. It is free, and it is
-there right now.
+CHECKING AND CORRECTING
+  4. Settings -> Exercise demos -> "Which of my exercises have no demo?"
+     Sorted so anything needing attention is at the top:
 
-It is downloaded once, matched against your library by name, equipment and
-muscle group, and then cached like anything else.
+       none        nothing at all      -> tap "Find one"
+       ~ closest   a real photo, but of a RELATED movement in the same muscle
+                   group, not that exact lift  -> tap "Change" if it looks wrong
+       match       confident, leave it
 
-MATCHING WAS TUNED TO REFUSE RATHER THAN GUESS. On a 36-exercise test it placed
-33 correctly and missed 3. The two it originally got WRONG were the important
-ones:
+  5. On any exercise, in the list OR mid-session, tap "Change demo", type a
+     word ("landmine", "press"), pick the right one. That choice is stored
+     against the exercise and NOTHING overrides it afterwards — not a re-match,
+     not a catalogue sync, not a failed clip, not the matcher. "Undo my choice"
+     hands it back to automatic when you want that.
 
-  "Deadlift"    was landing on "Romanian Deadlift"
-  "Nordic Curl" was landing on "Hammer Curls"
+  6. Anything badged "~ closest" on the image itself is the app telling you it
+     guessed. It never guesses across muscle groups — a hamstring exercise
+     cannot show a biceps photo — but within a group it will show the nearest
+     real movement rather than nothing.
 
-A hamstring exercise showing a biceps demo is worse than showing nothing. Two
-rules fixed it: equipment words in a name are treated as noise ("Barbell
-Squat" and "Squat" are the same lift), but any OTHER extra word is a qualifier
-that changes the movement and counts against the match. Both now resolve
-correctly or honestly refuse.
-
-Anything it can't place still gets the tappable "Watch demo" link, and you can
-override any demo yourself as before.
-
-
-3. PHOTOS — A TIMELINE, NOT A PILE
-===================================
-TAP A PHOTO AND ACTUALLY SEE IT
-  Full-screen viewer with the date, how long ago it was, arrows to move through
-  your shots, a label picker and a delete button.
-
-DATES AND FOLDERS
-  Every photo now carries a real timestamp and an angle: Front / Side / Back /
-  Legs / Other. They group into months, newest month first, and filter by angle
-  along the top. Each thumbnail shows its date day-first and "4 weeks ago".
-
-  Your existing photos are migrated automatically. They keep their dates and
-  start out unlabelled — tap one and set the angle.
-
-THEN & NOW
-  Two photos side by side with the gap spelled out. Quick buttons for 1 month,
-  3 months, 6 months and first-vs-latest.
-
-  It compares like with like: a front shot against a front shot. Which angle it
-  uses is chosen by which one actually has the history to cover the gap you
-  asked for — not by whichever photo you happened to add last, which is
-  arbitrary when you shoot three angles in one go. If there's no photo on the
-  exact date it takes the nearest and tells you how far off it is.
-
-  Your bodyweight around both dates is shown underneath when a check-in exists
-  near enough to each.
-
-  "Ask coach what's changed" sends both to the AI, oldest first, and is told to
-  say so if the lighting or angle differs too much to tell — rather than
-  inventing progress.
+IF SOMETHING IS STILL MISSING
+  Settings -> Exercise demos -> "Check what's working" reports which mirror is
+  reachable, whether the pack is loaded, whether Firebase has it, and how many
+  of your exercises matched. Then "Copy the list to fix" puts the exact names
+  on your clipboard. Send me that and I'll work through them by name.
 
 
-4. MEASUREMENTS
-================
-A collapsible panel under the photos. Chest, waist, hips, shoulders, arm,
-thigh, calf, neck — with a history table, and the change since your first entry
-next to it.
+THE ONE HONEST LIMIT
+====================
+The free pack gives two frames, start and end, not true motion. It shows you
+the positions, labelled, and it is free and unlimited and cannot run out. It
+does not show the path between them — that's what the "> demo" button is for.
 
-ESTIMATES FROM PHOTOS
-  "Estimate from my photos" reads your latest shots and gives circumferences
-  and a body-fat figure. It needs your height first and refuses without it —
-  there is nothing to scale a photograph against otherwise, and any number
-  would be invented.
-
-  Those entries are tagged EST everywhere they appear. They are a direction of
-  travel, not numbers to quote to the centimetre. A measurement you take
-  yourself on the same day replaces the estimate rather than sitting beside it.
-
-  The change column is deliberately NOT colour-coded. Green-for-bigger would
-  call a wider waist progress and a narrower one failure, which depends
-  entirely on the phase you're in. The number and its sign say everything that
-  is actually known.
-
-Measurements sync across your devices. Photos still don't — too big for a
-Firestore document.
-
-
-5. TRAIN — TODAY'S SESSION IS A DROPDOWN
-=========================================
-At the top of Train, above "Build today's session". One tap to swap Push Day
-for Pilates without going back to Home.
-
-It writes the same day override the weekly plan writes, so the two can't
-disagree, and it rebuilds the sheet immediately. The line beside it tells you
-when you've swapped away from what was planned.
-
-
-6. ABOUT THE RENPHO TAPE
-=========================
-No live link is possible, and it isn't a limitation of your app:
-
-  - iOS Safari has no Web Bluetooth at all, so a home-screen web app cannot
-    talk to the tape directly.
-  - Apple Health has no web API. Only a native app can read it.
-  - Renpho has no official public API. The unofficial ones need your Renpho
-    password sitting in your page source and break whenever Renpho ships an
-    update.
-
-The route that works is the export: measure -> it syncs to the Renpho app over
-Bluetooth -> Trends -> Circumference -> clock icon -> select data -> export as
-CSV -> import into Amir PT. An importer is not in v61 yet; send me one exported
-file once the tape arrives and I'll build the parser against the real format
-rather than guessing at it.
-
-TWO THINGS ON DAY ONE
-  Hold [M] for about a second to switch from straight-line to CIRCUMFERENCE
-  mode. There is a 2.1 cm difference between the two, because the tape has to
-  feed into the receptacle when measuring a circumference. In the wrong mode
-  every number you log is 2.1 cm out.
-
-  Set it to CENTIMETRES. That's what the measurement store uses.
-
-
-7. WHAT WAS FOUND AND FIXED WHILE TESTING
-==========================================
-PHOTO IDENTITY WAS A TIMESTAMP. Two photos added in the same session could
-share one, so "the photo at time T" silently returned the wrong one. Identity
-is now the photo's own id.
-
-A VARIABLE IN THE TEMPORAL DEAD ZONE. The saved-GIF lookup guards on
-"typeof GIFURL", and it runs during the first render. With `let`, even typeof
-throws — the guard would have been the thing that broke your session sheet.
-
-RELABELLING A PHOTO OUT OF THE CURRENT FILTER left the viewer pointing at
-somebody else's photo. It now closes instead of silently swapping.
-
-THE DEFAULT COMPARISON paired a front shot against a side one, then printed a
-warning about its own choice.
+Real animated GIFs come back the moment you switch WorkoutX on with requests
+available, and they sit at level 2 of the ladder, above the frames. Everything
+you've chosen by hand stays exactly as you set it either way.

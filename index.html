@@ -738,11 +738,14 @@ a{color:var(--orange);}
     <div class="head"><div><div class="greet">Your coach's memory</div><h1 class="display">Settings</h1></div></div>
     <div class="section-h">Exercise catalogue</div>
     <div class="card">
-      <div class="notebox mb">WorkoutX gives the coach <b>1,400+ exercises</b> with animated demos, difficulty and equipment tags — so it can program far beyond the built-in list and still respect what you have in Madrid or Greece. Synced <b>once</b> onto this device, then it works offline forever with no per-workout API calls.</div>
+      <div class="notebox mb"><b>Optional, and off.</b> WorkoutX has 1,400+ exercises with truly animated demos, but it's metered at 500 requests a month and it was the source of every blank tile. The free demo pack below covers the same ground with no key and no limit, so nothing here is needed any more. Your key stays saved — switch this on whenever you want the animation back.</div>
       <div class="field" style="margin-bottom:12px"><label>WorkoutX API key</label>
         <input class="txtin" id="setWxKey" type="password" placeholder="wx_..." />
         <div class="hint mt">Free plan: 500 requests a month. A full sync uses about 120 of them, once. Get a key at workoutxapp.com.</div></div>
-      <button class="btn sec mb" onclick="go('browse')">Browse all exercises</button>
+      <div class="set-row"><span class="k" style="color:var(--txt);font-weight:600">Use WorkoutX</span>
+        <div class="switch" id="wxOnSwitch" onclick="toggleWxOn(this)"></div></div>
+      <div class="hint" style="margin-top:-4px">Off by default. The free demo pack covers the same ground with no key and no monthly limit. Turn this back on if you want WorkoutX's animated clips and have requests left.</div>
+      <button class="btn sec mt mb" onclick="go('browse')">Browse all exercises</button>
       <button class="btn" onclick="getMyExercises()">Get my exercises</button>
       <div class="hint mt">Restores from your cloud backup if there is one (free), otherwise downloads from WorkoutX.</div>
       <button class="btn sec mt" onclick="saveWxKey()">Save key only</button>
@@ -756,9 +759,9 @@ a{color:var(--orange);}
       <div id="wxMsg" class="hint mt" style="font-size:13px"></div>
     </div>
 
-    <div class="section-h">Demo GIFs — kept on this phone</div>
+    <div class="section-h">Exercise demos</div>
     <div class="card">
-      <div class="notebox mb">Every demo GIF used to be re-fetched from WorkoutX <b>each time a session rendered</b> — and each fetch spends one of your 500 monthly requests. They are now <b>saved onto this phone permanently</b> the first time they're pulled. Once a movement is saved it costs nothing ever again and works with no signal.</div>
+      <div class="notebox mb">The buttons in this first block only apply when WorkoutX is switched on above. Demos it fetches are now saved onto this phone permanently instead of being re-bought on every render, which is what drained your allowance. <b>If WorkoutX is off, skip to the free demo pack below</b> — that's where everything comes from now.</div>
       <div id="gifStatus" class="hint mb" style="font-size:13px"></div>
       <div class="set-row"><span class="k" style="color:var(--txt);font-weight:600">Fetch missing demos automatically</span>
         <div class="switch" id="autoGifSwitch" onclick="toggleAutoGif(this)"></div></div>
@@ -1069,6 +1072,11 @@ function mergeDefaults(parsed){ const d={...structuredClone(DEFAULTS),...parsed}
     if(p.pose===undefined) p.pose="";
   });
   d.wx=Object.assign(structuredClone(DEFAULTS.wx),d.wx||{});
+  /* v62 — the default changed to off, but a saved profile carries its own
+     on:true and would quietly override it, so the whole point of switching
+     WorkoutX out would never reach his phone. Done once, and the switch in
+     Settings puts it back whenever he wants. */
+  if(!d.wx.v62){ d.wx.v62=true; d.wx.on=false; }
   d.profile=Object.assign(structuredClone(DEFAULTS.profile),d.profile||{});
   d.prefs=Object.assign(structuredClone(DEFAULTS.prefs),d.prefs||{});
   d.cloud=Object.assign(structuredClone(DEFAULTS.cloud),d.cloud||{});
@@ -1732,25 +1740,154 @@ function setDemoPick(name,p){
   delete _gifTried[name];
   catInvalidate(); save();
 }
-function mediaFor(name){
+/* ===== v63 · ONE RESOLVER, ONE RENDERER ==================================
+   Until now there were TWO image systems that didn't know about each other:
+   the single-clip path (mediaFor/mediaFail/mediaFallback/swapMedia) built for
+   WorkoutX, and the two-frame path (fedResolve/fedTileHTML/fedPaintCached)
+   built for the free pack. Every fault in this app's demos has been at the
+   seam between them — one quietly painting over the other's work: a saved
+   frame overriding a chosen clip, a cached frame overriding a changed pick,
+   a coverage report disagreeing with the tile beside it.
+
+   So there is now exactly ONE function that decides what an exercise shows,
+   ONE that renders it, and ONE that handles a failure. Nothing else touches
+   the image. The order below is the whole policy, in Amir's stated priority:
+
+     1. what he chose himself            — always wins, never overwritten
+     2. a real animated GIF              — saved on the phone, or live
+     3. free-pack start/end frames       — a real photograph, animated
+     4. a link to a video demo           — only if all of the above are absent
+
+   Every tile carries the ▶ demo link regardless, so he can always check the
+   movement is the one he thinks it is. */
+function demoFor(name){
+  if(!name) return {kind:"link"};
   const pk=demoPick(name);
-  /* He said no demo, or he picked a free-pack clip that the animator renders. */
-  if(pk && (pk.s==="none" || pk.s==="fed")) return null;
-  /* v61: a demo already saved onto the phone beats every remote source. It's
-     the same clip, it renders instantly, and it costs nothing to show. */
-  if(typeof GIFURL!=="undefined" && GIFURL[name] && !gifIsFed(name)) return GIFURL[name];
-  /* A remote clip that has already failed once, where the free pack can cover
-     it, is not tried again. */
-  if(DB.deadMedia && DB.deadMedia[name]) return null;
-  const picked=DB.media&&DB.media[name];
-  if(picked && DB.mediaPicked && DB.mediaPicked[name]) return picked;   // he or the coach chose this
-  /* A catalogue URL needs the key to load, so an <img> pointed at it always
-     401s first. Prefer a free public clip when one exists — same movement, and
-     it loads without spending anything. */
-  const free=(!picked && EXIMG[name]) ? EXIMG[name] : null;
-  if(free && !wxAutoGif()) return free;
-  return catGif(name) || ((EX(name)||{}).gif) || picked || EXIMG[name] || null;
+  const dead=!!(DB.deadMedia && DB.deadMedia[name]);
+
+  /* 1 ── his own choice */
+  if(pk && pk.s==="none") return {kind:"link", mine:true, label:"no demo"};
+  if(pk && pk.s==="fed"){
+    const r=fedRecById(pk.id);
+    if(r && r.f && r.f.length)
+      return {kind:"frames", id:r.i, frames:r.f.map(f=>fedImgBase()+f), label:r.n, mine:true};
+  }
+  if(pk && pk.s==="wx" && !dead){
+    const rec=(typeof WXIDX!=="undefined") && WXIDX[pk.k];
+    if(rec && rec.gif) return {kind:"gif", src:GIFURL[name]||rec.gif, label:pk.k, mine:true};
+  }
+
+  /* 2 ── a genuine animated clip. A saved free-pack FRAME is not one: it's
+          half a pair, and showing it alone is what made demos look frozen. */
+  if(typeof GIFURL!=="undefined" && GIFURL[name] && !gifIsFed(name))
+    return {kind:"gif", src:GIFURL[name], label:"saved clip"};
+  if(!dead){
+    const picked=DB.media && DB.media[name];
+    if(picked && DB.mediaPicked && DB.mediaPicked[name])
+      return {kind:"gif", src:picked, label:"chosen clip", mine:true};
+    if(EXIMG[name]) return {kind:"gif", src:EXIMG[name], label:"built-in clip"};
+    if(wxEnabled()){
+      const cg=catGif(name);
+      if(cg) return {kind:"gif", src:cg, label:((catMatch(name)||{}).name)||"WorkoutX"};
+    }
+  }
+
+  /* 3 ── free-pack frames */
+  const fx=fedAuto(name);
+  if(fx && fx.r.f && fx.r.f.length)
+    return {kind:"frames", id:fx.r.i, frames:fx.r.f.map(f=>fedImgBase()+f),
+            label:fx.r.n, approx:fx.approx};
+
+  /* 4 ── nothing to show but the link */
+  return {kind:"link"};
 }
+/* Kept because browse lists and the coverage report only need a still. */
+function mediaFor(name){
+  const d=demoFor(name);
+  if(d.kind==="gif") return d.src;
+  if(d.kind==="frames") return d.frames[0];
+  return null;
+}
+function anyThumb(name){ return mediaFor(name); }
+
+/* ===== ONE RENDERER ===== */
+function demoTileHTML(name){
+  const d=demoFor(name), nEsc=attrEsc(name), js=jsAttr(name);
+  /* Always present, on every kind of tile. */
+  const demoLink="<a class='demoover' href='"+demoSearchURL(name)+
+    "' target='_blank' rel='noopener'>\u25b6 demo</a>";
+  const approx=d.approx? "<span class='approxchip'>\u2248 closest match \u00b7 tap Change demo</span>" : "";
+  if(d.kind==="gif"){
+    return "<div class='imgwrap' data-ex='"+nEsc+"' data-exname='"+nEsc+"' data-kind='gif'>"+
+      "<img src='"+attrEsc(d.src)+"' alt='"+nEsc+"' loading='lazy' onerror=\"demoFail(this,'"+js+"')\">"+
+      approx+demoLink+"</div>";
+  }
+  if(d.kind==="frames"){
+    const f0=attrEsc(d.frames[0]), f1=attrEsc(d.frames[1]||d.frames[0]);
+    return "<div class='imgwrap' data-ex='"+nEsc+"' data-exname='"+nEsc+"' data-kind='frames'>"+
+      "<img src='"+f0+"' data-f0='"+f0+"' data-f1='"+f1+"' data-on='0' "+
+        "data-fedid='"+attrEsc(d.id)+"' data-fedname='"+nEsc+"' alt='"+nEsc+
+        "' loading='lazy' onerror='fedImgFail(this)'>"+
+      "<span class='fedphase'>start</span>"+approx+demoLink+"</div>";
+  }
+  return watchTileHTML(name," data-exname='"+nEsc+"' data-kind='link'");
+}
+
+/* ===== ONE FAILURE HANDLER =====
+   Records the dead source and re-renders through the SAME renderer, so a
+   failure just steps down the ladder instead of doing bespoke DOM surgery
+   that the next paint then undoes. */
+function demoFail(img,name){
+  try{
+    if(img) img.onerror=null;
+    if(!name) return;
+    DB.deadMedia=DB.deadMedia||{};
+    if(!DB.deadMedia[name]){ DB.deadMedia[name]=1; save(); }
+    let host=null;
+    try{ host=img&&img.closest? img.closest('.imgwrap') : null; }catch(e){}
+    if(!host) host=document.querySelector('.imgwrap[data-exname="'+CSS.escape(name)+'"]');
+    if(!host) return;
+    host.outerHTML=demoTileHTML(name);
+    paintDemos();
+  }catch(e){}
+}
+/* Old call sites (swapMedia, hydrateMedia) funnel into the same place. */
+function mediaFail(img,name){ demoFail(img,name); }
+function mediaFallback(name){
+  try{
+    const w=document.querySelector(".imgwrap[data-exname='"+CSS.escape(name)+"']")
+         || document.querySelector(".imgwrap[data-ex='"+CSS.escape(name)+"']");
+    if(w) w.outerHTML=demoTileHTML(name);
+  }catch(e){}
+}
+
+/* ===== ONE POST-RENDER PAINT =====
+   Swaps remote URLs for anything already on the phone, then starts the
+   animator. Replaces paintSavedGifs + fedPaintCached, which used to run one
+   after the other and fight over the same <img>. */
+async function paintDemos(){
+  try{
+    for(const im of [...document.querySelectorAll('img[data-fedid]')]){
+      const id=im.getAttribute('data-fedid'); if(!id) continue;
+      const a=await gifGet(fedImgKey(id,0)), b=await gifGet(fedImgKey(id,1));
+      if(a){ im.setAttribute('data-f0',a); if(im.getAttribute('data-on')!=='1') im.src=a; }
+      if(b){ im.setAttribute('data-f1',b); }
+    }
+    for(const el of [...document.querySelectorAll(".imgwrap[data-kind='gif'][data-exname]")]){
+      const n=el.getAttribute('data-exname'); if(!n||gifIsFed(n)) continue;
+      const u=await gifGet(n); if(!u) continue;
+      const im=el.querySelector('img'); if(im && im.src!==u) im.src=u;
+    }
+    fedAnimStart();
+    /* A tile fell through to a bare link only because the pack isn't loaded.
+       Fetch it (free) and redraw, rather than leaving him with links. */
+    if(!fedHas() && document.querySelector(".imgwrap[data-kind='link']")){
+      fedEnsure().then(n=>{ if(n){ try{ if(DB.workout) renderWorkoutSheet(DB.workout); }catch(e){} } });
+    }
+  }catch(e){}
+}
+async function paintSavedGifs(){ return paintDemos(); }
+async function fedPaintCached(){ return paintDemos(); }
 /* Forget whatever demo is cached for this exercise and fall back to the best source. */
 function refreshDemo(i){
   const e=DB.workout&&DB.workout.main[i]; if(!e) return;
@@ -1885,7 +2022,18 @@ async function hydrateMedia(){
     if(url){ const live=document.querySelector('[data-exmedia="'+CSS.escape(name)+'"]'); if(live) swapMedia(live,url,name); }
   }
 }
-function swapMedia(el,url,name){ if(!el) return; el.outerHTML="<div class='imgwrap' data-ex='"+attrEsc(name)+"'><img src='"+attrEsc(url)+"' alt='"+attrEsc(name)+"' loading='lazy' onerror=\"mediaFail(this,'"+jsAttr(name)+"')\"><a class='demoover' href='"+demoSearchURL(name)+"' target='_blank' rel='noopener'>▶ demo</a></div>"; }
+/* A found clip is recorded and the tile is rebuilt by the single renderer,
+   rather than hand-writing markup here that the painter can't then find —
+   this one was missing data-exname, so nothing could ever repaint it. */
+function swapMedia(el,url,name){
+  if(!el||!name) return;
+  DB.media=DB.media||{}; DB.media[name]=url;
+  DB.mediaPicked=DB.mediaPicked||{}; DB.mediaPicked[name]=1;
+  if(DB.deadMedia) delete DB.deadMedia[name];
+  save();
+  el.outerHTML=demoTileHTML(name);
+  paintDemos();
+}
 function catOf(name){ const e=EX(name); return (e&&e.cat) || catFromName(name); }
 function pickSplit(){ if(DB.dayOverride && DB.dayOverride.date===today() && DB.dayOverride.split) return DB.dayOverride.split; return DB.schedule[new Date().getDay()] || "Full Body"; }
 function todaySets(ex){ const a=DB.strength[ex]; if(!a) return []; const x=a.find(o=>o.date===today()); return x?x.sets:[]; }
@@ -2373,81 +2521,8 @@ function watchTileHTML(name,dataAttrs){ return "<a class='imgwrap watch'"+(dataA
 /* An <img> can't send the X-WorkoutX-Key header, so a catalogue GIF loaded by
    plain src comes back 401. Before falling back to an external link, fetch it
    properly with the key and swap in a blob. */
-function mediaFallback(name){
-  try{ const w=document.querySelector(".imgwrap[data-ex='"+CSS.escape(name)+"']"); if(!w) return;
-    w.classList.add('watch');
-    w.innerHTML="<a class='watchlink' href='"+demoSearchURL(name)+"' target='_blank' rel='noopener'>"+watchInner(name)+"</a>";
-  }catch(e){}
-}
 /* Swap a dead tile for the animated free-pack pair, in place. */
-function replaceWithFed(img,name){
-  try{
-    const html=fedTileHTML(name); if(!html) return false;
-    let host=null;
-    try{ host=img&&img.closest? img.closest('.imgwrap') : null; }catch(e){}
-    if(!host) host=document.querySelector('.imgwrap[data-exname="'+CSS.escape(name)+'"]');
-    if(!host) return false;
-    host.outerHTML=html;
-    fedPaintCached(); fedAnimStart();
-    return true;
-  }catch(e){ return false; }
-}
-function mediaFail(img,name){
-  try{
-    if(img) img.onerror=null;
-    /* The free pack covers this movement? Hand over to the two-frame animator
-       rather than settling for one frozen frame. */
-    if(fedFrames(name) && replaceWithFed(img,name)){
-      /* Remember it failed, so the next render goes straight to the free pack
-         instead of requesting a dead URL and flashing a broken tile every
-         single time the sheet is drawn. Only ever recorded when there IS a
-         working alternative, and "Wrong demo?" clears it. */
-      try{ DB.deadMedia=DB.deadMedia||{}; if(!DB.deadMedia[name]){ DB.deadMedia[name]=1; save(); } }catch(e){}
-      return;
-    }
-    /* v61 — order matters, and it used to be wrong. The phone is checked
-       FIRST, so a demo already paid for is never bought twice. A free public
-       clip is tried second. Only if both miss, and only if Amir has explicitly
-       switched auto-fetch on, do we spend a WorkoutX request. */
-    gifGet(name).then(saved=>{
-      if(saved && img && img.isConnected){ img.src=saved; return; }
-      const free=EXIMG[name];
-      if(free && img && img.isConnected && img.src.indexOf(free)<0){
-        img.onerror=function(){ this.onerror=null; mediaFallbackOrFetch(img,name); };
-        img.src=free; return;
-      }
-      mediaFallbackOrFetch(img,name);
-    }).catch(()=>mediaFallback(name));
-  }catch(e){ mediaFallback(name); }
-}
-function mediaFallbackOrFetch(img,name){
-  if(!wxAutoGif()){ mediaFallback(name); return; }
-  if(_gifTried[name] || !wxKey() || !(catMatch(name)||{}).gif || wxReqLeft()<=0){ mediaFallback(name); return; }
-  _gifTried[name]=1;
-  wxGifAuthed(name).then(url=>{
-    if(url && img && img.isConnected){ img.src=url; }
-    else mediaFallback(name);
-  }).catch(()=>mediaFallback(name));
-}
-function exImgHTML(name,muscles){
-  const nEsc=attrEsc(name), js=jsAttr(name);
-  const pk=demoPick(name);
-  if(pk && pk.s==="none") return watchTileHTML(name," data-exname='"+nEsc+"'");
-  if(pk && pk.s==="fed"){
-    try{ const fed=fedTileHTML(name); if(fed) return fed; }catch(e){}
-  }
-  const src=mediaFor(name);
-  if(src){
-    return "<div class='imgwrap' data-ex='"+nEsc+"' data-exname='"+nEsc+"'>"+
-      "<img src='"+attrEsc(src)+"' alt='"+nEsc+"' loading='lazy' onerror=\"mediaFail(this,'"+js+"')\">"+
-      "<a class='demoover' href='"+demoSearchURL(name)+"' target='_blank' rel='noopener'>▶ demo</a></div>";
-  }
-  /* Nothing cached — the free public-domain pack, and failing that a drawn
-     muscle card. Never a blank space. */
-  try{ const fed=fedTileHTML(name); if(fed) return fed; }catch(e){}
-  return watchTileHTML(name," data-exname='"+nEsc+"'");
-}
-
+function exImgHTML(name,muscles){ return demoTileHTML(name); }
 function ensureWorkout(){
   if(DB.workout && DB.workout.loc && DB.workout.loc!==locKey()) DB.workout=null;
   if(!DB.workout){ DB.workout=buildWorkout(); save();
@@ -2635,8 +2710,7 @@ function renderWorkoutSheet(w){
   sheetSec("rec","Recovery notes","","<div class='recovery'>"+w.recovery+"</div>",false)+
   completeBlockHTML(w)+"</div>";
   try{ bindSheetSecs(); }catch(e){}
-  try{ paintSavedGifs(); }catch(e){}
-  try{ fedPaintCached(); fedAnimStart(); }catch(e){}
+  try{ paintDemos(); }catch(e){}
   try{ hydrateMedia(); }catch(e){}
   try{ updateSyncDot(); }catch(e){}
   try{ renderTrainDayPick(); }catch(e){}
@@ -4746,7 +4820,7 @@ function scheduleInApp(){
    v18 ADDITIONS — draggable rest timer · weekly training memory · AI planner
    · Firestore sync
    ========================================================================== */
-const APP_VERSION="v62.2 · 06/08/2026";
+const APP_VERSION="v63 · 06/08/2026";
 
 /* ===== 1. REST TIMER — drag it anywhere so it never blocks the chat box ===== */
 let _rtDrag=null;
@@ -6193,17 +6267,6 @@ function wxReqLeft(){
 
 /* Paint whatever is already on the phone into a freshly rendered sheet.
    Costs nothing — pure IndexedDB reads. */
-async function paintSavedGifs(){
-  const nodes=[...document.querySelectorAll('[data-exname]')];
-  for(const el of nodes){
-    const name=el.getAttribute('data-exname'); if(!name) continue;
-    if(!gifSaved(name)) continue;
-    if(gifIsFed(name)) continue;          // two-frame pair — fedPaintCached owns it
-    const u=await gifGet(name); if(!u) continue;
-    const live=document.querySelector('[data-exname="'+CSS.escape(name)+'"]');
-    if(live) swapMedia(live,u,name);
-  }
-}
 async function wxImgFail(img,name){
   try{ img.onerror=null; }catch(e){}
   if(!name){ if(img) img.style.visibility="hidden"; return; }
@@ -6470,16 +6533,13 @@ function fedNames(){ return (FED||[]).map(r=>r.n); }
    asking WorkoutX for a thumbnail costs a request per row — which is how a
    list of 752 exercises could quietly eat a month's allowance. */
 function fedThumb(name){
-  const id=fedIdFor(name); if(!id) return null;
-  const r=fedRecById(id); if(!r||!r.f||!r.f.length) return null;
-  return fedImgBase()+r.f[0];
+  const d=demoFor(name);
+  return d.kind==="frames"? d.frames[0] : null;
 }
 /* What any list should show for an exercise: whatever's free and available. */
-function anyThumb(name){ return mediaFor(name) || fedThumb(name); }
 function fedFrames(name){
-  const x=fedResolve(name);
-  if(!x||!x.r.f||!x.r.f.length) return null;
-  return x.r.f.map(f=>fedImgBase()+f);
+  const d=demoFor(name);
+  return (d.kind==="frames" && d.frames && d.frames.length)? d.frames : null;
 }
 async function loadFreePack(){
   if(fedHas() && !confirm("The free pack is already on this phone ("+fedCount()+" movements).\n\nDownload a fresh copy?")) return;
@@ -6650,10 +6710,9 @@ function fedNear(name){
 }
 /* One place that decides which record a tile is showing, and whether it's a
    confident match or a near one. */
-function fedResolve(name){
-  const pk=demoPick(name);
-  if(pk && pk.s==="fed"){ const r=fedRecById(pk.id); return r? {r,approx:false,mine:true} : null; }
-  if(pk) return null;                                // he chose something else
+/* Matching only — knows nothing about his choices. demoFor() handles those,
+   so there's exactly one place where precedence is decided. */
+function fedAuto(name){
   const strict=fedMatch(name);
   /* Comfortably above the bar = state it plainly. Only just over = show the
      photo but say it's the closest thing, so a wrong one is obvious at a
@@ -6663,20 +6722,19 @@ function fedResolve(name){
   if(near) return {r:near,approx:true};
   return null;
 }
-function fedIdFor(name){ const x=fedResolve(name); return x? x.r.i : null; }
-function fedIsApprox(name){ const x=fedResolve(name); return !!(x&&x.approx); }
+/* Pick-aware view of the same thing, for callers that ask "what is this tile
+   actually showing" — the coverage report, the offline saver, thumbnails. */
+function fedResolve(name){
+  const d=demoFor(name);
+  if(d.kind!=="frames") return null;
+  const r=fedRecById(d.id);
+  return r? {r, approx:!!d.approx, mine:!!d.mine} : null;
+}
+function fedIdFor(name){ const d=demoFor(name); return d.kind==="frames"? d.id : null; }
+function fedIsApprox(name){ return !!demoFor(name).approx; }
 function fedFramesSaved(name){
   const id=fedIdFor(name); if(!id) return false;
   return !!GIFIDX[fedImgKey(id,0)];
-}
-async function fedPaintCached(){
-  const imgs=[...document.querySelectorAll('img[data-f0][data-f1][data-fedid]')];
-  for(const im of imgs){
-    const id=im.getAttribute('data-fedid'); if(!id) continue;
-    const a=await gifGet(fedImgKey(id,0)), b=await gifGet(fedImgKey(id,1));
-    if(a){ im.setAttribute('data-f0',a); if(im.getAttribute('data-on')!=='1') im.src=a; }
-    if(b){ im.setAttribute('data-f1',b); }
-  }
 }
 /* v61.5: frames saved by an earlier build sit under the exercise name and will
    keep overriding his choices. Nothing identifies which record they came from,
@@ -6702,20 +6760,7 @@ async function fedPurgeLegacyFrames(){
            muscle groups, so a hamstring exercise can't land on a biceps photo.
            It's badged as approximate, because presenting a guess as a certainty
            is the thing worth avoiding, not the guess itself.  */
-function fedTileHTML(name){
-  const frames=fedFrames(name); if(!frames) return null;
-  const nEsc=attrEsc(name), idEsc=attrEsc(fedIdFor(name)||"");
-  const f0=attrEsc(frames[0]), f1=attrEsc(frames[1]||frames[0]);
-  /* The badge is the point. Two photos flipping is ambiguous on its own — you
-     can't tell which one is the bottom of the lift. Labelling them removes the
-     guesswork this is meant to solve. */
-  return "<div class='imgwrap' data-ex='"+nEsc+"' data-exname='"+nEsc+"'>"+
-    "<img src='"+f0+"' data-f0='"+f0+"' data-f1='"+f1+"' data-on='0' data-fedname='"+nEsc+"' "+
-    "data-fedid='"+idEsc+"' alt='"+nEsc+"' loading='lazy' onerror='fedImgFail(this)'>"+
-    "<span class='fedphase'>start</span>"+
-    (fedIsApprox(name)? "<span class='approxchip'>\u2248 closest match \u00b7 tap Change demo</span>" : "")+
-    "<a class='demoover' href='"+demoSearchURL(name)+"' target='_blank' rel='noopener'>▶ demo</a></div>";
-}
+function fedTileHTML(name){ return demoFor(name).kind==="frames"? demoTileHTML(name) : null; }
 /* ===== v61.3 · DEMO COVERAGE =============================================
    "Find me more of that style" has no answer, because that style IS the free
    pack and he already holds all of it. The useful question is the other one:
@@ -6925,6 +6970,8 @@ function renderGifStatus(){
   const el=document.getElementById('gifStatus');
   const sw=document.getElementById('autoGifSwitch');
   if(sw) sw.classList.toggle('on',wxAutoGif());
+  const wsw=document.getElementById('wxOnSwitch');
+  if(wsw) wsw.classList.toggle('on',!!(DB.wx&&DB.wx.on));
   if(!el) return;
   const n=gifCount();
   const fresh=DB.wx && DB.wx.quotaAt && String(DB.wx.quotaAt).slice(0,7)===wxMonthKey();
@@ -6933,6 +6980,18 @@ function renderGifStatus(){
     "<br>Requests spent this month, as far as this phone has seen: <b>"+wxReqUsed()+"</b> of "+wxQuotaCap()+"."+
     (fresh? " WorkoutX last reported <b>"+DB.wx.quotaLeft+"</b> remaining." : "")+
     (wxReqLeft()<=0? " <span style='color:var(--red)'>Counted out — wait for the monthly reset, then save them once.</span>":"");
+}
+function toggleWxOn(el){
+  DB.wx=DB.wx||{};
+  DB.wx.on=!DB.wx.on;
+  el.classList.toggle('on',DB.wx.on);
+  catInvalidate(); save();
+  const m=document.getElementById('wxMsg');
+  if(m) m.innerHTML = DB.wx.on
+    ? "WorkoutX is on. Its clips are metered \u2014 "+wxReqLeft()+" request"+(wxReqLeft()===1?"":"s")+" left this month by this phone's count."
+    : "WorkoutX is off. Everything comes from the free pack: no key, no limit, nothing that can run out.";
+  try{ if(DB.workout) renderWorkoutSheet(DB.workout); }catch(e){}
+  try{ renderCatList(); }catch(e){}
 }
 function toggleAutoGif(el){
   DB.wx=DB.wx||{};
@@ -7259,7 +7318,7 @@ function chooseFedDemo(i,id){
   if(DB.media) delete DB.media[ex.name];
   if(DB.mediaPicked) delete DB.mediaPicked[ex.name];
   const el=document.getElementById('exb'+i); if(el) el.outerHTML=exBlockHTML(ex,i);
-  try{ fedPaintCached(); fedAnimStart(); }catch(e){}
+  try{ paintDemos(); }catch(e){}
   const r=fedRecById(id);
   toast("Demo set \u00b7 "+((r&&r.n)||"free pack"));
 }
@@ -7278,7 +7337,7 @@ function resetDemo(i){
   if(DB.exMap) delete DB.exMap[ex.name];
   catInvalidate(); save();
   const el=document.getElementById('exb'+i); if(el) el.outerHTML=exBlockHTML(ex,i);
-  try{ fedPaintCached(); fedAnimStart(); }catch(e){}
+  try{ paintDemos(); }catch(e){}
   toast("Back to the automatic match");
 }
 function chooseDemo(i,catName){
@@ -7968,7 +8027,7 @@ loadPhotos();
 gifIdxLoad().then(async n=>{
   try{ await fedPurgeLegacyFrames(); }catch(e){}
   try{ renderGifStatus(); }catch(e){}
-  if(n){ try{ paintSavedGifs(); }catch(e){} }
+  if(n){ try{ paintDemos(); }catch(e){} }
 });
 fedLoad().then(n=>{
   if(n){
