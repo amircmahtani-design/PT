@@ -586,7 +586,7 @@ a{color:var(--orange);}
     <details class="hcard" data-hk="intake">
       <summary class="hsum"><span class="t">Today’s food</span><span class="chev">›</span></summary>
       <div class="hbody">
-        <div class="hint mb">Your nutritionist owns the plan. Log it here whenever you like — the coach reads it to decide how hard to push you, and you can come back and update it all day.</div>
+        <div class="hint mb">Your nutritionist sends the food and the daily figure varies, so there is nothing to hit here — just record what it was. Come back and update it as often as you like.</div>
         <div id="intakeNow"></div>
         <div class="intgrid mt">
           <div class="intcell"><span class="k">Calories</span>
@@ -658,7 +658,7 @@ a{color:var(--orange);}
         <input class="txtin" id="ciPain" placeholder="e.g. right wrist, left knee, none" /></div>
       <div class="field">
         <label>What you actually ate</label>
-        <div class="hint" style="margin:-4px 0 10px">Optional. Your nutritionist owns the plan — the coach reads these only to decide how hard to push you.</div>
+        <div class="hint" style="margin:-4px 0 10px">Optional. Your nutritionist sends the food, so it varies day to day — just record what it was. The coach reads it to judge how hard to push you.</div>
         <div class="intgrid">
           <div class="intcell"><span class="k">Calories</span>
             <input class="txtin" id="ciKcal" inputmode="decimal" placeholder="1500" /></div>
@@ -3803,7 +3803,8 @@ function renderPhaseCard(){
         ? "<b>Phase 1 \u2014 strip the fat.</b> Hold the deficit until the stomach is flat. Training exists to keep every gram of muscle you have and add what it can on top. The diet does the fat loss; the workout never becomes cardio to chase calories."
         : "<b>Phase 2 \u2014 build.</b> Calories are up and the same framework goes to work adding muscle. Volume climbs on the groups that build your shape; the waist is the thing to watch.")+
     "</div>"+
-    (en? "<div class='hint mb'>Target "+en.kcal+" kcal against roughly "+en.maint+" maintenance at 187cm / "+((DB.profile&&DB.profile.weightKg)||"?")+"kg \u2014 about a "+en.pct+"% deficit.</div>" : "")+
+    (en? "<div class='hint mb'>"+(en.fromLog? "Averaging <b>"+en.kcal+" kcal</b> over your last "+en.days+" logged days" : "Around <b>"+en.kcal+" kcal</b> a day")+
+          " against roughly "+en.maint+" maintenance at 187cm / "+((DB.profile&&DB.profile.weightKg)||"?")+"kg \u2014 about a "+en.pct+"% deficit.</div>" : "")+
     (a? "<div class='hint mb'>Logged, last "+a.days+" day"+(a.days===1?"":"s")+": "+
         (a.kcal!=null? a.kcal+" kcal":"kcal not logged")+
         (a.protein!=null? " \u00b7 "+a.protein+"g protein":"")+
@@ -3874,19 +3875,17 @@ function renderIntake(){
   const el=document.getElementById('intakeNow'); if(!el) return;
   const c=todayCheckin(false)||{};
   const has=['kcal','protein','carbs','fat'].some(k=>c[k]!=null);
-  const target=(DB.nutrition&&DB.nutrition.calorieTarget)||null;
   if(!has){
-    el.innerHTML="<div class='notebox'>Nothing logged for today yet."+
-      (target? " Your target is <b>"+target+" kcal</b>." : "")+"</div>";
+    el.innerHTML="<div class='notebox'>Nothing logged for today yet.</div>";
     return;
   }
   const kg=(DB.profile&&DB.profile.weightKg)||null;
   const perKg=(c.protein!=null&&kg)? (Math.round((c.protein/kg)*10)/10) : null;
-  const left=(target&&c.kcal!=null)? target-c.kcal : null;
+  const avg=intakeAvg(7);
   el.innerHTML="<div class='notebox'>"+
-    "<b style='font-size:16px'>"+(c.kcal!=null? c.kcal+" kcal" : "kcal not logged")+"</b>"+
-    (left!=null? " <span style='color:"+(left<0?"var(--gold)":"var(--muted)")+"'>"+
-       (left>=0? left+" left of "+target : Math.abs(left)+" over "+target)+"</span>" : "")+
+    "<b style='font-size:16px'>"+(c.kcal!=null? fmtG(c.kcal)+" kcal" : "kcal not logged")+"</b>"+
+    /* Context, not a scoreboard: how today sits against his own recent days. */
+    ((avg&&avg.kcal!=null&&avg.days>1)? " <span style='color:var(--muted)'>\u00b7 "+avg.kcal+" avg over "+avg.days+" days</span>" : "")+
     "<div style='margin-top:6px;font-size:13px;color:var(--muted)'>"+
       (c.protein!=null? "Protein "+c.protein+"g"+(perKg? " ("+perKg+"g/kg)":"") : "Protein not logged")+
       (c.carbs!=null? " \u00b7 Carbs "+c.carbs+"g":"")+
@@ -3941,14 +3940,21 @@ function fatFuelContext(){
   };
 }
 function energyContext(){
-  const kcal=(DB.nutrition&&DB.nutrition.calorieTarget)||null;
+  /* v73.2 — prefer what he has actually eaten over the stored figure. His
+     nutritionist varies the food daily, so a fixed number was only ever a
+     stand-in until there were real days logged. */
+  const avg=(typeof intakeAvg==="function")? intakeAvg(14) : null;
+  const kcal=(avg&&avg.kcal!=null&&avg.days>=3)? avg.kcal
+           : ((DB.nutrition&&DB.nutrition.calorieTarget)||null);
+  const fromLog=!!(avg&&avg.kcal!=null&&avg.days>=3);
   const kg=(DB.profile&&DB.profile.weightKg)||null;
   const cm=(DB.profile&&DB.profile.height)||null;
   if(!kcal||!kg||!cm) return null;
   const bmr=10*kg+6.25*cm-5*45+5;
   const maint=Math.round(bmr*1.5);
   const gap=maint-kcal;
-  return {kcal,maint,gap,pct:Math.round((gap/maint)*100),steep:(gap/maint)>=0.25};
+  return {kcal,maint,gap,pct:Math.round((gap/maint)*100),steep:(gap/maint)>=0.25,
+          fromLog, days:(avg&&avg.days)||0};
 }
 /* Sets per week that produce THAT physique — not the maximums that produce
    the biggest possible one. */
@@ -4070,7 +4076,10 @@ function coachingDoctrine(){
 "  \u2022 Watch the waist. If it starts thickening, that is the signal the surplus is too large \u2014 flag it once and let his nutritionist handle it.\n"
 ))+"\n"+
 (en? ("=== WHAT HE IS ACTUALLY RUNNING ON ===\n"+
-"Target "+en.kcal+" kcal against roughly "+en.maint+" maintenance for 187cm / "+((DB.profile&&DB.profile.weightKg)||"?")+"kg \u2014 about a "+en.pct+"% deficit"+(en.steep?", a steep one":"")+".\n"+
+(en.fromLog
+  ? ("Actually eating about "+en.kcal+" kcal a day (his own logs, "+en.days+" days) against roughly "+en.maint+" maintenance for 187cm / "+((DB.profile&&DB.profile.weightKg)||"?")+"kg \u2014 about a "+en.pct+"% deficit"+(en.steep?", a steep one":"")+".\n")
+  : ("Roughly "+en.kcal+" kcal a day against about "+en.maint+" maintenance for 187cm / "+((DB.profile&&DB.profile.weightKg)||"?")+"kg \u2014 near a "+en.pct+"% deficit"+(en.steep?", a steep one":"")+". That intake figure is a stand-in until he logs a few real days.\n"))+
+"HIS NUTRITIONIST SENDS HIS FOOD AND THE DAILY NUMBER VARIES. There is no target he is trying to hit and no budget he is spending down \u2014 a day is simply what it was. Never frame his intake as being over, under, or \"X of Y\", and never congratulate or caution him on a number. Read it purely as how much fuel he had, and let it inform how hard you push.\n"+
 (function(){ const a=intakeAvg(7);
   return a? ("LOGGED INTAKE, last "+a.days+" day"+(a.days===1?"":"s")+": "+(a.kcal!=null?a.kcal+" kcal":"kcal not logged")+
     (a.protein!=null? ", "+a.protein+"g protein ("+(Math.round((a.protein/((DB.profile&&DB.profile.weightKg)||83.7))*10)/10)+"g per kg)":"")+
@@ -4647,25 +4656,25 @@ function coachSetCoachStyle(v){ DB.prefs.coachStyle=String(v||"").trim(); save()
    check-in, so saving food on the Home card left this line frozen at zero.
    One fact, one place: it reads the check-in, same as the card, the coach and
    the weekly averages. */
+/* v73.2 — no target framing. His nutritionist sends the food and the daily
+   figure varies, so there is nothing to hit and nothing to stay under. 1480
+   kcal is not "1480 of 1500", it is just what he ate. Showing a budget
+   invented a goal he does not have. */
 function renderNutrition(){
   const el=document.getElementById('nutriLine'); if(!el) return;
-  const n=DB.nutrition||{};
   const c=(typeof todayCheckin==="function"? todayCheckin(false) : null)||{};
-  const cal=(c.kcal!=null)? c.kcal : null;
-  const pro=(c.protein!=null)? c.protein : null;
-  if(!n.calorieTarget && !n.proteinTarget && cal==null && pro==null && !n.phase){
-    el.style.display="none"; el.innerHTML=""; return;
-  }
+  const has=['kcal','protein','carbs','fat'].some(k=>c[k]!=null);
+  if(!has){ el.style.display="none"; el.innerHTML=""; return; }
   el.style.display="";
+  const kg=(DB.profile&&DB.profile.weightKg)||null;
+  const perKg=(c.protein!=null&&kg)? " ("+fmtG(c.protein/kg)+"g/kg)" : "";
   const parts=[];
-  if(n.calorieTarget||cal!=null)
-    parts.push("<b>\ud83c\udf7d\ufe0f "+(cal!=null?fmtG(cal):"\u2013")+(n.calorieTarget?" / "+n.calorieTarget:"")+"</b> kcal");
-  if(n.proteinTarget||pro!=null)
-    parts.push("<b>\ud83e\udd69 "+(pro!=null?fmtG(pro):"\u2013")+(n.proteinTarget?" / "+n.proteinTarget:"")+"g</b> protein");
-  if(c.carbs!=null) parts.push("<b>"+fmtG(c.carbs)+"g</b> carbs");
-  if(c.fat!=null)   parts.push("<b>"+fmtG(c.fat)+"g</b> fat");
-  el.innerHTML="<div class='card'><div class='card-title'><span>Nutrition today"+(n.phase?" \u00b7 "+n.phase:"")+"</span></div>"+
-    "<div class='nutri'>"+(parts.join(" &nbsp;\u00b7&nbsp; ")||"Nothing logged yet")+"</div></div>";
+  if(c.kcal!=null)    parts.push("<b>\ud83c\udf7d\ufe0f "+fmtG(c.kcal)+"</b> kcal");
+  if(c.protein!=null) parts.push("<b>\ud83e\udd69 "+fmtG(c.protein)+"g</b> protein"+perKg);
+  if(c.carbs!=null)   parts.push("<b>"+fmtG(c.carbs)+"g</b> carbs");
+  if(c.fat!=null)     parts.push("<b>"+fmtG(c.fat)+"g</b> fat");
+  el.innerHTML="<div class='card'><div class='card-title'><span>Food today</span></div>"+
+    "<div class='nutri'>"+parts.join(" &nbsp;\u00b7&nbsp; ")+"</div></div>";
 }
 /* Cardio session logging (Train) */
 function addCardioLog(){ const c=DB.cardio||{name:"Cardio"}; const t=(val('cardioTime')||"").trim(); if(!t){ toast("Enter a time e.g. 30:00"); return; }
@@ -6466,7 +6475,7 @@ function scheduleInApp(){
    v18 ADDITIONS — draggable rest timer · weekly training memory · AI planner
    · Firestore sync
    ========================================================================== */
-const APP_VERSION="v73.1 · 06/08/2026";
+const APP_VERSION="v73.2 · 06/08/2026";
 
 /* ===== 1. REST TIMER — drag it anywhere so it never blocks the chat box ===== */
 let _rtDrag=null;

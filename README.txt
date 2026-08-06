@@ -1,5 +1,43 @@
-AMIR PT — v73.1 · 06/08/2026
+AMIR PT — v73.2 · 06/08/2026
 ============================
+
+Upload index.html AND sw.js.
+
+
+IT'S NOT A BUDGET
+=================
+You were right and I'd built the wrong idea in. "1480 / 1500" and "20 left"
+frame your food as a target you're spending down. Your nutritionist sends the
+food, the daily number varies, and 1480 is just what that day was.
+
+All of that language is gone:
+
+  "Nutrition today"  ->  "Food today". No slash, no target, no remaining.
+                         Just what you ate, with protein per kg.
+  Home card          ->  the figure, plus your own recent average for
+                         context. Not a score against anything.
+  Check-in hint      ->  "just record what it was".
+
+The only comparison left is against your OWN recent days — "1480 kcal · 1496
+avg over 5 days" — which is context, not a scoreboard, and it disappears until
+you have more than one day logged.
+
+
+AND THE SAME CORRECTION WHERE IT MATTERS MORE
+=============================================
+The coach was reasoning from 1500 as though it were fixed. It now reads your
+ACTUAL logged average over the last 14 days and says so — "actually eating
+about 1496 kcal a day (his own logs, 5 days)" — falling back to a rough
+stand-in only until you have at least three days recorded.
+
+It's also told explicitly: his nutritionist sends the food and the daily
+number varies, there is no target and no budget, never frame his intake as
+over, under or "X of Y", and never congratulate or caution him on a number.
+Read it purely as how much fuel he had, and let that inform how hard to push.
+
+That last part matters more than the display. A coach that treats a 1620 day
+as "going over" would start making training decisions on a rule you never set.
+
 
 Upload index.html AND sw.js.
 
