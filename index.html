@@ -495,6 +495,9 @@ details.sec2[open] .secsum2:after{content:"\2212";}
 .histsec[open]>summary{border-bottom:1px solid var(--hair);}
 .histsecbody{padding:10px 10px 4px;}
 .histsecbody .card{margin-bottom:10px;}
+.secbar{display:flex;align-items:center;gap:9px;margin:0 4px 6px;}
+.secbar .sbt{font-size:11px;font-weight:800;letter-spacing:.5px;text-transform:uppercase;color:var(--label);}
+.secbar .smove{margin-left:auto;}
 .psec{margin-bottom:14px;border:1px solid var(--line);border-radius:18px;overflow:hidden;background:var(--card);}
 .psec>summary{list-style:none;cursor:pointer;display:flex;align-items:center;gap:9px;padding:16px 18px;}
 .psec>summary::-webkit-details-marker{display:none;}
@@ -632,21 +635,21 @@ a{color:var(--orange);}
     <button class="btn green mb" onclick="go('checkin')" style="font-size:16px;padding:16px">Start check-in</button>
     <div id="firstRun"></div>
     <div id="readyToday"></div>
-    <details class="hcard" data-hk="tmr">
+    <details class="hcard" data-hk="tmr" data-sk="tmr">
       <summary class="hsum"><span class="t">Tomorrow</span><span class="chev">›</span></summary>
       <div class="hbody">
       <div class="card-title"><span>Coach's call for tomorrow</span></div>
       <div id="tmrBox"></div>
       </div>
     </details>
-    <div class="card hero tap" onclick="go('workout')">
+    <div class="card hero tap" data-sk="hero" data-nowrap="1" onclick="go('workout')">
       <div class="glow"></div>
       <div class="eyebrow" id="heroPhase">Today</div>
       <h2 class="display" id="heroTitle">Today's Workout</h2>
       <div class="sub" id="heroSub">Tap to open your session — log sets right on the exercise.</div>
       <button class="cta" onclick="event.stopPropagation();generateWorkout()">Open Today's Workout</button>
     </div>
-    <details class="hcard" data-hk="intake">
+    <details class="hcard" data-hk="intake" data-sk="intake">
       <summary class="hsum"><span class="t">Today’s food</span><span class="chev">›</span></summary>
       <div class="hbody">
         <div class="hint mb">Your nutritionist sends the food and the daily figure varies, so there is nothing to hit here — just record what it was. Come back and update it as often as you like.</div>
@@ -668,12 +671,12 @@ a{color:var(--orange);}
       </div>
     </details>
 
-    <details class="hcard" data-hk="metrics">
+    <details class="hcard" data-hk="metrics" data-sk="metrics">
       <summary class="hsum"><span class="t">Your numbers</span><span class="chev">›</span></summary>
       <div class="hbody"><div class="grid" id="metricGrid"></div></div>
     </details>
-    <div id="nutriLine" style="display:none"></div>
-    <details class="hcard" data-hk="week" open>
+    <div id="nutriLine" data-sk="foodline" data-nowrap="1" style="display:none"></div>
+    <details class="hcard" data-hk="week" data-sk="week" open>
       <summary class="hsum"><span class="t">Weekly plan</span><span class="chev">›</span></summary>
       <div class="hbody">
       <div class="card-title"><span>Weekly plan</span><span class="itin-edit">pick from the dropdowns</span></div>
@@ -682,7 +685,7 @@ a{color:var(--orange);}
       <div id="itinList"></div>
       </div>
     </details>
-    <details class="hcard" data-hk="streak">
+    <details class="hcard" data-hk="streak" data-sk="streak">
       <summary class="hsum"><span class="t">Streak</span><span class="chev">›</span></summary>
       <div class="hbody">
       <div class="powerbox"><div class="num" id="streakNum">0</div>
@@ -691,7 +694,7 @@ a{color:var(--orange);}
     </details>
 
     <div style="text-align:center;margin:14px 0 4px">
-      <button class="swapbtn" id="homeArrangeBtn" style="width:auto;padding:9px 16px;font-size:12.5px" onclick="toggleHomeArrange()">Rearrange cards</button>
+      <button class="swapbtn" id="s-todayArrangeBtn" style="width:auto;padding:9px 16px;font-size:12.5px" onclick="toggleSecArrange('s-today')">Rearrange cards</button>
     </div>
   </section>
 
@@ -878,7 +881,7 @@ a{color:var(--orange);}
 
     <div class="runtot" id="foodRunning"></div>
 
-    <details class="psec" id="mealSec" open>
+    <details class="psec" id="mealSec" data-sk="meal" open>
       <summary><span class="pst">Add a meal</span><span class="chev">›</span></summary>
       <div class="psecbody"><div class="card">
         <div class="hint mb">Describe it and the coach works out the macros, or type them in yourself if you already know.</div>
@@ -896,7 +899,7 @@ a{color:var(--orange);}
       </div></div>
     </details>
 
-    <details class="psec" id="drinkSec">
+    <details class="psec" id="drinkSec" data-sk="drink">
       <summary><span class="pst">Add a drink</span><span class="chev">›</span></summary>
       <div class="psecbody"><div class="card">
         <div class="hint mb">Alcohol isn't protein, carbs or fat — it's its own thing at 7 kcal a gram. It gets counted in your calories and tracked separately, with any carbs from the drink itself added properly.</div>
@@ -914,7 +917,7 @@ a{color:var(--orange);}
       </div></div>
     </details>
 
-    <details class="psec" id="wholeDaySec">
+    <details class="psec" id="wholeDaySec" data-sk="wholeday">
       <summary><span class="pst">Whole day at once</span><span class="chev">›</span></summary>
       <div class="psecbody"><div class="card">
         <div class="hint mb">For the days your nutritionist has it covered and you just want the totals in. Same box as Home — whichever you use, it's the same day.</div>
@@ -930,15 +933,19 @@ a{color:var(--orange);}
       </div></div>
     </details>
 
-    <details class="psec" id="todaySec" open>
+    <details class="psec" id="todaySec" data-sk="todaylog" open>
       <summary><span class="pst">Today</span><span class="chev">›</span></summary>
       <div class="psecbody"><div class="card"><div id="mealLog"></div></div></div>
     </details>
 
-    <details class="psec" id="foodHistSec">
+    <details class="psec" id="foodHistSec" data-sk="fooddays">
       <summary><span class="pst">Recent days</span><span class="chev">›</span></summary>
       <div class="psecbody"><div class="card"><div id="foodHistory"></div></div></div>
     </details>
+
+    <div style="text-align:center;margin:14px 0 4px">
+      <button class="swapbtn" id="s-foodArrangeBtn" style="width:auto;padding:9px 16px;font-size:12.5px" onclick="toggleSecArrange('s-food')">Rearrange sections</button>
+    </div>
   </section>
 
   <section class="screen" id="s-browse">
@@ -1332,6 +1339,12 @@ function mergeDefaults(parsed){ const d={...structuredClone(DEFAULTS),...parsed}
   if(!d.wx.v62){ d.wx.v62=true; d.wx.on=false; }
   /* v69 — his stated numbers, so the coach can program for the deficit and
      scale anything it reads off a photo. Only filled if never set. */
+  /* v80 — Home used to have its own ordering store. Carry it across so a
+     layout he already set isn't lost, then the old key is dead. */
+  if(d.prefs && d.prefs.homeOrder && !((d.prefs.secOrder||{})['s-today'])){
+    d.prefs.secOrder=d.prefs.secOrder||{};
+    d.prefs.secOrder['s-today']=d.prefs.homeOrder.slice();
+  }
   if(!d.profile.height) d.profile.height=187;
   /* v69 — he showed me the target physique and confirmed he still wants to
      build. Replace the old vague goal, but never overwrite one he wrote. */
@@ -1427,8 +1440,9 @@ function go(s){
   document.querySelectorAll('.tab').forEach(t=>t.classList.toggle('active',t.dataset.s===s));
   document.getElementById('chatBar').style.display = s==='coach'?'flex':'none';
   const rt=document.getElementById('restTimer'); if(rt) rt.classList.toggle('overchat', s==='coach');
+  if(s==='today'){ try{ bindSections('s-today'); }catch(e){} }
   if(s==='progress'){ try{ bindSections('s-progress'); }catch(e){} }
-  if(s==='food'){ try{ renderFood(); }catch(e){} }
+  if(s==='food'){ try{ renderFood(); bindSections('s-food'); }catch(e){} }
   if(s==='browse') renderBrowse();
   if(s==='settings'){ collapsibleSettings(); renderCatList(); }
   if(s==='checkin') syncCheckinLoc();
@@ -3138,8 +3152,10 @@ function setDefaultRest(kind,delta){
   try{ renderRestPrefs(); }catch(e){}
   try{ renderPhaseCard(); }catch(e){}
   try{ renderIntake(); }catch(e){}
+  try{ bindSections('s-today'); }catch(e){}
   try{ bindSections('s-progress'); }catch(e){}
   try{ renderFood(); }catch(e){}
+  try{ bindSections('s-food'); }catch(e){}
   try{ renderCheckinPhotos(); }catch(e){}
   try{ const mv=document.getElementById('masteryVal'); if(mv) mv.textContent=masterySets()+" sets"; }catch(e){}
   try{ if(DB.workout) renderWorkoutSheet(DB.workout); }catch(e){}
@@ -6915,7 +6931,7 @@ function scheduleInApp(){
    v18 ADDITIONS — draggable rest timer · weekly training memory · AI planner
    · Firestore sync
    ========================================================================== */
-const APP_VERSION="v79 · 06/08/2026";
+const APP_VERSION="v80 · 06/08/2026";
 
 /* ===== 1. REST TIMER — drag it anywhere so it never blocks the chat box ===== */
 let _rtDrag=null;
@@ -10099,12 +10115,12 @@ function saveCloud(){
    screen, this wraps ANY card carrying data-sk into a collapsible section at
    runtime, remembers open/closed, and reorders it. Adding a card later means
    adding data-sk to it and nothing else. */
-const SEC_TITLES={ history:"Session history", weight:"Bodyweight", lifts:"Your lifts", photos:"Physique photos",
+const SEC_TITLES={ hero:"Today\u2019s workout", foodline:"Food today", tmr:"Tomorrow", intake:"Today\u2019s food", metrics:"Metrics", week:"Weekly plan", streak:"Streak", meal:"Add a meal", drink:"Add a drink", wholeday:"Whole day at once", todaylog:"Today", fooddays:"Recent days", history:"Session history", weight:"Bodyweight", lifts:"Your lifts", photos:"Physique photos",
   plan:"The plan", review:"Week in review", compare:"Then & now",
   read:"Coach\u2019s read", measure:"Measurements" };
 function secOrder(screen){
   const host=document.getElementById(screen); if(!host) return [];
-  const known=[...host.querySelectorAll('[data-sk]')].map(e=>e.dataset.sk);
+  const known=[...host.querySelectorAll(':scope > [data-sk]')].map(e=>e.dataset.sk);
   const saved=((DB.prefs&&DB.prefs.secOrder)||{})[screen]||[];
   const out=saved.filter(k=>known.includes(k));
   known.forEach(k=>{ if(!out.includes(k)) out.push(k); });   /* new cards appear, never vanish */
@@ -10115,7 +10131,10 @@ function secOrder(screen){
 function buildSections(screen){
   const host=document.getElementById(screen); if(!host) return;
   host.querySelectorAll('[data-sk]').forEach(card=>{
-    if(card.dataset.wrapped==="1" || card.tagName==="DETAILS") return;
+    /* Some blocks move but must not be turned into a collapsible: the hero
+       button is the whole point of Home, and the food line is a summary. They
+       carry data-nowrap and take part in ordering only. */
+    if(card.dataset.wrapped==="1" || card.tagName==="DETAILS" || card.dataset.nowrap==="1") return;
     const k=card.dataset.sk;
     const title=card.querySelector('.card-title');
     const label=(title&&title.querySelector('span'))? title.querySelector('span').textContent : (SEC_TITLES[k]||k);
@@ -10143,14 +10162,22 @@ function buildSections(screen){
 }
 function applySecOrder(screen){
   const host=document.getElementById(screen); if(!host) return;
-  const map={};
-  host.querySelectorAll('details[data-sk]').forEach(d=>{ map[d.dataset.sk]=d; });
-  let anchor=null;
+  const nodes=[...host.querySelectorAll(':scope > [data-sk]')];
+  if(!nodes.length) return;
+  const map={}; nodes.forEach(d=>{ map[d.dataset.sk]=d; });
+  /* Anchor to where the block CURRENTLY starts. Chaining from the first item
+     in the saved order instead would drag the whole block to wherever that one
+     happened to sit \u2014 on Food that put every section below the button at the
+     bottom of the page. */
+  const first=nodes[0];
+  const mark=document.createComment('sec');
+  first.parentNode.insertBefore(mark, first);
+  let anchor=mark;
   secOrder(screen).forEach(k=>{
     const el=map[k]; if(!el) return;
-    if(anchor) anchor.after(el);
-    anchor=el;
+    anchor.after(el); anchor=el;
   });
+  mark.remove();
 }
 function moveSection(screen,k,dir){
   const order=secOrder(screen);
@@ -10160,7 +10187,7 @@ function moveSection(screen,k,dir){
   DB.prefs=DB.prefs||{}; DB.prefs.secOrder=DB.prefs.secOrder||{};
   DB.prefs.secOrder[screen]=order; save();
   applySecOrder(screen); bindSections(screen);
-  const el=document.querySelector('#'+screen+' details[data-sk="'+k+'"]');
+  const el=document.querySelector('#'+screen+' > [data-sk="'+k+'"]');
   if(el){ el.scrollIntoView({behavior:'smooth',block:'center'});
           el.classList.add('moved'); setTimeout(()=>el.classList.remove('moved'),1200); }
   toast((SEC_TITLES[k]||k)+" \u2192 "+(order.indexOf(k)+1)+" of "+order.length);
@@ -10177,10 +10204,30 @@ function bindSections(screen){
   const arrange=!!((DB.prefs&&DB.prefs.secArrange)||{})[screen];
   const open=((DB.prefs&&DB.prefs.openSec)||{})[screen]||{};
   const order=secOrder(screen);
-  document.querySelectorAll('#'+screen+' details[data-sk]').forEach(d=>{
+  document.querySelectorAll('#'+screen+' > [data-sk]').forEach(d=>{
     const k=d.dataset.sk;
+    /* A block that isn't collapsible still needs its arrows, and they go in a
+       little bar above it rather than in a summary it hasn't got. */
+    if(d.tagName!=="DETAILS"){
+      let bar=d.previousElementSibling;
+      if(bar && !bar.classList.contains('secbar')) bar=null;
+      if(arrange){
+        const i=order.indexOf(k);
+        const html="<span class='sbt'>"+escapeHtml(SEC_TITLES[k]||k)+"</span>"+
+          "<span class='smove'>"+
+          "<button class='hb' onclick=\"moveSection('"+screen+"','"+k+"',-1)\""+(i===0?" disabled":"")+">\u2191</button>"+
+          "<button class='hb' onclick=\"moveSection('"+screen+"','"+k+"',1)\""+(i===order.length-1?" disabled":"")+">\u2193</button></span>";
+        if(!bar){ bar=document.createElement('div'); bar.className='secbar'; d.parentNode.insertBefore(bar,d); }
+        bar.innerHTML=html;
+      } else if(bar){ bar.remove(); }
+      return;
+    }
+    /* Remember how the markup shipped it, then honour his choice above that.
+       Hardcoding two Progress keys here meant every Food section defaulted
+       shut, overriding the ones written as open. */
+    if(d.dataset.initOpen===undefined) d.dataset.initOpen = d.open? "1":"0";
     if(open[k]!==undefined) d.open=!!open[k];
-    else if(!d.dataset.defaulted){ d.open=(k==="weight"||k==="lifts"); d.dataset.defaulted="1"; }
+    else d.open = d.dataset.initOpen==="1";
     const sum=d.querySelector('summary'); if(!sum) return;
     let ctl=sum.querySelector('.smove');
     if(arrange && !ctl){
@@ -10199,86 +10246,21 @@ function bindSections(screen){
   const btn=document.getElementById(screen+'ArrangeBtn');
   if(btn) btn.textContent = arrange? "Done" : "Rearrange sections";
 }
-const HOME_CARD_NAMES={ tmr:"Tomorrow", intake:"Today\u2019s food",
-  metrics:"Metrics", week:"This week", streak:"Streak" };
-function homeOrder(){
-  const known=[...document.querySelectorAll('#s-today details[data-hk]')].map(d=>d.dataset.hk);
-  const saved=(DB.prefs&&DB.prefs.homeOrder)||[];
-  /* Saved order first, then anything new that has appeared since \u2014 a card
-     added in a later version must not vanish because it wasn't in the list. */
-  const out=saved.filter(k=>known.includes(k));
-  known.forEach(k=>{ if(!out.includes(k)) out.push(k); });
-  return out;
-}
-function applyHomeOrder(){
-  const host=document.getElementById('s-today'); if(!host) return;
-  const cards={};
-  host.querySelectorAll('details[data-hk]').forEach(d=>{ cards[d.dataset.hk]=d; });
-  const order=homeOrder();
-  let anchor=null;
-  order.forEach(k=>{
-    const el=cards[k]; if(!el) return;
-    if(anchor) anchor.after(el);
-    else if(el.parentNode) el.parentNode.insertBefore(el, cards[order[0]]);
-    anchor=el;
-  });
-}
-function moveHomeCard(k,dir){
-  const order=homeOrder();
-  const i=order.indexOf(k), j=i+dir;
-  if(i<0||j<0||j>=order.length) return;
-  order[i]=order[j]; order[j]=k;
-  DB.prefs=DB.prefs||{}; DB.prefs.homeOrder=order; save();
-  applyHomeOrder(); bindHomeCards();
-  const el=document.querySelector('#s-today details[data-hk="'+k+'"]');
-  if(el){ el.scrollIntoView({behavior:'smooth',block:'center'});
-          el.classList.add('moved'); setTimeout(()=>el.classList.remove('moved'),1200); }
-  toast((HOME_CARD_NAMES[k]||k)+" \u2192 "+(order.indexOf(k)+1)+" of "+order.length);
-}
-function toggleHomeArrange(){
-  DB.prefs=DB.prefs||{};
-  DB.prefs.homeArrange=!DB.prefs.homeArrange;
-  save(); bindHomeCards();
-  toast(DB.prefs.homeArrange? "Drag handles on \u2014 move the cards" : "Done");
-}
+/* v80 — ordering and the arrange controls moved to the generic section
+   system, which now covers Home, Progress and Food. Two implementations of
+   the same idea is how the duplicate weeklyReview slipped through, so this
+   keeps ONLY the open/closed persistence that is genuinely Home's. */
 function bindHomeCards(){
-  applyHomeOrder();
-  const arrange=!!(DB.prefs&&DB.prefs.homeArrange);
-  const order=homeOrder();
   document.querySelectorAll('#s-today details[data-hk]').forEach(d=>{
     const k=d.dataset.hk;
     const st=(DB.prefs&&DB.prefs.openHome)||{};
     if(st[k]!==undefined) d.open=!!st[k];
-
-    /* The arrows live in the summary, so they're reachable whether the card
-       is open or shut. */
-    const sum=d.querySelector('summary'); 
-    if(sum){
-      let ctl=sum.querySelector('.hmove');
-      if(arrange && !ctl){
-        ctl=document.createElement('span');
-        ctl.className='hmove';
-        const i=order.indexOf(k);
-        ctl.innerHTML="<button class='hb' onclick=\"event.preventDefault();event.stopPropagation();moveHomeCard('"+k+"',-1)\""+(i===0?" disabled":"")+">\u2191</button>"+
-                      "<button class='hb' onclick=\"event.preventDefault();event.stopPropagation();moveHomeCard('"+k+"',1)\""+(i===order.length-1?" disabled":"")+">\u2193</button>";
-        const chev=sum.querySelector('.chev');
-        if(chev) sum.insertBefore(ctl,chev); else sum.appendChild(ctl);
-      } else if(arrange && ctl){
-        const i=order.indexOf(k);
-        const bs=ctl.querySelectorAll('.hb');
-        if(bs[0]) bs[0].disabled=(i===0);
-        if(bs[1]) bs[1].disabled=(i===order.length-1);
-      } else if(!arrange && ctl){ ctl.remove(); }
-    }
-
     if(d.dataset.bound==="1") return; d.dataset.bound="1";
     d.addEventListener('toggle',()=>{
       DB.prefs=DB.prefs||{}; DB.prefs.openHome=DB.prefs.openHome||{};
       DB.prefs.openHome[k]=d.open; save();
     });
   });
-  const btn=document.getElementById('homeArrangeBtn');
-  if(btn) btn.textContent = arrange? "Done rearranging" : "Rearrange cards";
 }
 function boot(){
   const d=new Date(), hr=d.getHours();

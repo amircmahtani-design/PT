@@ -1,5 +1,82 @@
-AMIR PT — v79 · 06/08/2026
+AMIR PT — v80 · 06/08/2026
 ==========================
+
+Upload index.html AND sw.js.
+
+
+EVERYTHING ON HOME MOVES NOW
+============================
+The workout hero and the "Food today" line weren't in the reorder system at
+all — only the collapsible cards were. So the two biggest things on the page
+were the two you couldn't move.
+
+Both move now. Tap "Rearrange cards" and every block on Home gets arrows,
+including the ones that aren't collapsible: they get a small bar above them
+with the name and the controls, because they haven't got a header to put them
+in. Want food at the top and the workout under it? Two taps.
+
+
+AND THE REAL FIX UNDERNEATH
+===========================
+There were TWO reordering systems: one written for Home in v74, and the
+generic one written for Progress in v77. That is exactly the duplication that
+let a stale weeklyReview silently override the new one for ten versions.
+
+So I deleted the Home-only one — about 1,800 characters of it — and put Home
+on the generic system. One implementation now covers Home, Progress and Food,
+which means:
+
+  - a fix to ordering lands on all three at once
+  - a new screen is a matter of tagging its blocks, nothing more
+  - there is no second copy to drift out of step
+
+Any layout you had already set on Home is carried across automatically.
+
+Each screen keeps its own order, so rearranging one never disturbs another.
+Verified across all three, including an old Home-only layout migrating with
+nothing lost.
+
+
+STILL TO DO IF YOU WANT IT
+  Train and Settings aren't tagged yet. Train is mostly the session sheet,
+  which already reorders exercise by exercise, and Settings is one long
+  collapsible list — so neither felt urgent. Say the word and they're a few
+  lines each now that the system is shared.
+
+
+Upload index.html AND sw.js.
+
+
+FOOD SECTIONS REARRANGE
+=======================
+"Rearrange sections" at the bottom of the Food tab, same as Progress and Home.
+Add a meal, Add a drink, Whole day at once, Today, Recent days — put them in
+whatever order suits how you actually log.
+
+The running total stays pinned at the top. You asked for a counter at the top
+and it should stay there.
+
+Each screen keeps its own order, so rearranging Food doesn't disturb Progress.
+
+
+TWO BUGS THIS TURNED UP BEFORE YOU SAW THEM
+===========================================
+1. EVERY FOOD SECTION WOULD HAVE OPENED SHUT.
+   The default open/closed state was hardcoded to two Progress section names.
+   Anything else defaulted closed — including "Add a meal" and "Today", which
+   are written as open in the markup. Sections now remember how they shipped
+   and use that as the default, with your own choice on top.
+
+2. REORDERING COULD THROW SECTIONS PAST THE BUTTON.
+   The ordering chained everything after whichever section came first in your
+   saved order. On Progress the sections are one contiguous block so it
+   happened to work. On Food there's a running total above and a button below,
+   so moving a section to the top would have dragged the entire block down
+   past the button at the bottom of the page.
+
+   It now anchors to where the block actually starts rather than to one of its
+   members.
+
 
 Upload index.html AND sw.js.
 
