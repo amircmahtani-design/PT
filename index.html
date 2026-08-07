@@ -513,6 +513,44 @@ details.sec2[open] .secsum2:after{content:"\2212";}
 .smove .hb{background:var(--pill);border:1px solid var(--line);color:var(--txt);
   border-radius:9px;padding:5px 10px;font-size:13px;font-weight:800;line-height:1;}
 .smove .hb[disabled]{opacity:.3;}
+background:var(--card);border:1px solid var(--line);border-radius:18px;padding:18px;margin-bottom:14px;}
+.rtbig{font-size:34px;font-weight:800;color:var(--orange);line-height:1;}
+.rtbig span{font-size:14px;font-weight:700;color:var(--muted);margin-left:7px;}
+.rtrow{display:flex;gap:16px;margin-top:12px;flex-wrap:wrap;}
+.rtrow div{display:flex;flex-direction:column;}
+.rtrow b{font-size:16px;font-weight:800;color:var(--txt);}
+.rtrow span{font-size:10.5px;font-weight:700;text-transform:uppercase;letter-spacing:.4px;color:var(--label);margin-top:2px;}
+.rtsub{margin-top:11px;font-size:12px;color:var(--dim);font-weight:600;}
+.drinkgrid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:9px;}
+.drinkbtn{display:flex;flex-direction:column;align-items:flex-start;gap:3px;background:var(--pill);
+  border:1px solid var(--line);border-radius:13px;padding:11px 12px;text-align:left;}
+.drinkbtn .di{font-size:19px;}
+.drinkbtn .dn{font-size:12.5px;font-weight:800;color:var(--txt);line-height:1.25;}
+.drinkbtn .dm{font-size:11px;font-weight:700;color:var(--muted);}
+.mealrow{display:flex;align-items:center;gap:10px;padding:10px 2px;border-bottom:1px solid var(--hair);}
+.mealrow:last-child{border-bottom:none;}
+.mealrow .ml{flex:1 1 auto;min-width:0;display:flex;flex-direction:column;gap:3px;}
+.mealrow .ml b{font-size:14px;font-weight:700;color:var(--txt);}
+.mealrow .ml span{font-size:11.5px;color:var(--muted);font-weight:600;}
+.runtot{background:var(--card);border:1px solid var(--line);border-radius:18px;padding:18px;margin-bottom:14px;}
+.rtbig{font-size:34px;font-weight:800;color:var(--orange);line-height:1;}
+.rtbig span{font-size:14px;font-weight:700;color:var(--muted);margin-left:7px;}
+.rtrow{display:flex;gap:16px;margin-top:12px;flex-wrap:wrap;}
+.rtrow>div{display:flex;flex-direction:column;}
+.rtrow b{font-size:16px;font-weight:800;color:var(--txt);}
+.rtrow span{font-size:10.5px;font-weight:700;text-transform:uppercase;letter-spacing:.4px;color:var(--label);margin-top:2px;}
+.rtsub{margin-top:11px;font-size:12px;color:var(--dim);font-weight:600;}
+.drinkgrid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:9px;}
+.drinkbtn{display:flex;flex-direction:column;align-items:flex-start;gap:3px;background:var(--pill);
+  border:1px solid var(--line);border-radius:13px;padding:11px 12px;text-align:left;}
+.drinkbtn .di{font-size:19px;}
+.drinkbtn .dn{font-size:12.5px;font-weight:800;color:var(--txt);line-height:1.25;}
+.drinkbtn .dm{font-size:11px;font-weight:700;color:var(--muted);}
+.mealrow{display:flex;align-items:center;gap:10px;padding:10px 2px;border-bottom:1px solid var(--hair);}
+.mealrow:last-child{border-bottom:none;}
+.mealrow .ml{flex:1 1 auto;min-width:0;display:flex;flex-direction:column;gap:3px;}
+.mealrow .ml b{font-size:14px;font-weight:700;color:var(--txt);}
+.mealrow .ml span{font-size:11.5px;color:var(--muted);font-weight:600;}
 .hmove{display:flex;gap:5px;margin-left:auto;margin-right:8px;}
 .hmove .hb{background:var(--pill);border:1px solid var(--line);color:var(--txt);
   border-radius:9px;padding:5px 10px;font-size:13px;font-weight:800;line-height:1;}
@@ -822,6 +860,12 @@ a{color:var(--orange);}
       </div>
     </details>
 
+    <div class="card" data-sk="history">
+      <div class="card-title"><span>Session history</span><span class="itin-edit">grouped by workout</span></div>
+      <div class="grid" id="histSummary"></div>
+      <div id="histBody"></div>
+    </div>
+
     <div style="text-align:center;margin:14px 0 4px">
       <button class="swapbtn" id="s-progressArrangeBtn" style="width:auto;padding:9px 16px;font-size:12.5px" onclick="toggleSecArrange('s-progress')">Rearrange sections</button>
     </div>
@@ -829,10 +873,56 @@ a{color:var(--orange);}
     <div id="reviewOut"></div>
   </section>
 
-  <section class="screen" id="s-history">
-    <div class="head"><div><div class="greet">What you actually did</div><h1 class="display">History</h1></div></div>
-    <div class="grid" id="histSummary"></div>
-    <div id="histBody"></div>
+  <section class="screen" id="s-food">
+    <div class="head"><div><div class="greet">What actually went in</div><h1 class="display">Food</h1></div></div>
+
+    <div class="runtot" id="foodRunning"></div>
+
+    <details class="psec" id="mealSec" open>
+      <summary><span class="pst">Add a meal</span><span class="chev">›</span></summary>
+      <div class="psecbody"><div class="card">
+        <div class="hint mb">Describe it and the coach works out the macros, or type them in yourself if you already know.</div>
+        <div class="field"><label>What did you eat?</label>
+          <input class="txtin" id="mealDesc" placeholder="e.g. chicken shawarma wrap and a side salad" /></div>
+        <button class="btn blue" onclick="estimateMeal()">Work out the macros</button>
+        <div id="mealEst"></div>
+        <div class="intgrid mt">
+          <div class="intcell"><span class="k">Calories</span><input class="txtin" id="mKcal" inputmode="decimal" placeholder="—" /></div>
+          <div class="intcell"><span class="k">Protein (g)</span><input class="txtin" id="mProt" inputmode="decimal" placeholder="—" /></div>
+          <div class="intcell"><span class="k">Carbs (g)</span><input class="txtin" id="mCarb" inputmode="decimal" placeholder="—" /></div>
+          <div class="intcell"><span class="k">Fat (g)</span><input class="txtin" id="mFat" inputmode="decimal" placeholder="—" /></div>
+        </div>
+        <button class="btn green mt" onclick="addMeal()">Add it to today</button>
+      </div></div>
+    </details>
+
+    <details class="psec" id="drinkSec">
+      <summary><span class="pst">Add a drink</span><span class="chev">›</span></summary>
+      <div class="psecbody"><div class="card">
+        <div class="hint mb">Alcohol isn't protein, carbs or fat — it's its own thing at 7 kcal a gram. It gets counted in your calories and tracked separately, with any carbs from the drink itself added properly.</div>
+        <div id="drinkList"></div>
+        <details class="hcard mt"><summary class="hsum"><span class="t">Something else</span><span class="chev">›</span></summary>
+          <div class="hbody">
+            <div class="mgrid">
+              <div class="field"><label>Volume (ml)</label><input class="txtin" id="dVol" inputmode="decimal" placeholder="175" /></div>
+              <div class="field"><label>Strength (% ABV)</label><input class="txtin" id="dAbv" inputmode="decimal" placeholder="13" /></div>
+            </div>
+            <div class="field"><label>Name it</label><input class="txtin" id="dName" placeholder="e.g. Rioja" /></div>
+            <button class="btn sec" onclick="addCustomDrink()">Add that drink</button>
+          </div>
+        </details>
+      </div></div>
+    </details>
+
+    <details class="psec" id="todaySec" open>
+      <summary><span class="pst">Today</span><span class="chev">›</span></summary>
+      <div class="psecbody"><div class="card"><div id="mealLog"></div></div></div>
+    </details>
+
+    <details class="psec" id="foodHistSec">
+      <summary><span class="pst">Recent days</span><span class="chev">›</span></summary>
+      <div class="psecbody"><div class="card"><div id="foodHistory"></div></div></div>
+    </details>
   </section>
 
   <section class="screen" id="s-browse">
@@ -1073,7 +1163,7 @@ a{color:var(--orange);}
   <button class="tab" data-s="workout" onclick="goTab('workout')"><svg viewBox="0 0 24 24"><path d="M6 7v10M18 7v10M3 9v6M21 9v6M6 12h12"/></svg>Train</button>
   <button class="tab" data-s="coach" onclick="goTab('coach')"><svg viewBox="0 0 24 24"><path d="M4 5h16v11H8l-4 4z"/></svg>Coach</button>
   <button class="tab" data-s="progress" onclick="goTab('progress')"><svg viewBox="0 0 24 24"><path d="M4 19V5M4 19h16M8 16l3-4 3 3 5-7"/></svg>Progress</button>
-  <button class="tab" data-s="history" onclick="goTab('history')"><svg viewBox="0 0 24 24"><path d="M3 12a9 9 0 1 0 3-6.7L3 8m0-5v5h5"/><path d="M12 8v4l3 2"/></svg>History</button>
+  <button class="tab" data-s="food" onclick="goTab('food')"><svg viewBox="0 0 24 24"><path d="M5 3v8a3 3 0 0 0 6 0V3M8 3v18M16 3c-1.5 2-2 4-2 6s.5 3 2 3v9"/></svg>Food</button>
   <button class="tab" data-s="settings" onclick="goTab('settings')"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M12 3v3M12 18v3M3 12h3M18 12h3M5.6 5.6l2.1 2.1M16.3 16.3l2.1 2.1M18.4 5.6l-2.1 2.1M7.7 16.3l-2.1 2.1"/></svg>Settings</button>
 </nav>
 <div class="lbox" id="lbox">
@@ -1169,7 +1259,7 @@ const DEFAULTS = {
   checkins:[],
   strength:{},
   weights:[],
-  photos:[], rowing:[], measures:[],
+  photos:[], rowing:[], measures:[], meals:[],
   chat:[], streak:0, lastSessionDate:null, workout:null,
   integrations:{"Apple Watch":true,"Concept2 (manual)":true,"Photos":true,"Camera":false,"Notifications":true},
   lib:{}, dayTypes:{}, media:{}, mediaPicked:{}, exMap:{}, progression:{}, deadMedia:{}, demoPick:{},
@@ -1322,12 +1412,13 @@ function go(s){
   document.getElementById('chatBar').style.display = s==='coach'?'flex':'none';
   const rt=document.getElementById('restTimer'); if(rt) rt.classList.toggle('overchat', s==='coach');
   if(s==='progress'){ try{ bindSections('s-progress'); }catch(e){} }
+  if(s==='food'){ try{ renderFood(); }catch(e){} }
   if(s==='browse') renderBrowse();
   if(s==='settings'){ collapsibleSettings(); renderCatList(); }
   if(s==='checkin') syncCheckinLoc();
   if(s==='coach') renderChat();
   if(s==='progress'){ drawChart(); renderRowingLog(); }
-  if(s==='history') renderHistory();
+  if(s==='progress'){ try{ renderHistory(); }catch(e){} }
   if(s==='workout'){ ensureWorkout(); renderReadiness(); maybeAutoPlan(); }
   if(s==='today'){ renderNutrition(); renderWeek(); renderReadiness(); renderFirstRun(); renderTomorrow(); }
   _curScreen=s;
@@ -3032,6 +3123,7 @@ function setDefaultRest(kind,delta){
   try{ renderPhaseCard(); }catch(e){}
   try{ renderIntake(); }catch(e){}
   try{ bindSections('s-progress'); }catch(e){}
+  try{ renderFood(); }catch(e){}
   try{ renderCheckinPhotos(); }catch(e){}
   try{ const mv=document.getElementById('masteryVal'); if(mv) mv.textContent=masterySets()+" sets"; }catch(e){}
   try{ if(DB.workout) renderWorkoutSheet(DB.workout); }catch(e){}
@@ -3912,6 +4004,195 @@ function clearIntakeToday(){
   try{ renderPhaseCard(); }catch(e){}
   toast("Cleared");
 }
+/* ===== v78 · FOOD, MEAL BY MEAL ========================================
+   His nutritionist sends most of his food, so a single daily figure was fine
+   for that. It falls apart the moment he orders out or has a glass of wine,
+   because then he is assembling the day himself and needs a running total.
+
+   ONE STORE, STILL. Meals are the detail; the day's totals on the check-in
+   stay the single source everything else reads (the coach, the averages, the
+   Plan card, Home). Adding a meal recalculates that total and writes it back.
+   That is deliberate: I have twice shipped a bug where the same fact lived in
+   two places and one of them was always wrong.
+
+   ALCOHOL IS NOT A MACRO. It is its own fuel at 7 kcal/g. Counting it as carbs
+   would overstate his carbs and understate nothing; counting it nowhere would
+   quietly lose 300 calories on a night out. It is tracked in its own column
+   and included in calories, and any real carbs in the drink are added
+   properly on top. */
+const ALC_KCAL_PER_G = 7.0;
+const ETHANOL_G_PER_ML = 0.789;
+/* carbs are the residual sugar / mixer, per serving, not from the alcohol */
+const DRINKS = [
+  {n:"Wine, red or dry white", ml:175, abv:13,  carb:1,  ico:"\U0001F377"},
+  {n:"Wine, large glass",      ml:250, abv:13,  carb:1.5,ico:"\U0001F377"},
+  {n:"Prosecco / champagne",   ml:125, abv:12,  carb:1.5,ico:"\U0001F942"},
+  {n:"Beer, pint",             ml:568, abv:5,   carb:13, ico:"\U0001F37A"},
+  {n:"Beer, bottle",           ml:330, abv:5,   carb:8,  ico:"\U0001F37A"},
+  {n:"Spirit, single",         ml:25,  abv:40,  carb:0,  ico:"\U0001F943"},
+  {n:"Spirit, double",         ml:50,  abv:40,  carb:0,  ico:"\U0001F943"},
+  {n:"G&T (single + tonic)",   ml:25,  abv:40,  carb:9,  ico:"\U0001F378"},
+  {n:"Cocktail, average",      ml:60,  abv:30,  carb:14, ico:"\U0001F378"},
+  {n:"Aperol spritz",          ml:150, abv:11,  carb:14, ico:"\U0001F9CB"}
+];
+function drinkMacros(ml,abv,carb){
+  const gAlc = (Number(ml)||0) * ((Number(abv)||0)/100) * ETHANOL_G_PER_ML;
+  const kcal = gAlc*ALC_KCAL_PER_G + (Number(carb)||0)*4;
+  return { alcohol:Math.round(gAlc*10)/10, kcal:Math.round(kcal), carbs:Number(carb)||0, protein:0, fat:0 };
+}
+function mealsOn(date){
+  return (DB.meals||[]).filter(m=>m.d===(date||today())).sort((a,b)=>(a.t||0)-(b.t||0));
+}
+function mealTotals(date){
+  const t={kcal:0,protein:0,carbs:0,fat:0,alcohol:0};
+  mealsOn(date).forEach(m=>{ ['kcal','protein','carbs','fat','alcohol'].forEach(k=>{ t[k]+=Number(m[k])||0; }); });
+  Object.keys(t).forEach(k=>t[k]=Math.round(t[k]*10)/10);
+  return t;
+}
+/* Push the sum back onto the day's check-in, so nothing downstream has to know
+   meals exist. */
+function syncDayFood(date){
+  const d=date||today();
+  const list=mealsOn(d);
+  if(!list.length) return;
+  const t=mealTotals(d);
+  const c=todayCheckin(true);
+  if(c.date!==d){
+    DB.checkins=DB.checkins||[];
+    let x=DB.checkins.find(y=>y.date===d);
+    if(!x){ x={date:d, foodOnly:true}; DB.checkins.push(x); }
+    Object.assign(x,{kcal:t.kcal,protein:t.protein,carbs:t.carbs,fat:t.fat,alcohol:t.alcohol,fromMeals:true});
+  } else {
+    Object.assign(c,{kcal:t.kcal,protein:t.protein,carbs:t.carbs,fat:t.fat,alcohol:t.alcohol,fromMeals:true});
+  }
+  save();
+}
+function pushMeal(rec){
+  DB.meals=DB.meals||[];
+  DB.meals.push(Object.assign({t:Date.now(), d:today()}, rec));
+  syncDayFood();
+  renderFood();
+  try{ renderIntake(); renderNutrition(); renderPhaseCard(); }catch(e){}
+}
+function addMeal(){
+  const num=id=>{ const v=(val(id)||"").trim(); if(!v) return 0; const n=parseFloat(v); return isNaN(n)?0:n; };
+  const name=(val('mealDesc')||"").trim()||"Meal";
+  const rec={name, kind:"meal", kcal:num('mKcal'), protein:num('mProt'), carbs:num('mCarb'), fat:num('mFat'), alcohol:0};
+  if(!rec.kcal && !rec.protein && !rec.carbs && !rec.fat){ toast("Add the macros, or let the coach work them out"); return; }
+  /* If he gave macros but no calories, the calories follow from them. */
+  if(!rec.kcal) rec.kcal=Math.round(rec.protein*4 + rec.carbs*4 + rec.fat*9);
+  pushMeal(rec);
+  ['mealDesc','mKcal','mProt','mCarb','mFat'].forEach(id=>{ const e=document.getElementById(id); if(e) e.value=""; });
+  const est=document.getElementById('mealEst'); if(est) est.innerHTML="";
+  toast(rec.name+" added \u00b7 "+fmtG(rec.kcal)+" kcal");
+}
+function addDrink(i){
+  const d=DRINKS[i]; if(!d) return;
+  const m=drinkMacros(d.ml,d.abv,d.carb);
+  pushMeal(Object.assign({name:d.n, kind:"drink", ml:d.ml, abv:d.abv}, m));
+  toast(d.n+" \u00b7 "+m.kcal+" kcal, "+m.alcohol+"g alcohol");
+}
+function addCustomDrink(){
+  const ml=parseFloat(val('dVol')), abv=parseFloat(val('dAbv'));
+  if(isNaN(ml)||isNaN(abv)){ toast("Volume and strength, please"); return; }
+  const name=(val('dName')||"").trim()||"Drink";
+  const m=drinkMacros(ml,abv,0);
+  pushMeal(Object.assign({name, kind:"drink", ml, abv}, m));
+  ['dVol','dAbv','dName'].forEach(id=>{ const e=document.getElementById(id); if(e) e.value=""; });
+  toast(name+" \u00b7 "+m.kcal+" kcal, "+m.alcohol+"g alcohol");
+}
+function delMeal(t){
+  DB.meals=(DB.meals||[]).filter(m=>String(m.t)!==String(t));
+  const d=today();
+  if(!mealsOn(d).length){
+    /* Last one removed: clear the derived totals rather than leaving a stale
+       figure that no longer has anything behind it. */
+    const c=todayCheckin(false);
+    if(c&&c.fromMeals){ ['kcal','protein','carbs','fat','alcohol','fromMeals'].forEach(k=>delete c[k]); }
+    save();
+  } else syncDayFood();
+  renderFood();
+  try{ renderIntake(); renderNutrition(); renderPhaseCard(); }catch(e){}
+  toast("Removed");
+}
+/* Describe it, the coach costs it. This is what makes eating out workable. */
+async function estimateMeal(){
+  const out=document.getElementById('mealEst'); if(!out) return;
+  const desc=(val('mealDesc')||"").trim();
+  if(!desc){ toast("Describe the meal first"); return; }
+  if(DB.ai.provider!=="openai"||!DB.ai.key){ out.innerHTML="<div class='hint mt'>Needs a live OpenAI key \u2014 or just type the macros in.</div>"; return; }
+  out.innerHTML="<div class='hint mt'><span class='spin'></span> Working it out\u2026</div>";
+  try{
+    const sys="You estimate the macros of a described meal for a training log. "+
+      "Reply with RAW JSON ONLY, no prose and no markdown: "+
+      '{"kcal":0,"protein":0,"carbs":0,"fat":0,"note":"one short line on what you assumed"}. '+
+      "Assume a normal restaurant or takeaway portion unless he says otherwise. Be realistic rather than optimistic \u2014 "+
+      "underestimating a takeaway helps nobody.";
+    const reply=await callAI([{role:"system",content:sys},{role:"user",content:desc}],250);
+    const m=String(reply||"").replace(/```json|```/g,"").match(/\{[\s\S]*\}/);
+    if(!m) throw new Error("no json");
+    const o=JSON.parse(m[0]);
+    const set=(id,v)=>{ const e=document.getElementById(id); if(e&&v!=null&&!isNaN(v)) e.value=Math.round(Number(v)*10)/10; };
+    set('mKcal',o.kcal); set('mProt',o.protein); set('mCarb',o.carbs); set('mFat',o.fat);
+    out.innerHTML="<div class='notebox mt'><b>"+fmtG(o.kcal)+" kcal</b> \u00b7 "+fmtG(o.protein)+"g protein \u00b7 "+
+      fmtG(o.carbs)+"g carbs \u00b7 "+fmtG(o.fat)+"g fat"+
+      (o.note? "<div style='margin-top:6px;font-size:12.5px;color:var(--muted)'>"+escapeHtml(o.note)+"</div>":"")+
+      "<div style='margin-top:6px;font-size:12.5px;color:var(--muted)'>An estimate \u2014 change any of it below before you add it.</div></div>";
+  }catch(e){ out.innerHTML="<div class='hint mt'>Couldn\u2019t work that one out. Type the macros in instead.</div>"; }
+}
+function renderFood(){
+  /* running total */
+  const el=document.getElementById('foodRunning');
+  if(el){
+    const t=mealTotals(today());
+    const c=todayCheckin(false)||{};
+    const any=mealsOn(today()).length>0;
+    const show=any? t : {kcal:c.kcal||0,protein:c.protein||0,carbs:c.carbs||0,fat:c.fat||0,alcohol:c.alcohol||0};
+    const kg=(DB.profile&&DB.profile.weightKg)||null;
+    el.innerHTML="<div class='rtbig'>"+fmtG(show.kcal)+"<span> kcal today</span></div>"+
+      "<div class='rtrow'>"+
+        "<div><b>"+fmtG(show.protein)+"g</b><span>protein"+(kg&&show.protein? " \u00b7 "+fmtG(show.protein/kg)+"/kg":"")+"</span></div>"+
+        "<div><b>"+fmtG(show.carbs)+"g</b><span>carbs</span></div>"+
+        "<div><b>"+fmtG(show.fat)+"g</b><span>fat</span></div>"+
+        (show.alcohol? "<div><b>"+fmtG(show.alcohol)+"g</b><span>alcohol</span></div>":"")+
+      "</div>"+
+      (any? "<div class='rtsub'>"+mealsOn(today()).length+" item"+(mealsOn(today()).length===1?"":"s")+" logged</div>"
+          : "<div class='rtsub'>From your daily total on Home \u2014 add meals below and this takes over</div>");
+  }
+  /* drink buttons */
+  const dl=document.getElementById('drinkList');
+  if(dl) dl.innerHTML="<div class='drinkgrid'>"+DRINKS.map((d,i)=>{
+    const m=drinkMacros(d.ml,d.abv,d.carb);
+    return "<button class='drinkbtn' onclick='addDrink("+i+")'><span class='di'>"+d.ico+"</span>"+
+      "<span class='dn'>"+escapeHtml(d.n)+"</span>"+
+      "<span class='dm'>"+m.kcal+" kcal \u00b7 "+m.alcohol+"g alc</span></button>";
+  }).join('')+"</div>";
+  /* today's log */
+  const log=document.getElementById('mealLog');
+  if(log){
+    const list=mealsOn(today());
+    log.innerHTML = list.length
+      ? list.map(m=>"<div class='mealrow'>"+
+          "<div class='ml'><b>"+escapeHtml(m.name)+"</b>"+
+            "<span>"+fmtG(m.kcal)+" kcal"+
+            (m.protein? " \u00b7 P "+fmtG(m.protein):"")+(m.carbs? " \u00b7 C "+fmtG(m.carbs):"")+
+            (m.fat? " \u00b7 F "+fmtG(m.fat):"")+(m.alcohol? " \u00b7 alc "+fmtG(m.alcohol)+"g":"")+
+            " \u00b7 "+new Date(m.t).toLocaleTimeString('en-GB',{hour:'2-digit',minute:'2-digit'})+"</span></div>"+
+          "<button class='del' onclick='delMeal("+m.t+")'>\u2715</button></div>").join('')
+      : "<div class='hint'>Nothing logged yet today. Add a meal or a drink above \u2014 or leave it to the daily total on Home if your nutritionist has it covered.</div>";
+  }
+  /* recent days */
+  const hist=document.getElementById('foodHistory');
+  if(hist){
+    const days=[...new Set((DB.meals||[]).map(m=>m.d))].filter(d=>d!==today()).sort().reverse().slice(0,14);
+    hist.innerHTML = days.length
+      ? days.map(d=>{ const t=mealTotals(d);
+          return "<div class='mealrow'><div class='ml'><b>"+ukDate(d)+"</b><span>"+
+            fmtG(t.kcal)+" kcal \u00b7 P "+fmtG(t.protein)+" \u00b7 C "+fmtG(t.carbs)+" \u00b7 F "+fmtG(t.fat)+
+            (t.alcohol? " \u00b7 alc "+fmtG(t.alcohol)+"g":"")+"</span></div></div>"; }).join('')
+      : "<div class='hint'>Days you log meal by meal will build up here.</div>";
+  }
+}
 function renderIntake(){
   const el=document.getElementById('intakeNow'); if(!el) return;
   const c=todayCheckin(false)||{};
@@ -4287,7 +4568,7 @@ coachingDoctrine()+
 "To run code, emit a block EXACTLY like this (it is stripped from your spoken reply):\n[[RUN]]\n<your javascript — multiple lines allowed>\n[[/RUN]]\n"+
 "Inside it you can read/write any DB field, call any function, and edit the DOM / CSS / tabs via document.*.\n"+
 "LIVE DB SHAPE: "+dbShape()+"\n"+
-"HELPERS: buildWorkout(), ensureWorkout(), renderWorkoutSheet(DB.workout), renderItin(), boot(), go('today'|'workout'|'progress'|'history'|'coach'|'settings'), coachSetWorkout(list), coachSetWeekday(day,split), coachSetWeeklySchedule('Mon X; Tue Y'), coachCreateDayType(name,{kind,main,sets,note}), coachAddLibraryExercise(...), coachSetPref(k,v), coachSetLocation(v). Movement lists render with demo GIFs; kind:'cardio'=single machine block; kind:'mobility'=icon flow.\n\n"+
+"HELPERS: buildWorkout(), ensureWorkout(), renderWorkoutSheet(DB.workout), renderItin(), boot(), go('today'|'workout'|'progress'|'food'|'coach'|'settings'), coachSetWorkout(list), coachSetWeekday(day,split), coachSetWeeklySchedule('Mon X; Tue Y'), coachCreateDayType(name,{kind,main,sets,note}), coachAddLibraryExercise(...), coachSetPref(k,v), coachSetLocation(v). Movement lists render with demo GIFs; kind:'cardio'=single machine block; kind:'mobility'=icon flow.\n\n"+
 "=== ANY STYLE OF TRAINING ===\n"+
 "Pilates, HIIT, boxing, circuits, kettlebells, calisthenics, mobility — build whatever he asks. Create a day type and list the moves, e.g.:\n[[CREATE_DAY_TYPE: Pilates | kind:strength | main:The Hundred, Roll-Up, Single-Leg Stretch, Teaser, Side Plank Leg Lift | note:Core control, slow tempo, breathe]]\nthen [[SET_WEEKDAY: Wednesday | Pilates]] (or [[SET_DAY: Pilates]] for today). Each move auto-loads a real demo.\n\n"+
 "=== REAL DEMOS FROM THE WEB (never guess) ===\n"+
@@ -6580,7 +6861,7 @@ function scheduleInApp(){
    v18 ADDITIONS — draggable rest timer · weekly training memory · AI planner
    · Firestore sync
    ========================================================================== */
-const APP_VERSION="v77 · 06/08/2026";
+const APP_VERSION="v78 · 06/08/2026";
 
 /* ===== 1. REST TIMER — drag it anywhere so it never blocks the chat box ===== */
 let _rtDrag=null;
@@ -9764,7 +10045,7 @@ function saveCloud(){
    screen, this wraps ANY card carrying data-sk into a collapsible section at
    runtime, remembers open/closed, and reorders it. Adding a card later means
    adding data-sk to it and nothing else. */
-const SEC_TITLES={ weight:"Bodyweight", lifts:"Your lifts", photos:"Physique photos",
+const SEC_TITLES={ history:"Session history", weight:"Bodyweight", lifts:"Your lifts", photos:"Physique photos",
   plan:"The plan", review:"Week in review", compare:"Then & now",
   read:"Coach\u2019s read", measure:"Measurements" };
 function secOrder(screen){

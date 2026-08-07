@@ -1,5 +1,289 @@
-AMIR PT — v73.2 · 06/08/2026
+AMIR PT — v78 · 06/08/2026
+==========================
+
+Upload index.html AND sw.js.
+
+
+A FOOD TAB, WHERE HISTORY WAS
+=============================
+History wasn't earning a tab — it's something you look at occasionally. Food is
+daily. So Food takes the slot and History moves into Progress as a section
+(collapsible and reorderable like the rest, nothing lost).
+
+THE RUNNING TOTAL SITS AT THE TOP
+  Calories in big type, then protein with your g/kg, carbs, fat, and alcohol
+  when there is any. It counts up as you add things.
+
+ADD A MEAL
+  Describe it — "chicken shawarma wrap and a side salad" — and the coach works
+  out the macros and fills the boxes. Change anything before you add it. Or
+  skip the description and type the numbers straight in.
+
+  Give it macros without calories and it works the calories out for you.
+
+ADD A DRINK
+  Ten common ones, one tap each: wine (standard and large), prosecco, beer
+  (pint and bottle), single and double spirits, G&T, cocktail, Aperol spritz.
+  Anything else, give it a volume and an ABV and it does the maths.
+
+ALCOHOL IS HANDLED PROPERLY
+  It is NOT a macro. It's its own fuel at 7 kcal per gram, and counting it as
+  carbs would overstate your carbs while counting it nowhere would quietly
+  lose 300 calories on a night out.
+
+  So it gets its own column, it counts toward your calories, and any real carbs
+  in the drink — mixers, residual sugar — are added separately on top.
+
+    175ml wine at 13%   ->  18g alcohol, 130 kcal
+    pint of beer at 5%  ->  22g alcohol, 209 kcal (13g of that is carbs)
+    double spirit       ->  16g alcohol, 110 kcal, no carbs
+    G&T                 ->   8g alcohol,  91 kcal (9g carbs from the tonic)
+
+
+THE TWO WAYS OF LOGGING DON'T FIGHT
+===================================
+The daily-total box stays on Home, because that's right for the days your
+nutritionist has it covered. The meal-by-meal log is for the days you don't.
+
+They cannot disagree, because there is still only ONE store. Meals are the
+detail; adding one recalculates the day and writes it back to the same place
+the coach, the weekly averages and the Plan card already read. Delete the last
+meal of a day and the derived total clears rather than leaving a stale number
+with nothing behind it.
+
+That's deliberate. I've shipped a bug twice now where one fact lived in two
+places and one of them was always wrong. Not a third time.
+
+
+RECENT DAYS
+  Any day you build meal by meal is kept, with its totals and alcohol, so a
+  weekend out is visible next to a normal week rather than vanishing into a
+  single number.
+
+
+Upload index.html AND sw.js.
+
+
+1. PROGRESS IS COLLAPSIBLE AND REORDERABLE
+==========================================
+You asked for this and I only did Home. Home was already built out of
+collapsible parts so it was easy; Progress was plain cards, so it got neither.
+
+All eight sections now collapse and remember it:
+  Bodyweight · Your lifts · Physique photos · The plan · Week in review ·
+  Then & now · Coach's read · Measurements
+
+At the bottom: "Rearrange sections". Same up/down arrows as Home and the
+exercises. Photos to the top takes two taps.
+
+Built generically rather than as another one-off — any card tagged with a key
+becomes a collapsible, reorderable section automatically. History and Settings
+can have it whenever you want, and it carries over to Lia's app.
+
+Bodyweight and Your lifts start open, the rest closed. Change any of it and it
+stays that way.
+
+
+2. THE ESCAPE CODES AGAIN — AND WHY IT KEEPS HAPPENING
+======================================================
+"\ud83d\udcf7" and "\u2014" printing as literal text on the check-in. Same
+mistake as v73.2 and I reintroduced it.
+
+The cause is specific: those codes are real escapes inside JavaScript strings
+but meaningless in raw HTML, where they print as characters. The JavaScript
+syntax checker cannot catch it because the JavaScript is perfectly valid — the
+fault is in the markup.
+
+So I've built a PRE-FLIGHT CHECK that runs before every package from now on.
+It looks for escape codes in markup, duplicate function declarations,
+unbalanced tags, version mismatches between the app and the service worker,
+and inline handlers calling functions that do not exist.
+
+The buttons now read "📷 Front photo" and "📷 Side photo" properly.
+
+
+3. THE PRE-FLIGHT IMMEDIATELY CAUGHT SOMETHING WORSE
+====================================================
+There were TWO functions called weeklyReview. In JavaScript the last one wins
+— and the last one was the OLD version.
+
+Which means the weekly review I built in v68, with the volume landmarks and
+the fatigue signals and the deload case, HAS NEVER ONCE RUN. You were getting
+a much older one that read your bodyweight list and the last entry of each
+lift — including the same "prev" ordering bug I fixed in v72, still live in
+that copy.
+
+The old one is gone. The real one runs now.
+
+That is the second time a duplicate function has silently overridden new work
+(the first was five of them in v63). It is exactly the class of fault that
+survives testing, because everything looks fine and simply does the wrong
+thing quietly. It cannot happen again without the pre-flight catching it.
+
+
+Upload index.html AND sw.js.
+
+
+1. "I DID LATERAL RAISES YESTERDAY" SHOULD HAVE JUST WORKED
+==========================================================
+You told it a fact and it answered with a menu of example phrasings. That was
+a scripted fallback, not the coach thinking.
+
+The guard behind it was right in principle: if the coach SAYS it changed
+something but no actual change fired, don't let it lie to you. The handling
+was wrong — it threw the entire reply away and printed a list.
+
+Now, when that happens, it goes BACK TO THE MODEL and tells it exactly what
+went wrong: "you said you'd change something but nothing changed — answer him
+again and include the instruction that makes it real. If what he said was a
+statement of fact — that he already trained something, or correcting your
+picture of his week — accept it, say what it changes, and act on it. Do not
+list example phrasings at him."
+
+If that second attempt still can't act, your reply is KEPT and one honest line
+is added underneath. Never replaced.
+
+AND THE DEEPER FIX
+  The coach is now told plainly how you actually talk to it:
+
+    "Most of what he says is not a command and not a question — it is him
+     CORRECTING YOUR PICTURE of his training, and it should change what you do."
+
+  With your exact sentence as the worked example: lateral raises yesterday
+  means either the volume figures are wrong or a session went unlogged, so
+  agree with him, drop the catch-up work you'd planned, and offer to log it.
+
+  Plus: "You can be wrong and he will tell you. When he does, the answer starts
+  with agreeing. His memory of his own week is better evidence than your
+  figures, because your figures only know what got logged."
+
+  And explicitly forbidden: answering a statement of fact with a list of
+  example phrasings, or making you repeat yourself in different words.
+
+
+2. THE CAMERA OPENS DIRECTLY NOW
+================================
+You said you'll never upload, only shoot. So the two buttons — 📷 Take front
+and 📷 Take side — now open the camera straight away instead of the photo
+library. Both on Progress and on the daily check-in.
+
+The shot still files itself under the right pose automatically, from the
+button you pressed, and lands in Progress with the timeline, the comparison
+and the measurement estimates.
+
+
+3. THE COACH STAYS IN CHARACTER
+===============================
+I checked every place the app talks to the AI. The persona was reaching all
+the conversational paths already — chat, mid-set replies, the week plan, the
+day plan, the weekly review. The two that don't carry it are internal
+utilities (matching an exercise name to the catalogue, reading numbers off a
+photo), which is correct.
+
+What broke character was scripted text. Fixed:
+  - the fallback above no longer exists as a script at all
+  - the one line it can still add is written in the coach's voice
+  - the photo measurement estimate now speaks as your coach rather than
+    switching to clinical app-speak mid-conversation
+
+If you want to pin the voice harder, Settings has "How the coach should talk
+to me" — free text, overrides the generic personality, and syncs to the cloud
+so you set it once.
+
+
+Upload index.html AND sw.js.
+
+
+WHY THE SIDE PHOTO "DIDN'T WORK"
+================================
+It did work. It saved perfectly. Then it disappeared, which looks identical to
+a broken camera — and that was a trap I built.
+
+There were TWO pose controls that looked alike. The chips at the TOP of the
+section were a FILTER. The dropdown at the BOTTOM was the LABEL. So if you
+tapped "Side" on the chips and then took a photo, it was labelled Front —
+the dropdown's default, which you'd never touched — and the Side filter you'd
+just set hid it immediately.
+
+The dropdown is gone. There are now two buttons that say what they do:
+
+    📷 Front photo        📷 Side photo
+
+The pose comes from the button you press. It cannot be wrong, and it cannot
+disagree with the filter.
+
+And as a backstop: if you take a Front shot while filtered to Side, the filter
+resets to All so you SEE the photo you just took. Nothing you capture can
+vanish behind a filter again.
+
+
+FRONT AND SIDE ONLY
+===================
+Back, Legs and Other are removed — from the capture buttons, the filter chips
+and the label picker in the photo viewer. Three controls, all consistent.
+
+Any old photos still labelled Back or Legs are untouched and still show under
+All. Open one and you can relabel it Front or Side if you want.
+
+
+PHOTOS ON THE DAILY CHECK-IN
 ============================
+Same two buttons, on the check-in, above the food fields. Underneath them, a
+strip of whatever you've already taken today so you can see it landed without
+leaving the screen — tap any of them to open it full size.
+
+It is the SAME set of photos, not a copy. Anything taken at check-in appears
+in Progress with the timeline, the comparison and the measurement estimates,
+exactly as if you'd added it there. Progress is unchanged; this is just a
+second door into it for when you're already stood there doing the check-in.
+
+
+Upload index.html AND sw.js.
+
+
+REARRANGE THE HOME CARDS
+========================
+They already collapsed and remembered whether you'd left them open. What they
+couldn't do was move — so whatever mattered most to you sat wherever it
+happened to be written in the file.
+
+At the bottom of Home: "Rearrange cards". Tap it and every card grows an up
+and a down arrow in its header, reachable whether the card is open or shut.
+Move things, tap "Done rearranging".
+
+The moved card scrolls into view and flashes, and the order is saved.
+
+Arrows rather than drag, same reasoning as the exercise reorder: dragging
+inside a scrolling page is fiddly on a phone, and a mis-drag is more annoying
+than one extra tap.
+
+BUILT SO A FUTURE VERSION CAN'T BREAK IT
+  If I add a new card later, it appears at the end of your saved order instead
+  of vanishing because it wasn't in the list. If I remove one, the stale entry
+  is dropped rather than leaving a gap. Both tested.
+
+
+GROUNDWORK FOR LIA PT
+=====================
+Also in this build, invisible to you: everything that identifies WHOSE app
+this is now lives in one config block at the top of the file — name, storage
+keys, Firestore document, body stats, volume landmarks, physique priorities,
+training locations, starting phase.
+
+Previously your name and settings were scattered across 66 places. Building
+her version meant find-and-replace, and the two apps would have drifted apart
+within a week — my fixes landing in one and not the other.
+
+Now a second app is that block, changed once. Every fix from here lands in
+both.
+
+Her data stays completely separate: same Firebase project, her own document
+inside the collection your rules already permit. Nothing for you to configure,
+no rules change, and neither coach can see the other's training.
+
+Sharing your API key is fine — same string in her Settings, same billing,
+separate conversations.
+
 
 Upload index.html AND sw.js.
 
