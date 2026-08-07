@@ -433,6 +433,8 @@ details.sec2[open] .secsum2:after{content:"\2212";}
   padding:3px 7px;border-radius:8px;border:1px solid var(--line);text-transform:uppercase;letter-spacing:.4px;}
 .phcell .zoom{position:absolute;bottom:6px;right:6px;background:#0a0806cc;color:var(--txt);font-size:11px;
   padding:2px 6px;border-radius:7px;border:1px solid var(--line);}
+.posebtns{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:9px;}
+.posebtns .btn{margin:0;text-align:center;cursor:pointer;}
 .poseseg{display:flex;gap:6px;overflow-x:auto;padding:2px 0 8px;}
 .poseseg button{flex:0 0 auto;padding:7px 13px;border-radius:11px;background:var(--pill);border:1px solid var(--line);
   color:var(--muted);font-size:12.5px;font-weight:700;}
@@ -493,6 +495,11 @@ details.sec2[open] .secsum2:after{content:"\2212";}
 .histsec[open]>summary{border-bottom:1px solid var(--hair);}
 .histsecbody{padding:10px 10px 4px;}
 .histsecbody .card{margin-bottom:10px;}
+.hmove{display:flex;gap:5px;margin-left:auto;margin-right:8px;}
+.hmove .hb{background:var(--pill);border:1px solid var(--line);color:var(--txt);
+  border-radius:9px;padding:5px 10px;font-size:13px;font-weight:800;line-height:1;}
+.hmove .hb[disabled]{opacity:.3;}
+.hcard.moved{outline:2px solid var(--orange);outline-offset:3px;}
 .exorder{display:flex;align-items:center;gap:6px;margin-bottom:9px;}
 .exorder .pos{flex:1 1 auto;font-size:11px;font-weight:800;letter-spacing:.5px;
   text-transform:uppercase;color:var(--label);}
@@ -626,6 +633,10 @@ a{color:var(--orange);}
         <div><div class="lab">Training Day Run</div><div style="font-size:13px;font-weight:600;color:var(--muted);margin-top:3px">Rest days don't break it — three days off does </div></div></div>
       </div>
     </details>
+
+    <div style="text-align:center;margin:14px 0 4px">
+      <button class="swapbtn" id="homeArrangeBtn" style="width:auto;padding:9px 16px;font-size:12.5px" onclick="toggleHomeArrange()">Rearrange cards</button>
+    </div>
   </section>
 
   <section class="screen" id="s-checkin">
@@ -656,6 +667,18 @@ a{color:var(--orange);}
           <button data-v="Maybe" onclick="segPick(this)">Maybe</button><button data-v="Rest" onclick="segPick(this)">Rest</button></div></div>
       <div class="field"><label>Pain / injuries flaring? <span class="hint">(optional)</span></label>
         <input class="txtin" id="ciPain" placeholder="e.g. right wrist, left knee, none" /></div>
+      <div class="field">
+        <label>Progress photos <span class="hint" style="float:right;font-weight:700">optional</span></label>
+        <div class="hint" style="margin:-4px 0 10px">Same photos as Progress \u2014 this is just a second way in, for when you\u2019re already stood here doing the check-in.</div>
+        <div class="posebtns">
+          <label class="btn sec">\ud83d\udcf7 Take front
+            <input type="file" accept="image/*" capture="environment" style="display:none" onchange="addPhoto(this,'Front')" /></label>
+          <label class="btn sec">\ud83d\udcf7 Take side
+            <input type="file" accept="image/*" capture="environment" style="display:none" onchange="addPhoto(this,'Side')" /></label>
+        </div>
+        <div id="ciPhotos"></div>
+      </div>
+
       <div class="field">
         <label>What you actually ate</label>
         <div class="hint" style="margin:-4px 0 10px">Optional. Your nutritionist sends the food, so it varies day to day — just record what it was. The coach reads it to judge how hard to push you.</div>
@@ -709,20 +732,14 @@ a{color:var(--orange);}
         <button class="on" data-v="all" onclick="setPoseFilter('all')">All</button>
         <button data-v="Front" onclick="setPoseFilter('Front')">Front</button>
         <button data-v="Side" onclick="setPoseFilter('Side')">Side</button>
-        <button data-v="Back" onclick="setPoseFilter('Back')">Back</button>
-        <button data-v="Legs" onclick="setPoseFilter('Legs')">Legs</button>
-        <button data-v="Other" onclick="setPoseFilter('Other')">Other</button>
       </div>
       <div id="photoTimeline"></div>
-      <div class="field mt" style="margin-bottom:8px">
-        <label>Which shot is this?</label>
-        <select class="txtin" id="photoPose">
-          <option value="Front">Front</option><option value="Side">Side</option>
-          <option value="Back">Back</option><option value="Legs">Legs</option><option value="Other">Other</option>
-        </select>
+      <div class="posebtns mt">
+        <label class="btn sec">\ud83d\udcf7 Take front
+          <input type="file" accept="image/*" capture="environment" style="display:none" onchange="addPhoto(this,'Front')" /></label>
+        <label class="btn sec">\ud83d\udcf7 Take side
+          <input type="file" accept="image/*" capture="environment" style="display:none" onchange="addPhoto(this,'Side')" /></label>
       </div>
-      <label class="photodrop" style="display:block;cursor:pointer">+ Add a physique photo
-        <input type="file" accept="image/*" style="display:none" onchange="addPhoto(this)" /></label>
       <div class="hint mt">Tap any photo to see it full size, change its label or delete it.</div>
     </div>
 
@@ -1051,7 +1068,6 @@ a{color:var(--orange);}
   <div class="lbbot">
     <select class="txtin" id="lbPose" onchange="setPhotoPose(this.value)">
       <option value="Front">Front</option><option value="Side">Side</option>
-      <option value="Back">Back</option><option value="Legs">Legs</option><option value="Other">Other</option>
     </select>
     <button class="lbx" onclick="lbSetThen()">Then</button>
     <button class="lbx" onclick="lbSetNow()">Now</button>
@@ -2992,6 +3008,7 @@ function setDefaultRest(kind,delta){
   try{ renderRestPrefs(); }catch(e){}
   try{ renderPhaseCard(); }catch(e){}
   try{ renderIntake(); }catch(e){}
+  try{ renderCheckinPhotos(); }catch(e){}
   try{ const mv=document.getElementById('masteryVal'); if(mv) mv.textContent=masterySets()+" sets"; }catch(e){}
   try{ if(DB.workout) renderWorkoutSheet(DB.workout); }catch(e){}
 }
@@ -4110,6 +4127,14 @@ Object.keys(PHYSIQUE_PRIORITY).map(g=>"  "+g+": "+PHYSIQUE_PRIORITY[g]).join("\n
   (f.deloadCase? "  Two or more signals are showing. Make the case for a deload week \u2014 same movements, roughly half the sets, 60-70% of the loads \u2014 and use [[DELOAD_WORKOUT: -30%]] if he agrees. Do not wait for him to raise it.\n" : "  One signal only. Watch it, mention it if it persists, do not overreact.\n"))
  : "  No fatigue signals right now \u2014 he is recovering from what he is doing. Keep pushing.\n")+
 "\n"+
+"=== WHEN HE TELLS YOU SOMETHING, THAT IS DATA, NOT SMALL TALK ===\n"+
+"He talks to you in plain sentences. Most of what he says is not a command and is not a question \u2014 it is him CORRECTING YOUR PICTURE of his training, and it should change what you do.\n"+
+"  \u2022 \u201cI did lateral raises yesterday with my push section\u201d \u2192 he is telling you your volume figures are wrong or that a session went unlogged. Agree with him, say what it changes, and act: swap out the catch-up work you had planned, or ask if he wants it logged so the numbers stop being wrong.\n"+
+"  \u2022 \u201cmy shoulder is stiff today\u201d \u2192 change the session, do not sympathise.\n"+
+"  \u2022 \u201cthat felt easy\u201d \u2192 change the next set.\n"+
+"  \u2022 \u201cI only got 9\u201d \u2192 log it and adjust.\n"+
+"NEVER answer a statement of fact with a list of example phrasings, and never make him repeat himself in different words. He said it perfectly clearly the first time. If you truly need one thing clarified, ask that ONE thing in a single line \u2014 do not send him a menu.\n"+
+"YOU CAN BE WRONG AND HE WILL TELL YOU. When he does, the answer starts with agreeing. \u201cYou\u2019re right, I had that down as unworked\u201d beats defending a number that came from incomplete data. His memory of his own week is better evidence than your figures, because your figures only know what got logged.\n\n"+
 "WHAT SEPARATES A GOOD COACH FROM AN EXERCISE LIST:\n"+
 "  \u2022 You notice things he hasn't mentioned. A lift stalling three sessions running, a muscle group quietly under-trained for a fortnight, sleep dropping while loads climb \u2014 say so, unprompted.\n"+
 "  \u2022 You explain WHY in one line. Not a lecture, but never a bare instruction either.\n"+
@@ -5556,8 +5581,43 @@ async function sendChat(){
       try{ lc=localWorkoutCommand(txt)||localScheduleCommand(txt)||localMediaCommand(txt); }catch(e){ console.warn(e); }
       if(lc){ allNotes=lc.notes; if(!aiUsed||!reply) reply=lc.reply; }
     }
+    /* ===== v76 · REPAIR THE TURN, DON'T RECITE A SCRIPT =====
+       This used to throw the coach's entire reply away and print a list of
+       example phrasings. So "I did lateral raises yesterday with my push
+       section" \u2014 a plain statement of fact \u2014 came back as a lecture on syntax.
+
+       The guard itself was right: never let it CLAIM it changed something it
+       didn't. The handling was wrong. It now goes back to the model, tells it
+       precisely what went wrong, and asks for the turn again with the
+       instruction included. If that still fails, his own words are kept and
+       one honest line is added \u2014 never replaced. */
     if(!allNotes.length && aiUsed && looksLikeEditRequest(txt) && claimsAction(reply)){
-      reply="I couldn't actually apply that from here, so I won't pretend I did. Say it plainly and I'll lock it in for real:<br>\u2022 <b>\"set my week to push pull legs\"</b><br>\u2022 <b>\"make Wednesday pilates\"</b><br>\u2022 <b>\"swap goblet squat for barbell squat\"</b><br>\u2022 <b>\"give me a 20-min HIIT session\"</b><br>\u2022 <b>\"I'm in Madrid\"</b>";
+      let repaired=null;
+      try{
+        const fix=[{role:"system",content:coachSystem()},
+          {role:"user",content:txt},
+          {role:"assistant",content:String(reply).replace(/<[^>]+>/g,'')},
+          {role:"user",content:
+            "SYSTEM: You said you would change something but you emitted no directive, so NOTHING actually changed in the app. "+
+            "Answer him again. Keep your reasoning and your tone, but this time INCLUDE the directive that makes it real. "+
+            "If what he said was a statement of fact rather than a request \u2014 telling you he already trained something, "+
+            "correcting your picture of his week, or saying how a lift felt \u2014 then accept it, say what it changes, "+
+            "and emit whatever directive follows from it. If you genuinely cannot act on it, say so plainly in one line "+
+            "and ask the single question you need answered. Do not list example phrasings at him."}];
+        repaired=await callAI(fix,600);
+      }catch(e){ /* fall through to the honest note */ }
+      if(repaired){
+        const r2=applyCoachDirectives(repaired);
+        if(r2.notes && r2.notes.length){ reply=r2.cleaned; allNotes=r2.notes.slice(); }
+        else { reply=r2.cleaned||reply; }
+      }
+      if(!allNotes.length){
+        /* Keep what he actually said. Add the caveat, don't become it. */
+        /* His words, plus one honest line \u2014 and in the coach's voice, because
+           an app-speak disclaimer breaks the character he set up. */
+        reply=String(reply).replace(/\s+$/,"")+
+          "<br><br><i>Heads up though \u2014 I haven\u2019t actually moved anything in the app yet. Tell me what you want changed and I\u2019ll sort it.</i>";
+      }
     }
     if(JSON.stringify(DB)!==_before){ const id=snapId(); SNAPS[id]={before:_before,label:txt.slice(0,70)}; persistSnaps();
       allNotes.push("\u21a9 <button class='undoBtn' onclick=\"undoChange('"+id+"')\">Undo that change</button>"); }
@@ -5864,7 +5924,12 @@ function delStrength(ex,date){ if(!DB.strength[ex])return; DB.strength[ex]=DB.st
 /* ===== v61 · PHOTOS: A TIMELINE, NOT A PILE =====
    Every shot now carries a real timestamp and a pose label, so they group into
    months, filter by angle, open full size, and can be put side by side. */
-const POSES=["Front","Side","Back","Legs","Other"];
+/* v75 — front and side only. And the pose is now passed in by the button he
+   pressed rather than read from a dropdown, because the dropdown sat at the
+   BOTTOM of the section while a near-identical filter sat at the TOP: tap
+   "Side" on the filter, add a photo, and it was labelled Front and then
+   immediately hidden by the filter. The photo saved fine. It just vanished. */
+const POSES=["Front","Side"];
 let _poseFilter="all";
 let _lbIdx=-1;              // index into the CURRENT filtered list, for the lightbox
 let _cmpA=null,_cmpB=null;  // photo KEYS, so the pick survives a re-sort
@@ -5921,20 +5986,28 @@ function setPoseFilter(v){
   document.querySelectorAll('#poseFilter button').forEach(b=>b.classList.toggle('on',b.dataset.v===v));
   renderPhotos();
 }
-async function addPhoto(inp){
+async function addPhoto(inp,pose){
   const f=inp.files[0]; if(!f) return; inp.value="";
+  /* v75 — the pose comes from the BUTTON he pressed. It used to be read from a
+     dropdown at the bottom of the section while a near-identical filter sat at
+     the top, so tapping "Side" on the filter and then adding a photo labelled
+     it Front and the filter hid it instantly. The photo saved fine. It just
+     disappeared, which looks exactly like a broken camera. */
+  pose = (pose==="Side") ? "Side" : "Front";
   toast("Processing photo\u2026");
   try{
     const src=await downscaleImage(f,1280,0.72);
     const id="ph"+Date.now()+Math.random().toString(36).slice(2,6);
     PHOTOS[id]=src; await savePhotos();
-    const pose=val('photoPose')||"Front";
-    /* Real clock time, not just the date — two shots on one morning stay in the
-       order they were taken, and "6 weeks ago" can be worked out honestly. */
+    /* Real clock time, not just the date — two shots on one morning stay in
+       the order they were taken, and "6 weeks ago" is honest. */
     DB.photos.push({d:today(), t:Date.now(), id, pose});
     save();
+    /* Never take a photo and then hide it behind the current filter. */
+    if(_poseFilter!=="all" && _poseFilter!==pose) setPoseFilter("all");
     renderPhotos(); renderStorageStatus();
-    toast("Photo added · "+pose+" · "+ukDate());
+    try{ renderCheckinPhotos(); }catch(e){}
+    toast(pose+" photo added · "+ukDate());
   }catch(e){ console.warn(e); toast("Couldn't read that image"); }
 }
 async function delPhoto(i){
@@ -5943,7 +6016,22 @@ async function delPhoto(i){
   if(p.id){ delete PHOTOS[p.id]; await savePhotos(); }
   if(_cmpA===pkey(p)) _cmpA=null;
   if(_cmpB===pkey(p)) _cmpB=null;
-  save(); renderPhotos(); renderStorageStatus(); toast("Photo deleted");
+  save(); renderPhotos(); renderStorageStatus();
+  try{ renderCheckinPhotos(); }catch(e){}
+  toast("Photo deleted");
+}
+/* A thumbnail strip of what he's taken today, on the check-in, so he can see
+   it landed without leaving the screen. */
+function renderCheckinPhotos(){
+  const el=document.getElementById('ciPhotos'); if(!el) return;
+  const mine=(DB.photos||[]).filter(p=>p.d===today()).sort((a,b)=>(a.t||0)-(b.t||0));
+  if(!mine.length){ el.innerHTML="<div class='hint mt'>Nothing taken today yet.</div>"; return; }
+  el.innerHTML="<div class='photostrip mt'>"+mine.map(p=>
+    "<div class='phcell' onclick='openPhoto(\""+pkey(p)+"\")'>"+
+      "<img src='"+photoSrc(p)+"' alt='' loading='lazy'/>"+
+      (p.pose? "<span class='pose'>"+escapeHtml(p.pose)+"</span>":"")+
+    "</div>").join('')+"</div>"+
+    "<div class='hint mt'>"+mine.length+" today \u00b7 tap to view. They live in Progress with the rest.</div>";
 }
 function renderPhotos(){
   const wrap=document.getElementById('photoTimeline');
@@ -6246,7 +6334,9 @@ async function aiEstimateMeasurements(){
     '{"chest":0,"waist":0,"hips":0,"shoulders":0,"arm":0,"thigh":0,"calf":0,"neck":0,"bodyfat":0,"confidence":"low|medium|high","note":"one short sentence"}\n'+
     "Use null for anything the photos genuinely don't show. Arm is flexed upper arm, waist is at the navel."}];
   picks.forEach(p=>{ const src=photoSrc(p); if(src) content.push({type:"image_url",image_url:{url:src}}); });
-  const sys="You estimate body measurements from photographs for a training log. "+
+  /* Carries his coaching voice: its note lands in the same conversation as
+     everything else, and a sudden switch to clinical app-speak is jarring. */
+  const sys=coachSystem()+"\n\nRIGHT NOW you are estimating body measurements from photographs for his training log. "+
     "You are calibrating against a stated height, so give plausible centimetre figures rather than refusing. "+
     "Be conservative and state low confidence when the angle or clothing hides a measurement. "+
     "Output raw JSON and nothing else.";
@@ -6475,7 +6565,7 @@ function scheduleInApp(){
    v18 ADDITIONS — draggable rest timer · weekly training memory · AI planner
    · Firestore sync
    ========================================================================== */
-const APP_VERSION="v73.2 · 06/08/2026";
+const APP_VERSION="v76 · 06/08/2026";
 
 /* ===== 1. REST TIMER — drag it anywhere so it never blocks the chat box ===== */
 let _rtDrag=null;
@@ -9644,17 +9734,92 @@ function saveCloud(){
 
 
 /* Remember which Home sections he leaves open. */
+/* ===== v74 · HOME CARDS REARRANGE ======================================
+   They already collapsed and remembered it. What they couldn't do was move,
+   so whatever mattered most to him sat wherever it happened to be written in
+   the file. Arrows rather than drag: the same reasoning as the exercise
+   reorder — dragging inside a scrolling page is fiddly on a phone, and a
+   mis-drag is more annoying than one extra tap. */
+const HOME_CARD_NAMES={ tmr:"Tomorrow", intake:"Today\u2019s food",
+  metrics:"Metrics", week:"This week", streak:"Streak" };
+function homeOrder(){
+  const known=[...document.querySelectorAll('#s-today details[data-hk]')].map(d=>d.dataset.hk);
+  const saved=(DB.prefs&&DB.prefs.homeOrder)||[];
+  /* Saved order first, then anything new that has appeared since \u2014 a card
+     added in a later version must not vanish because it wasn't in the list. */
+  const out=saved.filter(k=>known.includes(k));
+  known.forEach(k=>{ if(!out.includes(k)) out.push(k); });
+  return out;
+}
+function applyHomeOrder(){
+  const host=document.getElementById('s-today'); if(!host) return;
+  const cards={};
+  host.querySelectorAll('details[data-hk]').forEach(d=>{ cards[d.dataset.hk]=d; });
+  const order=homeOrder();
+  let anchor=null;
+  order.forEach(k=>{
+    const el=cards[k]; if(!el) return;
+    if(anchor) anchor.after(el);
+    else if(el.parentNode) el.parentNode.insertBefore(el, cards[order[0]]);
+    anchor=el;
+  });
+}
+function moveHomeCard(k,dir){
+  const order=homeOrder();
+  const i=order.indexOf(k), j=i+dir;
+  if(i<0||j<0||j>=order.length) return;
+  order[i]=order[j]; order[j]=k;
+  DB.prefs=DB.prefs||{}; DB.prefs.homeOrder=order; save();
+  applyHomeOrder(); bindHomeCards();
+  const el=document.querySelector('#s-today details[data-hk="'+k+'"]');
+  if(el){ el.scrollIntoView({behavior:'smooth',block:'center'});
+          el.classList.add('moved'); setTimeout(()=>el.classList.remove('moved'),1200); }
+  toast((HOME_CARD_NAMES[k]||k)+" \u2192 "+(order.indexOf(k)+1)+" of "+order.length);
+}
+function toggleHomeArrange(){
+  DB.prefs=DB.prefs||{};
+  DB.prefs.homeArrange=!DB.prefs.homeArrange;
+  save(); bindHomeCards();
+  toast(DB.prefs.homeArrange? "Drag handles on \u2014 move the cards" : "Done");
+}
 function bindHomeCards(){
+  applyHomeOrder();
+  const arrange=!!(DB.prefs&&DB.prefs.homeArrange);
+  const order=homeOrder();
   document.querySelectorAll('#s-today details[data-hk]').forEach(d=>{
     const k=d.dataset.hk;
     const st=(DB.prefs&&DB.prefs.openHome)||{};
     if(st[k]!==undefined) d.open=!!st[k];
+
+    /* The arrows live in the summary, so they're reachable whether the card
+       is open or shut. */
+    const sum=d.querySelector('summary'); 
+    if(sum){
+      let ctl=sum.querySelector('.hmove');
+      if(arrange && !ctl){
+        ctl=document.createElement('span');
+        ctl.className='hmove';
+        const i=order.indexOf(k);
+        ctl.innerHTML="<button class='hb' onclick=\"event.preventDefault();event.stopPropagation();moveHomeCard('"+k+"',-1)\""+(i===0?" disabled":"")+">\u2191</button>"+
+                      "<button class='hb' onclick=\"event.preventDefault();event.stopPropagation();moveHomeCard('"+k+"',1)\""+(i===order.length-1?" disabled":"")+">\u2193</button>";
+        const chev=sum.querySelector('.chev');
+        if(chev) sum.insertBefore(ctl,chev); else sum.appendChild(ctl);
+      } else if(arrange && ctl){
+        const i=order.indexOf(k);
+        const bs=ctl.querySelectorAll('.hb');
+        if(bs[0]) bs[0].disabled=(i===0);
+        if(bs[1]) bs[1].disabled=(i===order.length-1);
+      } else if(!arrange && ctl){ ctl.remove(); }
+    }
+
     if(d.dataset.bound==="1") return; d.dataset.bound="1";
     d.addEventListener('toggle',()=>{
       DB.prefs=DB.prefs||{}; DB.prefs.openHome=DB.prefs.openHome||{};
       DB.prefs.openHome[k]=d.open; save();
     });
   });
+  const btn=document.getElementById('homeArrangeBtn');
+  if(btn) btn.textContent = arrange? "Done rearranging" : "Rearrange cards";
 }
 function boot(){
   const d=new Date(), hr=d.getHours();
