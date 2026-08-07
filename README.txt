@@ -1,5 +1,38 @@
-AMIR PT — v82 · 06/08/2026
+AMIR PT — v83 · 06/08/2026
 ==========================
+
+Upload index.html AND sw.js.
+
+
+PINCH TO ZOOM ON YOUR PHOTOS
+============================
+Open any physique photo and it now behaves like the normal photo viewer.
+
+  PINCH        zoom in and out, up to 6x
+  DRAG         move around once you're zoomed in
+  DOUBLE-TAP   straight in to 2.5x, double-tap again to fit
+  PINCH BACK   or just pinch back down and it snaps to fit
+
+It zooms toward the point BETWEEN YOUR FINGERS rather than the centre of the
+picture, so you land on the bit you're actually looking at instead of having
+to drag there afterwards.
+
+The image is clamped so you can't fling it off into empty space — it always
+stays over the frame.
+
+TWO DETAILS THAT MATTER IN USE
+  The left/right arrows disappear while you're zoomed in. They sit right over
+  the part of the picture you'd be examining, and a stray tap would jump you
+  to a different photo mid-comparison.
+
+  Zoom resets when you move to the next photo, so you're never comparing a
+  zoomed shot against a fitted one without realising.
+
+Also works with a trackpad or mouse wheel if you ever open this on a laptop.
+
+Tested as real gesture sequences: pinch out, pan with clamping, pinch back,
+double-tap in and out, and an attempt to drag the image 99,999 pixels away.
+
 
 Upload index.html AND sw.js.
 

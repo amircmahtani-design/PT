@@ -447,7 +447,13 @@ details.sec2[open] .secsum2:after{content:"\2212";}
 .lbox .lbwhen small{display:block;font-size:11.5px;font-weight:700;color:var(--muted);margin-top:2px;}
 .lbox .lbx{background:var(--card2);border:1px solid var(--line);color:var(--txt);border-radius:12px;padding:9px 14px;font-weight:800;font-size:15px;}
 .lbox .lbstage{flex:1 1 auto;min-height:0;display:flex;align-items:center;justify-content:center;position:relative;}
-.lbox .lbstage img{max-width:100%;max-height:100%;object-fit:contain;border-radius:14px;}
+.lbox .lbstage{overflow:hidden;touch-action:none;}
+.lbox .lbstage img{max-width:100%;max-height:100%;object-fit:contain;border-radius:14px;
+  transform-origin:center center;will-change:transform;touch-action:none;-webkit-user-select:none;user-select:none;}
+/* Once he's zoomed in, the nav arrows are in the way of the thing he's
+   looking at — and a stray tap would jump to another photo. */
+.lbox.zoomed .lbnav{opacity:0;pointer-events:none;}
+.lbzoomhint{text-align:center;font-size:11.5px;font-weight:700;color:var(--gold);min-height:15px;margin-top:6px;}
 .lbox .lbnav{position:absolute;top:50%;transform:translateY(-50%);background:#15110dcc;border:1px solid var(--line);
   color:var(--txt);width:44px;height:44px;border-radius:50%;font-size:20px;font-weight:800;}
 .lbox .lbnav.prev{left:2px;} .lbox .lbnav.next{right:2px;}
@@ -1206,6 +1212,7 @@ a{color:var(--orange);}
     <img id="lbImg" alt="" />
     <button class="lbnav next" onclick="photoNav(1)">›</button>
   </div>
+  <div class="lbzoomhint" id="lbZoomHint"></div>
   <div class="lbcount" id="lbCount"></div>
   <div class="lbbot">
     <select class="txtin" id="lbPose" onchange="setPhotoPose(this.value)">
@@ -6744,15 +6751,113 @@ function openPhoto(key){
   paintLightbox();
   const b=document.getElementById('lbox'); if(b) b.classList.add('show');
   document.body.style.overflow="hidden";
+  try{ initLbZoom(); lbZoomReset(); }catch(e){}
 }
 function paintLightbox(){
   const list=photosFiltered();
   const p=list[_lbIdx]; if(!p){ closePhoto(); return; }
-  const img=document.getElementById('lbImg'); if(img) img.src=photoSrc(p);
+  const img=document.getElementById('lbImg');
+  if(img){ img.src=photoSrc(p); lbZoomReset(); }
   const d=document.getElementById('lbDate'); if(d) d.textContent=photoWhenLong(p);
   const a=document.getElementById('lbAgo'); if(a) a.textContent=photoAgo(p)+(p.pose?" · "+p.pose:" · not labelled yet");
   const s=document.getElementById('lbPose'); if(s) s.value=p.pose||"Other";
   const c=document.getElementById('lbCount'); if(c) c.textContent=(_lbIdx+1)+" of "+list.length+(_poseFilter==="all"?"":" · "+_poseFilter);
+}
+/* ===== v83 · PINCH TO ZOOM ON A PHYSIQUE PHOTO ==========================
+   Comparing two shots six weeks apart is the whole point of that section, and
+   a fixed-size image on a phone is too small to see what actually changed.
+   This behaves like the normal photo viewer: pinch to zoom, drag to move
+   around, double-tap to jump in and back out.
+
+   Written with raw touch events rather than pointer events because a pinch is
+   two fingers on one element, and the transform is applied about the midpoint
+   between them \u2014 so it zooms toward what he is looking at rather than the
+   centre of the picture. */
+let _lbZ = {scale:1, x:0, y:0, sx:1, sy:0, sdist:0, mx:0, my:0, panning:false, lastTap:0};
+function lbApply(){
+  const img=document.getElementById('lbImg'); if(!img) return;
+  img.style.transform="translate("+_lbZ.x+"px,"+_lbZ.y+"px) scale("+_lbZ.scale+")";
+  img.style.cursor=_lbZ.scale>1?"grab":"";
+  const box=document.getElementById('lbox');
+  if(box) box.classList.toggle('zoomed', _lbZ.scale>1.01);
+  const hint=document.getElementById('lbZoomHint');
+  if(hint) hint.textContent = _lbZ.scale>1.01 ? ("\u00d7"+_lbZ.scale.toFixed(1)+" \u00b7 drag to move \u00b7 double-tap to fit") : "";
+}
+function lbZoomReset(){
+  _lbZ.scale=1; _lbZ.x=0; _lbZ.y=0; _lbZ.panning=false;
+  lbApply();
+}
+/* Keep the picture from being dragged off into nothing. */
+function lbClamp(){
+  const img=document.getElementById('lbImg'); if(!img) return;
+  const r=img.getBoundingClientRect();
+  const w=img.offsetWidth*_lbZ.scale, h=img.offsetHeight*_lbZ.scale;
+  const stage=img.parentElement; if(!stage) return;
+  const sw=stage.clientWidth, sh=stage.clientHeight;
+  const maxX=Math.max(0,(w-sw)/2), maxY=Math.max(0,(h-sh)/2);
+  _lbZ.x=Math.max(-maxX,Math.min(maxX,_lbZ.x));
+  _lbZ.y=Math.max(-maxY,Math.min(maxY,_lbZ.y));
+}
+function lbDist(t){ const dx=t[0].clientX-t[1].clientX, dy=t[0].clientY-t[1].clientY; return Math.hypot(dx,dy); }
+function lbMid(t){ return {x:(t[0].clientX+t[1].clientX)/2, y:(t[0].clientY+t[1].clientY)/2}; }
+function initLbZoom(){
+  const img=document.getElementById('lbImg'); if(!img || img.dataset.zoomBound==="1") return;
+  img.dataset.zoomBound="1";
+  img.addEventListener('touchstart',ev=>{
+    if(ev.touches.length===2){
+      _lbZ.sdist=lbDist(ev.touches);
+      _lbZ.sx=_lbZ.scale;
+      const m=lbMid(ev.touches);
+      _lbZ.mx=m.x-_lbZ.x; _lbZ.my=m.y-_lbZ.y;
+      _lbZ.panning=false;
+      ev.preventDefault();
+    } else if(ev.touches.length===1){
+      /* Double-tap: in to 2.5x, or back to fit. */
+      const now=Date.now();
+      if(now-_lbZ.lastTap<300){
+        _lbZ.scale = _lbZ.scale>1.01 ? 1 : 2.5;
+        if(_lbZ.scale===1){ _lbZ.x=0; _lbZ.y=0; }
+        lbClamp(); lbApply();
+        _lbZ.lastTap=0; ev.preventDefault(); return;
+      }
+      _lbZ.lastTap=now;
+      if(_lbZ.scale>1.01){
+        _lbZ.panning=true;
+        _lbZ.mx=ev.touches[0].clientX-_lbZ.x;
+        _lbZ.my=ev.touches[0].clientY-_lbZ.y;
+        ev.preventDefault();
+      }
+    }
+  },{passive:false});
+  img.addEventListener('touchmove',ev=>{
+    if(ev.touches.length===2 && _lbZ.sdist){
+      const ratio=lbDist(ev.touches)/_lbZ.sdist;
+      _lbZ.scale=Math.max(1,Math.min(6,_lbZ.sx*ratio));
+      const m=lbMid(ev.touches);
+      _lbZ.x=m.x-_lbZ.mx; _lbZ.y=m.y-_lbZ.my;
+      if(_lbZ.scale<=1.01){ _lbZ.x=0; _lbZ.y=0; }
+      lbClamp(); lbApply();
+      ev.preventDefault();
+    } else if(_lbZ.panning && ev.touches.length===1){
+      _lbZ.x=ev.touches[0].clientX-_lbZ.mx;
+      _lbZ.y=ev.touches[0].clientY-_lbZ.my;
+      lbClamp(); lbApply();
+      ev.preventDefault();
+    }
+  },{passive:false});
+  const end=ev=>{
+    if(ev.touches && ev.touches.length===0){ _lbZ.panning=false; _lbZ.sdist=0; }
+    if(_lbZ.scale<=1.01) lbZoomReset();
+  };
+  img.addEventListener('touchend',end);
+  img.addEventListener('touchcancel',end);
+  /* Trackpad / mouse wheel, for when he looks at this on a laptop. */
+  img.addEventListener('wheel',ev=>{
+    ev.preventDefault();
+    _lbZ.scale=Math.max(1,Math.min(6,_lbZ.scale*(ev.deltaY<0?1.12:0.89)));
+    if(_lbZ.scale<=1.01){ _lbZ.x=0; _lbZ.y=0; }
+    lbClamp(); lbApply();
+  },{passive:false});
 }
 function photoNav(dir){
   const list=photosFiltered();
@@ -7222,7 +7327,7 @@ function scheduleInApp(){
    v18 ADDITIONS — draggable rest timer · weekly training memory · AI planner
    · Firestore sync
    ========================================================================== */
-const APP_VERSION="v82 · 06/08/2026";
+const APP_VERSION="v83 · 06/08/2026";
 
 /* ===== 1. REST TIMER — drag it anywhere so it never blocks the chat box ===== */
 let _rtDrag=null;
