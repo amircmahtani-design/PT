@@ -1,5 +1,47 @@
-AMIR PT — v78 · 06/08/2026
+AMIR PT — v79 · 06/08/2026
 ==========================
+
+Upload index.html AND sw.js.
+
+
+1. THE DRINK ICONS
+==================
+"U0001F377" on every button. My mistake, and a specific one: I wrote the emoji
+as Python escapes (\U0001F377), which JavaScript does not recognise — it drops
+the backslash and prints the rest as text.
+
+Real emoji now. 🍷 🥂 🍺 🥃 🍸
+
+The pre-flight check has been taught this exact pattern, so it cannot ship
+again. That check has now caught three separate faults it was written for.
+
+
+2. HOME AND FOOD SHOW THE SAME READOUT
+======================================
+The Home card had its own small-text layout while the Food tab had the big
+one. Two different-looking readouts of the same number is how you end up
+unsure which is authoritative.
+
+There is one renderer now, used in both: calories large, then protein with
+your g/kg, carbs, fat, and alcohol when there is any.
+
+
+3. "WHOLE DAY AT ONCE" IN THE FOOD TAB
+======================================
+For the days your nutritionist has it covered and you just want the totals in,
+without leaving the Food tab. Same two buttons as Home — save the day's totals,
+or add to what's there.
+
+IT WON'T QUIETLY FIGHT THE MEAL LOG
+  If you have meals logged and then save a whole-day total, it asks first, then
+  clears the meal list — because a day cannot be both an itemised list and a
+  hand-typed total without one of them being wrong.
+
+  Testing that found a real bug: clearing the meals left their carbs, fat and
+  alcohol behind, so a day you had just re-entered by hand still carried
+  figures from meals that no longer existed. Those are wiped properly now, and
+  anything you leave blank shows as blank rather than as a stale number.
+
 
 Upload index.html AND sw.js.
 

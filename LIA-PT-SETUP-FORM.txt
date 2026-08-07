@@ -1,0 +1,146 @@
+LIA PT — SETUP FORM
+===================
+Fill this in with Lia and paste it back. Anything you don't know, write
+"don't know" or "not sure" — I'd rather build around a gap than a guess, and
+most of these can be changed in the app later anyway.
+
+The ones marked ** genuinely change how the programme is written. The rest
+just make it fit her better from day one.
+
+
+1. THE BASICS
+=============
+1.1  Name as she'd like the coach to use her:
+1.2  App name (default "Lia PT"):
+1.3  Age:
+1.4  Height (cm):
+1.5  Current weight (kg):
+1.6  Body fat % if she knows it (a rough guess is fine, or "no idea"):
+
+
+2. THE GOAL  **
+===============
+2.1  In her own words, what does she want to look like or be able to do?
+
+2.2  You said bulking. Which is closer:
+       (a) build muscle and don't mind gaining some fat with it
+       (b) build muscle while staying roughly the same body fat
+       (c) she's underweight / coming back from something and wants size back
+       (d) something else — describe
+
+2.3  Is there a target weight, or is it purely how she looks and feels?
+
+2.4  Which parts of her body does she most want to develop?
+     (e.g. glutes, legs, shoulders, back, arms, chest — rank the top three)
+
+2.5  Anything she does NOT want to get bigger?
+
+2.6  Is a photo of the look she's after easier than describing it? Send it if so.
+
+2.7  Has she trained seriously before? Roughly:
+       (a) new to lifting, or under ~6 months
+       (b) trained on and off for a year or two
+       (c) experienced, knows the lifts well
+
+
+3. FOOD  **
+===========
+3.1  Is she working with your nutritionist, someone else, or doing it herself?
+3.2  Roughly how many calories a day is she eating (or aiming for)?
+3.3  Does she know her protein target?
+3.4  Does she want to log daily food in the app, like you do?  yes / no
+3.5  Anything she can't or won't eat that affects protein intake
+     (vegetarian, vegan, dairy, etc.):
+
+
+4. TRAINING  **
+===============
+4.1  How many days a week can she realistically train?
+4.2  How long per session (minutes)?
+4.3  Which days of the week suit her? (or "flexible")
+4.4  Where does she train? List every place and what's there:
+
+     Place 1 — name:
+       Equipment (full gym / dumbbells / machines / bands / nothing):
+       Heaviest dumbbells available:
+     Place 2 — name:
+       Equipment:
+       Heaviest dumbbells:
+     Place 3 (if any) — name:
+       Equipment:
+
+4.5  Does she do any cardio she wants kept in? (rowing, walking, classes,
+     running, none)
+4.6  Anything she already does and enjoys that shouldn't be dropped?
+     (yoga, pilates, swimming, tennis...)
+
+
+5. HEALTH AND LIMITS  **
+========================
+5.1  Any injuries, past or present? Be specific about which side and what
+     movements aggravate it:
+
+5.2  Anything a doctor or physio has told her to avoid?
+
+5.3  Any joints that complain — knees, lower back, shoulders, wrists?
+
+5.4  Is she pregnant, recently postpartum, or planning to be in the next year?
+     This changes programming meaningfully, so it's worth answering even if
+     the answer is "not relevant".
+
+5.5  Would she like the coach to adjust training around her menstrual cycle
+     — pushing harder in some weeks, easing back in others? Good coaches do
+     this and it's genuinely useful, but plenty of people would rather the app
+     didn't track it. Entirely her call:   yes / no / maybe later
+
+5.6  Anything else the coach should know but never make a joke about?
+
+
+6. HOW SHE WANTS TO BE COACHED
+==============================
+6.1  Tone — pick or describe:
+       (a) warm and encouraging
+       (b) direct and no-nonsense
+       (c) blunt, tell her when she's being soft
+       (d) technical, explain the reasoning behind everything
+
+6.2  How much detail does she want with each exercise?
+       (a) just the sets and reps
+       (b) a short cue
+       (c) full explanation of what it's for and why
+
+6.3  Does she want the coach to push her to add weight, or would she rather
+     master a weight first the way you do?
+
+6.4  kg or lb?    cm or inches?
+
+6.5  Anything she'd find annoying? (emojis, motivational language, being
+     told "great job", being nagged...)
+
+
+7. EXERCISES
+============
+7.1  Any exercises she loves and wants in the programme?
+7.2  Any she hates or refuses to do?
+7.3  Any she doesn't know how to do and would want demos for?
+
+
+8. PRACTICAL
+============
+8.1  Does she want it on her phone home screen like yours?  yes / no
+8.2  Should her data be completely separate from yours?
+     (Recommended yes — same Firebase project, her own document, neither app
+      can see the other's training. Nothing for you to configure.)
+8.3  Any reason she'd want a different look — lighter theme, bigger text,
+     different colour instead of the orange?
+
+
+THAT'S IT
+=========
+Sections 2, 3, 4 and 5 are the ones that matter. If you only get through
+those, I can build it and we'll fine-tune the rest once she's used it.
+
+One note on the API key: sharing yours is fine. Same key typed into her
+Settings, billed to the same account, and the two coaches can't see each
+other's data because they read different documents. If you'd rather keep the
+usage separate later, swapping in a second key is a one-field change.
