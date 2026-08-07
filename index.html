@@ -617,6 +617,12 @@ background:var(--card);border:1px solid var(--line);border-radius:18px;padding:1
 .switch.on{background:linear-gradient(100deg,#3fe08a,#1fbf68);}
 .switch::after{content:"";position:absolute;top:3px;left:3px;width:22px;height:22px;border-radius:50%;background:#fff;transition:.2s;}
 .switch.on::after{transform:translateX(22px);}
+.jumpdown{position:fixed;right:16px;bottom:calc(150px + var(--safe-bot));z-index:45;
+  width:44px;height:44px;border-radius:50%;background:var(--card2);border:1px solid var(--line);
+  color:var(--txt);font-size:19px;font-weight:800;line-height:1;
+  box-shadow:0 6px 18px #0008;opacity:0;pointer-events:none;transform:translateY(6px);
+  transition:opacity .18s,transform .18s;}
+.jumpdown.show{opacity:1;pointer-events:auto;transform:translateY(0);}
 .toast{position:fixed;left:50%;bottom:calc(96px + var(--safe-bot));transform:translateX(-50%) translateY(20px);background:linear-gradient(100deg,#ff8a2b,#ff5a1a);color:#fff;padding:12px 20px;border-radius:12px;font-weight:700;font-size:14px;opacity:0;transition:.3s;z-index:60;box-shadow:0 8px 24px #ff5a1a55;pointer-events:none;max-width:90%;text-align:center;}
 .toast.show{opacity:1;transform:translateX(-50%) translateY(0);}
 .section-h{margin:26px 4px 10px;}
@@ -1250,6 +1256,7 @@ a{color:var(--orange);}
     <button class="lbx" style="color:var(--red)" onclick="delPhotoFromBox()">Delete</button>
   </div>
 </div>
+<button class="jumpdown" id="jumpDown" onclick="jumpChatEnd()" aria-label="jump to latest">↓</button>
 <div class="toast" id="toast"></div>
 <script>
 
@@ -1484,6 +1491,7 @@ function go(s){
   if(s==='today'){ try{ bindSections('s-today'); }catch(e){} }
   if(s==='progress'){ try{ bindSections('s-progress'); }catch(e){} }
   if(s==='food'){ try{ renderFood(); bindSections('s-food'); }catch(e){} }
+  try{ updateJumpBtn(); }catch(e){}
   if(s==='browse') renderBrowse();
   if(s==='settings'){ collapsibleSettings(); renderCatList(); }
   if(s==='checkin') syncCheckinLoc();
@@ -6867,7 +6875,31 @@ function localCoachReply(t){
   if(/increase|heavier|bump|progress/.test(s)) return "We add load only once the current weight is mastered with clean reps. Master it, then earn the bump.";
   return "Got it. Tell me how you slept, your energy, any niggles — and I'll set your day. Log lifts here, or tell me to change the day and I'll fix it.";
 }
-function clearChat(){ DB.chat=[]; save(); renderChat(); }
+/* v94 — a long conversation is a long scroll, and the only way back to the
+   newest message was a thumb marathon. */
+function jumpChatEnd(){
+  try{ window.scrollTo({top:document.body.scrollHeight, behavior:'smooth'}); }
+  catch(e){ window.scrollTo(0,document.body.scrollHeight); }
+}
+function updateJumpBtn(){
+  const b=document.getElementById('jumpDown'); if(!b) return;
+  const onCoach=(document.getElementById('s-coach')||{}).classList &&
+                document.getElementById('s-coach').classList.contains('active');
+  const fromBottom=document.body.scrollHeight-(window.scrollY+window.innerHeight);
+  b.classList.toggle('show', !!onCoach && fromBottom>260);
+}
+window.addEventListener('scroll',()=>{ try{ updateJumpBtn(); }catch(e){} },{passive:true});
+/* Clearing the transcript is NOT forgetting him. The coach rebuilds what it
+   knows from his training history, check-ins, nutrition, schedule, profile and
+   its own long-term memory every single message — none of which live here.
+   Worth saying plainly, because it isn't obvious. */
+function clearChat(){
+  if(DB.chat.length && !confirm(
+     "Clear the conversation?\n\nThis only wipes the messages on screen. Your coach keeps everything that matters — training history, check-ins, food, measurements, your programme and its long-term memory are all untouched, and it rebuilds what it knows from those every message.\n\nWhat it loses is the thread of THIS chat, so it won't remember what you said a few messages ago."
+  )) return;
+  DB.chat=[]; save(); renderChat();
+  toast("Chat cleared · your history is untouched");
+}
 
 async function analysePhysique(){
   const out=document.getElementById('physiqueOut');
@@ -7874,7 +7906,7 @@ function scheduleInApp(){
    v18 ADDITIONS — draggable rest timer · weekly training memory · AI planner
    · Firestore sync
    ========================================================================== */
-const APP_VERSION="v93 · 06/08/2026";
+const APP_VERSION="v94 · 06/08/2026";
 
 /* ===== 1. REST TIMER — drag it anywhere so it never blocks the chat box ===== */
 let _rtDrag=null;

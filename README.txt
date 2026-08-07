@@ -1,5 +1,39 @@
-AMIR PT — v93 · 06/08/2026
+AMIR PT — v94 · 06/08/2026
 ==========================
+
+Upload index.html AND sw.js.
+
+
+A JUMP-TO-LATEST BUTTON IN COACH
+================================
+A round arrow, bottom right. It appears only once you've scrolled up a screen
+or so, and only on the Coach tab, so it isn't sitting in the way the rest of
+the time. One tap and you're back at the newest message.
+
+
+AND NO, CLEAR DOES NOT WIPE ITS MEMORY
+======================================
+You were right to check before pressing it. The answer is no, and I verified
+it rather than assuming.
+
+The coach rebuilds what it knows from scratch on EVERY message, out of:
+
+    your training history        your check-ins
+    your food and macros         your measurements and photos
+    your schedule and programme  your profile, goals and injuries
+    its own long-term memory
+
+None of that lives in the chat transcript. Clear empties the transcript and
+nothing else. Tested: cleared the chat with a bench session logged, and the
+coach's knowledge came back byte-for-byte the same, bench included.
+
+WHAT YOU DO LOSE is the thread of that particular conversation — the last ten
+messages are what it uses for "what were we just talking about". So clear it
+freely between topics; just don't clear it mid-discussion and expect it to
+remember what you said three messages ago.
+
+The button now says all of that before it does anything, and you can back out.
+
 
 Upload index.html AND sw.js.
 
