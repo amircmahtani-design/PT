@@ -1,5 +1,112 @@
-AMIR PT — v80 · 06/08/2026
+AMIR PT — v82 · 06/08/2026
 ==========================
+
+Upload index.html AND sw.js.
+
+
+YOU WERE RIGHT: THERE WAS NO PROTOCOL
+=====================================
+Every session was assembled that morning out of exercise pools and whatever
+the volume figures said was behind. That is why lateral raises turned up two
+days running and why you had to catch it.
+
+It also meant progressive overload was never really possible. You cannot load
+a lift you do not repeat.
+
+But your second point is the one that stops the obvious fix being wrong: doing
+the same five lifts every week and just adding weight builds a lopsided body.
+Big mirror muscles, neglected small ones, no mobility, poor function. You said
+you did not want to look like a gorilla, and that is exactly the failure mode
+of the naive answer.
+
+So the structure is ANCHORS PLUS ROTATION.
+
+  ANCHORS      2 per session, FIXED for the whole block. These are the lifts
+               that get loaded week over week. Without them, no progression.
+  ACCESSORIES  rotate every week, chosen to fill what the week is actually
+               short of. Over a four-week block you now see 11 different
+               accessory movements instead of the same four.
+  PREHAB       one slot every session for what normally gets skipped: rear
+               delts, rotator cuff, grip, calves, tibialis, adductors, neck,
+               deep core. These are why a body holds up.
+  MOBILITY     programmed work with held durations, not a cooldown.
+
+Blocks run 4 working weeks plus a deload, then rebuild with new anchors.
+
+
+COVERAGE IS BY MOVEMENT PATTERN NOW, NOT JUST MUSCLE
+====================================================
+This is the difference between a mirror physique and a functional one.
+
+  Squat · Hinge · Lunge/single-leg · Horizontal push · Vertical push ·
+  Horizontal pull · Vertical pull · Carry/grip · Rotation & anti-rotation ·
+  Mobility
+
+The coach sees your weekly sets in each and what you are short of. A week that
+has squatted, hinged, lunged, pushed and pulled in both planes, carried
+something heavy, resisted rotation and done real mobility is a functional
+week. One that has benched three times is not, however good the numbers look.
+
+Unilateral work is called out explicitly, because single-leg and single-arm
+movements find the asymmetries a barbell hides.
+
+
+THE SPECIFIC THING YOU HAD TO CORRECT
+=====================================
+It now checks what you actually trained YESTERDAY and will not program the
+same movement — or the same movement pattern — hard again today. Tested: with
+lateral raises logged yesterday, today's session does not contain them.
+
+And the coach is told plainly that if you say you trained something yesterday,
+your word beats its figures, because its figures only know what got logged.
+
+
+YOU CAN SEE IT NOW
+==================
+Top of the Train sheet: which week of the block you are in, whether it is a
+deload, today's anchors, and what the prehab slot is for and why.
+
+
+Upload index.html AND sw.js.
+
+
+THE COACH WASN'T LYING. THE PLANNER WAS UNDOING IT.
+===================================================
+When you told it to reorder the session, it did. DB.workout really changed —
+that's why the green note listed the new order correctly, and why it insisted
+it had done what you asked. It had.
+
+Then you opened the Train tab.
+
+Opening Train runs maybeAutoPlan(). It checks whether an AI plan exists for
+today, finds none, and builds the whole session from scratch. Your change
+survived about four seconds — long enough to be reported, not long enough to
+reach the screen you were walking to.
+
+Which is why telling it again didn't help. Every time you asked, it worked;
+every time you went to look, it was rebuilt.
+
+THE FIX
+  Anything that deliberately changes today's session now STAMPS it, and the
+  auto-planner leaves a stamped session alone.
+
+  Twenty edit paths stamp it — reorder, move, swap, add, remove, per-exercise
+  sets and reps and rest and load, adjust the next set, skip, supersets and
+  circuits, deload, favourites, and the arrows on the Train sheet.
+
+  The "Build today's session" button still works, because pressing it is you
+  asking. It warns first if you've already changed things or logged sets.
+
+ALSO FIXED WHILE IN THERE
+  The planner could rebuild your session MID-WORKOUT. If you'd logged sets and
+  then navigated away and back, it would happily replace the sheet underneath
+  you. It now refuses if anything has been logged today.
+
+TESTED
+  Eleven different edits, each verified to protect the session. The planner
+  runs on an untouched session, and leaves both a changed one and a workout in
+  progress alone.
+
 
 Upload index.html AND sw.js.
 

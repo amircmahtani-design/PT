@@ -495,6 +495,13 @@ details.sec2[open] .secsum2:after{content:"\2212";}
 .histsec[open]>summary{border-bottom:1px solid var(--hair);}
 .histsecbody{padding:10px 10px 4px;}
 .histsecbody .card{margin-bottom:10px;}
+.blockbar{display:flex;flex-wrap:wrap;gap:7px;align-items:center;margin:0 0 12px;}
+.blockbar span{font-size:11px;font-weight:800;letter-spacing:.4px;padding:5px 10px;border-radius:9px;
+  border:1px solid var(--line);background:var(--pill);color:var(--muted);}
+.blockbar .bw{color:var(--orange);border-color:#ff8a2b44;}
+.blockbar .bd{color:var(--gold);border-color:#f0b24a44;}
+.blockbar .ba{color:var(--txt);}
+.blockbar .bp{flex:1 1 100%;font-weight:600;letter-spacing:0;color:var(--dim);text-transform:none;}
 .secbar{display:flex;align-items:center;gap:9px;margin:0 4px 6px;}
 .secbar .sbt{font-size:11px;font-weight:800;letter-spacing:.5px;text-transform:uppercase;color:var(--label);}
 .secbar .smove{margin-left:auto;}
@@ -2351,6 +2358,209 @@ function pickSplit(){ if(DB.dayOverride && DB.dayOverride.date===today() && DB.d
 function todaySets(ex){ const a=DB.strength[ex]; if(!a) return []; const x=a.find(o=>o.date===today()); return x?x.sets:[]; }
 function markSession(){ if(DB.lastSessionDate!==today()){ DB.lastSessionDate=today(); save(); updateStreak(); toast("Session started · "+(DB.streak||1)+" day run "); } }
 
+/* ===== v82 · A REAL PROGRAMME, NOT A DAILY IMPROVISATION ================
+   He was right twice over.
+
+   First: there was no protocol. Every session was assembled that morning from
+   pools and whatever the volume figures said was behind. That is why lateral
+   raises turned up two days running and why he had to catch it. It also means
+   progressive overload was never really possible \u2014 you cannot load a lift you
+   do not repeat.
+
+   Second, and this is the part that stops the obvious fix being wrong: doing
+   the same five lifts every week and just adding weight builds a lopsided
+   body. Big mirror muscles, neglected small ones, no mobility, poor function.
+   He asked for the opposite of that.
+
+   So the structure is ANCHORS PLUS ROTATION.
+
+     ANCHORS      2 per session, FIXED for the whole block. These are the lifts
+                  that get loaded week over week. Without them there is no
+                  progression.
+     ACCESSORIES  rotate every week or two, chosen to fill the gaps \u2014 angles,
+                  small muscles, weak points, whatever the week is short of.
+     PREHAB       one slot every session for the things that get skipped:
+                  rear delts, cuff, grip, calves, tibialis, deep core.
+     MOBILITY     programmed, with held durations. Not a cooldown afterthought.
+
+   And coverage is tracked by MOVEMENT PATTERN, not only muscle group. A body
+   that can squat, hinge, lunge, push and pull in both planes, carry, rotate
+   and resist rotation is a functional one. A body organised only by muscle
+   group is a mirror one. */
+
+const PATTERNS = {
+  squat:   {label:"Squat",              re:/squat|leg press|step[- ]?up|box jump/i},
+  hinge:   {label:"Hinge",              re:/deadlift|rdl|romanian|good morning|hip thrust|swing|back extension|glute bridge/i},
+  lunge:   {label:"Lunge / single leg", re:/lunge|split squat|bulgarian|pistol|single[- ]?leg|skater/i},
+  hpush:   {label:"Horizontal push",    re:/bench|chest press|push[- ]?up|dip|fly|pec/i},
+  vpush:   {label:"Vertical push",      re:/overhead|shoulder press|military|landmine press|arnold|handstand/i},
+  hpull:   {label:"Horizontal pull",    re:/row|face pull|rear delt|reverse fly/i},
+  vpull:   {label:"Vertical pull",      re:/pull[- ]?up|chin[- ]?up|pulldown|pullover|lat /i},
+  carry:   {label:"Carry / grip",       re:/carry|farmer|suitcase|rack hold|hang|grip/i},
+  rotate:  {label:"Rotation / anti-rot",re:/pallof|woodchop|russian twist|side plank|bird ?dog|renegade|copenhagen|chop/i},
+  mobility:{label:"Mobility",           re:/stretch|mobility|cat[- ]?cow|90\/90|hip flexor|thoracic|ankle|open|flow|pigeon|couch|swan|mermaid|spine/i}
+};
+function patternOf(name){
+  const n=String(name||"");
+  for(const k of Object.keys(PATTERNS)) if(PATTERNS[k].re.test(n)) return k;
+  return null;
+}
+/* Weekly coverage by pattern, from what he actually did. */
+function patternCoverage(days){
+  const cut=new Date(Date.now()-(days||7)*864e5).toISOString().slice(0,10);
+  const out={}; Object.keys(PATTERNS).forEach(k=>out[k]=0);
+  Object.keys(DB.strength||{}).forEach(name=>{
+    const k=patternOf(name); if(!k) return;
+    (DB.strength[name]||[]).forEach(sess=>{
+      if(!sess.date||sess.date==='prev'||sess.date<cut) return;
+      out[k]+=(sess.sets||[]).length;
+    });
+  });
+  return out;
+}
+function patternGaps(days){
+  const c=patternCoverage(days);
+  /* Every pattern wants SOMETHING in a week. Carries, rotation and mobility
+     are the ones that quietly disappear, so they're flagged at a lower bar. */
+  const min={squat:4,hinge:4,lunge:3,hpush:4,vpush:3,hpull:5,vpull:4,carry:1,rotate:2,mobility:2};
+  return Object.keys(min).filter(k=>(c[k]||0)<min[k]);
+}
+function patternText(days){
+  const c=patternCoverage(days||7);
+  return Object.keys(PATTERNS).map(k=>"  "+PATTERNS[k].label+": "+(c[k]||0)+" sets").join("\n");
+}
+
+/* The things that get skipped, and shouldn't. One a session. */
+const PREHAB = [
+  {n:"Band Pull-Apart",        why:"rear delts and posture"},
+  {n:"Face Pull",              why:"rear delts and cuff health"},
+  {n:"External Rotation",      why:"rotator cuff \u2014 protects the pressing"},
+  {n:"Calf Raise",             why:"calves, and ankles that hold up"},
+  {n:"Tibialis Raise",         why:"the front of the shin \u2014 nobody trains it, knees like it"},
+  {n:"Farmer Carry",           why:"grip and a braced trunk"},
+  {n:"Dead Hang",              why:"grip, shoulder decompression"},
+  {n:"Copenhagen Plank",       why:"adductors \u2014 the groin injury nobody sees coming"},
+  {n:"Bird Dog",               why:"anti-rotation and a spine that behaves"},
+  {n:"Pallof Press",           why:"anti-rotation under load"},
+  {n:"Side Plank",             why:"lateral trunk, without thickening the waist"},
+  {n:"Neck Nods",              why:"neck \u2014 posture, and it shows"}
+];
+
+/* ===== THE BLOCK ===== */
+function blockWeeks(){ return 5; }          /* 4 working weeks + a deload */
+function currentBlock(){ return DB.block||null; }
+function blockWeek(){
+  const b=currentBlock(); if(!b||!b.start) return 1;
+  const d=Math.floor((dnum(today())-dnum(b.start))/(7*864e5));
+  return Math.max(1, d+1);
+}
+function blockIsDeload(){ return blockWeek()>=blockWeeks(); }
+function blockExpired(){ return blockWeek()>blockWeeks(); }
+/* Anchors are chosen once per block per day type and then left alone. */
+function pickAnchors(split,key){
+  const grp=/legs/i.test(split)?"legs" : /pull/i.test(split)?"pull" : /push/i.test(split)?"push" : "full";
+  const P=(VPOOLS[key]||VPOOLS.dubai)[grp] || (VPOOLS[key]||VPOOLS.dubai).full;
+  const anchors=applyRules((P&&P.anchor)? P.anchor.slice() : []).filter(n=>canDoHere(n,key));
+  /* Two anchors covering DIFFERENT patterns \u2014 two horizontal presses is one
+     pattern trained twice, not a balanced day. */
+  const out=[];
+  anchors.forEach(n=>{
+    if(out.length>=2) return;
+    const p=patternOf(n);
+    if(out.some(x=>patternOf(x)===p)) return;
+    out.push(n);
+  });
+  while(out.length<2 && anchors.length) { const n=anchors.shift(); if(!out.includes(n)) out.push(n); }
+  return out;
+}
+function newBlock(){
+  const key=locKey();
+  const days=[...new Set(Object.values(DB.schedule||{}))].filter(d=>d&&d!=="Rest");
+  const anchors={};
+  days.forEach(sp=>{ anchors[sp]=pickAnchors(sp,key); });
+  DB.block={
+    start: today(),
+    weeks: blockWeeks(),
+    loc: key,
+    anchors,
+    n: ((DB.block&&DB.block.n)||0)+1
+  };
+  save();
+  return DB.block;
+}
+function ensureBlock(){
+  if(!DB.block || blockExpired() || DB.block.loc!==locKey()) newBlock();
+  /* A split added since the block started still needs anchors. */
+  const key=locKey();
+  Object.values(DB.schedule||{}).forEach(sp=>{
+    if(!sp||sp==="Rest") return;
+    if(!DB.block.anchors[sp] || !DB.block.anchors[sp].length){
+      DB.block.anchors[sp]=pickAnchors(sp,key); save();
+    }
+  });
+  return DB.block;
+}
+function anchorsFor(split){
+  const b=ensureBlock();
+  return (b.anchors[split]||[]).filter(n=>canDoHere(n,locKey()) && !exBanned(n));
+}
+/* What did yesterday actually contain? Never hammer the same pattern twice
+   in a row \u2014 this is the specific thing he had to correct by hand. */
+function yesterdayPatterns(){
+  const y=new Date(Date.now()-864e5).toISOString().slice(0,10);
+  const out=new Set();
+  Object.keys(DB.strength||{}).forEach(n=>{
+    if((DB.strength[n]||[]).some(s=>s.date===y)){ const p=patternOf(n); if(p) out.add(p); }
+  });
+  return out;
+}
+function trainedYesterday(name){
+  const y=new Date(Date.now()-864e5).toISOString().slice(0,10);
+  return (DB.strength&&DB.strength[name]||[]).some(s=>s.date===y);
+}
+/* Accessories rotate: a different slice each week of the block, biased toward
+   whatever the week is actually short of. */
+function pickAccessories(split,key,need,anchors){
+  const grp=/legs/i.test(split)?"legs" : /pull/i.test(split)?"pull" : /push/i.test(split)?"push" : "full";
+  const P=(VPOOLS[key]||VPOOLS.dubai)[grp] || (VPOOLS[key]||VPOOLS.dubai).full;
+  let pool=applyRules([...(P&&P.acc||[]), ...(P&&P.anchor||[])])
+             .filter(n=>canDoHere(n,key) && anchors.indexOf(n)<0);
+  const gaps=patternGaps(7);
+  const yest=yesterdayPatterns();
+  const score=n=>{
+    const p=patternOf(n);
+    let sc=0;
+    if(p && gaps.includes(p)) sc+=6;                 /* fills a gap in the week */
+    if(p && yest.has(p)) sc-=4;                       /* trained yesterday */
+    if(trainedYesterday(n)) sc-=10;                   /* literally did this yesterday */
+    if(anchors.some(a=>patternOf(a)===p)) sc-=3;      /* already covered today */
+    return sc;
+  };
+  /* Rotate the starting point by block week so it isn't the same accessories
+     for five weeks running. */
+  const wk=blockWeek();
+  pool=pool.map((n,i)=>({n,i})).sort((a,b)=>{
+    const d=score(b.n)-score(a.n); if(d) return d;
+    return ((a.i+wk*3)%pool.length)-((b.i+wk*3)%pool.length);
+  }).map(x=>x.n);
+  return pool.slice(0, Math.max(0,need));
+}
+function pickPrehab(){
+  const gaps=patternGaps(7);
+  const yest=yesterdayPatterns();
+  const list=PREHAB.filter(x=>!exBanned(x.n) && canDoHere(x.n,locKey()) && !trainedYesterday(x.n));
+  const pool=list.length? list : PREHAB;
+  const scored=pool.map(x=>{
+    const p=patternOf(x.n);
+    let sc=0;
+    if(p&&gaps.includes(p)) sc+=5;
+    if(p&&yest.has(p)) sc-=3;
+    return {x,sc};
+  }).sort((a,b)=>b.sc-a.sc);
+  const wk=blockWeek();
+  const top=scored.slice(0,4);
+  return top.length? top[wk%top.length].x : PREHAB[0];
+}
 function buildWorkout(){
   const ci=latestCheckin(), key=locKey(), L=LOC();
   const energy=ci?ci.energy:7, sleep=ci?ci.sleep:7;
@@ -2382,11 +2592,24 @@ function buildWorkout(){
   else if(/pull/i.test(split)) grp="pull";
   else if(/push/i.test(split)) grp="push";
   else if(/upper/i.test(split)) grp="upper";
-  main=buildVaried(grp,key,5);
+  /* v82 — anchors first, then rotating accessories, then one prehab slot.
+     The anchors are fixed for the whole block so they can actually be loaded;
+     everything after them moves, so the small muscles and the patterns that
+     get skipped keep getting covered. */
+  let anchors=[], prehabPick=null;
+  try{
+    anchors=anchorsFor(split);
+    const acc=pickAccessories(split,key,Math.max(0,4-anchors.length),anchors);
+    prehabPick=pickPrehab();
+    main=[...anchors,...acc];
+    if(prehabPick && main.indexOf(prehabPick.n)<0) main.push(prehabPick.n);
+  }catch(e){ console.warn("block",e); main=[]; }
+  if(!main.length) main=buildVaried(grp,key,5);
   if(!main.length) main=applyRules((pool[grp]||pool.full).slice());
   /* Absolute guard: never program something he can't physically do where he is. */
   main=main.filter(n=>canDoHere(n,key));
   main=applyRules(main);
+  main=[...new Set(main)];
   if(!main.length) main=applyRules(POOLS.greece.full.slice());
   if(!main.length) main=(POOLS.greece.full).slice();   /* every option banned — better something than nothing */
   if(knee){ main=main.map(n=>/squat|lunge|split|step-?up|pistol/i.test(n)? (key==="dubai"?"Romanian Deadlift":key==="madrid"?"DB Romanian Deadlift":"Glute Bridge") : n); main=[...new Set(main)]; }
@@ -2432,6 +2655,11 @@ function buildWorkout(){
   }
   const estF=estimateMinutes(main,sets,tb);
   const _built={title: split, tag: L.tag, loc:key, mins:tb.mins, est:estF,
+    blockWeek: (function(){ try{ return blockWeek(); }catch(e){ return 1; } })(),
+    blockWeeks: blockWeeks(),
+    deloadWeek: (function(){ try{ return blockIsDeload(); }catch(e){ return false; } })(),
+    anchors: anchors||[],
+    prehab: prehabPick||null,
     phase: DB.profile.phase, note, reps: travel? "AMRAP-ish \u00b7 2 in reserve" : "8\u201312 reps", sets, warmup, travel,
     main: main.map(n=>{
       const e=EX(n)||{m:["core"],cue:"Control the rep.",wristAlt:"Same"};
@@ -3092,6 +3320,18 @@ function renderWorkoutSheet(w){
   sheetSec("cool","Cool-down · timed",moveCount(w.cooldown),coolBodyHTML(w.cooldown),false)+
   sheetSec("rec","Recovery notes","","<div class='recovery'>"+w.recovery+"</div>",false)+
   completeBlockHTML(w)+"</div>";
+  /* v82 — show the structure, or he has no way of knowing a programme exists. */
+  try{
+    const host=document.getElementById('sheetTop')||document.getElementById('workoutSheet');
+    if(host && w && w.blockWeek){
+      let bar=document.getElementById('blockBar');
+      if(!bar){ bar=document.createElement('div'); bar.id='blockBar'; bar.className='blockbar'; host.insertBefore(bar, host.firstChild); }
+      bar.innerHTML="<span class='bw'>Week "+w.blockWeek+" of "+w.blockWeeks+"</span>"+
+        (w.deloadWeek? "<span class='bd'>Deload</span>":"")+
+        ((w.anchors&&w.anchors.length)? "<span class='ba'>Anchors: "+w.anchors.map(escapeHtml).join(" + ")+"</span>":"")+
+        ((w.prehab)? "<span class='bp'>"+escapeHtml(w.prehab.n)+" — "+escapeHtml(w.prehab.why)+"</span>":"");
+    }
+  }catch(e){}
   try{ bindSheetSecs(); }catch(e){}
   try{ paintDemos(); }catch(e){}
   try{ hydrateMedia(); }catch(e){}
@@ -3749,6 +3989,7 @@ function orderGuard(i){
   return true;
 }
 function commitOrder(newIdx,name){
+  markSessionTouched();
   DB.workout.reordered=true;      // so a re-render never quietly re-sorts it
   save();
   renderWorkoutSheet(DB.workout);
@@ -4510,6 +4751,28 @@ Object.keys(PHYSIQUE_PRIORITY).map(g=>"  "+g+": "+PHYSIQUE_PRIORITY[g]).join("\n
 "  \u2022 \u201cI only got 9\u201d \u2192 log it and adjust.\n"+
 "NEVER answer a statement of fact with a list of example phrasings, and never make him repeat himself in different words. He said it perfectly clearly the first time. If you truly need one thing clarified, ask that ONE thing in a single line \u2014 do not send him a menu.\n"+
 "YOU CAN BE WRONG AND HE WILL TELL YOU. When he does, the answer starts with agreeing. \u201cYou\u2019re right, I had that down as unworked\u201d beats defending a number that came from incomplete data. His memory of his own week is better evidence than your figures, because your figures only know what got logged.\n\n"+
+"=== THE PROGRAMME. YOU WORK INSIDE IT, YOU DO NOT REINVENT IT DAILY ===\n"+
+(function(){ try{
+  const b=ensureBlock(), wk=blockWeek();
+  return "Block "+(b.n||1)+", week "+wk+" of "+blockWeeks()+(blockIsDeload()?" \u2014 DELOAD WEEK":"")+".\n"+
+    "ANCHORS, fixed for this whole block so they can actually be loaded:\n"+
+    Object.keys(b.anchors||{}).map(k=>"  "+k+": "+(b.anchors[k]||[]).join(", ")).join("\n")+"\n";
+}catch(e){ return ""; } })()+
+"HOW THIS IS BUILT, AND WHY:\n"+
+"  \u2022 ANCHORS stay put for the block. You cannot progressively load a lift he does not repeat \u2014 that was the flaw in improvising a session every morning.\n"+
+"  \u2022 ACCESSORIES ROTATE weekly. Doing the same five lifts for months with the load creeping up builds big mirror muscles and a neglected everything-else. He has told you explicitly he does not want to look like a gorilla, and he is right that it is the failure mode.\n"+
+"  \u2022 ONE PREHAB SLOT every session for what normally gets skipped: rear delts, rotator cuff, grip, calves, tibialis, adductors, neck, deep core. These are why a body holds up.\n"+
+"  \u2022 NEVER repeat the same movement pattern hard two days running. If he tells you he trained something yesterday, believe him over your own figures and change the session.\n\n"+
+"=== FUNCTION, NOT JUST THE MIRROR ===\n"+
+"He wants to LOOK good, FEEL good and BE functional \u2014 in that order of what he says, but treat them as one goal. A physique built only from what shows in a mirror is a badly built body.\n"+
+"So coverage is judged by MOVEMENT PATTERN, not only by muscle group:\n"+
+(function(){ try{ return patternText(7)+"\n"; }catch(e){ return ""; } })()+
+(function(){ try{ const g=patternGaps(7);
+  return g.length? ("SHORT THIS WEEK: "+g.map(k=>PATTERNS[k].label).join(", ")+". Fix these before adding anything to what is already covered.\n")
+                 : "Every pattern has been covered this week. Keep it that way.\n"; }catch(e){ return ""; } })()+
+"A week that has squatted, hinged, lunged, pushed and pulled in both planes, carried something heavy, resisted rotation and spent real time on mobility is a functional week. One that has benched three times is not, however good the numbers look.\n"+
+"MOBILITY IS PROGRAMMED WORK, not a cooldown. Held durations, real positions, and it does not get dropped when time is short \u2014 something else does.\n"+
+"UNILATERAL WORK EARNS ITS PLACE: single-leg and single-arm movements find and fix the asymmetries that a barbell hides.\n\n"+
 "WHAT SEPARATES A GOOD COACH FROM AN EXERCISE LIST:\n"+
 "  \u2022 You notice things he hasn't mentioned. A lift stalling three sessions running, a muscle group quietly under-trained for a fortnight, sleep dropping while loads climb \u2014 say so, unprompted.\n"+
 "  \u2022 You explain WHY in one line. Not a lecture, but never a bare instruction either.\n"+
@@ -4857,19 +5120,23 @@ function finalizeCoachEdit(){
   const hp=document.getElementById('heroPhase'); if(hp)hp.textContent="Today · "+DB.workout.tag;
 }
 function coachSetWorkout(listRaw){
+  markSessionTouched();
   coachEnsureWorkout();
   const names=String(listRaw).split(/[,\n;]+/).map(x=>resolveExName(x)).filter(Boolean);
   if(!names.length) return null;
   names.forEach(ensureLibEntry);
   DB.workout.main=names.map(exObject); DB.workout.title=DB.workout.title||"Custom Session"; finalizeCoachEdit(); return names;
 }
-function coachAddEx(raw){ coachEnsureWorkout(); const n=resolveExName(raw); if(!n) return null;
+function coachAddEx(raw){
+  markSessionTouched(); coachEnsureWorkout(); const n=resolveExName(raw); if(!n) return null;
   if(DB.workout.main.some(e=>e.name.toLowerCase()===n.toLowerCase())) return n;
   DB.workout.main.push(exObject(n)); finalizeCoachEdit(); return n; }
-function coachRemoveEx(raw){ coachEnsureWorkout(); const n=resolveExName(raw); if(!n) return null;
+function coachRemoveEx(raw){
+  markSessionTouched(); coachEnsureWorkout(); const n=resolveExName(raw); if(!n) return null;
   const before=DB.workout.main.length; DB.workout.main=DB.workout.main.filter(e=>e.name.toLowerCase()!==n.toLowerCase());
   if(DB.workout.main.length===before) return null; finalizeCoachEdit(); return n; }
-function coachSwapWorkoutEx(oldRaw,newRaw){ coachEnsureWorkout();
+function coachSwapWorkoutEx(oldRaw,newRaw){
+  markSessionTouched(); coachEnsureWorkout();
   const o=resolveExName(oldRaw); if(!o) return null;
   const nn=resolveExName(newRaw,o); if(!nn) return null;
   if(nn.toLowerCase()===o.toLowerCase()) return null;   // never "swap" something for itself
@@ -5125,7 +5392,7 @@ function coachMoveEx(name,pos){
   j=Math.max(0,Math.min(m.length-1,j));
   const [ex]=m.splice(i,1);
   m.splice(j,0,ex);
-  DB.workout.reordered=true; save();
+  markSessionTouched(); DB.workout.reordered=true; save();
   try{ renderWorkoutSheet(DB.workout); }catch(e){}
   return {name:ex.name,pos:j+1};
 }
@@ -5142,7 +5409,7 @@ function coachReorder(list){
   /* Anything he didn't name keeps its place at the end. Reordering must never
      silently drop an exercise he's already logged sets against. */
   m.forEach((x,i)=>{ if(!used.has(i)) out.push(x); });
-  DB.workout.main=out; DB.workout.reordered=true; save();
+  DB.workout.main=out; markSessionTouched(); DB.workout.reordered=true; save();
   try{ renderWorkoutSheet(DB.workout); }catch(e){}
   return out.map(x=>x.name);
 }
@@ -5160,7 +5427,20 @@ function coachEx(name){
   const i=coachFindExIdx(name);
   return i<0? null : (DB.workout.main[i]);
 }
+/* ===== v81 · A SESSION HE HAS TOUCHED IS NOT THE PLANNER'S TO REBUILD =====
+   The coach would reorder the session, say so, and mean it \u2014 DB.workout.main
+   really did change. Then he'd open Train, maybeAutoPlan() would fire because
+   no AI plan existed for today yet, and it would rebuild the whole session
+   from scratch. His change was real for about four seconds.
+
+   Anything that deliberately edits the session now stamps it. The auto-planner
+   leaves a stamped session alone; the Build button still works, because that
+   is him asking. */
+function markSessionTouched(){
+  if(DB.workout){ DB.workout.touched=true; DB.workout.touchedAt=Date.now(); }
+}
 function coachAfterEx(){
+  markSessionTouched();
   DB.workout.reordered=DB.workout.reordered||false;
   save();
   try{ renderWorkoutSheet(DB.workout); }catch(e){}
@@ -5374,6 +5654,7 @@ function parseDelta(txt,base){
   return kg? parseFloat(kg[1]) : null;
 }
 function coachAdjustSets(a,scope){
+  markSessionTouched();
   const P=String(a).split("|").map(x=>x.trim());
   const e=coachEx(P[0]); if(!e) return null;
   const sess=setsToday(e.name);
@@ -5389,6 +5670,7 @@ function coachAdjustSets(a,scope){
   return {name:e.name, target, d};
 }
 function coachSkipRemaining(a){
+  markSessionTouched();
   const e=coachEx(a); if(!e) return null;
   const sess=setsToday(e.name);
   const done=sess? sess.sets.length : 0;
@@ -5399,6 +5681,7 @@ function coachSkipRemaining(a){
   return {name:e.name, done};
 }
 function coachSkipEx(a){
+  markSessionTouched();
   const e=coachEx(a); if(!e) return null;
   e.skipped=true;
   save(); try{ renderWorkoutSheet(DB.workout); }catch(err){}
@@ -5421,6 +5704,7 @@ function coachEndSession(a){
    no way to say any of it, so the coach could only mention it in passing and
    hope he remembered by set four. */
 function coachSetTechnique(a){
+  markSessionTouched();
   const P=String(a).split("|").map(x=>x.trim());
   const e=coachEx(P[0]); if(!e) return null;
   const t=P[1]||"";
@@ -5430,6 +5714,7 @@ function coachSetTechnique(a){
   return {name:e.name, t:e.technique||"cleared"};
 }
 function coachClearTechniques(){
+  markSessionTouched();
   let n=0;
   ((DB.workout&&DB.workout.main)||[]).forEach(e=>{
     if(e.technique){ delete e.technique; n++; }
@@ -5440,6 +5725,7 @@ function coachClearTechniques(){
   return n;
 }
 function coachRemoveSuperset(a){
+  markSessionTouched();
   const e=coachEx(a); if(!e) return null;
   const partner=e.superset;
   delete e.superset;
@@ -5453,6 +5739,7 @@ function coachRemoveSuperset(a){
    The scope problem, in the only form that matters day to day: never again,
    and always use this instead. */
 function coachNeverAgain(a){
+  markSessionTouched();
   const P=String(a).split("|").map(x=>x.trim());
   const name=P[0]; if(!name) return null;
   DB.rules=DB.rules||{banned:{},prefer:{},kit:{}};
@@ -5506,6 +5793,7 @@ function coachSetKitLimit(a){
 
 /* ---- whole-workout operations ---------------------------------------- */
 function coachRegenerateKeeping(a){
+  markSessionTouched();
   const keep=String(a).split(/\s*,\s*/).map(x=>x.trim()).filter(Boolean);
   const held=[];
   keep.forEach(n=>{ const e=coachEx(n); if(e) held.push(e); });
@@ -5522,6 +5810,7 @@ function coachRegenerateKeeping(a){
   return held.map(e=>e.name);
 }
 function coachDeloadWorkout(a){
+  markSessionTouched();
   const m=(DB.workout&&DB.workout.main)||[];
   if(!m.length) return null;
   const pct=parseFloat(String(a||"-20").replace(/[^\d.-]/g,""))||-20;
@@ -5546,6 +5835,7 @@ function coachSaveFavourite(a){
   save(); return name;
 }
 function coachLoadFavourite(a){
+  markSessionTouched();
   const name=String(a).trim();
   const f=(DB.favourites||{})[name] ||
           (DB.favourites||{})[Object.keys(DB.favourites||{}).find(k=>k.toLowerCase()===name.toLowerCase())];
@@ -5671,6 +5961,7 @@ function volumeSummary(days){
   };
 }
 function coachMakeCircuit(a){
+  markSessionTouched();
   const names=String(a).split(/\s*,\s*/).map(x=>x.trim()).filter(Boolean);
   if(names.length<2) return null;
   const got=names.map(n=>coachEx(n)).filter(Boolean);
@@ -6931,7 +7222,7 @@ function scheduleInApp(){
    v18 ADDITIONS — draggable rest timer · weekly training memory · AI planner
    · Firestore sync
    ========================================================================== */
-const APP_VERSION="v80 · 06/08/2026";
+const APP_VERSION="v82 · 06/08/2026";
 
 /* ===== 1. REST TIMER — drag it anywhere so it never blocks the chat box ===== */
 let _rtDrag=null;
@@ -7180,6 +7471,14 @@ async function aiPlanWeek(){
 async function aiPlanToday(force){
   const btn=document.getElementById('planBtn'), out=document.getElementById('planOut');
   if(DB.ai.provider!=="openai"||!DB.ai.key){ if(force){ toast("Add your OpenAI key in Settings first"); go('settings'); } return; }
+  /* Automatic runs never overwrite a session he has shaped. A press of the
+     button is him asking, so that still goes ahead \u2014 after a warning. */
+  if(!force && DB.workout && DB.workout.touched) return;
+  if(force && DB.workout && DB.workout.touched){
+    const logged=((DB.workout.main)||[]).reduce((a,e)=>a+todaySets(e.name).length,0);
+    if(!confirm("You've already changed today's session"+(logged? " and logged "+logged+" set"+(logged===1?"":"s"):"")+
+                ".\n\nBuilding a new one replaces it. Carry on?")) return;
+  }
   if(_planning) return; _planning=true;
   if(btn){ btn.disabled=true; btn.innerHTML="<span class='spin'></span> Reading your week\u2026"; }
   if(out) out.innerHTML="<div class='card mt center muted'><span class='spin'></span> Coach is looking at what you've done\u2026</div>";
@@ -7232,6 +7531,13 @@ function maybeAutoPlan(){
   if(!DB.prefs || DB.prefs.autoPlan===false) return;
   if(DB.ai.provider!=="openai"||!DB.ai.key) return;
   if(DB.aiPlan && DB.aiPlan.date===today() && DB.aiPlan.loc===locKey()) return;
+  /* He or the coach has already shaped today deliberately. Rebuilding over the
+     top of that is how a change he was told had been made vanished on the way
+     to the Train tab. */
+  if(DB.workout && DB.workout.touched) return;
+  /* Sets already logged means the session is in progress \u2014 never rebuild under
+     him mid-workout either. */
+  try{ if(((DB.workout&&DB.workout.main)||[]).some(e=>todaySets(e.name).length)) return; }catch(e){}
   const w=DB.workout;
   if(w && (w.kind==='cardio'||w.kind==='mobility'||w.sets===0)) return;   // rest / cardio days stay as-is
   if(readinessCall().verdict==='rest') return;                            // coach called a rest day
