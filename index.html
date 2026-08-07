@@ -495,6 +495,24 @@ details.sec2[open] .secsum2:after{content:"\2212";}
 .histsec[open]>summary{border-bottom:1px solid var(--hair);}
 .histsecbody{padding:10px 10px 4px;}
 .histsecbody .card{margin-bottom:10px;}
+.psec{margin-bottom:14px;border:1px solid var(--line);border-radius:18px;overflow:hidden;background:var(--card);}
+.psec>summary{list-style:none;cursor:pointer;display:flex;align-items:center;gap:9px;padding:16px 18px;}
+.psec>summary::-webkit-details-marker{display:none;}
+.psec .pst{font-size:15px;font-weight:800;color:var(--txt);}
+.psec .pse{font-size:11.5px;font-weight:700;color:var(--dim);margin-left:auto;}
+.psec .chev{margin-left:auto;color:var(--dim);font-size:18px;transition:transform .2s;}
+.psec .pse+.chev{margin-left:8px;}
+.psec[open]>summary .chev{transform:rotate(90deg);}
+.psec[open]>summary{border-bottom:1px solid var(--hair);}
+.psecbody{padding:4px 4px 0;}
+.psecbody .card{margin:0 0 4px;border:none;background:transparent;padding:14px 14px 16px;}
+.psecbody .hcard{margin:0;border:none;background:transparent;}
+.psec.moved{outline:2px solid var(--orange);outline-offset:3px;}
+.smove{display:flex;gap:5px;margin-left:auto;}
+.smove+.chev,.smove~.pse{margin-left:8px;}
+.smove .hb{background:var(--pill);border:1px solid var(--line);color:var(--txt);
+  border-radius:9px;padding:5px 10px;font-size:13px;font-weight:800;line-height:1;}
+.smove .hb[disabled]{opacity:.3;}
 .hmove{display:flex;gap:5px;margin-left:auto;margin-right:8px;}
 .hmove .hb{background:var(--pill);border:1px solid var(--line);color:var(--txt);
   border-radius:9px;padding:5px 10px;font-size:13px;font-weight:800;line-height:1;}
@@ -669,11 +687,11 @@ a{color:var(--orange);}
         <input class="txtin" id="ciPain" placeholder="e.g. right wrist, left knee, none" /></div>
       <div class="field">
         <label>Progress photos <span class="hint" style="float:right;font-weight:700">optional</span></label>
-        <div class="hint" style="margin:-4px 0 10px">Same photos as Progress \u2014 this is just a second way in, for when you\u2019re already stood here doing the check-in.</div>
+        <div class="hint" style="margin:-4px 0 10px">Same photos as Progress — this is just a second way in, for when you’re already stood here doing the check-in.</div>
         <div class="posebtns">
-          <label class="btn sec">\ud83d\udcf7 Take front
+          <label class="btn sec">📷 Front photo
             <input type="file" accept="image/*" capture="environment" style="display:none" onchange="addPhoto(this,'Front')" /></label>
-          <label class="btn sec">\ud83d\udcf7 Take side
+          <label class="btn sec">📷 Side photo
             <input type="file" accept="image/*" capture="environment" style="display:none" onchange="addPhoto(this,'Side')" /></label>
         </div>
         <div id="ciPhotos"></div>
@@ -724,9 +742,9 @@ a{color:var(--orange);}
 
   <section class="screen" id="s-progress">
     <div class="head"><div><div class="greet">The long game</div><h1 class="display">Progress</h1></div></div>
-    <div class="card"><div class="card-title"><span>Bodyweight</span></div><div id="wtWrap"></div></div>
-    <div class="card"><div class="card-title"><span>Your lifts</span><span class="itin-edit">tap one for its chart</span></div><div id="strengthPBs"></div></div>
-    <div class="card">
+    <div class="card" data-sk="weight"><div class="card-title"><span>Bodyweight</span></div><div id="wtWrap"></div></div>
+    <div class="card" data-sk="lifts"><div class="card-title"><span>Your lifts</span><span class="itin-edit">tap one for its chart</span></div><div id="strengthPBs"></div></div>
+    <div class="card" data-sk="photos">
       <div class="card-title"><span>Physique photos</span><span class="itin-edit" id="photoCount"></span></div>
       <div class="poseseg" id="poseFilter">
         <button class="on" data-v="all" onclick="setPoseFilter('all')">All</button>
@@ -735,27 +753,27 @@ a{color:var(--orange);}
       </div>
       <div id="photoTimeline"></div>
       <div class="posebtns mt">
-        <label class="btn sec">\ud83d\udcf7 Take front
+        <label class="btn sec">📷 Front photo
           <input type="file" accept="image/*" capture="environment" style="display:none" onchange="addPhoto(this,'Front')" /></label>
-        <label class="btn sec">\ud83d\udcf7 Take side
+        <label class="btn sec">📷 Side photo
           <input type="file" accept="image/*" capture="environment" style="display:none" onchange="addPhoto(this,'Side')" /></label>
       </div>
       <div class="hint mt">Tap any photo to see it full size, change its label or delete it.</div>
     </div>
 
-    <div class="card" id="phaseCard">
+    <div class="card" id="phaseCard" data-sk="plan">
       <div class="card-title"><span>The plan</span><span class="itin-edit" id="phaseTag"></span></div>
       <div id="phaseBody"></div>
     </div>
 
-    <div class="card">
+    <div class="card" data-sk="review">
       <div class="card-title"><span>Week in review</span><span class="itin-edit">what a coach actually does</span></div>
       <div class="notebox mb">Your logged volume against the landmarks, what's stalling, what's under-trained, and what changes next week. It reads your numbers, not the calendar — and it will make the case for a deload before you have to ask.</div>
       <button class="btn blue" onclick="weeklyReview()">Review my week</button>
       <div id="reviewOut"></div>
     </div>
 
-    <div class="card" id="compareCard">
+    <div class="card" id="compareCard" data-sk="compare">
       <div class="card-title"><span>Then &amp; now</span><span class="itin-edit">side by side</span></div>
       <div class="quickcmp" id="quickCmp">
         <button onclick="quickCompare(30)">1 month ago</button>
@@ -772,13 +790,13 @@ a{color:var(--orange);}
       <div id="compareAiOut"></div>
     </div>
 
-    <div class="card">
+    <div class="card" data-sk="read">
       <div class="card-title"><span>Coach's read</span></div>
       <button class="btn blue" onclick="analysePhysique()">🔍 Ask coach to analyse my physique</button>
       <div id="physiqueOut"></div>
     </div>
 
-    <details class="hcard" id="measCard">
+    <details class="hcard" id="measCard" data-sk="measure">
       <summary class="hsum"><span class="t">Measurements</span><span class="chev">›</span></summary>
       <div class="hbody">
         <div class="notebox mb">No tape measure? Tap <b>Estimate from my photos</b> and the coach will read them off your latest shots. Those are rough — anything you measure yourself is marked as real and always wins.</div>
@@ -803,6 +821,10 @@ a{color:var(--orange);}
         <div id="measOut"></div>
       </div>
     </details>
+
+    <div style="text-align:center;margin:14px 0 4px">
+      <button class="swapbtn" id="s-progressArrangeBtn" style="width:auto;padding:9px 16px;font-size:12.5px" onclick="toggleSecArrange('s-progress')">Rearrange sections</button>
+    </div>
     <button class="btn sec" onclick="weeklyReview()">📊 Run Weekly Review</button>
     <div id="reviewOut"></div>
   </section>
@@ -1299,6 +1321,7 @@ function go(s){
   document.querySelectorAll('.tab').forEach(t=>t.classList.toggle('active',t.dataset.s===s));
   document.getElementById('chatBar').style.display = s==='coach'?'flex':'none';
   const rt=document.getElementById('restTimer'); if(rt) rt.classList.toggle('overchat', s==='coach');
+  if(s==='progress'){ try{ bindSections('s-progress'); }catch(e){} }
   if(s==='browse') renderBrowse();
   if(s==='settings'){ collapsibleSettings(); renderCatList(); }
   if(s==='checkin') syncCheckinLoc();
@@ -3008,6 +3031,7 @@ function setDefaultRest(kind,delta){
   try{ renderRestPrefs(); }catch(e){}
   try{ renderPhaseCard(); }catch(e){}
   try{ renderIntake(); }catch(e){}
+  try{ bindSections('s-progress'); }catch(e){}
   try{ renderCheckinPhotos(); }catch(e){}
   try{ const mv=document.getElementById('masteryVal'); if(mv) mv.textContent=masterySets()+" sets"; }catch(e){}
   try{ if(DB.workout) renderWorkoutSheet(DB.workout); }catch(e){}
@@ -5670,15 +5694,6 @@ async function analysePhysique(){
   const reply=await callAI([{role:"system",content:sys},{role:"user",content}],450);
   out.innerHTML="<div class='card mt'><div class='card-title'><span>Coach's Physique Read · "+ukDate()+"</span></div><div class='coachnote'><div class='who'>◆ Coach</div>"+(reply?fmt(reply):"Couldn't reach the AI — check key/model/billing.")+"</div></div>";
 }
-async function weeklyReview(){
-  const out=document.getElementById('reviewOut');
-  out.innerHTML="<div class='card mt'><div class='card-title'><span>Weekly Review</span></div><div class='center muted'><span class='spin'></span> Analysing…</div></div>";
-  let text;
-  if(DB.ai.provider==="openai"&&DB.ai.key){ const sys=coachSystem()+"\nSaturday review. Analyse weight trend, strength gains, adherence. 4-5 sentences + ONE concrete adjustment for next week.";
-    text=await callAI([{role:"system",content:sys},{role:"user",content:"Weights: "+DB.weights.join(", ")+"kg. Strength: "+Object.entries(DB.strength).map(([k,v])=>k+" "+(v[v.length-1].sets||[]).map(s=>s.w+'x'+s.r).join('/')).join(' | ')+"."}],400); }
-  if(!text){ const dw=(DB.weights[0]-DB.weights[DB.weights.length-1]).toFixed(1); text="Weight's down "+dw+"kg across the block — right pace for a lean recomp. Lifts holding while waist drops = recomping, exactly the goal. Bench is close to a bump. <b>Next week:</b> add one set to your first pull movement, protein high. Stay boring, stay consistent."; }
-  out.innerHTML="<div class='card mt'><div class='card-title'><span>Weekly Review · "+today()+"</span></div><div class='coachnote'><div class='who'>◆ Coach</div>"+fmt(text)+"</div></div>";
-}
 
 function renderMetrics(){
   const ci=latestCheckin(); const w=ci&&ci.weight?ci.weight:DB.weights[DB.weights.length-1];
@@ -6565,7 +6580,7 @@ function scheduleInApp(){
    v18 ADDITIONS — draggable rest timer · weekly training memory · AI planner
    · Firestore sync
    ========================================================================== */
-const APP_VERSION="v76 · 06/08/2026";
+const APP_VERSION="v77 · 06/08/2026";
 
 /* ===== 1. REST TIMER — drag it anywhere so it never blocks the chat box ===== */
 let _rtDrag=null;
@@ -9740,6 +9755,115 @@ function saveCloud(){
    the file. Arrows rather than drag: the same reasoning as the exercise
    reorder — dragging inside a scrolling page is fiddly on a phone, and a
    mis-drag is more annoying than one extra tap. */
+/* ===== v77 · COLLAPSIBLE AND REORDERABLE, ON ANY SCREEN ================
+   Home got this in v74 because Home was already built out of <details>.
+   Progress is built out of plain cards, so it got neither \u2014 which is what he
+   asked for and I only half delivered.
+
+   Rather than hand-convert seven cards and then do it again for the next
+   screen, this wraps ANY card carrying data-sk into a collapsible section at
+   runtime, remembers open/closed, and reorders it. Adding a card later means
+   adding data-sk to it and nothing else. */
+const SEC_TITLES={ weight:"Bodyweight", lifts:"Your lifts", photos:"Physique photos",
+  plan:"The plan", review:"Week in review", compare:"Then & now",
+  read:"Coach\u2019s read", measure:"Measurements" };
+function secOrder(screen){
+  const host=document.getElementById(screen); if(!host) return [];
+  const known=[...host.querySelectorAll('[data-sk]')].map(e=>e.dataset.sk);
+  const saved=((DB.prefs&&DB.prefs.secOrder)||{})[screen]||[];
+  const out=saved.filter(k=>known.includes(k));
+  known.forEach(k=>{ if(!out.includes(k)) out.push(k); });   /* new cards appear, never vanish */
+  return out;
+}
+/* Wrap once. Re-renders write into ids INSIDE the card, so the wrapper
+   survives them. */
+function buildSections(screen){
+  const host=document.getElementById(screen); if(!host) return;
+  host.querySelectorAll('[data-sk]').forEach(card=>{
+    if(card.dataset.wrapped==="1" || card.tagName==="DETAILS") return;
+    const k=card.dataset.sk;
+    const title=card.querySelector('.card-title');
+    const label=(title&&title.querySelector('span'))? title.querySelector('span').textContent : (SEC_TITLES[k]||k);
+    const extra=(title&&title.children.length>1)? title.children[1].outerHTML : "";
+    const d=document.createElement('details');
+    d.className='psec'; d.dataset.sk=k; d.dataset.wrapped="1";
+    const sum=document.createElement('summary');
+    sum.innerHTML="<span class='pst'>"+escapeHtml(label)+"</span>"+
+                  (extra? "<span class='pse'>"+extra+"</span>":"")+
+                  "<span class='chev'>\u203a</span>";
+    d.appendChild(sum);
+    const body=document.createElement('div');
+    body.className='psecbody';
+    card.parentNode.insertBefore(d, card);
+    body.appendChild(card);
+    d.appendChild(body);
+    if(title) title.style.display='none';   /* the summary is the title now */
+    card.dataset.wrapped="1";
+    d.addEventListener('toggle',()=>{
+      DB.prefs=DB.prefs||{}; DB.prefs.openSec=DB.prefs.openSec||{};
+      DB.prefs.openSec[screen]=DB.prefs.openSec[screen]||{};
+      DB.prefs.openSec[screen][k]=d.open; save();
+    });
+  });
+}
+function applySecOrder(screen){
+  const host=document.getElementById(screen); if(!host) return;
+  const map={};
+  host.querySelectorAll('details[data-sk]').forEach(d=>{ map[d.dataset.sk]=d; });
+  let anchor=null;
+  secOrder(screen).forEach(k=>{
+    const el=map[k]; if(!el) return;
+    if(anchor) anchor.after(el);
+    anchor=el;
+  });
+}
+function moveSection(screen,k,dir){
+  const order=secOrder(screen);
+  const i=order.indexOf(k), j=i+dir;
+  if(i<0||j<0||j>=order.length) return;
+  order[i]=order[j]; order[j]=k;
+  DB.prefs=DB.prefs||{}; DB.prefs.secOrder=DB.prefs.secOrder||{};
+  DB.prefs.secOrder[screen]=order; save();
+  applySecOrder(screen); bindSections(screen);
+  const el=document.querySelector('#'+screen+' details[data-sk="'+k+'"]');
+  if(el){ el.scrollIntoView({behavior:'smooth',block:'center'});
+          el.classList.add('moved'); setTimeout(()=>el.classList.remove('moved'),1200); }
+  toast((SEC_TITLES[k]||k)+" \u2192 "+(order.indexOf(k)+1)+" of "+order.length);
+}
+function toggleSecArrange(screen){
+  DB.prefs=DB.prefs||{}; DB.prefs.secArrange=DB.prefs.secArrange||{};
+  DB.prefs.secArrange[screen]=!DB.prefs.secArrange[screen];
+  save(); bindSections(screen);
+  toast(DB.prefs.secArrange[screen]? "Move the sections, then tap Done" : "Done");
+}
+function bindSections(screen){
+  buildSections(screen);
+  applySecOrder(screen);
+  const arrange=!!((DB.prefs&&DB.prefs.secArrange)||{})[screen];
+  const open=((DB.prefs&&DB.prefs.openSec)||{})[screen]||{};
+  const order=secOrder(screen);
+  document.querySelectorAll('#'+screen+' details[data-sk]').forEach(d=>{
+    const k=d.dataset.sk;
+    if(open[k]!==undefined) d.open=!!open[k];
+    else if(!d.dataset.defaulted){ d.open=(k==="weight"||k==="lifts"); d.dataset.defaulted="1"; }
+    const sum=d.querySelector('summary'); if(!sum) return;
+    let ctl=sum.querySelector('.smove');
+    if(arrange && !ctl){
+      ctl=document.createElement('span'); ctl.className='smove';
+      const i=order.indexOf(k);
+      ctl.innerHTML="<button class='hb' onclick=\"event.preventDefault();event.stopPropagation();moveSection('"+screen+"','"+k+"',-1)\""+(i===0?" disabled":"")+">\u2191</button>"+
+                    "<button class='hb' onclick=\"event.preventDefault();event.stopPropagation();moveSection('"+screen+"','"+k+"',1)\""+(i===order.length-1?" disabled":"")+">\u2193</button>";
+      const chev=sum.querySelector('.chev');
+      if(chev) sum.insertBefore(ctl,chev); else sum.appendChild(ctl);
+    } else if(arrange && ctl){
+      const i=order.indexOf(k), bs=ctl.querySelectorAll('.hb');
+      if(bs[0]) bs[0].disabled=(i===0);
+      if(bs[1]) bs[1].disabled=(i===order.length-1);
+    } else if(!arrange && ctl){ ctl.remove(); }
+  });
+  const btn=document.getElementById(screen+'ArrangeBtn');
+  if(btn) btn.textContent = arrange? "Done" : "Rearrange sections";
+}
 const HOME_CARD_NAMES={ tmr:"Tomorrow", intake:"Today\u2019s food",
   metrics:"Metrics", week:"This week", streak:"Streak" };
 function homeOrder(){
