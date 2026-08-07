@@ -1,5 +1,434 @@
-AMIR PT — v83 · 06/08/2026
+AMIR PT — v93 · 06/08/2026
 ==========================
+
+Upload index.html AND sw.js.
+
+
+TWO CHILD'S POSES
+=================
+"Child's pose" and "Child's pose with side reach" are two separate entries with
+two different titles, and the duplicate check compared exact titles. So both
+walked into the same cool-down. Two child's poses isn't a variation, it's the
+same stretch twice.
+
+The check now compares the MOVEMENT rather than the wording — qualifiers,
+sides and setup words stripped off, so any two variants of the same thing
+collide the way they should:
+
+    "Child's pose"                  -> childs pose
+    "Child's pose with side reach"  -> childs pose
+    "Pigeon pose (left)"            -> pigeon pose
+
+Same fix applied to the warm-up and the rest-day mobility flow, which had the
+identical flaw waiting.
+
+
+AND THE COOL-DOWN NOW FOLLOWS THE SESSION
+=========================================
+It was picking off a list of muscle groups in a fixed order. It now stretches
+what you actually worked, weighted by how much of the session each group took
+— two stretches for the group that did the most, one for the rest.
+
+    PUSH   pec stretch, overhead triceps, cross-body shoulder, child's pose
+    PULL   lat stretch, child's pose with side reach, triceps, pec stretch
+    LEGS   couch stretch, standing hamstring, cobra, lat stretch, child's pose
+
+Three sessions, three genuinely different cool-downs.
+
+If the session loaded your wrist, the wrist flexor and extensor stretch is
+added on top rather than competing for a slot — given the TFCC that shouldn't
+be something the list ever squeezes out.
+
+
+Upload index.html AND sw.js.
+
+
+LAST TIME'S NUMBERS ARE ALREADY IN THE BOX
+==========================================
+The weight field now arrives filled in, and tells you what it's based on:
+
+    Last time 03/08/2026: 40kg x 10/10/9 · filled in ready
+
+Earned an increase and it fills in the new number and says so:
+
+    Last time 03/08/2026: 40kg x 10/10/10/10 · filled in with 42.5kg,
+    you earned the jump
+
+Reps prefill too. Mid-exercise it tracks what you're actually working with,
+including a jump an "easy" rating has just triggered. New lift, it fills in the
+suggested starting weight and says that's what it is.
+
+
+AND A REAL BUG BEHIND IT
+========================
+The box already prefilled — but from a value stored when the SESSION WAS
+BUILT, and the session only ever rebuilt when you changed LOCATION. Never when
+the day changed.
+
+So yesterday's session survived into today carrying yesterday's numbers. And
+since v81 stopped the auto-planner overwriting a session you'd touched, one
+could have sat there for days.
+
+Two fixes: sessions are stamped with their date and rebuild on a new day, and
+the prefill is now computed at render time from live history so it cannot go
+stale regardless.
+
+
+EVERYTHING FROM THIS CONVERSATION, CHECKED
+==========================================
+I went back through the whole thread against the shipped file. All present:
+
+  photos          lightbox, month timeline, then-and-now, pinch zoom,
+                  front/side only, camera capture, also on the check-in
+  measurements    manual log, AI estimate from photos, history table
+  demos           free pack, three mirrors, Firebase backup, picker with both
+                  sources, choices that stick, coverage report
+  train           session dropdown, reorder exercises, 4-set anchors,
+                  supersets and circuits, adjustable rest both kinds
+  programme       training block, fixed anchors, rotating accessories, prehab
+                  slot, movement-pattern coverage, deload detection
+  loads           mastery rule, easy jumps immediately, per-location kit,
+                  Dubai inventory, starting weights, prefill
+  food            Food tab, meal-by-meal, alcohol to macros, whole-day box,
+                  daily intake on the check-in, two-phase plan
+  layout          collapsible and reorderable on Home, Progress and Food;
+                  history grouped by split
+  coach           local intent parsing, ~80 verbs, edit logged sets,
+                  never-again rules, weekly review, session protected from
+                  the planner
+
+TWO THINGS NOT BUILT, BOTH DELIBERATE
+  RENPHO CSV IMPORT — waiting on you. You said the tape was arriving; send me
+  one exported file and I'll write the parser against the real format rather
+  than guessing at column headers and date order.
+
+  LIA PT — the config groundwork is in, so it's a block of settings rather
+  than a fork. Waiting until she's sat with you and seen the app. The two
+  things worth deciding first are her band kit and how her week splits between
+  Pilates, mobility and weights.
+
+
+Upload index.html AND sw.js.
+
+
+THE STARTING WEIGHTS WERE VICIOUS. HERE IS WHY.
+===============================================
+Those ratios are EQUIVALENCE figures — what a lift is worth once you already
+own the movement. On a first attempt the limiter isn't strength, it's
+technique. Offering you a 47.5kg front squat when you have never held the rack
+position is a bad first rep, and you were right to say so.
+
+First exposure now gets a deliberate discount, and the number is framed as
+what it actually is:
+
+    Front Squat        32.5kg   was 47.5
+    Seated Cable Row   31.5kg   was 45
+    Romanian Deadlift  42.5kg   was 60
+    Incline Bench        25kg   was 35
+    Hip Thrust           45kg   was 65
+    Lateral Raise         3kg   was 4
+
+And the wording changed from a prescription to a starting point:
+
+    "New one — try 32.5kg for the first set and work up from there. A feel-out
+     weight; once you own the movement it should land near 47.5kg, about 80%
+     of your Barbell Back Squat. Rate it easy and I'll jump it straight away."
+
+It still tells you where the lift SHOULD end up, so you know what you're
+working toward rather than just being handed a light number.
+
+AND YOU CAN TURN IT OFF
+  Settings -> Progression -> "Suggest a weight for new exercises".
+  Off, it just says the exercise is new and leaves the judgement to you, which
+  is what you said you'd rather do. Your call either way.
+
+
+THE PROCESS FAULT BEHIND THIS
+=============================
+Twice now I have written a change in several parts where a later part failed
+to match, threw, and silently discarded the earlier parts that HAD worked —
+leaving a build that passed every check and did nothing. v84 and v90 both.
+
+I have stopped doing that. Edits are now applied and saved one at a time, and
+anything that doesn't match is reported rather than taking the rest down with
+it. On this change that immediately caught one edit out of eight that hadn't
+matched — which under the old approach would have thrown away the other seven
+without a word.
+
+
+Upload index.html AND sw.js.
+
+
+"EASY" NOW MOVES THE WEIGHT IMMEDIATELY
+=======================================
+You're right, and it isn't a contradiction of the mastery rule — it's the
+other half of it, which I'd never built.
+
+  ABOUT RIGHT  the load is correct. Repeat it, own all four sets, earn the
+               increase between sessions. Unchanged.
+  EASY         the load was never your working weight. There is nothing to
+               master and nothing to earn — you picked light. Making you grind
+               out three more easy sets to "earn" a jump next week is
+               bureaucracy, not coaching.
+
+So an easy set moves the weight NOW, for the very next set:
+
+    45kg x 10, rated easy        -> 47.5kg for the next set
+    two easy sets in a row       -> 50kg. It was a long way light.
+    45kg x 10, about right       -> stay at 45. 1 of 4.
+    45kg x 10, hard              -> stay at 45.
+    10kg x 12 easy, at ceiling   -> 10kg again, go for 15 reps
+    easy on your LAST set        -> nothing to change; it feeds next session
+
+The mid-set coach is told the same thing, so it calls the jump rather than
+telling you to hold.
+
+And the mastery rule still governs BETWEEN sessions exactly as before: four
+clean sets at about right earns the increase, anything less holds.
+
+
+A NOTE ON HOW THIS ALMOST SHIPPED BROKEN
+========================================
+The first attempt at this passed my checks and did nothing. My patch had two
+parts; the second failed to match, which threw before the file was written —
+silently discarding the first part, which HAD worked.
+
+That's the second time that's happened (v84 was the same shape). It's a flaw
+in how I apply changes, not in the app, and it's why I now test the behaviour
+rather than trusting that an edit landed. This one is verified against all six
+cases above.
+
+
+Upload index.html AND sw.js.
+
+
+"SWAP RENEGADE ROW" NOW JUST HAPPENS
+====================================
+You shouldn't have had to say it twice, and the reason you did is specific.
+
+The coach replied "Swapping out the Renegade Row now. I'll replace it... 
+Updating your workout!" — and emitted no instruction, so nothing changed. The
+guard I built to catch exactly that only looked for PAST tense: "done",
+"I've swapped", "updated". Every verb in that sentence is present or future,
+so it sailed straight through.
+
+I've widened the guard. But patching the regex just moves the goalposts, so I
+did the real fix as well:
+
+THE APP NOW READS PLAIN INSTRUCTIONS ITSELF
+  "Swap renegade row" is not ambiguous. It doesn't need a language model, and
+  making the change depend on one is why it didn't happen.
+
+  These are now matched in code and applied BEFORE the coach is asked anything:
+
+    "swap renegade row"                  (picks a sensible replacement itself)
+    "swap X for Y"  /  "replace X with Y"
+    "remove X"  /  "drop the X"
+    "add X"
+    "move X to the top"  /  "put X first"  /  "X last"
+    "make X 5 sets"
+
+  The coach is then told it's already done, so it confirms rather than
+  promising a second time.
+
+  When you swap without naming a replacement, it picks one the way a coach
+  would: same muscle, same movement pattern where possible, kit you actually
+  have, not something you trained yesterday, not already in the session. On
+  your Pull day it chose Seated Cable Row — the same answer the coach gave.
+
+  Anything that ISN'T a plain instruction still goes to the coach untouched.
+  Tested: "how did I do last week", "what should I eat", "I feel tired today"
+  and a bare "swap" are all left alone.
+
+
+A STARTING WEIGHT FOR SOMETHING NEW
+===================================
+"First time on this one — pick a weight you can own" wasn't coaching, it was
+the app admitting it had nothing to say.
+
+It now works the number out from what you already lift, using the standard
+ratios a coach uses. From your bench 45, row 45, squat 60, deadlift 80,
+overhead press 30:
+
+    Incline Bench Press      35kg    80% of your bench
+    Close-grip Bench       37.5kg    85% of your bench
+    Seated Cable Row         45kg    100% of your barbell row
+    Lat Pulldown             43kg    95% of your barbell row
+    Front Squat            47.5kg    80% of your squat
+    Romanian Deadlift        60kg    75% of your deadlift
+    Hip Thrust               65kg    110% of your squat
+    Lateral Raise             4kg    12% of your overhead press
+    Face Pull              13.5kg    30% of your barbell row
+
+Every figure is rounded to kit you own — barbell lifts land on bar-plus-plates,
+dumbbells are capped at your 10kg ceiling.
+
+If there's no matching lift it scales off the closest thing in the same
+movement pattern. If there's nothing at all, it uses a conservative fraction of
+your bodyweight — too light for one set costs nothing, too heavy costs a
+shoulder.
+
+It's always labelled an estimate: "if set one flies up, add for set two."
+
+
+Upload index.html AND sw.js.
+
+
+YOUR DUBAI GYM IS IN THE APP NOW
+================================
+From your photos, not from an assumption:
+
+  All-in-one rack: Smith machine, dual adjustable cable stacks, multi-grip
+  pull-up bar, landmine post
+  Olympic barbell + plates (20kg bar; 1.25 / 2.5 / 5 / 10 / 20)
+  Fixed hex dumbbells, 2.5 to 10kg
+  Adjustable bench
+  Concept2 RowERG
+  Kettlebell, TRX, resistance bands, stability ball, foam roller and mats
+
+The coach reads this before every session and is told it's your real
+inventory rather than a guess.
+
+
+THE CORRECTION THAT MATTERS
+===========================
+Dubai was described in the app as "full gym: adjustable dumbbells". That
+implied the dumbbells could carry a session. They can't — they stop at 10kg.
+
+So DUMBBELLS ARE NO LONGER ELIGIBLE AS ANCHORS HERE. An anchor has to be
+loadable for four straight weeks; you'd hit the top of the rack in session one
+and the block would have nothing left to progress.
+
+Anchors now come from the barbell, the Smith and the cables. Dumbbells stay in
+as accessories and isolation, where 10kg is perfectly fine.
+
+Checked across all three day types — no dumbbell anchors anywhere:
+  Push Day     Bench Press + Overhead Press
+  Pull Day     Pull-up + Barbell Row
+  Legs & Core  Barbell Back Squat + Deadlift
+
+The rule is general, not hardcoded: any location whose dumbbell ceiling is
+12kg or under gets the same treatment, and so does any single lift where
+you're already within 2kg of the top of the rack.
+
+Dumbbell steps in Dubai are 1kg rather than 2, since your rack goes
+2.5 / 4 / 5 / 6 / ... / 10.
+
+
+ONE THING TO CONFIRM
+====================
+The room with the rower, the dumbbell rack and the bench looks like a
+different space from the garage with the rack — tiled floor, "Electrical
+Room" door. I've filed it all as Dubai because that's what you said.
+
+If the rower and dumbbells are actually somewhere else, tell me and I'll split
+them, because it changes what the app thinks you can superset with what.
+
+
+Upload index.html AND sw.js.
+
+
+FIRST: v84 NEVER ACTUALLY WORKED
+================================
+The fix I shipped yesterday for "45kg single-arm row" did nothing. The prompt
+change landed; the code that FEEDS it never did. I verified it by building the
+data object by hand in a test and checking the prompt came out right — which
+proved the prompt builder worked and told me nothing about whether the app
+ever called it. It didn't.
+
+It's in now, verified in the source rather than in a test fixture. The coach
+receives the next exercise's own history, its own load call and its cue.
+
+
+4 SETS ON THE MAIN LIFTS, 3 ON THE REST
+=======================================
+The two anchors carry the session, so they get the volume. Everything after
+them runs 3. Anchors are marked on the sheet so you can see which is which.
+
+TWO THINGS THIS BROKE, BOTH FIXED
+  An anchor could be silently swapped for "better" kit — that's how Pull-up
+  became DB Row and the day lost its anchor. Anchors are fixed for the block
+  on purpose and are now exempt.
+
+  The time-fitting used one set count for everything, so with 4-set anchors it
+  under-estimated and would have overrun. It now costs anchors at 4 and the
+  rest at 3, and trims accessories before it touches an anchor or the prehab
+  slot.
+
+AND IT TELLS YOU WHEN THE CLOCK WINS
+  45 minutes with a 10-minute row genuinely does not fit two 4-set anchors and
+  three accessories. Rather than quietly handing you a short session, it says:
+
+    "Your 45 minutes (including the 10-minute row) fits 3 exercises at this
+     volume, so Incline Bench Press and Close-grip Bench Press are out today.
+     Drop the row or go to 60 minutes and they come back."
+
+  Your call which you'd rather have. But you should be making it, not
+  discovering it.
+
+
+YOUR DUMBBELL CEILING
+=====================
+You said 10kg is your heaviest and it felt easy. The coach now knows what that
+means.
+
+KIT IS PER LOCATION (Settings -> What kit you have here)
+  Heaviest dumbbell, dumbbell steps, bar weight, plates. Dubai, Madrid and
+  Greece are different gyms and a limit in one says nothing about another —
+  a single global figure would have capped you everywhere.
+
+AT THE CEILING, REPS ARE THE PROGRESSION
+    10kg x 12, all easy    -> "Stay at 10kg and go for 14 reps — that's the
+                               heaviest dumbbell you've got."
+    10kg x 18              -> "...go for 20."
+    10kg x 22, still easy  -> "Reps have done their job — make it harder
+                               instead: 3 seconds down, a pause at the top, or
+                               a single-limb version."
+
+  And the mid-set coach is told outright never to ask for weight you don't own.
+
+
+Upload index.html AND sw.js.
+
+
+A 45KG SINGLE-ARM DUMBBELL ROW
+==============================
+Fair. That would be a world record and a shoulder injury.
+
+WHY IT SAID IT
+  When you finish an exercise, the mid-set coach is asked to point you at the
+  next one. But it was handed the next exercise's NAME and nothing else — no
+  history, no load, no cue. So the only weight anywhere in its context was the
+  45kg you had just finished on the Barbell Row, and it reached for that.
+
+  It wasn't ignoring your history. It was never shown it.
+
+FIXED
+  It now receives, for the next exercise:
+
+    what you actually lifted on it last time, and when
+    the app's own load recommendation for it
+    its cue
+    how many sets it's set to
+
+  So instead of inventing a number it tells you: "Single-arm row — you did
+  10kg × 12, 12, 11 on the 31st. The call is to stay at 10 and own it."
+
+  Which is what you asked for: tell me what I did last time so I can decide
+  whether to go up.
+
+AND THE RULE IS STATED OUTRIGHT
+  "Every exercise has its own load. Never carry the weight across from the
+  lift he just finished — a 45kg barbell row and a 45kg single-arm dumbbell
+  row are not remotely the same thing."
+
+  Belt and braces, but this is the kind of thing that should never happen
+  twice.
+
+Verified by capturing the exact prompt the coach receives: it contains the
+next exercise by name, your real 10kg × 12 history with the date, its own load
+call, and the instruction not to carry weights across.
+
 
 Upload index.html AND sw.js.
 

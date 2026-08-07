@@ -486,6 +486,9 @@ details.sec2[open] .secsum2:after{content:"\2212";}
 .mtable .est{color:var(--gold);font-size:10px;font-weight:800;margin-left:4px;}
 .mtable .up{color:var(--green);} .mtable .dn{color:var(--red);}
 .mscroll{overflow-x:auto;-webkit-overflow-scrolling:touch;}
+.anchortag{display:inline-block;margin-bottom:8px;background:#101a14;border:1px solid #3fe08a44;
+  color:var(--green);font-size:11px;font-weight:800;letter-spacing:.4px;text-transform:uppercase;
+  padding:4px 10px;border-radius:9px;}
 .grpband{display:inline-block;margin-bottom:8px;background:#2a1c0e;border:1px solid var(--gold);
   color:var(--gold);font-size:11px;font-weight:800;letter-spacing:.5px;text-transform:uppercase;
   padding:4px 10px;border-radius:9px;}
@@ -501,12 +504,15 @@ details.sec2[open] .secsum2:after{content:"\2212";}
 .histsec[open]>summary{border-bottom:1px solid var(--hair);}
 .histsecbody{padding:10px 10px 4px;}
 .histsecbody .card{margin-bottom:10px;}
+.prefill{margin-top:7px;font-size:11.5px;font-weight:600;color:var(--dim);line-height:1.45;}
+.prefill b{color:var(--txt);}
 .blockbar{display:flex;flex-wrap:wrap;gap:7px;align-items:center;margin:0 0 12px;}
 .blockbar span{font-size:11px;font-weight:800;letter-spacing:.4px;padding:5px 10px;border-radius:9px;
   border:1px solid var(--line);background:var(--pill);color:var(--muted);}
 .blockbar .bw{color:var(--orange);border-color:#ff8a2b44;}
 .blockbar .bd{color:var(--gold);border-color:#f0b24a44;}
 .blockbar .ba{color:var(--txt);}
+.blockbar .bt{flex:1 1 100%;font-weight:600;letter-spacing:0;color:var(--gold);text-transform:none;line-height:1.5;}
 .blockbar .bp{flex:1 1 100%;font-weight:600;letter-spacing:0;color:var(--dim);text-transform:none;}
 .secbar{display:flex;align-items:center;gap:9px;margin:0 4px 6px;}
 .secbar .sbt{font-size:11px;font-weight:800;letter-spacing:.5px;text-transform:uppercase;color:var(--label);}
@@ -1000,6 +1006,24 @@ a{color:var(--orange);}
       <div id="wxMsg" class="hint mt" style="font-size:13px"></div>
     </div>
 
+    <div class="section-h">What kit you have here</div>
+    <div class="card">
+      <div class="notebox mb">Set this per location — Dubai, Madrid and Greece are different gyms. Once you're on your heaviest dumbbell the coach stops asking for more weight and starts asking for more reps.</div>
+      <div id="kitWhere" class="hint mb"></div>
+      <div class="mgrid">
+        <div class="field"><label>Heaviest dumbbell <span class="hint">kg</span></label>
+          <input class="txtin" id="kitDbMax" inputmode="decimal" placeholder="e.g. 10" /></div>
+        <div class="field"><label>Dumbbell steps <span class="hint">kg</span></label>
+          <input class="txtin" id="kitDbStep" inputmode="decimal" placeholder="2" /></div>
+        <div class="field"><label>Bar weight <span class="hint">kg</span></label>
+          <input class="txtin" id="kitBar" inputmode="decimal" placeholder="20" /></div>
+        <div class="field"><label>Plates you have</label>
+          <input class="txtin" id="kitPlates" placeholder="1.25, 2.5, 5, 10, 20" /></div>
+      </div>
+      <button class="btn green mt" onclick="saveKit()">Save for this location</button>
+      <div id="kitMsg" class="hint mt"></div>
+    </div>
+
     <div class="section-h">Progression</div>
     <div class="card">
       <div class="notebox mb">The load stays the same for every set of an exercise, and only goes up once you've completed the full number of sets at that weight with the reps holding up and it feeling about right or easier. "About right" is the weight to repeat, not to jump from.</div>
@@ -1008,6 +1032,9 @@ a{color:var(--orange);}
         <span class="n" id="masteryVal" style="min-width:70px">4 sets</span>
         <button class="st" onclick="setMasterySets(1)">+</button></div>
       <div class="hint mt">Complete this many sets at one weight, feeling about right or easier, and the coach adds load next session. Anything less and it holds.</div>
+      <div class="set-row" style="margin-top:14px"><span class="k" style="color:var(--txt);font-weight:600">Suggest a weight for new exercises</span>
+        <div class="switch" id="startEstSwitch" onclick="toggleStartEst(this)"></div></div>
+      <div class="hint" style="margin-top:-4px">On, it offers a deliberately light feel-out weight for a movement you have never logged. Off, it just says it is new and leaves the judgement to you.</div>
     </div>
 
     <div class="section-h">Rest timers</div>
@@ -1601,10 +1628,15 @@ const EXDB = {
 };
 
 /* ===== LOCATIONS — equipment is decided by where Amir is, automatically ===== */
+/* v87 \u2014 the Dubai inventory is now what is actually in the garage, taken from
+   photographs rather than assumed. The important correction: the dumbbells
+   stop at 10kg. "Adjustable dumbbells" implied they could carry a session and
+   they cannot, so the loading has to come from the barbell, the Smith and the
+   cables, with dumbbells doing accessory and isolation work. */
 const LOCS={
-  dubai :{key:"dubai", label:"Dubai",  emoji:"\uD83C\uDFE0", tag:"Dubai · Full Gym", gear:["bw","db","bb","mach","band","bar","kb","other"], rower:true,  short:false,
-          equipment:"Full gym: barbell + plates, adjustable dumbbells, bench, pull-up bar, cable/machines, Concept2 rower, resistance bands",
-          blurb:"Full gym and full time — proper session."},
+  dubai :{key:"dubai", label:"Dubai",  emoji:"\uD83C\uDFE0", tag:"Dubai \u00b7 Home Gym", gear:["bw","db","bb","mach","band","bar","kb","other"], rower:true,  short:false,
+          equipment:"Home garage gym: all-in-one rack with Smith machine, dual adjustable cable stacks, multi-grip pull-up bar and landmine post; Olympic barbell + plates; fixed hex dumbbells 2.5\u201310kg ONLY; adjustable bench; Concept2 RowERG; kettlebell; TRX; resistance bands; stability ball; foam roller and mats",
+          blurb:"Full setup at home \u2014 proper session."},
   madrid:{key:"madrid",label:"Madrid", emoji:"\uD83C\uDDEA\uD83C\uDDF8", tag:"Madrid · Dumbbells Only", gear:["bw","db","band"], rower:false, short:false,
           equipment:"Dumbbells only, plus bodyweight. No barbell, no machines, no rower.",
           blurb:"Dumbbells only — same intent, different tools."},
@@ -2470,8 +2502,24 @@ function pickAnchors(split,key){
   const anchors=applyRules((P&&P.anchor)? P.anchor.slice() : []).filter(n=>canDoHere(n,key));
   /* Two anchors covering DIFFERENT patterns \u2014 two horizontal presses is one
      pattern trained twice, not a balanced day. */
+  /* An anchor has to be loadable for four weeks. With a 10kg dumbbell ceiling
+     that rules dumbbells out of the anchor slot entirely in Dubai \u2014 he'd hit
+     the top of the rack in the first session and the block would have nothing
+     left to progress. They stay in as accessories, where light is fine. */
+  const k=kitFor(key);
+  const loadable=n=>{
+    const e=EX(n)||{};
+    if((e.eq==="db"||e.eq==="kb") && k.dbMax!=null){
+      const top=(function(){ try{ const h=realStrengthSessions(n); if(!h.length) return 0;
+        return Math.max(...(h[h.length-1].sets||[]).map(x=>x.w||0),0); }catch(e2){ return 0; } })();
+      /* Already at or near the ceiling on it? It cannot anchor anything. */
+      if(top >= k.dbMax-2) return false;
+      if(k.dbMax<=12) return false;
+    }
+    return true;
+  };
   const out=[];
-  anchors.forEach(n=>{
+  anchors.filter(loadable).forEach(n=>{
     if(out.length>=2) return;
     const p=patternOf(n);
     if(out.some(x=>patternOf(x)===p)) return;
@@ -2631,8 +2679,25 @@ function buildWorkout(){
   if(call.verdict==="push"){ sets=travel?3:4; note="Full volume, your call \u2014 "+sets+" sets. Technique first; if a rep looks ugly, that set's over."; }
   /* Fit the session to the time he actually has. */
   const tb=timeBudget();
-  const fit=planForTime(main,tb);
+  /* Anchors run 4 sets and everything else 3, so a single uniform figure
+     under-estimates the session and it overruns. Fit against the real shape,
+     and never trim an anchor or the prehab slot — cut accessories first. */
+  const wanted=main.slice();
+  const fit=planForTime(main,tb,{anchors:anchors||[], keepLast:!!prehabPick});
   main=fit.names; sets=Math.min(sets,fit.sets);
+  /* v86 — 4-set anchors take real time. If the clock forced exercises out, say
+     so plainly and say what would buy them back, rather than quietly handing
+     him a short session and letting him wonder why the programme shrank. */
+  let trimNote="";
+  if(wanted.length>main.length){
+    const lost=wanted.filter(n=>main.indexOf(n)<0);
+    const row=(tb.row?(tb.rowMins||0):0);
+    trimNote="Your "+tb.mins+" minutes"+(row?" (including the "+row+"-minute row)":"")+
+      " fits "+main.length+" exercises at this volume, so "+lost.join(" and ")+
+      (lost.length===1?" is":" are")+" out today. "+
+      (row? "Drop the row or go to "+(tb.mins+15)+" minutes and they come back."
+          : "Go to "+(tb.mins+15)+" minutes and they come back.");
+  }
   const est0=estimateMinutes(main,sets,tb);
   note+=" "+tb.mins+" min available"+(est0.row?" (including a "+est0.row+" min row)":"")+" \u2014 "+main.length+" moves \u00d7 "+sets+" sets fits in about "+est0.total+".";
   /* Amir's manual set count beats everything \u2014 readiness, AI, rebuilds. */
@@ -2648,6 +2713,10 @@ function buildWorkout(){
   if(!L.short){
     const claimed=new Set(main);
     main=main.map(n=>{
+      /* v86 — an anchor is deliberately fixed for the whole block. Swapping it
+         for a "better" bit of kit here is how Pull-up quietly became DB Row
+         and the session lost its anchor. */
+      if((anchors||[]).indexOf(n)>=0) return n;
       if(gearRank(n,key)<=1) return n;
       const want=((EX(n)||guessEx(n)).m||["core"])[0];
       const better=allExNames()
@@ -2662,6 +2731,8 @@ function buildWorkout(){
   }
   const estF=estimateMinutes(main,sets,tb);
   const _built={title: split, tag: L.tag, loc:key, mins:tb.mins, est:estF,
+    trimNote: trimNote||null,
+    date: today(),
     blockWeek: (function(){ try{ return blockWeek(); }catch(e){ return 1; } })(),
     blockWeeks: blockWeeks(),
     deloadWeek: (function(){ try{ return blockIsDeload(); }catch(e){ return false; } })(),
@@ -2670,8 +2741,16 @@ function buildWorkout(){
     phase: DB.profile.phase, note, reps: travel? "AMRAP-ish \u00b7 2 in reserve" : "8\u201312 reps", sets, warmup, travel,
     main: main.map(n=>{
       const e=EX(n)||{m:["core"],cue:"Control the rep.",wristAlt:"Same"};
+      /* v86 \u2014 the anchors carry the session, so they get the volume: 4 sets on
+         the two main lifts, 3 on everything after them. Spreading the same
+         count across every exercise gives the accessories volume they don't
+         need and the compounds less than they deserve. Travel sessions stay
+         lean throughout. */
+      const isAnchor=(anchors||[]).indexOf(n)>=0;
+      const n_sets = travel? sets : (isAnchor? 4 : 3);
       return {name:n, muscles:e.m, cue:e.cue, wristNote: flagged[n]||null, timed:!!e.timed,
-        scheme: travel? (sets+" sets \u00b7 "+(e.m.includes('core')?"40\u201360s hold":"12\u201320 reps")) : (sets+" sets \u00b7 "+(e.timed?"30\u201360s hold":"8\u201312")),
+        sets:n_sets, anchor:isAnchor,
+        scheme: travel? (n_sets+" sets \u00b7 "+(e.m.includes('core')?"40\u201360s hold":"12\u201320 reps")) : (n_sets+" sets \u00b7 "+(e.timed?"30\u201360s hold":"8\u201312")),
         rest: travel? "45\u201360s":"90s", rec: e.timed?null:recommendLoad(n)};}),
     cooldown:coolFor, recovery: travel?"Hydrate between drinks \ud83d\ude04. Grab some protein when you can. You're maintaining beautifully \u2014 don't stress the holiday.":"Hydrate (aim 3L). 30\u201340g protein within the hour. Lights out by 11. Recovery builds the physique."};
   return _built;
@@ -2840,6 +2919,135 @@ function lastTopWeight(ex){
   const top=Math.max(...sets.map(s=>s.w||0));
   return top>0? top : null;
 }
+/* ===== v89 · A STARTING WEIGHT FOR SOMETHING HE HAS NEVER DONE ==========
+   "First time on this one \u2014 pick a weight you can own" is not coaching, it is
+   the app admitting it has nothing to say. A PT looks at what you already
+   lift and works it out.
+
+   The ratios below are the standard ones coaches use: a lift expressed as a
+   fraction of a reference lift he HAS trained. Where there is no reference,
+   it falls back to a fraction of bodyweight. Everything is then rounded to
+   the kit he actually owns and capped at his dumbbell ceiling.
+
+   It is an estimate and is always labelled as one \u2014 set one tells him more
+   than any formula. */
+const LOAD_RATIOS = {
+  /* pressing, referenced to the barbell bench */
+  "incline bench press":      {from:"Bench Press", r:0.80},
+  "close-grip bench press":   {from:"Bench Press", r:0.85},
+  "decline bench press":      {from:"Bench Press", r:1.02},
+  "overhead press":           {from:"Bench Press", r:0.62},
+  "military press":           {from:"Bench Press", r:0.60},
+  "landmine press":           {from:"Overhead Press", r:0.55},
+  "db bench press":           {from:"Bench Press", r:0.42, perHand:true},
+  "db shoulder press":        {from:"Overhead Press", r:0.42, perHand:true},
+  "incline db press":         {from:"Bench Press", r:0.36, perHand:true},
+  "cable fly":                {from:"Bench Press", r:0.22, perHand:true},
+  "db fly":                   {from:"Bench Press", r:0.18, perHand:true},
+  "triceps pushdown":         {from:"Bench Press", r:0.45},
+  "overhead triceps extension":{from:"Bench Press", r:0.28},
+  /* pulling, referenced to the barbell row */
+  "seated cable row":         {from:"Barbell Row", r:1.00},
+  "lat pulldown":             {from:"Barbell Row", r:0.95},
+  "db row":                   {from:"Barbell Row", r:0.45, perHand:true},
+  "db single-arm row":        {from:"Barbell Row", r:0.45, perHand:true},
+  "chest-supported row":      {from:"Barbell Row", r:0.85},
+  "face pull":                {from:"Barbell Row", r:0.30},
+  "db reverse fly":           {from:"Barbell Row", r:0.15, perHand:true},
+  "barbell curl":             {from:"Barbell Row", r:0.45},
+  "db curl":                  {from:"Barbell Row", r:0.22, perHand:true},
+  "hammer curl":              {from:"Barbell Row", r:0.24, perHand:true},
+  /* legs, referenced to the back squat */
+  "front squat":              {from:"Barbell Back Squat", r:0.80},
+  "romanian deadlift":        {from:"Deadlift", r:0.75},
+  "hip thrust":               {from:"Barbell Back Squat", r:1.10},
+  "leg press":                {from:"Barbell Back Squat", r:1.80},
+  "bulgarian split squat":    {from:"Barbell Back Squat", r:0.22, perHand:true},
+  "goblet squat":             {from:"Barbell Back Squat", r:0.30},
+  "walking lunge":            {from:"Barbell Back Squat", r:0.22, perHand:true},
+  "calf raise":               {from:"Barbell Back Squat", r:0.50},
+  "lateral raise":            {from:"Overhead Press", r:0.12, perHand:true}
+};
+/* Last resort: a fraction of bodyweight, by pattern. Deliberately conservative
+   \u2014 too light for one set costs nothing, too heavy costs a shoulder. */
+const BW_FRACTION = { squat:0.55, hinge:0.65, lunge:0.15, hpush:0.50, vpush:0.32,
+                      hpull:0.45, vpull:0.40, carry:0.25, rotate:0.10 };
+function bestTopWeight(name){
+  try{
+    const h=realStrengthSessions(name);
+    if(!h.length) return null;
+    const last=h[h.length-1];
+    const w=Math.max(...(last.sets||[]).map(x=>x.w||0),0);
+    return w>0? w : null;
+  }catch(e){ return null; }
+}
+/* Round to something he can actually load here. */
+function roundToKit(name,w){
+  const k=kitFor(locKey());
+  const e=EX(name)||{};
+  if(w<=0) return 0;
+  if(e.eq==="db"||e.eq==="kb"){
+    const step=k.dbStep||1;
+    let v=Math.round(w/step)*step;
+    if(k.dbMax!=null) v=Math.min(v,k.dbMax);
+    return Math.max(step,v);
+  }
+  if(e.eq==="bb"||e.eq==="bar"){
+    const bar=k.bar||20, sm=(k.plates&&k.plates[0])||1.25;
+    if(w<=bar) return bar;
+    const perSide=Math.round(((w-bar)/2)/sm)*sm;
+    return bar+perSide*2;
+  }
+  return Math.round(w*2)/2;
+}
+/* v91 — the ratios above are EQUIVALENCE figures: what a lift is worth once
+   you already own the movement. On a first attempt the limiter is technique,
+   not strength, so quoting them straight offered a 47.5kg front squat to a man
+   who has never held the rack position. Fair thing to be annoyed about.
+
+   First exposure now gets a deliberate discount. The job of set one is to find
+   out how it feels, not to prove anything. */
+const FIRST_TRY_FACTOR = 0.7;
+function estimateStartLoad(name){
+  const key=String(name||"").toLowerCase().trim();
+  const kg=(DB.profile&&DB.profile.weightKg)||83;
+  if(DB.prefs && DB.prefs.noStartEstimates) return null;
+  /* 1. a direct ratio off a lift he has actually trained */
+  const rule=LOAD_RATIOS[key];
+  if(rule){
+    const base=bestTopWeight(rule.from);
+    if(base){
+      const raw=base*rule.r*FIRST_TRY_FACTOR;
+      const full=roundToKit(name, base*rule.r);
+      return {w:roundToKit(name,raw), full,
+        why:"a feel-out weight — once you own the movement it should land near "+full+"kg, about "+Math.round(rule.r*100)+"% of your "+rule.from};
+    }
+  }
+  /* 2. the same movement pattern, scaled off the closest thing he does do */
+  const p=patternOf(name);
+  if(p){
+    let best=null;
+    Object.keys(DB.strength||{}).forEach(n=>{
+      if(patternOf(n)!==p) return;
+      const w=bestTopWeight(n); if(!w) return;
+      const sameKit=((EX(n)||{}).eq)===((EX(name)||{}).eq);
+      const sc=(sameKit?2:0)+1;
+      if(!best||sc>best.sc) best={n,w,sc};
+    });
+    if(best){
+      const sameKit=((EX(best.n)||{}).eq)===((EX(name)||{}).eq);
+      const raw=best.w*(sameKit?0.85:0.55)*FIRST_TRY_FACTOR;
+      return {w:roundToKit(name,raw),
+        why:"a feel-out weight, scaled down off your "+best.n+" ("+best.w+"kg) — same movement pattern"};
+    }
+    /* 3. a conservative fraction of bodyweight */
+    if(BW_FRACTION[p]!=null){
+      const raw=kg*BW_FRACTION[p]*(((EX(name)||{}).eq==="db")?0.25:1)*FIRST_TRY_FACTOR;
+      return {w:roundToKit(name,raw), why:"a deliberately light start \u2014 there is nothing of yours to scale it off yet"};
+    }
+  }
+  return null;
+}
 function recommendLoadRaw(ex){
   const pr=DB.progression&&DB.progression[ex];
   const h=DB.strength[ex];
@@ -2849,7 +3057,16 @@ function recommendLoadRaw(ex){
     if(pr.keep && topPrev!=null) return {text:"Stay at "+topPrev+"kg this session — coach wants it kept. Own the reps.",up:false,w:topPrev};
     if(pr.delta && topPrev!=null){ const w=Math.max(0,topPrev+pr.delta); return {text:w+"kg — coach added "+(pr.delta>0?"+":"")+pr.delta+"kg vs last time.",up:pr.delta>0,w}; }
   }
-  if(!h||!h.length) return null;
+  if(!h||!h.length){
+    /* Nothing logged for this lift. Work out a starting point from what he
+       does lift, rather than telling him to guess. */
+    try{
+      const g=estimateStartLoad(ex);
+      if(g && g.w>0) return {w:g.w, up:false, estimate:true,
+        text:"New one — try "+g.w+"kg for the first set and work up from there. "+g.why+". Rate it easy and I'll jump it straight away."};
+    }catch(e){}
+    return null;
+  }
   const last=lastStrengthSession(ex)||{}, sets=last.sets||[]; if(!sets.length) return null;
   const topW=Math.max(...sets.map(s=>s.w));
   const bump=loadStep(ex,topW);
@@ -2895,10 +3112,59 @@ function recommendLoadRaw(ex){
    actually make is a big relative leap — which it always is on light dumbbell
    work — the answer is NOT to force it. It's to keep the weight and add reps,
    which is exactly what a coach does when the next dumbbell is too far away. */
-function kitInfo(){
-  const k=(DB.rules&&DB.rules.kit)||{};
-  return { dbStep:k.dbStep||2, dbMax:k.dbMax||null,
-           bar:k.bar||20, plates:(k.plates&&k.plates.length)? k.plates.slice().sort((a,b)=>a-b) : [1.25,2.5,5,10,20] };
+/* v85 — kit is per LOCATION. A 10kg dumbbell ceiling in Madrid says nothing
+   about the Dubai gym, and a single global figure would have capped him in
+   both. Old single-object settings are read as the current location's. */
+/* Taken from his own photos. He can change any of it in Settings, and the
+   coach is told this is the real list rather than a guess. */
+const GEAR_DEFAULTS = {
+  dubai: { dbMax:10, dbStep:1, bar:20, plates:[1.25,2.5,5,10,20],
+    has:["Smith machine","dual adjustable cable stacks","multi-grip pull-up bar",
+         "landmine post","Olympic barbell + plates","adjustable bench",
+         "fixed dumbbells 2.5\u201310kg","kettlebell","TRX","resistance bands",
+         "Concept2 RowERG","stability ball","foam roller and mats"],
+    note:"Dumbbells top out at 10kg \u2014 they are for accessory and isolation work, not for loading a main lift. Heavy work comes from the barbell, the Smith and the cables." },
+  madrid: { dbMax:null, dbStep:2, bar:null, plates:[],
+    has:["dumbbells","resistance bands"], note:"Dumbbells and bands only." },
+  greece: { dbMax:null, dbStep:null, bar:null, plates:[],
+    has:["bodyweight only"], note:"Nothing but bodyweight." }
+};
+function gearProfile(loc){
+  loc=loc||locKey();
+  const saved=((DB.rules&&DB.rules.gear)||{})[loc];
+  return Object.assign({}, GEAR_DEFAULTS[loc]||{has:[],note:""}, saved||{});
+}
+function gearText(loc){
+  const g=gearProfile(loc);
+  const k=kitFor(loc);
+  return "  Equipment: "+((g.has||[]).join(", ")||"unknown")+"\n"+
+    (k.dbMax? "  Heaviest dumbbell: "+k.dbMax+"kg\n" : "")+
+    (k.bar? "  Bar: "+k.bar+"kg, plates "+(k.plates||[]).join("/")+"\n" : "")+
+    (g.note? "  "+g.note+"\n" : "");
+}
+function kitFor(loc){
+  const r=(DB.rules&&DB.rules.kit)||{};
+  loc=loc||locKey();
+  const d=(typeof GEAR_DEFAULTS!=="undefined"? GEAR_DEFAULTS[loc] : null)||{};
+  const k=Object.assign({}, d, (r[loc]) || (r.dbMax||r.bar||r.plates||r.dbStep ? r : {}));
+  return { dbStep:k.dbStep||2, dbMax:(k.dbMax!=null?k.dbMax:null),
+           bar:k.bar||20,
+           plates:(k.plates&&k.plates.length)? k.plates.slice().sort((a,b)=>a-b) : [1.25,2.5,5,10,20] };
+}
+function kitInfo(){ return kitFor(locKey()); }
+function setKitFor(loc,patch){
+  DB.rules=DB.rules||{banned:{},prefer:{},kit:{}};
+  DB.rules.kit=DB.rules.kit||{};
+  DB.rules.kit[loc]=Object.assign({}, DB.rules.kit[loc]||{}, patch);
+  save();
+  return DB.rules.kit[loc];
+}
+/* Is he already on the heaviest thing he owns for this movement? */
+function atKitCeiling(name,w){
+  const e=EX(name)||{};
+  const k=kitInfo();
+  if((e.eq==="db"||e.eq==="kb") && k.dbMax!=null) return w>=k.dbMax-0.01;
+  return false;
 }
 function loadStep(name,current){
   const k=kitInfo();
@@ -2913,7 +3179,21 @@ function loadStep(name,current){
 function earnedIt(name,topW,step,need,easy,loReps){
   const next=Math.round((topW+step)*2)/2;
   const jump=topW>0? (step/topW)*100 : 100;
-  const repCap=18;
+  const repCap=25;
+  /* At the top of his rack there is no next weight. Chasing reps is not a
+     consolation prize here, it is the only honest progression available \u2014 and
+     beyond about 20 reps the answer stops being reps and becomes tempo,
+     pauses, or a harder variation. */
+  const k=kitInfo();
+  if(atKitCeiling(name,next) && atKitCeiling(name,topW)){
+    if(loReps && loReps<20){
+      const target=Math.min(25, loReps+2);
+      return {w:topW, up:false, addReps:true, ceiling:true,
+        text:"Stay at "+topW+"kg and go for "+target+" reps \u2014 that's the heaviest dumbbell you've got, so reps are the progression now."};
+    }
+    return {w:topW, up:false, addReps:false, ceiling:true, harder:true,
+      text:"You're at "+topW+"kg for "+loReps+" reps and that's your heaviest dumbbell. Reps have done their job \u2014 make it harder instead: 3 seconds down, a pause at the top, or a single-limb/deficit version."};
+  }
   /* A jump over ~12% isn't progression, it's a different exercise. Hold the
      weight and chase reps instead — unless he's already at the top of the
      range, in which case take it. */
@@ -2925,6 +3205,40 @@ function earnedIt(name,topW,step,need,easy,loReps){
   }
   return {w:next, up:true,
     text:next+"kg — "+need+" clean sets at "+topW+"kg"+(easy?", all easy":", all about right")+". That's mastered. Earned it."};
+}
+function renderKit(){
+  const w=document.getElementById('kitWhere'); if(!w) return;
+  const loc=locKey(), k=kitFor(loc);
+  const lbl=((typeof LOCS!=="undefined"&&LOCS[loc])||{}).label||loc;
+  w.innerHTML="Editing <b>"+escapeHtml(lbl)+"</b>. Switch location on Home to set another.";
+  const set=(id,v)=>{ const e=document.getElementById(id); if(e) e.value=(v==null?"":v); };
+  set('kitDbMax',k.dbMax); set('kitDbStep',k.dbStep); set('kitBar',k.bar);
+  const pl=document.getElementById('kitPlates'); if(pl) pl.value=(k.plates||[]).join(", ");
+}
+function saveKit(){
+  const num=id=>{ const v=(val(id)||"").trim(); if(!v) return null; const n=parseFloat(v); return isNaN(n)?null:n; };
+  const patch={};
+  const dm=num('kitDbMax'); if(dm!=null) patch.dbMax=dm;
+  const ds=num('kitDbStep'); if(ds!=null) patch.dbStep=ds;
+  const bar=num('kitBar'); if(bar!=null) patch.bar=bar;
+  const pl=(val('kitPlates')||"").trim();
+  if(pl){ const arr=pl.split(/[,\s]+/).map(parseFloat).filter(x=>x>0); if(arr.length) patch.plates=arr; }
+  if(!Object.keys(patch).length){ toast("Nothing to save"); return; }
+  const loc=locKey();
+  setKitFor(loc,patch);
+  const lbl=((typeof LOCS!=="undefined"&&LOCS[loc])||{}).label||loc;
+  const m=document.getElementById('kitMsg');
+  if(m) m.innerHTML="Saved for <b>"+escapeHtml(lbl)+"</b>. The coach will stop asking for weight you haven\u2019t got.";
+  toast("Kit saved \u00b7 "+lbl);
+  try{ if(DB.workout) renderWorkoutSheet(DB.workout); }catch(e){}
+}
+function toggleStartEst(el){
+  DB.prefs=DB.prefs||{};
+  DB.prefs.noStartEstimates=!DB.prefs.noStartEstimates;
+  el.classList.toggle('on',!DB.prefs.noStartEstimates);
+  save();
+  try{ if(DB.workout) renderWorkoutSheet(DB.workout); }catch(e){}
+  toast(DB.prefs.noStartEstimates? "Your call on new exercises" : "Suggestions back on");
 }
 function masterySets(){
   const n=(DB.prefs&&DB.prefs.masterySets)|0;
@@ -3010,12 +3324,28 @@ function topGroups(names,k,fallback){
   return gs.length? gs.slice(0,k||3) : (fallback||["legs","back","chest","core"]).slice(0,k||3);
 }
 function pickItem(it){ return {t:it.t, d:it.d, cue:it.cue}; }
+/* v93 \u2014 "Child's pose" and "Child's pose with side reach" are two entries with
+   two different titles, so a dedupe keyed on the exact title happily let both
+   into the same cool-down. Two child's poses in one session is not a variation,
+   it is the same stretch twice.
+
+   The key is now the MOVEMENT: qualifiers, sides and equipment words stripped
+   off, so any two variants of the same thing collide the way they should. */
+function mobKey(t){
+  return String(t||"").toLowerCase()
+    .replace(/[\u2019']/g,"")
+    .replace(/\s*\(.*?\)/g,"")
+    .split(/\s+(?:with|to|into|\u2014|-|\u00b7|,|and|plus)\s+/)[0]
+    .replace(/\b(left|right|each side|per side|side|alternating|kneeling|standing|seated|supine|prone|half|full|deep|easy|gentle)\b/g,"")
+    .replace(/[^a-z ]/g,"").replace(/\s+/g," ").trim();
+}
 
 /* Warm-up built from what today actually trains. */
 function buildWarmup(names,ctx){
   ctx=ctx||{};
   const out=[], seen=new Set();
-  const push=it=>{ if(it&&!seen.has(it.t)&&gearOk(it)){ out.push(pickItem(it)); seen.add(it.t); return true; } return false; };
+  const push=it=>{ if(!it||!gearOk(it)) return false; const k=mobKey(it.t);
+    if(!k||seen.has(k)) return false; out.push(pickItem(it)); seen.add(k); return true; };
   /* 1. pulse raiser — skipped entirely where the Concept2 block is shown,
      because that IS the pulse raiser and it now lives in its own section (v48). */
   const raisers=PREP.filter(i=>i.tag==="raise");
@@ -3043,10 +3373,29 @@ function buildWarmup(names,ctx){
 function buildCooldown(names,ctx){
   ctx=ctx||{};
   const targeted=[], seen=new Set();
-  const push=(arr,it)=>{ if(it&&!seen.has(it.t)){ arr.push(pickItem(it)); seen.add(it.t); } };
-  topGroups(names,3,ctx.fallback).forEach(g=>{
-    MOB.filter(i=>i.m&&i.m.indexOf(g)>=0&&!i.tag&&!i.wrist&&!seen.has(i.t)).slice(0,2).forEach(it=>push(targeted,it));
+  const push=(arr,it)=>{
+    if(!it) return false;
+    const k=mobKey(it.t);
+    if(!k || seen.has(k)) return false;      /* same movement, different wording */
+    arr.push(pickItem(it)); seen.add(k); return true;
+  };
+  /* v93 \u2014 stretch what today actually worked, in the order it was worked, and
+     weight it by how much of the session each group took. A leg day should not
+     finish with the same flow as a push day. */
+  const groups=topGroups(names,4,ctx.fallback);
+  const load={};
+  (names||[]).forEach(n=>{ ((EX(n)||guessEx(n)||{}).m||[]).forEach((g,idx)=>{ load[g]=(load[g]||0)+(idx===0?2:1); }); });
+  groups.sort((a,b)=>(load[b]||0)-(load[a]||0));
+  /* Two stretches for the group that did the most work, one for the others. */
+  groups.forEach((g,idx)=>{
+    const want=idx===0?2:1;
+    let taken=0;
+    MOB.filter(i=>i.m&&i.m.indexOf(g)>=0&&!i.tag&&!i.wrist).forEach(it=>{
+      if(taken>=want) return;
+      if(push(targeted,it)) taken++;
+    });
   });
+  /* Anything that loaded the wrist gets its own piece, given the TFCC. */
   if(ctx.wrist) push(targeted,MOB.find(i=>i.wrist));
   /* The finishers are the point of a cool-down \u2014 never let the cap eat them. */
   const finish=[]; MOB.filter(i=>i.tag==="finish").forEach(it=>push(finish,it));
@@ -3055,7 +3404,7 @@ function buildCooldown(names,ctx){
 /* A long full-body flow for rest / mobility days. */
 function buildMobilityFlow(){
   const out=[], seen=new Set();
-  const push=it=>{ if(it&&!seen.has(it.t)){ out.push(pickItem(it)); seen.add(it.t); } };
+  const push=it=>{ if(!it) return; const k=mobKey(it.t); if(!k||seen.has(k)) return; out.push(pickItem(it)); seen.add(k); };
   push({t:"Easy walk", d:"20\u201330 min", cue:"Outside if you can. Blood flow, daylight, no effort."});
   ["legs","back","chest","shoulders","core"].forEach(g=>{
     MOB.filter(i=>i.m&&i.m.indexOf(g)>=0&&!seen.has(i.t)).slice(0,2).forEach(push);
@@ -3143,6 +3492,11 @@ function watchTileHTML(name,dataAttrs){ return "<a class='imgwrap watch'"+(dataA
 function exImgHTML(name,muscles){ return demoTileHTML(name); }
 function ensureWorkout(){
   if(DB.workout && DB.workout.loc && DB.workout.loc!==locKey()) DB.workout=null;
+  /* v92 \u2014 it only ever rebuilt on a location change, so a session built
+     yesterday survived into today carrying yesterday's load calls. Since v81
+     also stopped the planner overwriting a session he'd touched, one could sit
+     there for days. A new day is a new session. */
+  if(DB.workout && DB.workout.date && DB.workout.date!==today()) DB.workout=null;
   if(!DB.workout){ DB.workout=buildWorkout(); save();
     const t=document.getElementById('heroTitle'); if(t)t.textContent=DB.workout.title;
     const su=document.getElementById('heroSub'); if(su)su.textContent=DB.workout.note;
@@ -3334,6 +3688,7 @@ function renderWorkoutSheet(w){
       let bar=document.getElementById('blockBar');
       if(!bar){ bar=document.createElement('div'); bar.id='blockBar'; bar.className='blockbar'; host.insertBefore(bar, host.firstChild); }
       bar.innerHTML="<span class='bw'>Week "+w.blockWeek+" of "+w.blockWeeks+"</span>"+
+        (w.trimNote? "<span class='bt'>\u23f3 "+escapeHtml(w.trimNote)+"</span>":"")+
         (w.deloadWeek? "<span class='bd'>Deload</span>":"")+
         ((w.anchors&&w.anchors.length)? "<span class='ba'>Anchors: "+w.anchors.map(escapeHtml).join(" + ")+"</span>":"")+
         ((w.prehab)? "<span class='bp'>"+escapeHtml(w.prehab.n)+" — "+escapeHtml(w.prehab.why)+"</span>":"");
@@ -3397,6 +3752,8 @@ function setDefaultRest(kind,delta){
   v=Math.max(15,Math.min(600,Math.round(v/15)*15));
   DB.prefs.rest[kind]=v; save();
   try{ renderRestPrefs(); }catch(e){}
+  try{ renderKit(); }catch(e){}
+  try{ const se=document.getElementById('startEstSwitch'); if(se) se.classList.toggle('on', !(DB.prefs&&DB.prefs.noStartEstimates)); }catch(e){}
   try{ renderPhaseCard(); }catch(e){}
   try{ renderIntake(); }catch(e){}
   try{ bindSections('s-today'); }catch(e){}
@@ -3875,6 +4232,57 @@ function lastTimeHTML(name){
   return "<div class='cue'><b>Last time ("+agoTxt+"):</b> "+txt+" \u2014 top "+top+"</div>"+backNote;
 }
 /* Sets are per exercise. DB.workout.sets is only the default for new ones. */
+/* ===== v92 \u00b7 LAST TIME'S NUMBERS ARE ALREADY IN THE BOX =============
+   He should not have to remember what he lifted, or scroll to find it. The
+   weight box arrives filled in, and says what it is based on.
+
+   Computed at RENDER time from live history rather than read from a value
+   stored when the session was built \u2014 that stored copy is what went stale. */
+function prefillWeight(e){
+  if(!e || e.timed) return "";
+  const done=todaySets(e.name);
+  /* Mid-exercise: whatever he is actually working with now, including any
+     jump an "easy" rating has just triggered. */
+  if(done.length){
+    if(e.rec && e.rec.w) return e.rec.w;
+    const last=done[done.length-1];
+    return (last&&last.w)||"";
+  }
+  /* First set: what the coach is calling for, which is last session's weight
+     unless he has earned an increase. */
+  if(e.rec && e.rec.w) return e.rec.w;
+  try{
+    const s=lastSessionOf(e.name);
+    if(s&&s.sets&&s.sets.length) return Math.max(...s.sets.map(x=>x.w||0))||"";
+  }catch(err){}
+  return "";
+}
+function prefillReps(e){
+  if(!e || e.timed) return "";
+  const done=todaySets(e.name);
+  if(done.length) return (done[done.length-1].r)||"";
+  try{
+    const s=lastSessionOf(e.name);
+    if(s&&s.sets&&s.sets.length) return s.sets[s.sets.length-1].r||"";
+  }catch(err){}
+  return "";
+}
+/* Say where the number came from, so a prefilled box is never mistaken for
+   something he typed. */
+function prefillNote(e){
+  if(!e || e.timed) return "";
+  if(todaySets(e.name).length) return "";
+  let s=null; try{ s=lastSessionOf(e.name); }catch(err){}
+  if(!s||!s.sets||!s.sets.length){
+    return (e.rec&&e.rec.estimate)? "<div class='prefill'>Filled in with a suggested starting weight \u2014 first time on this one.</div>" : "";
+  }
+  const top=Math.max(...s.sets.map(x=>x.w||0));
+  const when=(s.date&&s.date!=='prev')? ukDate(s.date) : "last session";
+  const reps=s.sets.map(x=>x.r).join("/");
+  const up=(e.rec&&e.rec.w&&e.rec.w>top);
+  return "<div class='prefill'>Last time "+when+": <b>"+top+"kg</b> \u00d7 "+reps+
+    (up? " \u00b7 filled in with <b>"+e.rec.w+"kg</b>, you earned the jump" : " \u00b7 filled in ready")+"</div>";
+}
 function exSets(e){
   if(!e) return (DB.workout&&DB.workout.sets)||3;
   const n=(typeof e==="object")? e.sets : null;
@@ -3918,11 +4326,13 @@ function exBlockHTML(e,i){
   const chips=todaySets(e.name).map(setChip).join('');
   const input = e.timed
     ? "<div class='holdrow'><div class='hold-cd' id='hcd"+i+"'>0:00</div><button class='holdbtn' id='hbtn"+i+"' onclick='toggleHold("+i+")'>▶ Start hold</button></div>"
-    : "<div class='logrow'><input id='w"+i+"' inputmode='decimal' placeholder='kg' value='"+(e.rec?e.rec.w:'')+"'><input id='r"+i+"' inputmode='numeric' placeholder='reps'><button onclick='logSet("+i+")'>Log</button></div>";
+    : "<div class='logrow'><input id='w"+i+"' inputmode='decimal' placeholder='kg' value='"+prefillWeight(e)+"'><input id='r"+i+"' inputmode='numeric' placeholder='reps' value='"+prefillReps(e)+"'><button onclick='logSet("+i+")'>Log</button></div>"
+      + prefillNote(e);
   const total=((DB.workout&&DB.workout.main)||[]).length;
+  const anchTag = e.anchor? "<div class='anchortag'>\u2693 Main lift \u00b7 held for this block</div>" : "";
   const grpTag = e.grp? ("<div class='grpband'>\u26a1 "+escapeHtml(grpLabel(e.grp))+
         " \u00b7 "+(grpPosition(e).idx+1)+" of "+grpPosition(e).size+"</div>") : "";
-  const order=grpTag+"<div class='exorder'>"+
+  const order=anchTag+grpTag+"<div class='exorder'>"+
       "<span class='pos'>"+(i+1)+" of "+total+"</span>"+
       "<button class='ob' onclick='moveExTop("+i+")'"+(i===0?" disabled":"")+" aria-label='move to top'>\u21c8 top</button>"+
       "<button class='ob' onclick='moveEx("+i+",-1)'"+(i===0?" disabled":"")+" aria-label='move up'>\u2191</button>"+
@@ -4046,8 +4456,28 @@ async function logSet(i){
      didn't exist. It's the per-exercise count that matters. */
   const done=todaySets(ex.name).length, target=exSets(ex);
   const nextEx=DB.workout.main[i+1];
+  /* v84/85 — the coach used to be handed the next exercise's NAME and nothing
+     else, so the only weight in its context was the one just finished. Hence
+     "stick with 45kg" on a single-arm dumbbell row. It now gets that
+     exercise's own history, its own load call, and whether he is already on
+     the heaviest dumbbell he owns. */
+  let nextInfo=null;
+  if(nextEx){
+    const nl=lastSessionOf(nextEx.name);
+    nextInfo={
+      name: nextEx.name,
+      sets: exSets(nextEx),
+      last: nl? (nl.sets||[]).map(x=>x.w+"kg \u00d7 "+x.r).join(", ") : null,
+      lastWhen: (nl&&nl.date&&nl.date!=='prev')? ukDate(nl.date) : (nl? "an earlier session" : null),
+      rec: (nextEx.rec&&nextEx.rec.text) || (function(){ try{ const r=recommendLoad(nextEx.name); return r&&r.text; }catch(e){ return null; } })(),
+      cue: nextEx.cue||null
+    };
+  }
   const exObj={name:ex.name, cue:ex.cue, rec:ex.rec, target, sets:todaySets(ex.name),
-               finished:done>=target, nextName:(nextEx&&nextEx.name)||null};
+               finished:done>=target, nextName:(nextEx&&nextEx.name)||null,
+               next: nextInfo,
+               ceiling: (function(){ try{ return atKitCeiling(ex.name,w); }catch(e){ return false; } })(),
+               kit: (function(){ try{ return kitInfo(); }catch(e){ return null; } })()};
   const reply=await coachSetReply(exObj,{w,r});
   /* The mid-set reply never went through the directive parser, so anything the
      coach emitted was printed at him raw AND never applied. Both halves of
@@ -4072,13 +4502,19 @@ async function coachSetReply(ex,set){
     const sys=coachSystem()+"\nYou are mid-set in a LIVE workout. Reply like texting — 1-3 short punchy lines. No fluff."+
       (ex.finished
         ? "\nTHAT WAS HIS LAST SET OF THIS EXERCISE. Do NOT ask for another set and do NOT call a load for a next set — there isn't one. Give the verdict on the exercise as a whole, then point him at what's next."
-        : "\nHOLD THE WEIGHT. He works a weight for all "+(ex.target||4)+" sets before it ever goes up — same load every set. Do NOT suggest adding weight mid-exercise, and do NOT congratulate him into a jump. The ONLY reason to change it now is that it's genuinely too heavy: form broke down, or he ground out far short of the rep target. Otherwise the call is 'same again'.\nGive: a short verdict, 'same weight' (or a drop if it's too heavy), ONE technique cue, and the rest time.");
+        : "\nLOAD RULE. If a set felt ABOUT RIGHT, hold it \u2014 he works a weight for all "+(ex.target||4)+" sets and earns the increase between sessions. Do not congratulate him into a jump off one good set.\nBUT IF HE RATED IT EASY, that was never his working weight and there is nothing to master. Call the jump for the very next set \u2014 easy means the load was wrong, not that he has earned something. If he is already on his heaviest dumbbell, call more REPS instead.\nIf it was genuinely too heavy \u2014 form broke down, or he ground out far short of the target \u2014 drop it.\nGive: a short verdict, the load call for the next set, ONE technique cue, and the rest time.");
     const eff=sessionEffort(ex.sets), word=effortWord(eff);
     const usr="Exercise: "+ex.name+". Just logged set "+setNo+" of "+target+": "+set.w+"kg × "+set.r+"."+
       (ex.finished? " THAT COMPLETES THIS EXERCISE ("+target+" of "+target+" sets done)."+
-                    (ex.nextName? " Next up is "+ex.nextName+"." : " That was the last exercise of the session.")
+                    (ex.next? ("\nNEXT EXERCISE: "+ex.next.name+" \u2014 "+ex.next.sets+" sets."+
+                          "\n  What he lifted on it last time: "+(ex.next.last? ex.next.last+" ("+ex.next.lastWhen+")" : "no history yet, this is new to him")+
+                          (ex.next.rec? "\n  The app's load call for it: "+ex.next.rec : "")+
+                          (ex.next.cue? "\n  Its cue: "+ex.next.cue : "")+
+                          "\nEVERY EXERCISE HAS ITS OWN LOAD. Never carry the weight across from the lift he just finished \u2014 a 45kg barbell row and a 45kg single-arm dumbbell row are not remotely the same thing. Tell him what HE did on the next exercise last time, and call the load from that.")
+                       : " That was the last exercise of the session.")
                   : " "+(target-setNo)+" set"+((target-setNo)===1?"":"s")+" still to go.")+
       (word? " Sets so far have felt "+word+" (avg RPE ~"+effortRPE(eff)+")." : " He hasn't rated effort yet.")+
+      (ex.ceiling? "\nHE IS ON HIS HEAVIEST DUMBBELL ("+((ex.kit&&ex.kit.dbMax)||set.w)+"kg) \u2014 there is no heavier one. If that felt easy the progression is MORE REPS, so name a rep target. Past about 20 reps switch to tempo, a pause, or a harder single-limb version. Never tell him to add weight he does not own." : "")+
       " History start: "+(ex.rec?ex.rec.text:'n/a')+". Cue: "+ex.cue+".";
     const out=await callAI([{role:"system",content:sys},{role:"user",content:usr}],120);
     if(out) return fmt(out);
@@ -4847,7 +5283,13 @@ coachingDoctrine()+
 "RULES YOU DO NOT BREAK: never superset two heavy compounds \u2014 the main lift is always straight sets. Never pair two movements on the same muscle, that is not a rest. Never pair two that both load the wrist (his TFCC). ALWAYS say in one short line WHICH muscle group you\u2019re catching up and why \u2014 he wants the reasoning, not just the pairing.\n"+
 "The app handles the timing: no rest inside a superset or circuit, full rest once the round is done.\n\n"+
 "=== LOADS HE CAN ACTUALLY MAKE ===\n"+
-"His kit: "+JSON.stringify(kitInfo())+". Never recommend a jump his equipment cannot produce \u2014 a \"+1kg\" call on dumbbells is useless to him. If the next available weight is a big relative leap, KEEP THE WEIGHT AND ADD REPS instead, and say that\u2019s why. The app computes this and prints it as \"Load:\" \u2014 state that number.\n\n"
+"=== WHAT IS ACTUALLY IN THE ROOM ===\n"+
+(function(){ try{ return gearText(locKey()); }catch(e){ return ""; } })()+
+"This is his real inventory, not a guess \u2014 he photographed it. Never program a movement that needs kit he has not got, and never call a load his rack cannot make.\n\n"+
+"His kit HERE ("+(((typeof LOCS!=="undefined"&&LOCS[locKey()])||{}).label||locKey())+"): "+JSON.stringify(kitInfo())+
+". Kit is per LOCATION \u2014 the Dubai gym and the Madrid dumbbells are different.\n"+
+"ON HIS HEAVIEST DUMBBELL there is no next weight. Progress him with REPS, then tempo, pauses, or a harder single-limb variation.\n"+
+"Never recommend a jump his equipment cannot produce \u2014 a \"+1kg\" call on dumbbells is useless to him. If the next available weight is a big relative leap, KEEP THE WEIGHT AND ADD REPS instead, and say that\u2019s why. The app computes this and prints it as \"Load:\" \u2014 state that number.\n\n"
 "=== HOW HE PROGRESSES \u2014 THIS OVERRIDES YOUR INSTINCTS ===\n"+
 "He works a weight until he OWNS it, then moves up. Concretely:\n"+
 "1. The load does NOT change between sets of the same exercise. Four sets at the same weight, then done. Never talk him up mid-exercise.\n"+
@@ -5783,19 +6225,21 @@ function coachClearRules(){
 function coachSetKitLimit(a){
   DB.rules=DB.rules||{banned:{},prefer:{},kit:{}};
   DB.rules.kit=DB.rules.kit||{};
+  const loc=locKey();
+  DB.rules.kit[loc]=DB.rules.kit[loc]||{};
   let hit=0;
   String(a).split("|").forEach(seg=>{
     let m=seg.match(/dumbbell[s]?\s*(?:max)?\s*([\d.]+)/i);
-    if(m){ DB.rules.kit.dbMax=parseFloat(m[1]); hit++; return; }
+    if(m){ DB.rules.kit[loc].dbMax=parseFloat(m[1]); hit++; return; }
     m=seg.match(/dumbbell[s]?\s*(?:step|increment|jump)s?\s*(?:of)?\s*([\d.]+)/i);
-    if(m){ DB.rules.kit.dbStep=parseFloat(m[1]); hit++; return; }
+    if(m){ DB.rules.kit[loc].dbStep=parseFloat(m[1]); hit++; return; }
     m=seg.match(/bar\s*(?:weighs?)?\s*([\d.]+)/i);
-    if(m){ DB.rules.kit.bar=parseFloat(m[1]); hit++; return; }
+    if(m){ DB.rules.kit[loc].bar=parseFloat(m[1]); hit++; return; }
     m=seg.match(/plates?\s*[:=]?\s*([\d.,\s]+)/i);
-    if(m){ DB.rules.kit.plates=m[1].split(/[,\s]+/).map(parseFloat).filter(x=>x>0); hit++; return; }
+    if(m){ DB.rules.kit[loc].plates=m[1].split(/[,\s]+/).map(parseFloat).filter(x=>x>0); hit++; return; }
   });
   if(!hit) return null;
-  save(); return DB.rules.kit;
+  save(); return Object.assign({loc:LOCS[loc].label}, DB.rules.kit[loc]);
 }
 
 /* ---- whole-workout operations ---------------------------------------- */
@@ -6213,9 +6657,102 @@ function localMediaCommand(txt){
   return {notes:["🎬 Exercise GIFs on"], reply:"Done — real exercise GIFs are on across every session. Any lift with a demo shows it in the Train tab. 💪"};
 }
 /* Honesty guard: does the user's message look like a change request, and does the coach's reply CLAIM it acted? */
+/* ===== v88 · THE APP CAN READ A PLAIN INSTRUCTION ITSELF ================
+   "Swap renegade row" is not ambiguous. Waiting for the model to emit the
+   right instruction, and then policing whether it did, is a lot of machinery
+   for a sentence the app can parse in one regex.
+
+   So the common edits are matched locally and applied BEFORE the model is
+   asked anything. The model then writes the reply knowing it is already done,
+   which also stops it promising a second time. If nothing matches, everything
+   carries on exactly as before \u2014 this only ever adds certainty. */
+function sessionNames(){ return ((DB.workout&&DB.workout.main)||[]).map(e=>e.name); }
+/* Pick a sensible replacement when he says "swap X" and names nothing. */
+function autoReplacementFor(name){
+  const e=EX(name)||guessEx(name)||{};
+  const want=(e.m||[])[0];
+  const key=locKey();
+  const inSession=new Set(sessionNames());
+  const cands=allExNames().filter(n=>
+    !inSession.has(n) && canDoHere(n,key) && !exBanned(n) &&
+    (((EX(n)||{}).m)||[])[0]===want && !trainedYesterday(n));
+  if(!cands.length) return null;
+  /* Prefer the same movement pattern, then something he can actually load. */
+  const p=patternOf(name);
+  const k=kitFor(key);
+  const score=n=>{
+    let sc=0;
+    if(patternOf(n)===p) sc+=5;
+    const o=EX(n)||{};
+    if((o.eq==="db"||o.eq==="kb") && k.dbMax!=null && k.dbMax<=12) sc-=2;
+    sc-=((o.pop||500)/1000);
+    return sc;
+  };
+  return cands.sort((a,b)=>score(b)-score(a))[0]||null;
+}
+function localIntent(txt){
+  const t=String(txt||"").trim();
+  if(!t || !DB.workout || !DB.workout.main) return null;
+  const notes=[];
+  const find=n=>{ const i=coachFindExIdx(n); return i>=0? DB.workout.main[i].name : null; };
+
+  /* swap X for Y  /  replace X with Y */
+  let m=t.match(/^\s*(?:can you\s+)?(?:please\s+)?(?:swap|replace|change)\s+(.+?)\s+(?:for|with|to)\s+(.+?)\s*$/i);
+  if(m){
+    const from=find(m[1]), to=m[2].trim();
+    if(from){ try{ if(coachSwapWorkoutEx(from,to)) notes.push("\u21c4 Swapped "+from+" \u2192 "+to); }catch(e){} }
+    if(notes.length) return notes;
+  }
+  /* swap X  (no replacement named) */
+  m=t.match(/^\s*(?:can you\s+)?(?:please\s+)?(?:swap|change|replace)\s+(?:out\s+)?(?:the\s+)?(.+?)\s*$/i);
+  if(m && !/\b(for|with|to)\b/i.test(m[1])){
+    const from=find(m[1]);
+    if(from){
+      const to=autoReplacementFor(from);
+      if(to){ try{ if(coachSwapWorkoutEx(from,to)) notes.push("\u21c4 Swapped "+from+" \u2192 "+to); }catch(e){} }
+      if(notes.length) return notes;
+    }
+  }
+  /* remove / drop X */
+  m=t.match(/^\s*(?:remove|drop|delete|take out|get rid of)\s+(?:the\s+)?(.+?)\s*$/i);
+  if(m){
+    const n=find(m[1]);
+    if(n){ try{ if(coachRemoveEx(n)) notes.push("\u2716 Removed "+n); }catch(e){} }
+    if(notes.length) return notes;
+  }
+  /* add X */
+  m=t.match(/^\s*add\s+(?:some\s+|a\s+|an\s+)?(.+?)\s*$/i);
+  if(m && !/\bset|rep|min|kg\b/i.test(m[1])){
+    try{ const r=coachAddEx(m[1].trim()); if(r) notes.push("\u2795 Added "+(r.name||m[1].trim())); }catch(e){}
+    if(notes.length) return notes;
+  }
+  /* move X first / last / to N */
+  m=t.match(/^\s*(?:move|put)\s+(?:the\s+)?(.+?)\s+(?:to\s+the\s+|to\s+|at\s+)?(top|first|start|beginning|last|end|bottom|\d+)\s*$/i);
+  if(m){
+    const n=find(m[1]);
+    if(n){ const r=coachMoveEx(n,m[2]); if(r) notes.push("\u21c5 Moved "+r.name+" to position "+r.pos); }
+    if(notes.length) return notes;
+  }
+  /* make X N sets */
+  m=t.match(/^\s*(?:make|set)\s+(?:the\s+)?(.+?)\s+(\d+)\s*sets?\s*$/i);
+  if(m){
+    const n=find(m[1]);
+    if(n){ const r=coachSetExSets(n,m[2]); if(r) notes.push("\ud83c\udfaf "+r.name+" \u2192 "+r.v+" sets"); }
+    if(notes.length) return notes;
+  }
+  return notes.length? notes : null;
+}
 function looksLikeEditRequest(t){ return /\b(split|schedule|week|day|workout|routine|program|programme|swap|change|replace|add|remove|drop|cut|set|make|switch|gif|demo|media|cardio|rest|push|pull|legs?|upper|full body|location|greece|dubai|sets?|protein|calorie|nutrition|icon)\b/i.test(t); }
 function claimsAction(t){ const x=String(t||"").replace(/<[^>]+>/g,"").toLowerCase();
-  return /\b(done|sorted|all set|locked in|updated|switched)\b|\bi'?ve (?:set|updated|changed|added|removed|swapped|split|switched|made|locked|built)\b|\bi have (?:set|updated|changed|added|removed|swapped)\b|\byour (?:week|schedule|split|workout|plan) is now\b/.test(x); }
+  /* v88 \u2014 this only caught PAST tense, so "Swapping out the Renegade Row now.
+     I'll replace it... Updating your workout!" sailed through: every verb in it
+     is present or future. A promise to act is a claim to act. */
+  return /\b(done|sorted|all set|locked in|updated|switched)\b/.test(x)
+    || /\bi[\u2019']?(?:ve|ll|m)\s+(?:go(?:ing)? to\s+)?(?:set|update|updating|updated|change|changing|changed|add|adding|added|remove|removing|removed|swap|swapping|swapped|replace|replacing|replaced|move|moving|moved|split|switch|switching|switched|make|making|made|lock|locked|build|built|sort|sorting|sorted)\b/.test(x)
+    || /\b(swapping|replacing|updating|changing|adding|removing|moving|switching|sorting)\b/.test(x)
+    || /\blet me (?:swap|change|update|add|remove|move|sort)\b/.test(x)
+    || /\bi have (?:set|updated|changed|added|removed|swapped)\b/.test(x)
+    || /\byour (?:week|schedule|split|workout|plan) is now\b/.test(x); }
 
 function renderChat(){
   const w=document.getElementById('chatWrap');
@@ -6240,15 +6777,25 @@ async function sendChat(){
       const summary=log.sets.map(s=>s.w+"kg\u00d7"+s.r).join(", ")+(eTag?" ("+EFFORT[eTag].lab.toLowerCase()+")":"");
       DB.chat.push({role:"log",text:"\ud83d\udccc Saved to history \u2014 "+log.exercise+": "+summary}); save();
       logNote="(SYSTEM: Amir just logged "+log.exercise+" \u2014 "+summary+" \u2014 already saved. Acknowledge, compare to previous "+log.exercise+", say hold or add load next time.)"; }
+    /* v88 — do the unambiguous edits FIRST, in code. "Swap renegade row" does
+       not need a language model, and making the change depend on one is why
+       he had to ask twice. The model is then told it is already done, so it
+       confirms rather than promising to do it again. */
+    let doneNotes=[];
+    if(!log){ try{ doneNotes=localIntent(txt)||[]; }catch(e){ doneNotes=[]; } }
     let reply, aiUsed=false;
     if(DB.ai.provider==="openai"&&DB.ai.key){
       const msgs=[{role:"system",content:coachSystem()}];
       DB.chat.slice(-10).filter(m=>m.role!=='log').forEach(m=>msgs.push({role:m.role==='me'?'user':'assistant',content:m.text.replace(/<[^>]+>/g,'')}));
       if(logNote) msgs.push({role:"user",content:logNote});
+      if(doneNotes.length) msgs.push({role:"user",content:
+        "(SYSTEM: this has ALREADY been applied to his session — "+doneNotes.join("; ").replace(/<[^>]+>/g,'')+
+        ". Do NOT emit a directive for it and do NOT say you are about to do it. Confirm it in one line, say why that replacement suits him, and move on.)"});
       reply=await callAI(msgs,600); if(reply) aiUsed=true;
     }
     if(!reply) reply=log?localLogReply(log):localCoachReply(txt);
-    const res=applyCoachDirectives(reply); reply=res.cleaned; let allNotes=res.notes.slice();
+    const res=applyCoachDirectives(reply); reply=res.cleaned;
+    let allNotes=doneNotes.concat(res.notes);
     if(!allNotes.length && !log){
       let lc=null;
       try{ lc=localWorkoutCommand(txt)||localScheduleCommand(txt)||localMediaCommand(txt); }catch(e){ console.warn(e); }
@@ -7327,7 +7874,7 @@ function scheduleInApp(){
    v18 ADDITIONS — draggable rest timer · weekly training memory · AI planner
    · Firestore sync
    ========================================================================== */
-const APP_VERSION="v83 · 06/08/2026";
+const APP_VERSION="v93 · 06/08/2026";
 
 /* ===== 1. REST TIMER — drag it anywhere so it never blocks the chat box ===== */
 let _rtDrag=null;
@@ -8127,6 +8674,35 @@ function showEffortPrompt(i,ex){
   const anchor=document.getElementById('sl'+i);
   if(anchor) anchor.insertAdjacentHTML('afterend',effortPromptHTML(i,ex,sets.length-1));
 }
+/* ===== v90 · "EASY" IS NOT PROGRESSION, IT IS A WRONG WEIGHT ============
+   The mastery rule and this are the same rule seen from two sides, and I had
+   only built one of them.
+
+   ABOUT RIGHT means the load is correct. Repeat it, own all four sets, and
+   earn the increase between sessions. That is the rule he asked for and it
+   still holds.
+
+   EASY means the load was never the working weight. There is nothing to
+   master and nothing to earn \u2014 he simply picked light. Making him grind out
+   three more easy sets before "earning" a jump next week is bureaucracy, not
+   coaching. So an easy set moves the weight NOW, for the very next set.
+
+   At the top of his rack there is no next weight, so it moves the reps
+   instead. */
+function easyJumpFor(name,w){
+  const k=kitFor(locKey());
+  const e=EX(name)||{};
+  if(atKitCeiling(name,w)) return null;            /* no heavier one exists */
+  let step=loadStep(name,w);
+  /* Two easy sets in a row means it was a long way light. */
+  const sets=todaySets(name);
+  const easyRun=sets.slice(-2).filter(x=>x.e===1).length;
+  if(easyRun>=2) step*=2;
+  let next=roundToKit(name, w+step);
+  if(next<=w) next=w+step;
+  if((e.eq==="db"||e.eq==="kb") && k.dbMax!=null) next=Math.min(next,k.dbMax);
+  return (next>w)? next : null;
+}
 function setEffort(i,setIdx,e){
   const ex=DB.workout&&DB.workout.main[i]; if(!ex) return;
   const arr=DB.strength[ex.name]||[];
@@ -8141,8 +8717,46 @@ function setEffort(i,setIdx,e){
   const sl=document.getElementById('sl'+i);
   if(sl) sl.innerHTML=todaySets(ex.name).map(setChip).join('');
   try{ renderStrengthPBs(); }catch(err){}
-  /* Rebuild the load call now that we know how it felt. */
-  try{ if(DB.workout&&DB.workout.main[i]) DB.workout.main[i].rec=recommendLoad(ex.name); }catch(err){}
+
+  /* EASY: move it now, for the next set of this exercise. */
+  let jumped=null;
+  if(e===1){
+    const done=todaySets(ex.name);
+    const w=(done[setIdx]&&done[setIdx].w)||0;
+    const target=exSets(ex);
+    const setsLeft = done.length < target;
+    if(w>0){
+      const next=easyJumpFor(ex.name,w);
+      if(next && setsLeft){
+        ex.rec={w:next, text:next+"kg for the next set \u2014 that one was easy, so it wasn't your working weight."};
+        ex.adjNote="+"+(Math.round((next-w)*10)/10)+"kg now \u00b7 last set was easy";
+        markSessionTouched();
+        jumped={from:w,to:next};
+      } else if(!next && setsLeft){
+        /* Already at the top of the rack \u2014 reps are the only lever left. */
+        const reps=(done[setIdx]&&done[setIdx].r)||0;
+        const t=Math.min(25, reps+3);
+        ex.rec={w, text:w+"kg again but go for "+t+" reps \u2014 that's your heaviest, so reps are the progression."};
+        ex.adjNote="same weight, "+t+" reps \u00b7 at your ceiling";
+        markSessionTouched();
+        jumped={from:w,to:w,reps:t};
+      }
+    }
+  }
+  save();
+
+  /* Rebuild the load call now that we know how it felt \u2014 unless an easy set
+     has just overridden it for the rest of this exercise. */
+  try{
+    if(DB.workout&&DB.workout.main[i] && !jumped)
+      DB.workout.main[i].rec=recommendLoad(ex.name);
+  }catch(err){}
+
+  if(jumped){
+    try{ const el=document.getElementById('exb'+i); if(el){ el.outerHTML=exBlockHTML(ex,i); paintDemos(); } }catch(err){}
+    toast(jumped.reps? ("At your ceiling \u2014 go for "+jumped.reps+" reps")
+                     : ("Easy? Then up it \u2014 "+jumped.to+"kg next set"));
+  }
 }
 
 /* --- fatigue: grinding is a signal the volume numbers can't see --- */
@@ -8601,25 +9215,44 @@ function estimateMinutes(names,sets,t){
   return {row,warm,cool,lift:Math.round(lift),total:Math.round(row+warm+cool+lift)};
 }
 /* Given a time budget, how many exercises and sets fit? */
-function planForTime(pool,t){
+/* Same maths as estimateMinutes, but anchors count as 4 sets. */
+function estimateMinutesMixed(names,sets,t,anchors){
+  anchors=anchors||[];
+  if(!anchors.length) return estimateMinutes(names,sets,t);
+  const a=names.filter(n=>anchors.indexOf(n)>=0);
+  const b=names.filter(n=>anchors.indexOf(n)<0);
+  const ea=a.length? estimateMinutes(a,4,t) : {lift:0};
+  const eb=b.length? estimateMinutes(b,sets,t) : {lift:0};
+  const whole=estimateMinutes(names,sets,t);
+  return Object.assign({}, whole, {lift:(ea.lift||0)+(eb.lift||0)});
+}
+function planForTime(pool,t,opt){
   t=t||timeBudget();
+  opt=opt||{};
+  const anchors=opt.anchors||[];
   const row = t.row? (t.rowMins||0) : 0;
   const warm = LOC().short? 3 : 5, cool=4;
   const forLifting = Math.max(4, t.mins - row - warm - cool);
+  /* Anchors first, then accessories, then the prehab slot last so it survives
+     a trim from the middle. */
+  const last = opt.keepLast? pool[pool.length-1] : null;
+  const body = last? pool.slice(0,-1) : pool.slice();
+  const floor = Math.min(body.length, Math.max(anchors.length,1));
   let best=null;
   for(let sets=2; sets<=4; sets++){
-    for(let n=Math.min(pool.length,8); n>=2; n--){
-      const names=pool.slice(0,n);
-      const est=estimateMinutes(names,sets,t);
+    for(let n=body.length; n>=floor; n--){
+      const names=body.slice(0,n).concat(last?[last]:[]);
+      /* Estimate honestly: anchors at 4, the rest at the trial count. */
+      const est=estimateMinutesMixed(names,sets,t,anchors);
       if(est.lift<=forLifting){
         const waste=forLifting-est.lift;
-        const score = waste + (sets===3?0:1.5) + (n<3?6:0);   // prefer 3 sets, at least 3 moves
+        const score = waste + (sets===3?0:1.5) + (names.length<3?6:0);   // prefer 3 sets, at least 3 moves
         if(!best||score<best.score) best={names,sets,est,score,waste};
       }
     }
   }
   if(!best){                                    // not even 2x2 fits — give the shortest honest session
-    const names=pool.slice(0,2);
+    const names=pool.slice(0,Math.max(2,anchors.length));
     best={names,sets:2,est:estimateMinutes(names,2,t),score:99,waste:0};
   }
   return {names:best.names,sets:best.sets,est:best.est,budget:t.mins,forLifting};
