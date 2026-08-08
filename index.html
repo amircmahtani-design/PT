@@ -1645,7 +1645,7 @@ const LOCS={
   dubai :{key:"dubai", label:"Dubai",  emoji:"\uD83C\uDFE0", tag:"Dubai \u00b7 Home Gym", gear:["bw","db","bb","mach","band","bar","kb","other"], rower:true,  short:false,
           equipment:"Home garage gym: all-in-one rack with Smith machine, dual adjustable cable stacks, multi-grip pull-up bar and landmine post; Olympic barbell + plates; fixed hex dumbbells 2.5\u201310kg ONLY; adjustable bench; Concept2 RowERG; kettlebell; TRX; resistance bands; stability ball; foam roller and mats",
           blurb:"Full setup at home \u2014 proper session."},
-  madrid:{key:"madrid",label:"Madrid", emoji:"\uD83C\uDDEA\uD83C\uDDF8", tag:"Madrid · Dumbbells Only", gear:["bw","db","band"], rower:false, short:false,
+  madrid:{key:"madrid",label:"Madrid", emoji:"\uD83C\uDDEA\uD83C\uDDF8", tag:"Madrid · Dumbbells Only", gear:["bw","db","band"], rower:false, short:false, noBench:true,
           equipment:"Dumbbells only, plus bodyweight. No barbell, no machines, no rower.",
           blurb:"Dumbbells only — same intent, different tools."},
   greece:{key:"greece",label:"Greece", emoji:"\uD83C\uDDEC\uD83C\uDDF7", tag:"Greece · No Equipment", gear:["bw"], rower:false, short:true,
@@ -1668,7 +1668,23 @@ function locKey(){ const l=(DB.profile&&DB.profile.location)||"dubai"; if(l==="h
 function LOC(){ return LOCS[locKey()]; }
 function currentEquipment(){ const e=(DB.profile&&DB.profile.equip)||{}; return (e[locKey()]||"").trim() || LOC().equipment; }
 function eqOf(name){ const e=EX(name); return (e&&e.eq)||"bw"; }
-function canDoHere(name,key){ const gear=LOCS[key||locKey()].gear; return gear.indexOf(eqOf(name))>=0; }
+/* v95 — "dumbbells only" was a kit list and nothing more, so DB Bench Press
+   passed the check in Madrid: the dumbbells are there, the bench is not.
+   Some movements need something to lie on, and that is separate from what you
+   can hold. */
+const NEEDS_BENCH=/bench press|incline|decline|chest press|chest[- ]supported|lying|step[- ]?up|bulgarian|split squat|hip thrust|preacher|skullcrusher|pullover/i;
+function needsBench(name){ return NEEDS_BENCH.test(String(name||"")); }
+function benchHere(key){
+  key=key||locKey();
+  const L=LOCS[key]||{};
+  try{ const g=gearProfile(key); if(g&&Array.isArray(g.has)&&g.has.some(x=>/bench/i.test(x))) return true; }catch(e){}
+  return !L.noBench;
+}
+function canDoHere(name,key){
+  key=key||locKey();
+  if(needsBench(name) && !benchHere(key)) return false;
+  const gear=LOCS[key].gear; return gear.indexOf(eqOf(name))>=0;
+}
 function availableExNames(key){ return allExNames().filter(n=>canDoHere(n,key)); }
 /* The full catalogue can be 1000+ names \u2014 far too many for a prompt. Send the
    built-ins plus a spread of catalogue moves across the muscle groups. */
@@ -5277,6 +5293,7 @@ function coachSystem(){
 "TODAY'S WORKOUT (Train tab):\n"+
 "[[SET_DAY: Legs & Core]] · [[SET_WORKOUT: Bench Press, Barbell Row, Plank]] · [[ADD_EX: Lateral Raise]] · [[REMOVE_EX: Walking Lunge]] · [[SWAP_EX: Bench Press -> Incline DB Press]] · [[SET_SETS: 4]]\n"+
 "[[MOVE_EX: Bench Press -> 1]] moves one exercise to that position (1 = first). [[REORDER: Bench Press, Barbell Row, Plank]] sets the whole order at once — it only reorders what is already in the session, it never adds or removes.\n"+
+"NEVER INVENT AN EXERCISE NAME. Every movement you program must exist in his library or the catalogue you have been given. If you cannot find the right one, say so and ask — do not make one up. \"Spell Caster\" is not an exercise.\n"+
 "If he asks to do something first, earlier, later or last, that is MOVE_EX \u2014 not SET_WORKOUT, which would rebuild the session and lose his logged sets.\n\n"+
 coachingDoctrine()+
 "\n=== YOU DECIDE THE STRUCTURE \u2014 FROM HIS ANATOMY, NOT FROM A RULE ===\n"+
@@ -5305,6 +5322,10 @@ coachingDoctrine()+
 "3. If it felt hard, or the reps fell away, or he didn\u2019t finish the sets \u2014 same weight next time. Say so plainly; that is a good session, not a failure.\n"+
 "4. Adding weight because a single set looked good is exactly the ego lifting he asked you to prevent.\n"+
 "The app already computes the correct call and shows it as \"Load:\" on the exercise. STATE THAT NUMBER. Do not invent a different one.\n\n"+
+"=== PILATES MEANS PILATES ===\n"+
+"If he asks for Pilates that is the CLASSICAL MAT REPERTOIRE: The Hundred, Roll-Up, Roll Over, Single Leg Circles, Rolling Like a Ball, Single and Double Leg Stretch, Scissors, Criss-Cross, Spine Stretch Forward, Saw, Swan, Single Leg Kick, Shoulder Bridge, Spine Twist, Teaser, Swimming, Side Kick Series, Leg Pull Front, Mermaid. Bodyweight, breath-led, in order, one round, no sets and no weight.\n"+
+"It is NOT dumbbell core work. A Russian twist holding a dumbbell is not Pilates.\n"+
+"USE [[SET_DAY: Pilates]] and let the app build the mat flow. Do NOT list movements yourself with SET_WORKOUT.\n\n"+
 "PER-EXERCISE PRESCRIPTION (use these, NOT SET_WORKOUT, when he changes one lift):\n"+
 "[[SET_EX_SETS: Bench Press | 4]] · [[SET_EX_REPS: Bench Press | 6-8]] · [[SET_EX_REST: Bench Press | 3 min]] · [[SET_EX_LOAD: Bench Press | 60kg]] · [[SET_EX_TEMPO: Bench Press | 3-1-1]] · [[SET_EX_TIMED: Plank | 45s]] · [[SUPERSET: Curl + Pushdown]]\n"+
 "SET_SETS changes EVERY exercise. For one lift always use SET_EX_SETS. \"4 sets of 6 with 3 minutes rest\" is three directives, not a rebuild.\n\n"+
@@ -6698,57 +6719,175 @@ function autoReplacementFor(name){
   };
   return cands.sort((a,b)=>score(b)-score(a))[0]||null;
 }
+/* ===== v96 · THE COMMAND LAYER IS CODE, NOT LANGUAGE ====================
+   89 ways to change this app all depended on the model choosing to emit a
+   bracket. Six were parsed here. That ratio is the whole problem: a command
+   either happened or it didn't, and that should not be probabilistic.
+
+   Everything below is matched and executed in code, before the model is asked
+   anything. The model then writes the reply knowing it is already done. What
+   is left for it is what it is actually good at \u2014 explaining, judging, talking.
+
+   Anything that doesn't match here still goes to the coach exactly as before,
+   so this only ever adds certainty. */
+const INTENTS = [
+  /* ---- the session ---- */
+  {re:/^(?:can you |please )?(?:swap|replace|change)\s+(.+?)\s+(?:for|with|to)\s+(.+)$/i,
+   run:(m,C)=>C.swap(m[1],m[2])},
+  {re:/^(?:can you |please )?(?:swap|change|replace)\s+(?:out\s+)?(?:the\s+)?(.+)$/i,
+   guard:m=>!/\b(for|with|to)\b/i.test(m[1]),
+   run:(m,C)=>C.swap(m[1],null)},
+  {re:/^(?:remove|drop|delete|take out|get rid of|bin|skip)\s+(?:the\s+)?(.+)$/i,
+   run:(m,C)=>C.remove(m[1])},
+  {re:/^add\s+(?:some\s+|a\s+|an\s+|in\s+)?(.+)$/i,
+   guard:m=>!/\b\d+\s*(set|rep|min|kg|g|kcal|cal)/i.test(m[1]),
+   run:(m,C)=>C.add(m[1])},
+  {re:/^(?:move|put)\s+(?:the\s+)?(.+?)\s+(?:to\s+the\s+|to\s+|at\s+|)?(top|first|start|beginning|last|end|bottom|\d+)$/i,
+   run:(m,C)=>C.move(m[1],m[2])},
+  {re:/^(?:do|start with)\s+(.+?)\s+(first|last)$/i, run:(m,C)=>C.move(m[1],m[2])},
+  {re:/^(?:superset|pair)\s+(.+?)\s+(?:and|with|\+)\s+(.+)$/i, run:(m,C)=>C.superset(m[1],m[2])},
+  {re:/^(?:make|turn)\s+(.+?)\s+(?:into\s+)?a?\s*circuit$/i, run:(m,C)=>C.circuit(m[1])},
+  {re:/^(?:remove|break|split|undo)\s+(?:the\s+)?superset(?:\s+on\s+(.+))?$/i, run:(m,C)=>C.unSuperset(m[1])},
+  {re:/^(?:rebuild|redo|regenerate|new)\s+(?:my\s+|the\s+|today.?s\s+)?(?:workout|session)$/i, run:(m,C)=>C.rebuild()},
+  {re:/^reset\s+(?:my\s+|the\s+|today.?s\s+)?(?:workout|session|plan)$/i, run:(m,C)=>C.rebuild()},
+
+  /* ---- prescription ---- */
+  {re:/^(?:make|set)\s+(?:the\s+)?(.+?)\s+(\d+)\s*sets?$/i, run:(m,C)=>C.sets(m[1],m[2])},
+  {re:/^(\d+)\s*sets?\s+(?:of|on|for)\s+(.+)$/i, run:(m,C)=>C.sets(m[2],m[1])},
+  {re:/^(?:make\s+)?(?:everything|all|every exercise)\s+(\d+)\s*sets?$/i, run:(m,C)=>C.allSets(m[1])},
+  {re:/^(?:make|set)\s+(?:the\s+)?(.+?)\s+(\d+\s*(?:-|to|\u2013)\s*\d+|\d+)\s*reps?$/i, run:(m,C)=>C.reps(m[1],m[2])},
+  {re:/^(\d+\s*(?:-|to|\u2013)\s*\d+|\d+)\s*reps?\s+(?:of|on|for)\s+(.+)$/i, run:(m,C)=>C.reps(m[2],m[1])},
+  {re:/^(?:make\s+)?(?:the\s+)?rest\s+(?:on\s+)?(.+?)\s+(\d+\s*(?:s|sec|seconds|m|min|minutes)?)$/i,
+   guard:m=>!/^between/i.test(m[1]), run:(m,C)=>C.rest(m[1],m[2])},
+  {re:/^(\d+\s*(?:s|sec|seconds|m|min|minutes))\s+rest\s+(?:on|for)\s+(.+)$/i, run:(m,C)=>C.rest(m[2],m[1])},
+  {re:/^(?:start|use|do)\s+(.+?)\s+(?:at|on|with)\s+([\d.]+)\s*kg$/i, run:(m,C)=>C.load(m[1],m[2])},
+  {re:/^(?:drop|reduce|lower)\s+(?:the\s+)?(.+?)\s+(?:by\s+)?([\d.]+\s*(?:kg|%))$/i, run:(m,C)=>C.down(m[1],m[2])},
+  {re:/^(?:add|put)\s+([\d.]+\s*(?:kg|%))\s+(?:to|on)\s+(.+)$/i, run:(m,C)=>C.up(m[2],m[1])},
+  {re:/^deload\s+(?:the\s+)?(.+?)(?:\s+(?:by\s+)?([\d.]+\s*%?))?$/i,
+   guard:m=>!/workout|session|everything/i.test(m[1]), run:(m,C)=>C.down(m[1],m[2]||"-10%")},
+  {re:/^deload\s+(?:the\s+)?(?:workout|session|everything|week)(?:\s+(?:by\s+)?([\d.]+\s*%?))?$/i,
+   run:(m,C)=>C.deloadAll(m[1]||"-20")},
+
+  /* ---- the day ---- */
+  {re:/\bpilates\b/i, guard:(m,t)=>!/\b(what|why|how|explain|tell me|is|are)\b/i.test(t), run:(m,C)=>C.pilates()},
+  {re:/^(?:make\s+)?(?:today|it)\s+(?:a\s+)?(push|pull|legs?|upper|lower|full body|core|arms|mobility|cardio|rest)(?:\s*day)?$/i,
+   run:(m,C)=>C.day(m[1])},
+  {re:/^(?:i(?:'|\u2019)?m|i am)\s+in\s+(dubai|madrid|greece)$/i, run:(m,C)=>C.where(m[1])},
+  {re:/^(?:i(?:'|\u2019)?ve|i have)?\s*(?:only\s+)?(?:got\s+)?(\d+)\s*(?:min|minutes)(?:\s+today)?$/i, run:(m,C)=>C.time(m[1])},
+  {re:/^(?:make it|cut it to|shorten to)\s+(\d+)\s*(?:min|minutes)$/i, run:(m,C)=>C.time(m[1])},
+
+  /* ---- what he just did ---- */
+  {re:/^(?:that|it|last set|this)\s+(?:one\s+)?(?:felt|was|is|seemed)?\s*(easy|light|too light)$/i, run:(m,C)=>C.felt(1)},
+  {re:/^(?:that|it|last set|this)\s+(?:one\s+)?(?:felt|was|is|seemed)?\s*(hard|heavy|tough|too heavy)$/i, run:(m,C)=>C.felt(3)},
+  {re:/^(?:that|it|last set|this)\s+(?:one\s+)?(?:felt|was|is|seemed)?\s*(?:about\s+right|fine|ok|okay|good)$/i, run:(m,C)=>C.felt(2)},
+  {re:/^(?:i\s+was\s+)?(?:grinding|struggling|it was a grind)$/i, run:(m,C)=>C.felt(4)},
+  {re:/^(?:i\s+)?(?:only\s+)?(?:got|managed|did)\s+(\d+)(?:\s*reps?)?$/i, run:(m,C)=>C.gotReps(m[1])},
+  {re:/^(?:skip|stop)\s+(?:the\s+)?(?:rest of\s+)?(?:this|these)?\s*sets?$/i, run:(m,C)=>C.skipRest()},
+  {re:/^(?:delete|remove|undo)\s+(?:that|the last)\s+set$/i, run:(m,C)=>C.delSet()},
+
+  /* ---- things that stick ---- */
+  {re:/^(?:never|don'?t|do not)\s+(?:give|program|show)\s+(?:me\s+)?(.+?)\s+again$/i, run:(m,C)=>C.never(m[1])},
+  {re:/^(?:i\s+)?(?:hate|can'?t do|refuse)\s+(.+)$/i, run:(m,C)=>C.never(m[1])},
+  {re:/^(?:always|from now on)\s+(?:use\s+)?(.+?)\s+(?:instead of|rather than)\s+(.+)$/i, run:(m,C)=>C.prefer(m[2],m[1])},
+];
+
 function localIntent(txt){
   const t=String(txt||"").trim();
-  if(!t || !DB.workout || !DB.workout.main) return null;
-  const notes=[];
-  const find=n=>{ const i=coachFindExIdx(n); return i>=0? DB.workout.main[i].name : null; };
-
-  /* swap X for Y  /  replace X with Y */
-  let m=t.match(/^\s*(?:can you\s+)?(?:please\s+)?(?:swap|replace|change)\s+(.+?)\s+(?:for|with|to)\s+(.+?)\s*$/i);
-  if(m){
-    const from=find(m[1]), to=m[2].trim();
-    if(from){ try{ if(coachSwapWorkoutEx(from,to)) notes.push("\u21c4 Swapped "+from+" \u2192 "+to); }catch(e){} }
-    if(notes.length) return notes;
+  if(!t) return null;
+  const C=intentActions();
+  for(const it of INTENTS){
+    const m=t.match(it.re);
+    if(!m) continue;
+    if(it.guard && !it.guard(m,t)) continue;
+    let out=null;
+    try{ out=it.run(m,C); }catch(e){ out=null; }
+    if(out && out.length) return out;
   }
-  /* swap X  (no replacement named) */
-  m=t.match(/^\s*(?:can you\s+)?(?:please\s+)?(?:swap|change|replace)\s+(?:out\s+)?(?:the\s+)?(.+?)\s*$/i);
-  if(m && !/\b(for|with|to)\b/i.test(m[1])){
-    const from=find(m[1]);
-    if(from){
-      const to=autoReplacementFor(from);
-      if(to){ try{ if(coachSwapWorkoutEx(from,to)) notes.push("\u21c4 Swapped "+from+" \u2192 "+to); }catch(e){} }
-      if(notes.length) return notes;
-    }
-  }
-  /* remove / drop X */
-  m=t.match(/^\s*(?:remove|drop|delete|take out|get rid of)\s+(?:the\s+)?(.+?)\s*$/i);
-  if(m){
-    const n=find(m[1]);
-    if(n){ try{ if(coachRemoveEx(n)) notes.push("\u2716 Removed "+n); }catch(e){} }
-    if(notes.length) return notes;
-  }
-  /* add X */
-  m=t.match(/^\s*add\s+(?:some\s+|a\s+|an\s+)?(.+?)\s*$/i);
-  if(m && !/\bset|rep|min|kg\b/i.test(m[1])){
-    try{ const r=coachAddEx(m[1].trim()); if(r) notes.push("\u2795 Added "+(r.name||m[1].trim())); }catch(e){}
-    if(notes.length) return notes;
-  }
-  /* move X first / last / to N */
-  m=t.match(/^\s*(?:move|put)\s+(?:the\s+)?(.+?)\s+(?:to\s+the\s+|to\s+|at\s+)?(top|first|start|beginning|last|end|bottom|\d+)\s*$/i);
-  if(m){
-    const n=find(m[1]);
-    if(n){ const r=coachMoveEx(n,m[2]); if(r) notes.push("\u21c5 Moved "+r.name+" to position "+r.pos); }
-    if(notes.length) return notes;
-  }
-  /* make X N sets */
-  m=t.match(/^\s*(?:make|set)\s+(?:the\s+)?(.+?)\s+(\d+)\s*sets?\s*$/i);
-  if(m){
-    const n=find(m[1]);
-    if(n){ const r=coachSetExSets(n,m[2]); if(r) notes.push("\ud83c\udfaf "+r.name+" \u2192 "+r.v+" sets"); }
-    if(notes.length) return notes;
-  }
-  return notes.length? notes : null;
+  return null;
+}
+/* Every action the command layer can take. Kept in one place so what the app
+   can do by itself is a list you can read, not something buried in regexes. */
+function intentActions(){
+  const has=()=>!!(DB.workout&&DB.workout.main);
+  const find=n=>{ if(!has()) return null; const i=coachFindExIdx(n); return i>=0? DB.workout.main[i].name : null; };
+  const n=x=>[x];
+  return {
+    swap:(from,to)=>{ const f=find(from); if(!f) return null;
+      const t=to? String(to).trim() : autoReplacementFor(f);
+      if(!t) return null;
+      return coachSwapWorkoutEx(f,t)? n("\u21c4 Swapped "+f+" \u2192 "+t) : null; },
+    remove:(x)=>{ const f=find(x); if(!f) return null;
+      return coachRemoveEx(f)? n("\u2716 Removed "+f) : null; },
+    add:(x)=>{ const r=coachAddEx(String(x).trim()); return r? n("\u2795 Added "+(r.name||x)) : null; },
+    move:(x,pos)=>{ const f=find(x); if(!f) return null;
+      const r=coachMoveEx(f,pos); return r? n("\u21c5 Moved "+r.name+" to position "+r.pos) : null; },
+    superset:(a,b)=>{ const r=coachMakeCircuit([a,b].join(",")); return r? n("\u26a1 Superset \u00b7 "+r.names.join(" + ")) : null; },
+    circuit:(list)=>{ const r=coachMakeCircuit(list); return r? n("\u26a1 "+r.label+" \u00b7 "+r.names.join(" + ")) : null; },
+    unSuperset:(x)=>{ if(x){ const f=find(x); if(f){ const r=coachRemoveSuperset(f); return r? n("\u2702 Superset removed") : null; } }
+      const c=coachClearTechniques(); return c? n("\u2702 Back to straight sets") : null; },
+    rebuild:()=>{ DB.workout=null; try{ ensureWorkout(); }catch(e){} save(); return n("\u21ba Rebuilt today\u2019s session"); },
+    sets:(x,v)=>{ const f=find(x); if(!f) return null; const r=coachSetExSets(f,v); return r? n("\ud83c\udfaf "+r.name+" \u2192 "+r.v+" sets") : null; },
+    allSets:(v)=>{ if(!has()) return null; const k=parseInt(v,10); if(!(k>=1&&k<=8)) return null;
+      DB.workout.main.forEach(e=>{ e.sets=k; try{ e.scheme=schemeFor(e.name,k); }catch(err){} });
+      markSessionTouched(); save(); try{ renderWorkoutSheet(DB.workout); }catch(e){}
+      return n("\ud83c\udfaf Everything \u2192 "+k+" sets"); },
+    reps:(x,v)=>{ const f=find(x); if(!f) return null; const r=coachSetExReps(f,v); return r? n("\ud83c\udfaf "+r.name+" \u2192 "+r.r) : null; },
+    rest:(x,v)=>{ const f=find(x); if(!f) return null; const r=coachSetExRest(f,v); return r? n("\u23f1 "+r.name+" \u2192 rest "+r.r) : null; },
+    load:(x,v)=>{ const f=find(x); if(!f) return null; const r=coachSetExLoad(f,v+"kg"); return r? n("\ud83c\udfcb "+r.name+" \u2192 "+r.txt) : null; },
+    up:(x,v)=>{ const f=find(x); if(!f) return null; const r=coachDecreaseLoad(f+" | +"+String(v).replace(/^\+/,"")); return r? n("\u2b06 "+r.n+" "+r.d+" next time") : null; },
+    down:(x,v)=>{ const f=find(x); if(!f) return null; const r=coachDecreaseLoad(f+" | -"+String(v).replace(/^-/,"")); return r? n("\u2b07 "+r.n+" "+r.d+" next time") : null; },
+    deloadAll:(v)=>{ const r=coachDeloadWorkout(v); return r? n("\u2b07 Whole session deloaded "+r+"%") : null; },
+    pilates:()=>{ try{
+        const name=Object.keys(DB.dayTypes||{}).find(k=>/pilates/i.test(k)) || "Pilates";
+        DB.dayTypes=DB.dayTypes||{};
+        if(!DB.dayTypes[name]) DB.dayTypes[name]={kind:"pilates"};
+        DB.dayOverride={date:today(), split:name};
+        DB.workout=null; ensureWorkout(); markSessionTouched(); save();
+        const c=((DB.workout&&DB.workout.cooldown)||[]).length;
+        return n("\ud83e\uddd8 Today \u2192 Pilates mat flow"+(c? " \u00b7 "+c+" movements":""));
+      }catch(e){ return null; } },
+    day:(kind)=>{ try{
+        const want=String(kind).toLowerCase();
+        const all=allSplits();
+        const match=all.find(x=>x.toLowerCase().indexOf(want)>=0) ||
+                    (/rest/.test(want)? "Rest" : null);
+        if(!match) return null;
+        setDaySplit(new Date().getDay(), match);
+        markSessionTouched();
+        return n("\ud83d\udcc5 Today \u2192 "+match);
+      }catch(e){ return null; } },
+    where:(loc)=>{ try{ setLocation(String(loc).toLowerCase()); return n("\ud83d\udccd Now in "+(LOCS[String(loc).toLowerCase()]||{}).label); }catch(e){ return null; } },
+    time:(mins)=>{ const r=coachSetTimeBudget(mins); return r? n("\u23f3 Session \u2192 "+r+" min") : null; },
+    felt:(e)=>{ if(!has()) return null;
+      /* Rate the most recent set of whatever he last logged. */
+      let best=null;
+      DB.workout.main.forEach((ex,i)=>{ const s=todaySets(ex.name);
+        if(s.length && (!best || s.length)) best={i,ex,idx:s.length-1}; });
+      if(!best) return null;
+      setEffort(best.i,best.idx,e);
+      return n((e===1?"\ud83d\udfe2":"\ud83d\udfe0")+" "+best.ex.name+" \u00b7 last set rated "+(EFFORT[e]||{}).lab); },
+    gotReps:(r)=>{ if(!has()) return null;
+      let best=null;
+      DB.workout.main.forEach((ex,i)=>{ const s=todaySets(ex.name); if(s.length) best={ex,idx:s.length-1}; });
+      if(!best) return null;
+      const res=coachEditSet(best.ex.name+" | last | "+r+" reps");
+      return res? n("\u270f\ufe0f "+res.name+" set "+res.no+" \u2192 "+res.w+"kg \u00d7 "+res.r) : null; },
+    skipRest:()=>{ if(!has()) return null;
+      let target=null;
+      DB.workout.main.forEach(ex=>{ if(todaySets(ex.name).length) target=ex; });
+      if(!target) return null;
+      const r=coachSkipRemaining(target.name);
+      return r? n("\u23ed "+r.name+" stopped at "+r.done+" set"+(r.done===1?"":"s")) : null; },
+    delSet:()=>{ if(!has()) return null;
+      let target=null;
+      DB.workout.main.forEach(ex=>{ if(todaySets(ex.name).length) target=ex; });
+      if(!target) return null;
+      const r=coachDeleteSet(target.name+" | last");
+      return r? n("\ud83d\uddd1 Deleted "+r.name+" set "+r.no) : null; },
+    never:(x)=>{ const f=find(x)||String(x).trim(); const r=coachNeverAgain(f);
+      return r? n("\ud83d\udeab "+r+" \u2014 never programmed again") : null; },
+    prefer:(from,to)=>{ const r=coachPreferEx(from,to); return r? n("\ud83d\udd01 From now on: "+r.from+" \u2192 "+r.to) : null; }
+  };
 }
 function looksLikeEditRequest(t){ return /\b(split|schedule|week|day|workout|routine|program|programme|swap|change|replace|add|remove|drop|cut|set|make|switch|gif|demo|media|cardio|rest|push|pull|legs?|upper|full body|location|greece|dubai|sets?|protein|calorie|nutrition|icon)\b/i.test(t); }
 function claimsAction(t){ const x=String(t||"").replace(/<[^>]+>/g,"").toLowerCase();
@@ -7906,7 +8045,7 @@ function scheduleInApp(){
    v18 ADDITIONS — draggable rest timer · weekly training memory · AI planner
    · Firestore sync
    ========================================================================== */
-const APP_VERSION="v94 · 06/08/2026";
+const APP_VERSION="v96 · 06/08/2026";
 
 /* ===== 1. REST TIMER — drag it anywhere so it never blocks the chat box ===== */
 let _rtDrag=null;
