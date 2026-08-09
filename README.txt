@@ -1,5 +1,53 @@
-AMIR PT — v103 · 06/08/2026
+AMIR PT — v105 · 06/08/2026
 ===========================
+
+Upload index.html AND sw.js.
+
+
+1. TAPPING THE MIC IS THE WAKE WORD
+===================================
+I had this backwards. Making you say "coach" after you'd just pressed the
+microphone is asking you to knock on a door you'd already opened.
+
+Tap the mic and just talk. Nothing to say first.
+
+The wake word now exists for ONE situation, which is the one you described:
+the mic is running and you're across the room.
+
+  GREEN button    open. Just talk.
+  AMBER button    it's gone quiet for 45 seconds. Say "coach" to get back in.
+
+The button shows which state it's in, with a label next to it. Not knowing
+whether it's listening is most of what "doesn't work smoothly" feels like.
+
+Recognition also restarts three times faster between sentences (80ms rather
+than 250), because iOS ends it after every utterance whatever you set, and the
+gap was clipping the start of your next sentence.
+
+
+2. WHY IT WAS SO QUIET — AND IT WASN'T THE VOLUME SETTING
+=========================================================
+iOS puts the audio session into RECORD mode the moment anything touches the
+microphone. In record mode it routes playback to the EARPIECE, not the
+speaker. So it sounded like the phone was held to your ear because as far as
+iOS was concerned, it was.
+
+An <audio> element cannot override that route and cannot go above volume 1.0.
+Web Audio can do both. Speech is now decoded and played through an
+AudioContext with a gain stage, which puts it back on the speaker and lets it
+go well past what the phone normally allows.
+
+  Default gain is 2.0 — twice the previous ceiling.
+  There's a Volume slider up to 4x in Settings.
+
+It also waits 140ms after the microphone stops before playing, because the
+audio session takes a beat to hand the route back, and without that pause the
+first couple of words still came out of the earpiece.
+
+IF IT STILL SOUNDS QUIET: turn the mic off and tap "Hear it". iOS keeps
+playback on the earpiece for as long as ANYTHING is holding the microphone,
+and that's a platform rule rather than something the app can override.
+
 
 Upload index.html AND sw.js.
 

@@ -628,6 +628,13 @@ background:var(--card);border:1px solid var(--line);border-radius:18px;padding:1
   box-shadow:0 8px 22px #0009;transition:transform .15s,background .15s;}
 .micbtn:active{transform:scale(.93);}
 .micbtn.on{background:var(--green);animation:micpulse 1.1s ease-in-out infinite;}
+.micbtn.open{background:var(--green);box-shadow:0 0 0 3px #3fe08a55,0 8px 22px #0009;}
+.micbtn.armed{background:var(--card2);color:var(--gold);box-shadow:0 0 0 2px #f0b24a55,0 8px 22px #0009;}
+.micstate{position:fixed;right:78px;bottom:calc(108px + var(--safe-bot));z-index:46;
+  font-size:11px;font-weight:800;letter-spacing:.4px;text-transform:uppercase;color:var(--muted);
+  background:var(--card2);border:1px solid var(--line);border-radius:9px;padding:5px 9px;
+  opacity:0;pointer-events:none;transition:opacity .18s;}
+.micstate.show{opacity:1;}
 .micbtn.hands{box-shadow:0 0 0 3px #3fe08a55,0 8px 22px #0009;}
 @keyframes micpulse{0%,100%{box-shadow:0 0 0 0 #3fe08a66,0 8px 22px #0009}50%{box-shadow:0 0 0 12px #3fe08a00,0 8px 22px #0009}}
 .micheard{position:fixed;right:16px;bottom:calc(156px + var(--safe-bot));z-index:46;
@@ -1278,6 +1285,7 @@ a{color:var(--orange);}
   </div>
 </div>
 <button class="jumpdown" id="jumpDown" onclick="jumpChatEnd()" aria-label="jump to latest">↓</button>
+<div class="micstate" id="micState"></div>
 <div class="micheard" id="micHeard"></div>
 <button class="micbtn" id="micBtn" onclick="tapMic()" aria-label="talk to your coach">
   <svg viewBox="0 0 24 24" width="21" height="21" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
@@ -7187,10 +7195,14 @@ function ensureRec(){
     _recOn=false; paintMic();
     /* Hands-free: pick it straight back up. Recognition stops after every
        utterance on iOS whatever you set. */
-    if(_recHands && !_recBusy && !_speaking) setTimeout(()=>{ try{ startVoice(true); }catch(e){} },250);
+    /* iOS ends recognition after every utterance whatever you set, so the
+       restart has to be quick or it clips the beginning of the next sentence. */
+    if(_recHands && !_recBusy && !_speaking) setTimeout(()=>{ try{ startVoice(true); }catch(e){} },80);
   };
   _rec=r; return r;
 }
+/* The window shuts on a timer, so the button has to notice. */
+setInterval(()=>{ try{ if(_recHands) paintMic(); }catch(e){} }, 2000);
 function startVoice(quiet){
   const r=ensureRec();
   if(!r){ toast("This browser can\u2019t do speech"); return; }
@@ -7203,16 +7215,32 @@ function stopVoice(){
   try{ if(_rec) _rec.stop(); }catch(e){}
   _recOn=false; paintMic();
 }
-/* v99 — one tap turns it on and it STAYS on. Pressing the mic before every
-   sentence is not talking to something, it is operating it. */
+/* ===== v104 · TAPPING THE MIC IS THE WAKE WORD =========================
+   I had this backwards. Making him say "coach" after he had just deliberately
+   pressed the microphone is asking him to knock on a door he has already
+   opened. The wake word exists for ONE situation: the mic is running and he
+   is across the room from the phone.
+
+   So there is an OPEN WINDOW. Tap the mic and it is open \u2014 talk normally, no
+   wake word, and it stays open while the conversation is live. Once it has
+   been quiet for a while the window shuts and the wake word takes over, which
+   is what stops the radio driving his session. */
+const OPEN_MS = 45000;      /* how long "we're talking" lasts after you speak */
+function openWindow(ms){ _followUntil = Date.now() + (ms||OPEN_MS); paintMic(); }
+function windowOpen(){ return Date.now() < _followUntil; }
 function tapMic(){
   if(_recHands || _recOn){ stopVoice(); toast("Mic off"); return; }
   _recHands=true;
   DB.prefs=DB.prefs||{};
   if(DB.prefs.voiceReply===undefined) DB.prefs.voiceReply=true;
   DB.prefs.handsFree=true; save();
+  openWindow();                       /* he tapped it \u2014 he is talking to it NOW */
+  /* iOS only lets an AudioContext start from a real tap, so it is created here
+     rather than the first time it needs to speak. */
+  try{ const c=ensureCtx(); if(c&&c.state==="suspended") c.resume(); }catch(e){}
+  try{ const a=ensureAudio(); if(a){ a.muted=true; a.play().catch(()=>{}); a.pause(); a.muted=false; } }catch(e){}
   startVoice();
-  toast("Listening \u00b7 say \u201c"+wakeWord()+"\u2026\u201d, then just talk");
+  toast("Listening \u2014 just talk");
   try{ renderVoiceCard(); }catch(e){}
 }
 function toggleHandsFree(){
@@ -7228,12 +7256,10 @@ async function handleVoice(said){
   const {woke,text}=stripWake(said);
   /* In hands-free the wake word is compulsory \u2014 that is the entire point of
      it. Tap-to-talk needs no wake word, because tapping IS the intent. */
-  /* Wake word required, EXCEPT in the fifteen seconds after it has spoken to
-     him. Mid-conversation, having to say "coach" before every sentence is
-     precisely what stops it feeling like one. */
-  const inFollowUp = Date.now() < _followUntil;
-  if(_recHands && !woke && !inFollowUp){ paintMic(said,true); return; }
-  _followUntil=0;
+  /* No wake word needed while the window is open. It is only the way back IN
+     once the conversation has gone quiet. */
+  if(!windowOpen() && !woke){ paintMic(said,true); return; }
+  openWindow();   /* he is talking to it, so keep it open */
   const cmd=(text||"").trim();
   if(!cmd){ toast("Didn\u2019t catch that"); return; }
   paintMic(cmd,false);
@@ -7264,7 +7290,7 @@ async function handleVoice(said){
   } finally {
     _recBusy=false;
     /* If it is speaking, speak() picks the mic back up when it stops. */
-    if(_recHands && !_speaking) setTimeout(()=>{ try{ startVoice(true); }catch(e){} },300);
+    if(_recHands && !_speaking) setTimeout(()=>{ try{ startVoice(true); }catch(e){} },80);
   }
 }
 /* Read the confirmation back, so he never has to look at the phone. */
@@ -7346,6 +7372,9 @@ function renderVoicePicker(){
       "</select></div>"+
       "<div class='field'><label>Speed <span class='hint'>"+voiceRate().toFixed(2)+"\u00d7</span></label>"+
         "<input type='range' min='0.7' max='1.3' step='0.05' value='"+voiceRate()+"' oninput=\"setVoicePref('voiceRate',parseFloat(this.value))\" /></div>"+
+      "<div class='field'><label>Volume <span class='hint'>"+Math.round(voiceGain()*50)+"%</span></label>"+
+        "<input type='range' min='0.5' max='4' step='0.1' value='"+voiceGain()+"' oninput=\"setVoicePref('voiceGain',parseFloat(this.value))\" />"+
+        "<div class='hint mt'>Goes above what the phone normally allows. If it still sounds like it is coming from the earpiece, turn the mic off and tap Hear it \u2014 iOS keeps playback on the earpiece while anything is holding the microphone.</div></div>"+
       "<div class='field'><label>How it should sound</label>"+
         "<textarea class='txtin' id='ttsStyle' rows='2' placeholder='warm, confident, unhurried'>"+
         escapeHtml((DB.prefs&&DB.prefs.ttsStyle)||"Speak like a personal trainer who knows him well: warm, confident and direct. Unhurried, relaxed, low and steady. Say it as if you are stood next to him between sets, not reading it out.")+
@@ -7423,12 +7452,58 @@ function useAIVoice(){
   if(DB.prefs && DB.prefs.aiVoiceOff) return false;
   return !!(DB.ai && DB.ai.provider==="openai" && DB.ai.key);
 }
-let _aud=null, _audBusy=false;
+let _aud=null, _audBusy=false, _actx=null;
 /* One <audio> element, reused. Created on a tap so iOS lets it play later. */
 function ensureAudio(){
   if(_aud) return _aud;
-  try{ _aud=new Audio(); _aud.preload="auto"; }catch(e){ _aud=null; }
+  try{ _aud=new Audio(); _aud.preload="auto"; _aud.playsInline=true; _aud.volume=1; }catch(e){ _aud=null; }
   return _aud;
+}
+/* ===== v105 · WHY IT WAS SO QUIET ======================================
+   iOS puts the audio session into RECORD mode the moment anything touches the
+   microphone, and in record mode it routes playback to the EARPIECE, not the
+   speaker. That is why it sounded like the phone was held to his ear \u2014 as far
+   as iOS was concerned, it was.
+
+   An <audio> element can't override the route. Web Audio can: decoding the
+   speech and playing it through an AudioContext puts it back on the speaker,
+   and a gain node lets it go ABOVE 1.0, which an <audio> element cannot.
+
+   The context is also given a moment after the microphone stops, because the
+   session takes a beat to hand the route back. */
+function ensureCtx(){
+  if(_actx) return _actx;
+  try{
+    const C=window.AudioContext||window.webkitAudioContext;
+    if(!C) return null;
+    _actx=new C();
+  }catch(e){ _actx=null; }
+  return _actx;
+}
+function voiceGain(){
+  const g=(DB.prefs&&DB.prefs.voiceGain);
+  return (g>=0.5&&g<=4)? g : 2.0;
+}
+async function playBuffer(arrayBuf){
+  const ctx=ensureCtx();
+  if(!ctx) return false;
+  try{
+    if(ctx.state==="suspended"){ try{ await ctx.resume(); }catch(e){} }
+    const audio=await new Promise((res,rej)=>{
+      /* Safari still wants the callback form. */
+      const p=ctx.decodeAudioData(arrayBuf, res, rej);
+      if(p&&p.then) p.then(res,rej);
+    });
+    return await new Promise(resolve=>{
+      const src=ctx.createBufferSource();
+      const gain=ctx.createGain();
+      gain.gain.value=voiceGain();
+      src.buffer=audio;
+      src.connect(gain); gain.connect(ctx.destination);
+      src.onended=()=>resolve(true);
+      src.start(0);
+    });
+  }catch(e){ console.warn("audio",e); return false; }
 }
 async function speakAI(text,then){
   const t=String(text||"").trim();
@@ -7458,14 +7533,21 @@ async function speakAI(text,then){
       if(res.status===401||res.status===403) toast("Voice: check your OpenAI key");
       return false;
     }
-    const buf=await res.blob();
-    const url=URL.createObjectURL(buf);
+    const raw=await res.arrayBuffer();
+    /* Give iOS a moment to hand the audio route back from the microphone,
+       otherwise the first words come out of the earpiece. */
+    await new Promise(r=>setTimeout(r,140));
+    const played=await playBuffer(raw.slice(0));
+    if(played){ if(then) then(); return true; }
+    /* Web Audio unavailable: fall back to an <audio> element, which at least
+       makes a sound even if iOS insists on the earpiece. */
+    const url=URL.createObjectURL(new Blob([raw],{type:"audio/mpeg"}));
     const a=ensureAudio(); if(!a){ URL.revokeObjectURL(url); return false; }
     return await new Promise(resolve=>{
       const done=(ok)=>{ try{ URL.revokeObjectURL(url); }catch(e){} if(then) then(); resolve(ok); };
       a.onended=()=>done(true);
       a.onerror=()=>done(false);
-      a.src=url;
+      a.volume=1; a.src=url;
       a.play().catch(()=>done(false));
     });
   }catch(e){ console.warn(e); return false; }
@@ -7486,7 +7568,7 @@ function speak(txt,then){
   const finish=()=>{
     if(!_speaking) return;
     _speaking=false;
-    _followUntil=Date.now()+15000;
+    openWindow();
     if(wasListening) setTimeout(()=>{ try{ startVoice(true); }catch(e){} },220);
     if(then) then();
   };
@@ -7514,6 +7596,16 @@ function paintMic(heard,ignored){
   const b=document.getElementById('micBtn'); if(!b) return;
   b.classList.toggle('on',_recOn);
   b.classList.toggle('hands',_recHands);
+  /* v104 \u2014 three states, and he should be able to tell them apart at a glance:
+     off, open (just talk), and armed (waiting for the wake word). Not knowing
+     which one it is in is most of what "doesn't work smoothly" feels like. */
+  b.classList.toggle('open', _recHands && windowOpen());
+  b.classList.toggle('armed', _recHands && !windowOpen());
+  const lbl=document.getElementById('micState');
+  if(lbl){
+    lbl.textContent = !_recHands? "" : (windowOpen()? "Listening" : "Say \u201c"+wakeWord()+"\u201d");
+    lbl.classList.toggle('show', !!_recHands);
+  }
   const h=document.getElementById('micHeard');
   if(h){
     if(heard){ h.textContent=(ignored? "\u201c"+heard+"\u201d \u2014 no wake word" : "\u201c"+heard+"\u201d");
@@ -7533,6 +7625,7 @@ function renderVoiceCard(){
   const hf=!!(DB.prefs&&DB.prefs.handsFree);
   el.innerHTML=
     "<div class='hint mb'>Ask by voice and it answers out loud. Type and it writes back \u2014 it matches however you asked.</div>"+
+    "<div class='notebox mb'><b>Tapping the mic is the wake word.</b> Tap it and just talk \u2014 nothing to say first. It stays open while you\u2019re talking, and after about 45 seconds of quiet it goes amber and waits for \u201c"+escapeHtml(wakeWord())+"\u201d, which is how you get back in from across the room.<br><br>Green = just talk. Amber = say the word first.</div>"+
     "<div class='notebox mb'>Tap the mic once and it <b>stays on</b> until you tap it again. Say your wake word to start, and after it replies you can just talk \u2014 no wake word for 15 seconds, so it runs as a conversation.<br><br>Commands are applied instantly in code. Anything else goes to your coach, and the answer is read back to you.</div>"+
     "<div class='field'><label>Wake word</label>"+
       "<input class='txtin' id='wakeIn' value='"+escapeHtml(wakeWord())+"' placeholder='coach' />"+
@@ -8590,7 +8683,7 @@ function scheduleInApp(){
    v18 ADDITIONS — draggable rest timer · weekly training memory · AI planner
    · Firestore sync
    ========================================================================== */
-const APP_VERSION="v103 · 06/08/2026";
+const APP_VERSION="v105 · 06/08/2026";
 
 /* ===== 1. REST TIMER — drag it anywhere so it never blocks the chat box ===== */
 let _rtDrag=null;
