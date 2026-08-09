@@ -1,5 +1,167 @@
-AMIR PT — v94 · 06/08/2026
+AMIR PT — v97 · 06/08/2026
 ==========================
+
+Upload index.html AND sw.js.
+
+
+REPS OR TIME IS YOUR CALL NOW
+=============================
+Every exercise has a "Logged as" row: REPS & WEIGHT / TIMED HOLD. One tap
+switches it, and your choice sticks for every future session — it isn't just
+for today.
+
+Or say it: "make plank reps", "log farmer carry as time", "do suitcase carry
+for reps".
+
+Switching to reps brings back the weight box and the load recommendation.
+Switching to a hold replaces them with the timer.
+
+
+ON THE SUITCASE CARRY SPECIFICALLY
+==================================
+That one is genuinely a timed carry — you hold one dumbbell and walk, and it's
+measured in time or distance, not reps. The cue even says "walk tall, refuse to
+lean". So the app had it right.
+
+What was wrong is the DEMO. It's showing a dumbbell side bend, which is a
+different exercise entirely, and it's flagged "closest match" because the free
+pack has no suitcase carry. Tap "Wrong demo?" and pick a better one, or use
+"Change demo" to search — your choice is remembered permanently.
+
+That said, you may well want it as reps anyway, and now you can have it that
+way without arguing with the app.
+
+
+AND I AUDITED THE REST
+======================
+Eighteen exercises were flagged as timed holds. Seventeen were right — planks,
+holds, hangs, carries, wall sits, bear crawls, the Hundred.
+
+One was wrong: HOLLOW ROCK was marked as a hold. It's a rep movement — you rock
+back and forth and count them. Hollow HOLD is the timed one, and both exist in
+the library, so the two had been conflated. Fixed.
+
+A related bug fell out of it: the line under each exercise ("3 sets · 30–60s
+hold") was generated from the LIBRARY flag rather than your override, so
+switching to reps left it still saying "hold". It reads your choice now.
+
+
+Upload index.html AND sw.js.
+Read WHAT-FAILED.txt too — it's the honest count behind this decision.
+
+
+YOU WERE RIGHT ABOUT THE PROBLEM. NOT QUITE RIGHT ABOUT THE CAUSE.
+==================================================================
+I counted before rebuilding. Eighteen of the failures in this build were bugs
+in MY code — the brackets, the frozen images, the two-store food, the planner
+overwriting your swaps, "prev" sorting after real dates, the duplicate
+function that stopped the weekly review running for ten versions. Three were
+the model's.
+
+Scrapping the brain would not have prevented a single one of the eighteen.
+
+BUT your instinct was right for a different reason, and the numbers made it
+obvious: 89 ways to change this app all depended on the model choosing to emit
+a bracket correctly. Six were parsed in code. That ratio IS the weak link. A
+command either happened or it didn't; that shouldn't be probabilistic.
+
+The proof was already in the app. When I moved "swap X" into code in v88, it
+stopped failing. Immediately and permanently.
+
+
+SO: THE COMMAND LAYER IS NOW CODE
+=================================
+36 patterns, matched and executed before the model is asked anything:
+
+  the session    swap (with or without a replacement), remove, add, move,
+                 first/last, superset, circuit, break the superset, rebuild
+  prescription   sets on one lift or all of them, reps, rest, starting load,
+                 add or drop weight, deload one lift or the session
+  the day        pilates, make today legs, I'm in Madrid, I've only got 30 min
+  mid-workout    that felt easy / hard / about right / grinding, I only got 8,
+                 skip the rest of these sets, delete that set
+  permanent      never give me X again, always use X instead of Y
+
+TESTED ON 31 REAL PHRASINGS: 31 handled in code, 0 passed through, 0 wrongly
+grabbed. And the things that must NOT be intercepted — "how did I do last
+week", "what is pilates", "why do you keep giving me rows", "I feel tired",
+"explain the mastery rule" — all still go to the coach untouched.
+
+
+WHAT THE MODEL IS LEFT DOING
+============================
+Explaining, judging and talking. Not applying changes.
+
+It still writes the mid-set comment, the weekly review, the physique read, and
+free conversation — and it still handles anything the 36 patterns don't match.
+But it is no longer the thing standing between you and a change you asked for.
+
+29 things already ran with no model involved: the programme, the anchors, load
+calls, the mastery rule, easy-jumps, kit limits, cool-downs, prefill, pattern
+coverage, deload detection, alcohol maths. None of those have ever failed.
+That's the pattern worth extending, and this extends it.
+
+
+Upload index.html AND sw.js.
+
+
+1. IT DOES KNOW WHAT PILATES IS. IT WASN'T ASKING.
+==================================================
+The app has had the classical mat repertoire all along — twenty movements,
+correct order, proper doses — and a builder for it. The coach never used it.
+It reached for SET_WORKOUT instead and invented a list, which is how you got
+DB Russian Twists, DB Windmills and something called a Spell Caster.
+
+Saying "pilates" now goes straight to the real thing, in code, before the
+coach is asked anything:
+
+    The Hundred            10 breaths, 100 pumps
+    Roll-Up                x6
+    Roll Over              x6
+    Single Leg Circles     x5 each direction
+    Rolling Like a Ball    x8
+    Single Leg Stretch     x10 each side
+    Double Leg Stretch     x8
+    Scissors               x10 each side
+    ... eleven movements, one round, no sets, no weight
+
+Not a dumbbell in it.
+
+The coach is also told outright what Pilates is and isn't, and to use
+[[SET_DAY: Pilates]] rather than listing movements itself. Plus a blunt new
+rule: NEVER INVENT AN EXERCISE NAME. If it can't find the right movement it
+asks. "Spell Caster" is not an exercise.
+
+Asking a QUESTION about Pilates still goes to the coach normally — "what is
+pilates" isn't hijacked into rebuilding your session.
+
+
+2. NO BENCH IN MADRID
+=====================
+"Dumbbells only" was stored as a kit list and nothing more, so DB Bench Press
+passed the check: the dumbbells are there, the bench isn't.
+
+Needing something to lie on is now checked separately from what you can hold.
+In Madrid these are blocked: bench press, incline and decline anything, lying
+work, Bulgarian split squats, hip thrusts, step-ups, pullovers, skullcrushers.
+
+A Madrid push day now builds as DB Shoulder Press, DB Floor Press, DB Chest
+Fly, Farmer Carry — the floor press being exactly the substitution a coach
+makes when there's no bench.
+
+Unchanged in Dubai, where there is one.
+
+
+3. AND A NEAR-MISS WORTH TELLING YOU ABOUT
+==========================================
+While making these changes my patch tool truncated index.html to zero bytes.
+It opened the file for writing, which empties it, and then hit an encoding
+error before writing anything back.
+
+Restored from the last packaged build and redone. But the tool now writes to a
+temporary file and moves it into place, so a failure mid-write can't destroy
+the file — it either fully succeeds or leaves the original untouched.
+
 
 Upload index.html AND sw.js.
 

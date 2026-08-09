@@ -1,0 +1,54 @@
+WHAT ACTUALLY FAILED — AN HONEST COUNT
+======================================
+You said the coach is the weak link after 95 versions. Worth checking whether
+that's true before rebuilding on that assumption.
+
+
+BUGS IN MY CODE (the large majority)
+------------------------------------
+  brackets printed at you            I never ran the mid-set reply through the parser
+  "one more set" when done           I passed the global set count, not the exercise's
+  45kg single-arm row                I handed the coach the next exercise's NAME only
+  lateral raises two days running    there was no programme; it improvised daily
+  Pilates as dumbbell work           the mat builder existed; nothing routed to it
+  swap didn't stick                  the planner rebuilt over it on the way to Train
+  today's bench not showing          "prev" sorts after real dates alphabetically
+  frozen demo images                 saved frame 0 resolved as a finished clip
+  changing a demo did nothing        frames cached by exercise name, not by record
+  weekly review never ran            a duplicate function silently overrode it
+  food logged twice, disagreeing     two stores for one fact (twice)
+  \u00b7 and \u2014 printed literally          JS escapes written into raw HTML (twice)
+  drag button snapped back           the movement test compared against undefined
+  two child's poses                  deduped on exact title, not on the movement
+  DB bench press in Madrid           "dumbbells only" never checked for a bench
+  stale weights in the box           session only rebuilt on location change
+  v84 and v90 shipped doing nothing  my patch tool discarded successful edits
+  index.html truncated to zero       my patch tool opened for write then failed
+
+THE MODEL'S OWN FAILURES (far fewer)
+------------------------------------
+  said it would swap, emitted nothing
+  claimed action in present tense, so my guard missed it
+  invented "Spell Caster"
+
+
+THE CONCLUSION
+--------------
+Most of what went wrong was mine, not the model's. Scrapping the brain would
+not have prevented a single one of the eighteen above.
+
+BUT YOUR INSTINCT IS STILL RIGHT, for a different reason: anything that
+CHANGES STATE should never depend on language. Not because the model is bad,
+but because a command either happened or it didn't, and that shouldn't be
+probabilistic.
+
+The evidence is already in the app. When I moved "swap X" into code in v88, it
+stopped failing. Immediately and permanently.
+
+29 things already run with no model involved: the programme, anchors, load
+calls, mastery rule, easy-jump, kit limits, cool-downs, prefill, pattern
+coverage, deload detection, alcohol maths. Those have not failed.
+
+So the fix isn't to remove the coach. It's to move the remaining commands into
+code, and leave the model doing only what it's actually good at: explaining,
+judging, and talking.

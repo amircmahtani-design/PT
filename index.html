@@ -504,6 +504,11 @@ details.sec2[open] .secsum2:after{content:"\2212";}
 .histsec[open]>summary{border-bottom:1px solid var(--hair);}
 .histsecbody{padding:10px 10px 4px;}
 .histsecbody .card{margin-bottom:10px;}
+.timingrow{display:flex;align-items:center;gap:7px;margin:10px 0 4px;flex-wrap:wrap;}
+.timingrow .tl{font-size:10.5px;font-weight:800;letter-spacing:.5px;text-transform:uppercase;color:var(--label);margin-right:2px;}
+.tbtn{background:var(--pill);border:1px solid var(--line);color:var(--muted);
+  border-radius:10px;padding:7px 12px;font-size:12px;font-weight:700;}
+.tbtn.on{background:#2a1c0e;border-color:var(--orange);color:var(--orange);}
 .prefill{margin-top:7px;font-size:11.5px;font-weight:600;color:var(--dim);line-height:1.45;}
 .prefill b{color:var(--txt);}
 .blockbar{display:flex;flex-wrap:wrap;gap:7px;align-items:center;margin:0 0 12px;}
@@ -1768,7 +1773,7 @@ const EXTRA_LIB={
  "Flutter Kick":{m:["core"],eq:"bw",cue:"Small fast kicks, low back glued down.",timed:true,wristAlt:"No wrist load — good"},
  "Side Plank Rotation":{m:["core"],eq:"bw",cue:"From side plank, thread the top arm under and back open.",wristAlt:"Forearm version — no wrist load"},
  "Bear Crawl":{m:["core","shoulders"],eq:"bw",cue:"Knees an inch off the floor, opposite hand and foot, hips low.",timed:true,wristAlt:"Loaded wrist — go easy"},
- "Hollow Rock":{m:["core"],eq:"bw",cue:"Hollow position, rock from the mid-back. Never let the low back lift.",timed:true,wristAlt:"No wrist load — good"},
+ "Hollow Rock":{m:["core"],eq:"bw",cue:"Hollow position, rock from the mid-back. Never let the low back lift.",wristAlt:"No wrist load — good"},
  /* ---- bodyweight: conditioning ---- */
  "High Knees":{m:["legs","core"],eq:"bw",cue:"Fast feet, knees to hip height, arms driving.",timed:true,wristAlt:"No wrist load — good"},
  "Jumping Jacks":{m:["legs","shoulders"],eq:"bw",cue:"Full range, land soft.",timed:true,wristAlt:"No wrist load — good"},
@@ -2772,10 +2777,13 @@ function buildWorkout(){
          lean throughout. */
       const isAnchor=(anchors||[]).indexOf(n)>=0;
       const n_sets = travel? sets : (isAnchor? 4 : 3);
-      return {name:n, muscles:e.m, cue:e.cue, wristNote: flagged[n]||null, timed:!!e.timed,
+      /* v97 — if he has said a movement is reps rather than a hold (or the
+         reverse), that decision outlives the session it was made in. */
+      const tmd = (typeof isTimed==="function")? isTimed(n, e.timed) : !!e.timed;
+      return {name:n, muscles:e.m, cue:e.cue, wristNote: flagged[n]||null, timed:tmd,
         sets:n_sets, anchor:isAnchor,
-        scheme: travel? (n_sets+" sets \u00b7 "+(e.m.includes('core')?"40\u201360s hold":"12\u201320 reps")) : (n_sets+" sets \u00b7 "+(e.timed?"30\u201360s hold":"8\u201312")),
-        rest: travel? "45\u201360s":"90s", rec: e.timed?null:recommendLoad(n)};}),
+        scheme: travel? (n_sets+" sets \u00b7 "+(tmd?"40\u201360s hold":"12\u201320 reps")) : (n_sets+" sets \u00b7 "+(tmd?"30\u201360s hold":"8\u201312")),
+        rest: travel? "45\u201360s":"90s", rec: tmd?null:recommendLoad(n)};}),
     cooldown:coolFor, recovery: travel?"Hydrate between drinks \ud83d\ude04. Grab some protein when you can. You're maintaining beautifully \u2014 don't stress the holiday.":"Hydrate (aim 3L). 30\u201340g protein within the hour. Lights out by 11. Recovery builds the physique."};
   return _built;
 }
@@ -4307,6 +4315,48 @@ function prefillNote(e){
   return "<div class='prefill'>Last time "+when+": <b>"+top+"kg</b> \u00d7 "+reps+
     (up? " \u00b7 filled in with <b>"+e.rec.w+"kg</b>, you earned the jump" : " \u00b7 filled in ready")+"</div>";
 }
+/* ===== v97 · REPS OR TIME IS HIS CALL ==================================
+   Most of the timed flags are right — a carry, a plank, a dead hang are held,
+   not counted. But the library will get some wrong (Hollow Rock was marked as
+   a hold when it is plainly a rep movement), and some movements are genuinely
+   done either way depending on what you want from them.
+
+   So the flag is a default, not a verdict. His choice overrides it and sticks
+   for every future session. */
+function timingOverride(name){
+  const t=(DB.rules&&DB.rules.timing)||{};
+  const v=t[String(name||"").toLowerCase()];
+  return (v===true||v===false)? v : null;
+}
+function isTimed(name,fallback){
+  const o=timingOverride(name);
+  if(o!==null) return o;
+  if(fallback!==undefined) return !!fallback;
+  return !!((EX(name)||{}).timed);
+}
+function setTiming(name,timed){
+  DB.rules=DB.rules||{banned:{},prefer:{},kit:{}};
+  DB.rules.timing=DB.rules.timing||{};
+  DB.rules.timing[String(name).toLowerCase()]=!!timed;
+  save();
+  return !!timed;
+}
+function toggleTiming(i){
+  const e=DB.workout&&DB.workout.main[i]; if(!e) return;
+  const now=isTimed(e.name, e.timed);
+  const next=!now;
+  setTiming(e.name,next);
+  e.timed=next;
+  /* The scheme line and the log row both key off this, so rebuild them. */
+  try{ e.scheme=schemeFor(e.name, exSets(e), e); }catch(err){
+    const n=exSets(e);
+    e.scheme=n+" sets \u00b7 "+(next? "30\u201360s hold" : "8\u201312");
+  }
+  if(next) delete e.rec; else { try{ e.rec=recommendLoad(e.name); }catch(err){} }
+  markSessionTouched(); save();
+  try{ const el=document.getElementById('exb'+i); if(el){ el.outerHTML=exBlockHTML(e,i); paintDemos(); } }catch(err){}
+  toast(e.name+" \u2192 "+(next? "timed hold" : "reps"));
+}
 function exSets(e){
   if(!e) return (DB.workout&&DB.workout.sets)||3;
   const n=(typeof e==="object")? e.sets : null;
@@ -4323,10 +4373,13 @@ function setExSets(i,n){
   refreshDoneCard(); refreshTimeBar();
   toast(e.name+" \u2192 "+n+" sets");
 }
-function schemeFor(name,n){
+function schemeFor(name,n,ex){
   const e=EX(name)||{}; const travel=DB.workout?!!DB.workout.travel:!!LOC().short;
-  const tail = travel? ((e.m||[]).includes('core')||e.timed? "40\u201360s hold" : "12\u201320 reps")
-                     : (e.timed? "30\u201360s hold" : "8\u201312");
+  /* v97 — this read the LIBRARY flag, so switching an exercise to reps left
+     the line underneath still saying "30-60s hold". His override wins. */
+  const tmd=(typeof isTimed==="function")? isTimed(name, ex? ex.timed : e.timed) : !!e.timed;
+  const tail = travel? ((e.m||[]).includes('core')||tmd? "40\u201360s hold" : "12\u201320 reps")
+                     : (tmd? "30\u201360s hold" : "8\u201312");
   return n+" sets \u00b7 "+tail;
 }
 function setChip(sset){
@@ -4376,6 +4429,10 @@ function exBlockHTML(e,i){
       "<span class='d'>between sets</span></div>"+
     /* v65 — a technique the coach sets has to be VISIBLE, or "drop set on the
        last one" changes a field and the sheet looks identical. */
+    "<div class='timingrow'><span class='tl'>Logged as</span>"+
+      "<button class='tbtn"+(isTimed(e.name,e.timed)?"":" on")+"' onclick='if(isTimed(\""+e.name.replace(/"/g,'&quot;').replace(/'/g,"\\'")+"\","+(!!e.timed)+"))toggleTiming("+i+")'>Reps &amp; weight</button>"+
+      "<button class='tbtn"+(isTimed(e.name,e.timed)?" on":"")+"' onclick='if(!isTimed(\""+e.name.replace(/"/g,'&quot;').replace(/'/g,"\\'")+"\","+(!!e.timed)+"))toggleTiming("+i+")'>Timed hold</button>"+
+    "</div>"+
     (e.technique? "<div class='cue' style='color:var(--orange)'><b>\ud83d\udd25 "+escapeHtml(e.technique)+"</b></div>":"")+
     grpNoteHTML(e)+
     (e.superset? "<div class='cue' style='color:var(--gold)'><b>\u26a1 Superset:</b> straight into "+escapeHtml(e.superset)+", no rest</div>":"")+
@@ -6752,6 +6809,10 @@ const INTENTS = [
   {re:/^reset\s+(?:my\s+|the\s+|today.?s\s+)?(?:workout|session|plan)$/i, run:(m,C)=>C.rebuild()},
 
   /* ---- prescription ---- */
+  {re:/^(?:make|log|do)\s+(?:the\s+)?(.+?)\s+(?:as\s+|for\s+|in\s+)?(?:reps?|reps and weight|weighted)$/i,
+   run:(m,C)=>C.timing(m[1],false)},
+  {re:/^(?:make|log|do)\s+(?:the\s+)?(.+?)\s+(?:as\s+|for\s+|on\s+)?(?:time|timed|a hold|seconds|secs)$/i,
+   run:(m,C)=>C.timing(m[1],true)},
   {re:/^(?:make|set)\s+(?:the\s+)?(.+?)\s+(\d+)\s*sets?$/i, run:(m,C)=>C.sets(m[1],m[2])},
   {re:/^(\d+)\s*sets?\s+(?:of|on|for)\s+(.+)$/i, run:(m,C)=>C.sets(m[2],m[1])},
   {re:/^(?:make\s+)?(?:everything|all|every exercise)\s+(\d+)\s*sets?$/i, run:(m,C)=>C.allSets(m[1])},
@@ -6826,6 +6887,12 @@ function intentActions(){
     unSuperset:(x)=>{ if(x){ const f=find(x); if(f){ const r=coachRemoveSuperset(f); return r? n("\u2702 Superset removed") : null; } }
       const c=coachClearTechniques(); return c? n("\u2702 Back to straight sets") : null; },
     rebuild:()=>{ DB.workout=null; try{ ensureWorkout(); }catch(e){} save(); return n("\u21ba Rebuilt today\u2019s session"); },
+    timing:(x,timed)=>{ if(!has()) return null;
+      const f=find(x); if(!f) return null;
+      const i=coachFindExIdx(f);
+      if(isTimed(f, DB.workout.main[i].timed)===timed) return n("\u2713 "+f+" is already logged as "+(timed?"a timed hold":"reps"));
+      toggleTiming(i);
+      return n((timed?"\u23f1 ":"\ud83d\udd22 ")+f+" \u2192 "+(timed?"timed hold":"reps and weight")); },
     sets:(x,v)=>{ const f=find(x); if(!f) return null; const r=coachSetExSets(f,v); return r? n("\ud83c\udfaf "+r.name+" \u2192 "+r.v+" sets") : null; },
     allSets:(v)=>{ if(!has()) return null; const k=parseInt(v,10); if(!(k>=1&&k<=8)) return null;
       DB.workout.main.forEach(e=>{ e.sets=k; try{ e.scheme=schemeFor(e.name,k); }catch(err){} });
@@ -8045,7 +8112,7 @@ function scheduleInApp(){
    v18 ADDITIONS — draggable rest timer · weekly training memory · AI planner
    · Firestore sync
    ========================================================================== */
-const APP_VERSION="v96 · 06/08/2026";
+const APP_VERSION="v97 · 06/08/2026";
 
 /* ===== 1. REST TIMER — drag it anywhere so it never blocks the chat box ===== */
 let _rtDrag=null;
