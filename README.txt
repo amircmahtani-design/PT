@@ -1,5 +1,77 @@
-AMIR PT — v101 · 06/08/2026
+AMIR PT — v103 · 06/08/2026
 ===========================
+
+Upload index.html AND sw.js.
+
+
+IT ANSWERS THE WAY YOU ASKED
+============================
+    You TYPE   ->  it writes back. Silent.
+    You SPEAK  ->  it speaks back, and still writes it in the chat.
+
+That applies to questions and to commands. Type "swap lateral raise" and you
+get the green note. Say it and you hear "Swapped Lateral Raise to Band
+Pull-Apart" as well.
+
+Tested all four combinations: typed question silent, spoken question spoken,
+typed command silent, spoken command spoken. And the flag that tracks which
+one you used never sticks on, so a spoken message can't make the next typed
+one talk at you.
+
+Yesterday's version had it backwards in both directions — first it only spoke
+when you'd spoken, then I overcorrected and made it speak at everything. This
+is the version that actually reads the room: speaking at you while you're
+quietly typing on the sofa is as wrong as staying silent when your hands are
+full mid-set.
+
+The switch in Settings now reads "Speak back when I speak", which is what it
+actually governs.
+
+
+Upload index.html AND sw.js.
+
+
+A VOICE THAT SOUNDS LIKE A PERSON
+=================================
+You were right and I should have gone here first. The browser's built-in
+speech is a 2010-era engine — no amount of pitch and rate tuning fixes it,
+because the problem isn't the settings, it's the synthesiser.
+
+You already have an OpenAI key in this app. Their speech endpoint is a neural
+model — the same family of voice as ChatGPT — so the app now uses that.
+
+  Onyx      deep, male, measured — the default, closest to what you described
+  Ash       male, warm, natural
+  Verse     male, conversational
+  Echo, Ballad, Alloy, Sage, Nova, Shimmer
+
+Cost is negligible: a spoken reply is a couple of hundred characters, fractions
+of a penny.
+
+AND THE STYLE BOX IS REAL THIS TIME
+  There's a "How it should sound" field and the neural model actually follows
+  it. Default:
+
+      "Speak like a personal trainer who knows him well: warm, confident and
+       direct. Unhurried, relaxed, low and steady. Say it as if you are stood
+       next to him between sets, not reading it out."
+
+  Rewrite it however you like. This is the setting that does what the pitch
+  slider was pretending to do.
+
+If the key is missing or the request fails, it drops back to the phone voice
+rather than going silent. There's also a switch to force the basic voice.
+
+
+AND IT TALKS WHEN YOU TYPE NOW
+==============================
+Speech was wired only into the voice path, so typing to it got silence. That
+wasn't a decision, just an oversight.
+
+Every coach reply is now read out — typed or spoken — as long as "Speak
+replies out loud" is on. That switch is in the same card and on by default
+once you've used the mic once.
+
 
 Upload index.html AND sw.js.
 
