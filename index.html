@@ -1374,7 +1374,7 @@ const DEFAULTS = {
      150s between exercises that nothing could change. Both are settings now. */
   rest:{ sets:90, ex:150 },
   cloud:{on:true, config:JSON.stringify(FB_CONFIG,null,2), syncId:FB_SYNC_DEFAULT, last:null, syncKeys:false},
-  prefs:{visualMode:"auto", showIcons:true, exerciseGifs:true, workoutFormat:"list", coachStyle:"direct funny concise",
+  prefs:{visualMode:"auto", showIcons:true, exerciseGifs:true, workoutFormat:"list", coachStyle:"Warm, confident and direct",
          autoPlan:true, restPos:null, restMini:false, sessPos:null}
 };
 
@@ -1519,7 +1519,18 @@ function go(s){
   if(s==='food'){ try{ renderFood(); bindSections('s-food'); }catch(e){} }
   try{ updateJumpBtn(); }catch(e){}
   if(s==='browse') renderBrowse();
-  if(s==='settings'){ collapsibleSettings(); renderCatList(); }
+  if(s==='settings'){
+    collapsibleSettings(); renderCatList();
+    /* v98.1 — these renders had ended up inside setDefaultRest(), a rest-timer
+       function, so the voice card and the kit card only appeared if he happened
+       to nudge a rest timer first. They belong here, where Settings opens. */
+    try{ renderVoiceCard(); }catch(e){}
+    try{ renderVoicePicker(); }catch(e){}
+    try{ renderKit(); }catch(e){}
+    try{ renderRestPrefs(); }catch(e){}
+    try{ const se=document.getElementById('startEstSwitch'); if(se) se.classList.toggle('on', !(DB.prefs&&DB.prefs.noStartEstimates)); }catch(e){}
+    try{ const mv=document.getElementById('masteryVal'); if(mv) mv.textContent=masterySets()+" sets"; }catch(e){}
+  }
   if(s==='checkin') syncCheckinLoc();
   if(s==='coach') renderChat();
   if(s==='progress'){ drawChart(); renderRowingLog(); }
@@ -5482,7 +5493,7 @@ coachingDoctrine()+
 "\n\n"+readinessContext()+
 "\n\n"+trainingContext()+
 "\n\nCONCEPT2 / CARDIO LOG:\n"+rowing;
-  return "You are Amir's personal trainer — the ONLY coach he has. You know him deeply and remember everything. This app stores his data; you are the coaching brain."+mem+"\n\nPERSONALITY: "+(prefs.coachStyle||"Direct, funny, warm, encouraging")+". Never robotic or generic. Challenge him, explain WHY, celebrate wins. Text like a real PT. Keep it tight.\n\nPERMANENT RULES:\n- Goal: "+p.goal+". The physique he wants, NOT bodyweight targets.\n- Klinefelter syndrome — respect recovery/fatigue, patient strength curve.\n- TFCC injury (right wrist) — avoid loaded wrist extension / straight-wrist heavy pressing; prefer neutral-grip. If wrist pain reported, swap immediately.\n- Technique beats weight. Never ego lift. Only add load after current weight is MASTERED with clean form.\n- FLEXIBILITY AND MOBILITY ARE A REAL GOAL, not a warm-up formality. He wants to get measurably more supple and move better, alongside the physique. Program for it: proper cool-down stretching every session with held durations, hip/shoulder/thoracic/ankle mobility, and dedicated mobility or Pilates-style days when the week allows. Track range of motion the way you track load, ask about stiff spots, and never let mobility be the thing that gets dropped when time is short.\n- He never chooses workouts — YOU decide and tell him exactly what to do.\n- You may invent whole session types when his week needs one — Pilates, Core Day, Mobility, HIIT, Arms, Conditioning — with [[CREATE_DAY_TYPE: Name]] then [[SET_WEEKDAY: Monday | Name]]. Don't restrict yourself to push/pull/legs if the gaps say otherwise.\n"+
+  return "You are Amir's personal trainer — the ONLY coach he has. You know him deeply and remember everything. This app stores his data; you are the coaching brain."+mem+"\n\nPERSONALITY: "+(prefs.coachStyle||"Warm, confident and direct")+".\nWARM means you are on his side and it shows: you know his week, you notice when something is hard, you talk to him like someone you actually train rather than a case. It does not mean soft, and it does not mean praise he has not earned.\nCONFIDENT means you make the call. Not 'you could try' or 'maybe consider' - say what he is doing and why. If you are genuinely unsure, say that plainly too; hedging every sentence is not humility, it is noise.\nDIRECT means the point comes first and the explanation second, in one line. No preamble, no throat-clearing, no repeating his own words back at him.\nNever robotic or generic. Challenge him, explain WHY in a line, and name a real win when there is one. Keep it tight.\n\nPERMANENT RULES:\n- Goal: "+p.goal+". The physique he wants, NOT bodyweight targets.\n- Klinefelter syndrome — respect recovery/fatigue, patient strength curve.\n- TFCC injury (right wrist) — avoid loaded wrist extension / straight-wrist heavy pressing; prefer neutral-grip. If wrist pain reported, swap immediately.\n- Technique beats weight. Never ego lift. Only add load after current weight is MASTERED with clean form.\n- FLEXIBILITY AND MOBILITY ARE A REAL GOAL, not a warm-up formality. He wants to get measurably more supple and move better, alongside the physique. Program for it: proper cool-down stretching every session with held durations, hip/shoulder/thoracic/ankle mobility, and dedicated mobility or Pilates-style days when the week allows. Track range of motion the way you track load, ask about stiff spots, and never let mobility be the thing that gets dropped when time is short.\n- He never chooses workouts — YOU decide and tell him exactly what to do.\n- You may invent whole session types when his week needs one — Pilates, Core Day, Mobility, HIIT, Arms, Conditioning — with [[CREATE_DAY_TYPE: Name]] then [[SET_WEEKDAY: Monday | Name]]. Don't restrict yourself to push/pull/legs if the gaps say otherwise.\n"+
 (p.rules? "\nHIS OWN STANDING RULES (he wrote these — follow them):\n"+p.rules+"\n":"")+
 (p.injuries? "\nINJURIES AND LIMITATIONS:\n"+p.injuries+"\n":"")+
 (p.coachTone? "\nHOW HE WANTS YOU TO TALK TO HIM — match this voice exactly, it overrides the generic personality line above:\n"+p.coachTone+"\n":"")+
@@ -7167,7 +7178,7 @@ function ensureRec(){
     _recOn=false; paintMic();
     /* Hands-free: pick it straight back up. Recognition stops after every
        utterance on iOS whatever you set. */
-    if(_recHands && !_recBusy) setTimeout(()=>{ try{ startVoice(true); }catch(e){} },250);
+    if(_recHands && !_recBusy && !_speaking) setTimeout(()=>{ try{ startVoice(true); }catch(e){} },250);
   };
   _rec=r; return r;
 }
@@ -7183,10 +7194,17 @@ function stopVoice(){
   try{ if(_rec) _rec.stop(); }catch(e){}
   _recOn=false; paintMic();
 }
+/* v99 — one tap turns it on and it STAYS on. Pressing the mic before every
+   sentence is not talking to something, it is operating it. */
 function tapMic(){
-  if(_recHands){ stopVoice(); toast("Hands-free off"); return; }
-  if(_recOn){ try{ _rec.stop(); }catch(e){} return; }
+  if(_recHands || _recOn){ stopVoice(); toast("Mic off"); return; }
+  _recHands=true;
+  DB.prefs=DB.prefs||{};
+  if(DB.prefs.voiceReply===undefined) DB.prefs.voiceReply=true;
+  DB.prefs.handsFree=true; save();
   startVoice();
+  toast("Listening \u00b7 say \u201c"+wakeWord()+"\u2026\u201d, then just talk");
+  try{ renderVoiceCard(); }catch(e){}
 }
 function toggleHandsFree(){
   if(!speechSupported()){ toast("This browser can\u2019t do speech"); return; }
@@ -7201,7 +7219,12 @@ async function handleVoice(said){
   const {woke,text}=stripWake(said);
   /* In hands-free the wake word is compulsory \u2014 that is the entire point of
      it. Tap-to-talk needs no wake word, because tapping IS the intent. */
-  if(_recHands && !woke){ paintMic(said,true); return; }
+  /* Wake word required, EXCEPT in the fifteen seconds after it has spoken to
+     him. Mid-conversation, having to say "coach" before every sentence is
+     precisely what stops it feeling like one. */
+  const inFollowUp = Date.now() < _followUntil;
+  if(_recHands && !woke && !inFollowUp){ paintMic(said,true); return; }
+  _followUntil=0;
   const cmd=(text||"").trim();
   if(!cmd){ toast("Didn\u2019t catch that"); return; }
   paintMic(cmd,false);
@@ -7211,8 +7234,8 @@ async function handleVoice(said){
     try{ notes=localIntent(cmd); }catch(e){}
     if(notes && notes.length){
       /* Handled in code \u2014 instant, no model, no round trip. */
-      speak(notes.join(". ").replace(/<[^>]+>/g,""));
       toast(notes[0].replace(/<[^>]+>/g,""));
+      speak(notes.join(". "));
       try{ if(DB.workout) renderWorkoutSheet(DB.workout); }catch(e){}
       DB.chat.push({role:"me",text:escapeHtml(cmd)});
       DB.chat.push({role:"ai",text:notes.join("<br>")});
@@ -7220,21 +7243,154 @@ async function handleVoice(said){
     } else {
       /* Not a command \u2014 hand it to the coach as a normal message. */
       const inp=document.getElementById('chatInput');
-      if(inp){ inp.value=cmd; go('coach'); await sendChat(); }
+      if(inp){
+        inp.value=cmd; go('coach');
+        await sendChat();
+        const last=(DB.chat||[]).filter(m=>m.role==='ai').slice(-1)[0];
+        if(last) speak(last.text);
+      }
     }
   } finally {
     _recBusy=false;
-    if(_recHands) setTimeout(()=>{ try{ startVoice(true); }catch(e){} },300);
+    /* If it is speaking, speak() picks the mic back up when it stops. */
+    if(_recHands && !_speaking) setTimeout(()=>{ try{ startVoice(true); }catch(e){} },300);
   }
 }
 /* Read the confirmation back, so he never has to look at the phone. */
-function speak(txt){
-  if(!(DB.prefs&&DB.prefs.voiceReply)) return;
+/* Speaking and listening at once means it hears itself and answers its own
+   voice. The mic is stood down for the length of the reply and picked back up
+   when it finishes. */
+let _speaking=false, _followUntil=0;
+/* ===== v100 · PICKING THE VOICE =======================================
+   The Web Speech API exposes whatever voices the device has installed and
+   NOTHING about them beyond a name and a language \u2014 no gender, no age, no
+   tone. So gender here is inferred from the name against a known list, which
+   is honest but imperfect. The only real test is listening, hence the button.
+
+   For "male, 40s, calm" the settings that get you there are a mature male
+   voice with the rate a shade under normal and the pitch slightly down.
+   Rushed and high is what makes a synthetic voice sound young and anxious. */
+const MALE_VOICES=/daniel|arthur|oliver|james|alex|fred|thomas|aaron|nathan|gordon|rishi|male|liam|guy|ryan|george|william|edward|harry|jack/i;
+const FEMALE_VOICES=/samantha|karen|moira|tessa|serena|kate|fiona|victoria|allison|ava|susan|nicky|female|emma|sonia|libby|amy|hazel/i;
+function allVoices(){
+  try{ return speechSynthesis.getVoices()||[]; }catch(e){ return []; }
+}
+function voiceGender(v){
+  const n=(v.name||"");
+  if(MALE_VOICES.test(n)) return "m";
+  if(FEMALE_VOICES.test(n)) return "f";
+  return "?";
+}
+function pickedVoice(){
+  const want=(DB.prefs&&DB.prefs.voiceName)||null;
+  const list=allVoices();
+  if(!list.length) return null;
+  if(want){ const hit=list.find(v=>v.name===want); if(hit) return hit; }
+  /* No choice yet: a male English voice, preferring an enhanced one. */
+  const lang=(DB.prefs&&DB.prefs.voiceLang)||"en-GB";
+  const eng=list.filter(v=>(v.lang||"").toLowerCase().startsWith(lang.slice(0,2).toLowerCase()));
+  const males=eng.filter(v=>voiceGender(v)==="m");
+  const pref=males.filter(v=>/enhanced|premium|siri/i.test(v.name));
+  const local=males.filter(v=>(v.lang||"")===lang);
+  return pref[0]||local[0]||males[0]||eng[0]||list[0];
+}
+function voiceRate(){ const r=(DB.prefs&&DB.prefs.voiceRate); return (r>=0.6&&r<=1.6)? r : 0.95; }
+function voicePitch(){ const p=(DB.prefs&&DB.prefs.voicePitch); return (p>=0.5&&p<=1.6)? p : 0.9; }
+function setVoicePref(k,v){
+  DB.prefs=DB.prefs||{};
+  DB.prefs[k]=v; save();
+  renderVoicePicker();
+}
+function setCoachStyle(v){
+  DB.prefs=DB.prefs||{};
+  DB.prefs.coachStyle=String(v||"").trim();
+  save();
+  try{ renderVoiceCard(); renderVoicePicker(); }catch(e){}
+  toast("Coach tone: "+DB.prefs.coachStyle.split(/[.,]/)[0]);
+}
+function testVoice(){
+  const lines=[
+    "Right, that's four clean sets at forty five. Next session we go to forty seven and a half.",
+    "Solid. Rest ninety seconds, then same weight, ribs down.",
+    "Your pull volume is short this week, so I've put a row back in."
+  ];
+  const t=lines[Math.floor(Math.random()*lines.length)];
+  const was=(DB.prefs&&DB.prefs.voiceReply);
+  DB.prefs=DB.prefs||{}; DB.prefs.voiceReply=true;
+  speak(t, ()=>{ DB.prefs.voiceReply=was; });
+}
+function renderVoicePicker(){
+  const el=document.getElementById('voicePick'); if(!el) return;
+  const list=allVoices();
+  if(!list.length){
+    el.innerHTML="<div class='hint'>No voices loaded yet \u2014 tap Test and they usually appear.</div>";
+    return;
+  }
+  const lang=(DB.prefs&&DB.prefs.voiceLang)||"en-GB";
+  const eng=list.filter(v=>(v.lang||"").toLowerCase().startsWith(lang.slice(0,2).toLowerCase()));
+  const pool=(eng.length?eng:list);
+  /* Male first, then the ones the name doesn't tell us about. */
+  const order={m:0,"?":1,f:2};
+  const sorted=pool.slice().sort((a,b)=>{
+    const g=order[voiceGender(a)]-order[voiceGender(b)];
+    if(g) return g;
+    const e=(/enhanced|premium/i.test(b.name)?1:0)-(/enhanced|premium/i.test(a.name)?1:0);
+    if(e) return e;
+    return (a.name||"").localeCompare(b.name||"");
+  });
+  const cur=pickedVoice();
+  el.innerHTML=
+    "<div class='field'><label>Voice</label>"+
+      "<select class='txtin' onchange=\"setVoicePref('voiceName',this.value)\">"+
+      sorted.map(v=>"<option value='"+escapeHtml(v.name)+"'"+((cur&&cur.name===v.name)?" selected":"")+">"+
+        escapeHtml(v.name)+" \u00b7 "+escapeHtml(v.lang||"")+
+        (voiceGender(v)==="m"?" \u00b7 male":voiceGender(v)==="f"?" \u00b7 female":"")+
+        (/enhanced|premium/i.test(v.name)?" \u00b7 enhanced":"")+"</option>").join("")+
+      "</select></div>"+
+    "<div class='field'><label>Speed <span class='hint'>"+voiceRate().toFixed(2)+"\u00d7</span></label>"+
+      "<input type='range' min='0.7' max='1.3' step='0.05' value='"+voiceRate()+"' oninput=\"setVoicePref('voiceRate',parseFloat(this.value))\" /></div>"+
+    "<div class='field'><label>Pitch <span class='hint'>"+voicePitch().toFixed(2)+"</span></label>"+
+      "<input type='range' min='0.6' max='1.3' step='0.05' value='"+voicePitch()+"' oninput=\"setVoicePref('voicePitch',parseFloat(this.value))\" /></div>"+
+    "<button class='btn sec' onclick='testVoice()'>\ud83d\udd0a Hear it</button>"+
+    "<div class='hint mt' style='margin-bottom:6px'>Quick settings</div>"+
+    "<div class='posebtns'>"+
+      "<button class='btn ghost' onclick=\"setVoicePref('voiceRate',0.95);setVoicePref('voicePitch',0.95)\">Warm &amp; direct</button>"+
+      "<button class='btn ghost' onclick=\"setVoicePref('voiceRate',0.92);setVoicePref('voicePitch',0.86)\">Calm &amp; low</button>"+
+    "</div>"+
+    "<div class='hint mt'>The API tells us a name and a language and nothing else \u2014 no gender, no age. Male and female labels are inferred from the name, so trust your ears over the label. On iPhone, Settings \u2192 Accessibility \u2192 Spoken Content \u2192 Voices downloads better ones, and they show up here.</div>";
+}
+function speak(txt,then){
+  if(!(DB.prefs&&DB.prefs.voiceReply)){ if(then) then(); return; }
+  let t=String(txt||"")
+    .replace(/<br\s*\/?>/gi,". ")
+    .replace(/<[^>]+>/g," ")
+    .replace(/&nbsp;/g," ").replace(/&amp;/g,"&")
+    .replace(/[\u2190-\u21FF\u2300-\u27BF\uD800-\uDFFF\uFE0F\u2B00-\u2BFF]/g," ")
+    .replace(/\s+/g," ").trim();
+  if(!t){ if(then) then(); return; }
+  if(t.length>420){ const cut=t.slice(0,420); t=cut.replace(/[^.!?]*$/,"")||cut; }
   try{
-    const u=new SpeechSynthesisUtterance(String(txt).replace(/[^\w\s,.\u2192\u00b7-]/g,"").slice(0,140));
-    u.lang=(DB.prefs&&DB.prefs.voiceLang)||"en-GB"; u.rate=1.05;
+    const wasListening=_recHands;
+    _speaking=true;
+    try{ if(_rec){ if(_rec.abort) _rec.abort(); else _rec.stop(); } }catch(e){}
+    const u=new SpeechSynthesisUtterance(t);
+    u.lang=(DB.prefs&&DB.prefs.voiceLang)||"en-GB";
+    const pv=pickedVoice(); if(pv) u.voice=pv;
+    u.rate=voiceRate(); u.pitch=voicePitch();
+    const done=()=>{
+      if(!_speaking) return;
+      _speaking=false;
+      /* A short window where he can just answer, no wake word. That is what
+         makes it a conversation rather than a run of commands. */
+      _followUntil=Date.now()+15000;
+      if(wasListening) setTimeout(()=>{ try{ startVoice(true); }catch(e){} },220);
+      if(then) then();
+    };
+    u.onend=done; u.onerror=done;
     speechSynthesis.cancel(); speechSynthesis.speak(u);
-  }catch(e){}
+    /* Safari sometimes never fires onend. */
+    setTimeout(done, Math.min(25000, 1400+t.length*70));
+  }catch(e){ _speaking=false; if(then) then(); }
 }
 function paintMic(heard,ignored){
   const b=document.getElementById('micBtn'); if(!b) return;
@@ -7247,6 +7403,10 @@ function paintMic(heard,ignored){
   }
 }
 function renderVoiceCard(){
+  /* Voices load asynchronously on iOS \u2014 the first call often returns an empty
+     list, so redraw when they arrive. */
+  try{ if(!window._voicesHooked){ window._voicesHooked=true;
+    speechSynthesis.onvoiceschanged=()=>{ try{ renderVoicePicker(); }catch(e){} }; } }catch(e){}
   const el=document.getElementById('voiceBody'); if(!el) return;
   if(!speechSupported()){
     el.innerHTML="<div class='notebox'>This browser can\u2019t do speech recognition. On iPhone that means using Safari rather than a webview.</div>";
@@ -7254,11 +7414,21 @@ function renderVoiceCard(){
   }
   const hf=!!(DB.prefs&&DB.prefs.handsFree);
   el.innerHTML=
-    "<div class='notebox mb'>Tap the mic anywhere in the app and talk. Commands run instantly in code \u2014 anything else goes to your coach.</div>"+
+    "<div class='notebox mb'>Tap the mic once and it <b>stays on</b> until you tap it again. Say your wake word to start, and after it replies you can just talk \u2014 no wake word for 15 seconds, so it runs as a conversation.<br><br>Commands are applied instantly in code. Anything else goes to your coach, and the answer is read back to you.</div>"+
     "<div class='field'><label>Wake word</label>"+
       "<input class='txtin' id='wakeIn' value='"+escapeHtml(wakeWord())+"' placeholder='coach' />"+
       "<div class='hint mt'>Only needed in hands-free. Say \u201c"+escapeHtml(wakeWord())+", swap the lateral raise\u201d.</div></div>"+
     "<button class='btn sec' onclick=\"setWakeWord(document.getElementById('wakeIn').value)\">Save wake word</button>"+
+    "<div class='section-h' style='margin:18px 0 10px'>How it talks</div>"+
+    "<div class='hint mb'>Currently: <b>"+escapeHtml((DB.prefs&&DB.prefs.coachStyle)||"Warm, confident and direct")+"</b></div>"+
+    "<div class='posebtns'>"+
+      "<button class='btn ghost' onclick=\"setCoachStyle('Warm, confident and direct')\">Warm &amp; direct</button>"+
+      "<button class='btn ghost' onclick=\"setCoachStyle('Blunt. No cheerleading. Short sentences.')\">Blunt</button>"+
+      "<button class='btn ghost' onclick=\"setCoachStyle('Technical. Explain the reasoning behind every call.')\">Technical</button>"+
+      "<button class='btn ghost' onclick=\"setCoachStyle('Dry, funny, understated. British.')\">Dry &amp; funny</button>"+
+    "</div>"+
+    "<div class='hint mt'>Or write your own in Settings \u2192 Your profile \u2192 how the coach should talk to you. Warmth comes from the WORDS far more than the voice \u2014 the sliders below only change how those words are read out.</div>"+
+    "<div class='section-h' style='margin:18px 0 10px'>How it sounds</div><div id='voicePick'></div>"+
     "<div class='set-row' style='margin-top:14px'><span class='k' style='color:var(--txt);font-weight:600'>Hands-free while the app is open</span>"+
       "<div class='switch"+(hf?" on":"")+"' onclick='toggleHandsFree()'></div></div>"+
     "<div class='set-row'><span class='k' style='color:var(--txt);font-weight:600'>Read confirmations back to me</span>"+
@@ -8301,7 +8471,7 @@ function scheduleInApp(){
    v18 ADDITIONS — draggable rest timer · weekly training memory · AI planner
    · Firestore sync
    ========================================================================== */
-const APP_VERSION="v98 · 06/08/2026";
+const APP_VERSION="v101 · 06/08/2026";
 
 /* ===== 1. REST TIMER — drag it anywhere so it never blocks the chat box ===== */
 let _rtDrag=null;

@@ -1,5 +1,174 @@
-AMIR PT — v98 · 06/08/2026
+AMIR PT — v101 · 06/08/2026
+===========================
+
+Upload index.html AND sw.js.
+
+
+WARM, CONFIDENT AND DIRECT
 ==========================
+That's now the coach's tone, and it's the DEFAULT rather than something you
+have to set.
+
+Naming a tone doesn't do much on its own — "warm" can drift into flattery and
+"direct" into curt. So each word is defined:
+
+  WARM        you are on his side and it shows. You know his week, you notice
+              when something is hard, you talk to him like someone you train
+              rather than a case. It does NOT mean soft, and it does not mean
+              praise he hasn't earned.
+
+  CONFIDENT   you make the call. Not "you could try" or "maybe consider" —
+              say what he's doing and why. If you're genuinely unsure, say
+              THAT plainly; hedging every sentence isn't humility, it's noise.
+
+  DIRECT      the point first, the explanation second, in one line. No
+              preamble, no throat-clearing, no repeating his own words back
+              at him.
+
+Settings -> Talking to your coach -> "How it talks" has one-tap presets:
+Warm & direct, Blunt, Technical, Dry & funny. Or write your own.
+
+
+AND A MATCHING VOICE PRESET
+===========================
+"Warm & direct" for the voice is speed 0.95, pitch 0.95 — near-normal, which
+is what warmth actually sounds like. "Calm & low" (0.92 / 0.86) is the more
+measured one if you prefer it.
+
+WORTH BEING CLEAR ABOUT WHICH LEVER MATTERS: warmth comes from the WORDS, not
+the pitch. Dropping the pitch on a cold sentence gives you a cold sentence
+read slowly. The tone setting above is doing the real work; the sliders only
+change how those words are read out.
+
+That's also why "warm & direct" doesn't drop the pitch far — going too low
+reads as flat and detached, which is the opposite of what you asked for.
+
+
+Upload index.html AND sw.js.
+
+
+TUNE THE VOICE UNTIL YOU LIKE IT
+================================
+Settings -> Talking to your coach -> "How it sounds".
+
+  VOICE    every voice your iPhone has, male ones listed first, enhanced ones
+           at the top of those
+  SPEED    0.70x to 1.30x
+  PITCH    0.60 to 1.30
+  HEAR IT  a random real coaching line, so you're judging it on something it
+           would actually say rather than "testing one two three"
+
+Everything applies immediately and sticks.
+
+WHAT YOU ASKED FOR — male, 40s, calm — is roughly:
+    a mature British male voice, speed 0.92, pitch 0.88
+
+There's a "Calm and low" button that sets exactly that in one tap. It's also
+the default, so it should already sound close before you touch anything.
+
+Rushed and high is what makes a synthetic voice sound young and anxious.
+Slowing it slightly and dropping the pitch is most of the distance to calm and
+forty.
+
+
+TWO THINGS WORTH KNOWING
+========================
+THE API TELLS US ALMOST NOTHING. A voice has a name and a language and that is
+it — no gender, no age, no tone. The male and female labels are inferred from
+the name against a known list, so they'll be right most of the time and
+occasionally wrong. Trust your ears over the label.
+
+BETTER VOICES ARE A FREE DOWNLOAD. iPhone ships with compressed ones. Go to
+Settings -> Accessibility -> Spoken Content -> Voices -> English and download
+an Enhanced or Premium voice — Daniel (Enhanced) is the obvious British male
+one. It's a much bigger jump in quality than anything the sliders will do, and
+it appears in the list here automatically.
+
+
+Upload index.html AND sw.js.
+
+
+ONE TAP AND IT STAYS ON
+=======================
+Pressing the mic before every sentence isn't talking to something, it's
+operating it. Fair point.
+
+Tap the mic once — it stays listening until you tap it again. That's it.
+Turning it on also switches spoken replies on, because if you're talking to it
+you presumably want it talking back.
+
+
+IT TALKS BACK NOW
+=================
+Confirmations and the coach's actual answers are both read aloud. Ask "why do
+you keep giving me rows" and you hear the answer rather than having to look.
+
+The speech is cleaned first — markup, arrows and emoji stripped, long replies
+cut at a sentence end rather than mid-word.
+
+
+AND IT'S A CONVERSATION, NOT A RUN OF COMMANDS
+==============================================
+The wake word gets you in. After it replies, you have FIFTEEN SECONDS to just
+talk — no wake word needed. So:
+
+    you    "coach, why do you keep giving me rows"
+    it     "Your pull volume was short this week..."
+    you    "fair enough, swap the second one"          <- no wake word
+    it     "Swapped Barbell Row to Seated Cable Row"
+    you    "and make it 4 sets"                        <- still no wake word
+
+Once the window lapses it wants the wake word again, so your music can't drive
+your session.
+
+THE PART THAT MATTERS TECHNICALLY
+  While it's speaking, the microphone is switched off, then picked back up when
+  it finishes. Without that it hears its own voice and answers itself. Safari
+  doesn't always fire the "finished speaking" event, so there's a timeout
+  behind it as a backstop.
+
+
+ONE PROCESS NOTE
+================
+My first attempt at this shipped nothing — I wrote it as one script instead of
+using the safe patch tool I built two versions ago, so a single mismatched
+pattern threw and discarded all six working edits. Exactly the failure that
+tool exists to prevent, and I didn't reach for it. Redone properly.
+
+
+Upload index.html AND sw.js.
+
+
+YES — SETTINGS -> TALKING TO YOUR COACH
+=======================================
+A "Wake word" box, type anything, tap "Save wake word".
+
+  Single word     "amir", "oi", "yo"
+  Or a phrase     "oi mate", "hey you"
+
+It accepts "hey" and "ok" in front of whatever you pick, so setting it to
+"amir" also answers to "hey amir" and "ok amir". Leave it blank and it falls
+back to "coach".
+
+Same card has the hands-free switch, the read-confirmations-back switch, and
+both caveats about background listening and your music.
+
+
+AND ASKING THAT CAUGHT A REAL BUG
+=================================
+Checking before answering, I found the card would have been INVISIBLE.
+
+The line that draws it had ended up inside setDefaultRest() — a rest-timer
+function — rather than in the code that runs when Settings opens. So the voice
+card, the kit card and the rest-timer values would only have appeared if you
+happened to nudge a rest timer first, and otherwise you'd have opened Settings
+to a blank space where the wake word box should be.
+
+Moved to where Settings actually opens. All four cards now render on arrival.
+
+Worth noting because you'd have found it thirty seconds after uploading v98
+and reasonably concluded the feature didn't exist.
+
 
 Upload index.html AND sw.js.
 First time you tap the mic, iPhone will ask for microphone permission. Allow it.
