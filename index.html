@@ -622,7 +622,20 @@ background:var(--card);border:1px solid var(--line);border-radius:18px;padding:1
 .switch.on{background:linear-gradient(100deg,#3fe08a,#1fbf68);}
 .switch::after{content:"";position:absolute;top:3px;left:3px;width:22px;height:22px;border-radius:50%;background:#fff;transition:.2s;}
 .switch.on::after{transform:translateX(22px);}
-.jumpdown{position:fixed;right:16px;bottom:calc(150px + var(--safe-bot));z-index:45;
+.micbtn{position:fixed;right:16px;bottom:calc(96px + var(--safe-bot));z-index:46;
+  width:52px;height:52px;border-radius:50%;background:var(--orange);border:none;color:#160d04;
+  display:flex;align-items:center;justify-content:center;
+  box-shadow:0 8px 22px #0009;transition:transform .15s,background .15s;}
+.micbtn:active{transform:scale(.93);}
+.micbtn.on{background:var(--green);animation:micpulse 1.1s ease-in-out infinite;}
+.micbtn.hands{box-shadow:0 0 0 3px #3fe08a55,0 8px 22px #0009;}
+@keyframes micpulse{0%,100%{box-shadow:0 0 0 0 #3fe08a66,0 8px 22px #0009}50%{box-shadow:0 0 0 12px #3fe08a00,0 8px 22px #0009}}
+.micheard{position:fixed;right:16px;bottom:calc(156px + var(--safe-bot));z-index:46;
+  max-width:74vw;background:var(--card2);border:1px solid var(--line);border-radius:13px;
+  padding:9px 13px;font-size:12.5px;font-weight:600;color:var(--txt);
+  opacity:0;pointer-events:none;transform:translateY(6px);transition:opacity .18s,transform .18s;}
+.micheard.show{opacity:1;transform:translateY(0);}
+.jumpdown{position:fixed;right:16px;bottom:calc(156px + var(--safe-bot));right:78px;z-index:45;
   width:44px;height:44px;border-radius:50%;background:var(--card2);border:1px solid var(--line);
   color:var(--txt);font-size:19px;font-weight:800;line-height:1;
   box-shadow:0 6px 18px #0008;opacity:0;pointer-events:none;transform:translateY(6px);
@@ -1017,6 +1030,9 @@ a{color:var(--orange);}
       <div id="wxMsg" class="hint mt" style="font-size:13px"></div>
     </div>
 
+    <div class="section-h">Talking to your coach</div>
+    <div class="card"><div id="voiceBody"></div></div>
+
     <div class="section-h">What kit you have here</div>
     <div class="card">
       <div class="notebox mb">Set this per location — Dubai, Madrid and Greece are different gyms. Once you're on your heaviest dumbbell the coach stops asking for more weight and starts asking for more reps.</div>
@@ -1262,6 +1278,11 @@ a{color:var(--orange);}
   </div>
 </div>
 <button class="jumpdown" id="jumpDown" onclick="jumpChatEnd()" aria-label="jump to latest">↓</button>
+<div class="micheard" id="micHeard"></div>
+<button class="micbtn" id="micBtn" onclick="tapMic()" aria-label="talk to your coach">
+  <svg viewBox="0 0 24 24" width="21" height="21" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
+    <rect x="9" y="2" width="6" height="11" rx="3"/><path d="M5 11a7 7 0 0 0 14 0"/><path d="M12 18v3"/></svg>
+</button>
 <div class="toast" id="toast"></div>
 <script>
 
@@ -3785,6 +3806,7 @@ function setDefaultRest(kind,delta){
   DB.prefs.rest[kind]=v; save();
   try{ renderRestPrefs(); }catch(e){}
   try{ renderKit(); }catch(e){}
+  try{ renderVoiceCard(); }catch(e){}
   try{ const se=document.getElementById('startEstSwitch'); if(se) se.classList.toggle('on', !(DB.prefs&&DB.prefs.noStartEstimates)); }catch(e){}
   try{ renderPhaseCard(); }catch(e){}
   try{ renderIntake(); }catch(e){}
@@ -7083,6 +7105,173 @@ function localCoachReply(t){
 }
 /* v94 — a long conversation is a long scroll, and the only way back to the
    newest message was a thumb marathon. */
+/* ===== v98 · TALKING TO IT ==============================================
+   Two honest constraints shape this, and they are worth knowing:
+
+   1. A web app cannot listen in the background. iOS gives no such permission.
+      Recognition runs only while this app is OPEN and the screen is ON. The
+      moment you lock the phone or switch apps, it stops. Nothing I can do.
+
+   2. Starting the microphone on iOS interrupts audio playing on the same
+      device. So hands-free mode WILL fight your music. Tap-to-talk only takes
+      the mic for a few seconds, which is why it is the default.
+
+   So: a mic button everywhere, one tap, speak. And an optional hands-free
+   mode for when your hands are full mid-set, gated behind a wake word so a
+   podcast or a conversation cannot drive your session. */
+let _rec=null, _recOn=false, _recHands=false, _recBusy=false;
+function speechSupported(){
+  return !!(window.SpeechRecognition||window.webkitSpeechRecognition);
+}
+function wakeWord(){ return ((DB.prefs&&DB.prefs.wakeWord)||"coach").toLowerCase().trim(); }
+function setWakeWord(v){
+  DB.prefs=DB.prefs||{};
+  DB.prefs.wakeWord=String(v||"coach").toLowerCase().trim()||"coach";
+  save(); renderVoiceCard();
+  toast("Wake word: \u201c"+DB.prefs.wakeWord+"\u201d");
+}
+/* Strip the wake word off the front, and say whether it was there at all. */
+function stripWake(t){
+  const w=wakeWord();
+  const s=String(t||"").trim().replace(/^[,.\s]+/,"");
+  const re=new RegExp("^(?:hey\\s+|ok\\s+|okay\\s+)?"+w.replace(/[.*+?^${}()|[\]\\]/g,"\\$&")+"\\b[,.:\\s]*","i");
+  if(re.test(s)) return {woke:true, text:s.replace(re,"").trim()};
+  return {woke:false, text:s};
+}
+function ensureRec(){
+  if(_rec) return _rec;
+  const R=window.SpeechRecognition||window.webkitSpeechRecognition;
+  if(!R) return null;
+  const r=new R();
+  r.lang=(DB.prefs&&DB.prefs.voiceLang)||"en-GB";
+  r.interimResults=false;
+  r.maxAlternatives=1;
+  r.continuous=false;      /* iOS ignores continuous anyway; we restart by hand */
+  r.onresult=(ev)=>{
+    let said="";
+    for(let i=ev.resultIndex;i<ev.results.length;i++)
+      if(ev.results[i].isFinal) said+=ev.results[i][0].transcript;
+    said=said.trim();
+    if(said) handleVoice(said);
+  };
+  r.onerror=(ev)=>{
+    const e=ev.error||"";
+    if(e==="not-allowed"||e==="service-not-allowed"){
+      _recHands=false; stopVoice();
+      toast("Microphone blocked \u2014 allow it in Safari settings");
+      return;
+    }
+    if(e==="no-speech"||e==="aborted"||e==="network"){ /* normal, just restart */ }
+  };
+  r.onend=()=>{
+    _recOn=false; paintMic();
+    /* Hands-free: pick it straight back up. Recognition stops after every
+       utterance on iOS whatever you set. */
+    if(_recHands && !_recBusy) setTimeout(()=>{ try{ startVoice(true); }catch(e){} },250);
+  };
+  _rec=r; return r;
+}
+function startVoice(quiet){
+  const r=ensureRec();
+  if(!r){ toast("This browser can\u2019t do speech"); return; }
+  if(_recOn) return;
+  try{ r.start(); _recOn=true; paintMic(); if(!quiet) toast(_recHands? "Listening \u2014 say \u201c"+wakeWord()+"\u2026\u201d" : "Listening\u2026"); }
+  catch(e){ /* already started */ }
+}
+function stopVoice(){
+  _recHands=false;
+  try{ if(_rec) _rec.stop(); }catch(e){}
+  _recOn=false; paintMic();
+}
+function tapMic(){
+  if(_recHands){ stopVoice(); toast("Hands-free off"); return; }
+  if(_recOn){ try{ _rec.stop(); }catch(e){} return; }
+  startVoice();
+}
+function toggleHandsFree(){
+  if(!speechSupported()){ toast("This browser can\u2019t do speech"); return; }
+  _recHands=!_recHands;
+  DB.prefs=DB.prefs||{}; DB.prefs.handsFree=_recHands; save();
+  renderVoiceCard();
+  if(_recHands){ startVoice(); toast("Hands-free on \u2014 start with \u201c"+wakeWord()+"\u201d"); }
+  else { stopVoice(); toast("Hands-free off"); }
+}
+/* What to do with what it heard. */
+async function handleVoice(said){
+  const {woke,text}=stripWake(said);
+  /* In hands-free the wake word is compulsory \u2014 that is the entire point of
+     it. Tap-to-talk needs no wake word, because tapping IS the intent. */
+  if(_recHands && !woke){ paintMic(said,true); return; }
+  const cmd=(text||"").trim();
+  if(!cmd){ toast("Didn\u2019t catch that"); return; }
+  paintMic(cmd,false);
+  _recBusy=true;
+  try{
+    let notes=null;
+    try{ notes=localIntent(cmd); }catch(e){}
+    if(notes && notes.length){
+      /* Handled in code \u2014 instant, no model, no round trip. */
+      speak(notes.join(". ").replace(/<[^>]+>/g,""));
+      toast(notes[0].replace(/<[^>]+>/g,""));
+      try{ if(DB.workout) renderWorkoutSheet(DB.workout); }catch(e){}
+      DB.chat.push({role:"me",text:escapeHtml(cmd)});
+      DB.chat.push({role:"ai",text:notes.join("<br>")});
+      save(); try{ renderChat(); }catch(e){}
+    } else {
+      /* Not a command \u2014 hand it to the coach as a normal message. */
+      const inp=document.getElementById('chatInput');
+      if(inp){ inp.value=cmd; go('coach'); await sendChat(); }
+    }
+  } finally {
+    _recBusy=false;
+    if(_recHands) setTimeout(()=>{ try{ startVoice(true); }catch(e){} },300);
+  }
+}
+/* Read the confirmation back, so he never has to look at the phone. */
+function speak(txt){
+  if(!(DB.prefs&&DB.prefs.voiceReply)) return;
+  try{
+    const u=new SpeechSynthesisUtterance(String(txt).replace(/[^\w\s,.\u2192\u00b7-]/g,"").slice(0,140));
+    u.lang=(DB.prefs&&DB.prefs.voiceLang)||"en-GB"; u.rate=1.05;
+    speechSynthesis.cancel(); speechSynthesis.speak(u);
+  }catch(e){}
+}
+function paintMic(heard,ignored){
+  const b=document.getElementById('micBtn'); if(!b) return;
+  b.classList.toggle('on',_recOn);
+  b.classList.toggle('hands',_recHands);
+  const h=document.getElementById('micHeard');
+  if(h){
+    if(heard){ h.textContent=(ignored? "\u201c"+heard+"\u201d \u2014 no wake word" : "\u201c"+heard+"\u201d");
+               h.classList.add('show'); clearTimeout(h._t); h._t=setTimeout(()=>h.classList.remove('show'),2600); }
+  }
+}
+function renderVoiceCard(){
+  const el=document.getElementById('voiceBody'); if(!el) return;
+  if(!speechSupported()){
+    el.innerHTML="<div class='notebox'>This browser can\u2019t do speech recognition. On iPhone that means using Safari rather than a webview.</div>";
+    return;
+  }
+  const hf=!!(DB.prefs&&DB.prefs.handsFree);
+  el.innerHTML=
+    "<div class='notebox mb'>Tap the mic anywhere in the app and talk. Commands run instantly in code \u2014 anything else goes to your coach.</div>"+
+    "<div class='field'><label>Wake word</label>"+
+      "<input class='txtin' id='wakeIn' value='"+escapeHtml(wakeWord())+"' placeholder='coach' />"+
+      "<div class='hint mt'>Only needed in hands-free. Say \u201c"+escapeHtml(wakeWord())+", swap the lateral raise\u201d.</div></div>"+
+    "<button class='btn sec' onclick=\"setWakeWord(document.getElementById('wakeIn').value)\">Save wake word</button>"+
+    "<div class='set-row' style='margin-top:14px'><span class='k' style='color:var(--txt);font-weight:600'>Hands-free while the app is open</span>"+
+      "<div class='switch"+(hf?" on":"")+"' onclick='toggleHandsFree()'></div></div>"+
+    "<div class='set-row'><span class='k' style='color:var(--txt);font-weight:600'>Read confirmations back to me</span>"+
+      "<div class='switch"+((DB.prefs&&DB.prefs.voiceReply)?" on":"")+"' onclick='toggleVoiceReply(this)'></div></div>"+
+    "<div class='notebox mt' style='border-color:var(--gold)'><b>Two things worth knowing.</b><br>"+
+      "A web app can\u2019t listen in the background \u2014 it only hears you while this app is open with the screen on. Lock the phone and it stops.<br><br>"+
+      "And on iPhone, taking the microphone interrupts audio playing on the same device, so hands-free will fight your music. Tap-to-talk only holds the mic for a few seconds, which is why it\u2019s the default.</div>";
+}
+function toggleVoiceReply(el){
+  DB.prefs=DB.prefs||{};
+  DB.prefs.voiceReply=!DB.prefs.voiceReply;
+  el.classList.toggle('on',!!DB.prefs.voiceReply); save();
+}
 function jumpChatEnd(){
   try{ window.scrollTo({top:document.body.scrollHeight, behavior:'smooth'}); }
   catch(e){ window.scrollTo(0,document.body.scrollHeight); }
@@ -8112,7 +8301,7 @@ function scheduleInApp(){
    v18 ADDITIONS — draggable rest timer · weekly training memory · AI planner
    · Firestore sync
    ========================================================================== */
-const APP_VERSION="v97 · 06/08/2026";
+const APP_VERSION="v98 · 06/08/2026";
 
 /* ===== 1. REST TIMER — drag it anywhere so it never blocks the chat box ===== */
 let _rtDrag=null;

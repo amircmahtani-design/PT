@@ -1,5 +1,63 @@
-AMIR PT — v97 · 06/08/2026
+AMIR PT — v98 · 06/08/2026
 ==========================
+
+Upload index.html AND sw.js.
+First time you tap the mic, iPhone will ask for microphone permission. Allow it.
+
+
+TALK TO YOUR COACH
+==================
+An orange mic button, bottom right, on every tab. Tap it, say what you want,
+done.
+
+Because the command layer is now code, a spoken command doesn't go near the
+model. "Swap the lateral raise" is heard, matched, applied and confirmed —
+instantly, and it can't fail to happen. Anything that isn't a command goes to
+the coach as a normal message.
+
+All 36 commands work by voice: swap, remove, add, move, sets, reps, rest,
+load, deload, pilates, "I'm in Madrid", "I've only got 30 minutes", "that felt
+easy", "I only got 8", "never give me X again".
+
+
+THE WAKE WORD
+=============
+Tap-to-talk needs no wake word — tapping IS the intent.
+
+Hands-free does, and that's exactly the problem you anticipated. With
+hands-free on it listens continuously and ONLY acts on phrases that start with
+your wake word:
+
+    "coach, swap the lateral raise"        -> acts
+    "hey coach, make bench press 5 sets"   -> acts
+    "and then the guitar solo kicks in"    -> ignored
+    "I love this song"                     -> ignored
+
+Default is "coach". Change it in Settings -> Talking to your coach. It accepts
+"hey coach" and "ok coach" too, and shows you what it heard and ignored so you
+can see it working rather than wonder.
+
+There's also a switch to have confirmations read back, so mid-set you never
+have to look at the phone.
+
+
+TWO HONEST LIMITS
+=================
+1. A WEB APP CANNOT LISTEN IN THE BACKGROUND. iOS gives no such permission to
+   anything that isn't a native app. It hears you only while Amir PT is open
+   with the screen on. Lock the phone or switch apps and it stops. There is no
+   way around this short of a native app.
+
+2. ON IPHONE, TAKING THE MICROPHONE INTERRUPTS AUDIO ON THE SAME DEVICE. So
+   hands-free will fight your music — that's iOS, not the app.
+
+   Tap-to-talk only holds the mic for a few seconds, so the interruption is
+   brief. That's why it's the default and hands-free is opt-in.
+
+   If your music is on a speaker or another device, hands-free is clean.
+
+Both limits are written into the Settings card so you're not left guessing.
+
 
 Upload index.html AND sw.js.
 
