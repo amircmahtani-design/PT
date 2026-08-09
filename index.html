@@ -6846,6 +6846,7 @@ const INTENTS = [
   {re:/^(?:superset|pair)\s+(.+?)\s+(?:and|with|\+)\s+(.+)$/i, run:(m,C)=>C.superset(m[1],m[2])},
   {re:/^(?:make|turn)\s+(.+?)\s+(?:into\s+)?a?\s*circuit$/i, run:(m,C)=>C.circuit(m[1])},
   {re:/^(?:remove|break|split|undo)\s+(?:the\s+)?superset(?:\s+on\s+(.+))?$/i, run:(m,C)=>C.unSuperset(m[1])},
+  {re:/^(?:ok(?:ay)?[,\s]*)?(?:stop|quiet|shut up|enough|be quiet)$/i, run:(m,C)=>C.hush()},
   {re:/^(?:rebuild|redo|regenerate|new)\s+(?:my\s+|the\s+|today.?s\s+)?(?:workout|session)$/i, run:(m,C)=>C.rebuild()},
   {re:/^reset\s+(?:my\s+|the\s+|today.?s\s+)?(?:workout|session|plan)$/i, run:(m,C)=>C.rebuild()},
 
@@ -6927,6 +6928,7 @@ function intentActions(){
     circuit:(list)=>{ const r=coachMakeCircuit(list); return r? n("\u26a1 "+r.label+" \u00b7 "+r.names.join(" + ")) : null; },
     unSuperset:(x)=>{ if(x){ const f=find(x); if(f){ const r=coachRemoveSuperset(f); return r? n("\u2702 Superset removed") : null; } }
       const c=coachClearTechniques(); return c? n("\u2702 Back to straight sets") : null; },
+    hush:()=>{ try{ stopSpeaking(); }catch(e){} return n("\ud83d\udd07 Stopped"); },
     rebuild:()=>{ DB.workout=null; try{ ensureWorkout(); }catch(e){} save(); return n("\u21ba Rebuilt today\u2019s session"); },
     timing:(x,timed)=>{ if(!has()) return null;
       const f=find(x); if(!f) return null;
@@ -7196,8 +7198,10 @@ function ensureRec(){
     /* Hands-free: pick it straight back up. Recognition stops after every
        utterance on iOS whatever you set. */
     /* iOS ends recognition after every utterance whatever you set, so the
-       restart has to be quick or it clips the beginning of the next sentence. */
-    if(_recHands && !_recBusy && !_speaking) setTimeout(()=>{ try{ startVoice(true); }catch(e){} },80);
+       restart has to be quick or it clips the beginning of the next sentence.
+       v106 \u2014 it restarts DURING playback too, which is what makes interrupting
+       possible at all. */
+    if(_recHands && !_recBusy) setTimeout(()=>{ try{ startVoice(true); }catch(e){} },80);
   };
   _rec=r; return r;
 }
@@ -7229,6 +7233,9 @@ const OPEN_MS = 45000;      /* how long "we're talking" lasts after you speak */
 function openWindow(ms){ _followUntil = Date.now() + (ms||OPEN_MS); paintMic(); }
 function windowOpen(){ return Date.now() < _followUntil; }
 function tapMic(){
+  /* If it is mid-sentence, the first tap shuts it up rather than shutting the
+     microphone down \u2014 that is what the button means in that moment. */
+  if(_speaking){ stopSpeaking(); toast("Stopped"); return; }
   if(_recHands || _recOn){ stopVoice(); toast("Mic off"); return; }
   _recHands=true;
   DB.prefs=DB.prefs||{};
@@ -7253,7 +7260,19 @@ function toggleHandsFree(){
 }
 /* What to do with what it heard. */
 async function handleVoice(said){
+  /* v106 \u2014 while it is talking, three things can arrive: its own voice, a
+     stop word, or him starting a new sentence. Sorted in that order. */
+  if(_speaking){
+    if(looksLikeEcho(said)) return;                 /* itself. ignore. */
+    const {text:bare}=stripWake(said);
+    if(isStopPhrase(bare)||isStopPhrase(said)){
+      stopSpeaking(); toast("Stopped"); return;     /* "ok, stop" */
+    }
+    stopSpeaking(true);                             /* he started talking. listen. */
+  }
   const {woke,text}=stripWake(said);
+  /* A stop said when nothing is playing still cancels anything queued. */
+  if(isStopPhrase(text)){ stopSpeaking(); return; }
   /* In hands-free the wake word is compulsory \u2014 that is the entire point of
      it. Tap-to-talk needs no wake word, because tapping IS the intent. */
   /* No wake word needed while the window is open. It is only the way back IN
@@ -7452,6 +7471,47 @@ function useAIVoice(){
   if(DB.prefs && DB.prefs.aiVoiceOff) return false;
   return !!(DB.ai && DB.ai.provider==="openai" && DB.ai.key);
 }
+/* ===== v106 · INTERRUPTING IT =========================================
+   It read every reply to the end and could not be stopped, and the reason was
+   my own design: I switched the microphone OFF while it spoke, so it was
+   deaf exactly when he most wanted to interrupt.
+
+   The mic now stays on through playback. That creates the obvious problem \u2014
+   at twice the speaker volume it hears itself \u2014 so anything heard while it is
+   talking is checked against what it is saying. Words that overlap heavily
+   are its own voice coming back and get dropped. Anything else is him, and it
+   stops mid-sentence and listens.
+
+   A short list of stop words works whether or not the rest is understood. */
+let _nowSpeaking="", _srcNode=null;
+const STOP_WORDS=/^(?:ok(?:ay)?[,.\s]*|alright[,.\s]*|right[,.\s]*)?(?:stop|stop it|shut up|be quiet|quiet|enough|that[\u2019']?s enough|wait|hold on|shh+|cancel|nevermind|never mind|leave it|forget it|pause)[.!]?$/i;
+function isStopPhrase(t){ return STOP_WORDS.test(String(t||"").trim()); }
+/* Is this the machine hearing itself? Compare against what it is saying. */
+function looksLikeEcho(heard){
+  if(!_nowSpeaking) return false;
+  const norm=x=>String(x||"").toLowerCase().replace(/[^a-z0-9\s]/g," ").split(/\s+/).filter(w=>w.length>2);
+  const said=new Set(norm(_nowSpeaking));
+  const got=norm(heard);
+  if(!got.length||!said.size) return false;
+  const hits=got.filter(w=>said.has(w)).length;
+  /* Most of what it heard is words it is currently saying \u2014 that's the echo. */
+  return (hits/got.length) >= 0.55;
+}
+function stopSpeaking(quiet){
+  const was=_speaking;
+  _speaking=false; _nowSpeaking="";
+  try{ if(_srcNode){ _srcNode.onended=null; _srcNode.stop(0); } }catch(e){}
+  _srcNode=null;
+  try{ if(_aud){ _aud.pause(); _aud.currentTime=0; } }catch(e){}
+  try{ speechSynthesis.cancel(); }catch(e){}
+  if(was){
+    openWindow();
+    if(!quiet) paintMic();
+    /* Make sure the mic is live again for whatever he says next. */
+    if(_recHands) setTimeout(()=>{ try{ startVoice(true); }catch(e){} },60);
+  }
+  return was;
+}
 let _aud=null, _audBusy=false, _actx=null;
 /* One <audio> element, reused. Created on a tap so iOS lets it play later. */
 function ensureAudio(){
@@ -7500,7 +7560,8 @@ async function playBuffer(arrayBuf){
       gain.gain.value=voiceGain();
       src.buffer=audio;
       src.connect(gain); gain.connect(ctx.destination);
-      src.onended=()=>resolve(true);
+      src.onended=()=>{ _srcNode=null; resolve(true); };
+      _srcNode=src;              /* kept so stopSpeaking() can cut it off */
       src.start(0);
     });
   }catch(e){ console.warn("audio",e); return false; }
@@ -7564,10 +7625,13 @@ function speak(txt,then){
   if(t.length>420){ const cut=t.slice(0,420); t=cut.replace(/[^.!?]*$/,"")||cut; }
   const wasListening=_recHands;
   _speaking=true;
-  try{ if(_rec){ if(_rec.abort) _rec.abort(); else _rec.stop(); } }catch(e){}
+  _nowSpeaking=t;               /* so its own voice can be recognised and ignored */
+  /* v106 \u2014 the microphone deliberately STAYS ON now. Switching it off was why
+     it could not be interrupted. */
   const finish=()=>{
     if(!_speaking) return;
     _speaking=false;
+    _nowSpeaking="";
     openWindow();
     if(wasListening) setTimeout(()=>{ try{ startVoice(true); }catch(e){} },220);
     if(then) then();
@@ -7625,6 +7689,7 @@ function renderVoiceCard(){
   const hf=!!(DB.prefs&&DB.prefs.handsFree);
   el.innerHTML=
     "<div class='hint mb'>Ask by voice and it answers out loud. Type and it writes back \u2014 it matches however you asked.</div>"+
+    "<div class='notebox mb'><b>Interrupt it whenever you like.</b> Start talking and it stops mid-sentence and listens. Or say \u201cok, stop\u201d. Or tap the mic while it\u2019s talking.</div>"+
     "<div class='notebox mb'><b>Tapping the mic is the wake word.</b> Tap it and just talk \u2014 nothing to say first. It stays open while you\u2019re talking, and after about 45 seconds of quiet it goes amber and waits for \u201c"+escapeHtml(wakeWord())+"\u201d, which is how you get back in from across the room.<br><br>Green = just talk. Amber = say the word first.</div>"+
     "<div class='notebox mb'>Tap the mic once and it <b>stays on</b> until you tap it again. Say your wake word to start, and after it replies you can just talk \u2014 no wake word for 15 seconds, so it runs as a conversation.<br><br>Commands are applied instantly in code. Anything else goes to your coach, and the answer is read back to you.</div>"+
     "<div class='field'><label>Wake word</label>"+
@@ -7666,6 +7731,8 @@ function updateJumpBtn(){
   b.classList.toggle('show', !!onCoach && fromBottom>260);
 }
 window.addEventListener('scroll',()=>{ try{ updateJumpBtn(); }catch(e){} },{passive:true});
+/* Nothing should still be talking to an empty room. */
+document.addEventListener('visibilitychange',()=>{ if(document.hidden){ try{ stopSpeaking(true); }catch(e){} } });
 /* Clearing the transcript is NOT forgetting him. The coach rebuilds what it
    knows from his training history, check-ins, nutrition, schedule, profile and
    its own long-term memory every single message — none of which live here.
@@ -8683,7 +8750,7 @@ function scheduleInApp(){
    v18 ADDITIONS — draggable rest timer · weekly training memory · AI planner
    · Firestore sync
    ========================================================================== */
-const APP_VERSION="v105 · 06/08/2026";
+const APP_VERSION="v106 · 06/08/2026";
 
 /* ===== 1. REST TIMER — drag it anywhere so it never blocks the chat box ===== */
 let _rtDrag=null;

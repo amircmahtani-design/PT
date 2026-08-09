@@ -1,5 +1,42 @@
-AMIR PT — v105 · 06/08/2026
+AMIR PT — v106 · 06/08/2026
 ===========================
+
+Upload index.html AND sw.js.
+
+
+YOU CAN INTERRUPT IT NOW
+========================
+Three ways, all working:
+
+  JUST TALK        it stops mid-sentence and listens to you
+  SAY "OK, STOP"   also: stop, shut up, enough, wait, hold on, that's enough,
+                   never mind, leave it, pause
+  TAP THE MIC      while it's talking, the first tap shuts it up rather than
+                   switching the mic off
+
+And it stops on its own if you leave the app or lock the phone. Nothing should
+still be talking to an empty room.
+
+
+WHY IT COULDN'T BE INTERRUPTED
+==============================
+My own doing. I was switching the microphone OFF while it spoke — to stop it
+hearing itself — which made it deaf at exactly the moment you'd want to cut in.
+
+The mic now stays on right through playback. That creates the obvious problem:
+at twice speaker volume it hears its own voice come back. So anything heard
+while it's talking is compared against what it's currently saying. If most of
+the words match, that's the echo and it's dropped. If they don't, that's you,
+and it stops.
+
+    it says     "your pull volume was short so I've put a row back in"
+    hears       "put a row back in for tomorrow"     -> its own voice, ignored
+    hears       "actually make it four sets"         -> you, stops and acts
+
+Tested both directions, including that "stop the deadlift" is NOT treated as a
+stop command — it's an instruction about a deadlift and passes through
+normally.
+
 
 Upload index.html AND sw.js.
 
