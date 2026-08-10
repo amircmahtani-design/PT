@@ -622,7 +622,7 @@ background:var(--card);border:1px solid var(--line);border-radius:18px;padding:1
 .switch.on{background:linear-gradient(100deg,#3fe08a,#1fbf68);}
 .switch::after{content:"";position:absolute;top:3px;left:3px;width:22px;height:22px;border-radius:50%;background:#fff;transition:.2s;}
 .switch.on::after{transform:translateX(22px);}
-.micbtn{position:fixed;right:16px;bottom:calc(96px + var(--safe-bot));z-index:46;
+.micbtn{position:fixed;right:16px;bottom:calc(150px + var(--safe-bot));z-index:46;touch-action:none;
   width:52px;height:52px;border-radius:50%;background:var(--orange);border:none;color:#160d04;
   display:flex;align-items:center;justify-content:center;
   box-shadow:0 8px 22px #0009;transition:transform .15s,background .15s;}
@@ -1287,7 +1287,7 @@ a{color:var(--orange);}
 <button class="jumpdown" id="jumpDown" onclick="jumpChatEnd()" aria-label="jump to latest">↓</button>
 <div class="micstate" id="micState"></div>
 <div class="micheard" id="micHeard"></div>
-<button class="micbtn" id="micBtn" onclick="tapMic()" aria-label="talk to your coach">
+<button class="micbtn" id="micBtn" aria-label="talk to your coach">
   <svg viewBox="0 0 24 24" width="21" height="21" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
     <rect x="9" y="2" width="6" height="11" rx="3"/><path d="M5 11a7 7 0 0 0 14 0"/><path d="M12 18v3"/></svg>
 </button>
@@ -1717,7 +1717,10 @@ function eqOf(name){ const e=EX(name); return (e&&e.eq)||"bw"; }
    passed the check in Madrid: the dumbbells are there, the bench is not.
    Some movements need something to lie on, and that is separate from what you
    can hold. */
-const NEEDS_BENCH=/bench press|incline|decline|chest press|chest[- ]supported|lying|step[- ]?up|bulgarian|split squat|hip thrust|preacher|skullcrusher|pullover/i;
+/* v107.1 \u2014 "skullcrusher" as one word never matched "DB Skull Crusher", so a
+   movement that needs somewhere to lie down was offered in a room with no
+   bench. Names are matched loosely now. */
+const NEEDS_BENCH=/bench press|incline|decline|chest press|chest[- ]supported|lying|supine|step[- ]?up|bulgarian|split squat|hip thrust|glute bridge|preacher|skull ?crusher|pullover|chest fly|db fly|seated (?:db|dumbbell)/i;
 function needsBench(name){ return NEEDS_BENCH.test(String(name||"")); }
 function benchHere(key){
   key=key||locKey();
@@ -3196,8 +3199,9 @@ const GEAR_DEFAULTS = {
          "fixed dumbbells 2.5\u201310kg","kettlebell","TRX","resistance bands",
          "Concept2 RowERG","stability ball","foam roller and mats"],
     note:"Dumbbells top out at 10kg \u2014 they are for accessory and isolation work, not for loading a main lift. Heavy work comes from the barbell, the Smith and the cables." },
-  madrid: { dbMax:null, dbStep:2, bar:null, plates:[],
-    has:["dumbbells","resistance bands"], note:"Dumbbells and bands only." },
+  madrid: { dbMax:10, dbStep:2, bar:null, plates:[],
+    has:["dumbbells up to 10kg","resistance bands"],
+    note:"Dumbbells and bands only \u2014 no bench, no bar, no machines, and they stop at 10kg. Load cannot carry a session here, so density has to: supersets, short rests, higher reps." },
   greece: { dbMax:null, dbStep:null, bar:null, plates:[],
     has:["bodyweight only"], note:"Nothing but bodyweight." }
 };
@@ -5407,6 +5411,11 @@ coachingDoctrine()+
 "The app handles the timing: no rest inside a superset or circuit, full rest once the round is done.\n\n"+
 "=== LOADS HE CAN ACTUALLY MAKE ===\n"+
 "=== WHAT IS ACTUALLY IN THE ROOM ===\n"+
+"EVERY movement you program is checked against this before it reaches his sheet. If he cannot do it here it gets substituted and he is told, which is embarrassing for you \u2014 so do not program it in the first place.\n"+
+(function(){ try{ const k=kitFor(locKey());
+  return (k.dbMax!=null && k.dbMax<=12)
+    ? "HIS DUMBBELLS CAP AT "+k.dbMax+"kg HERE. Load cannot supply the stimulus, so DENSITY has to: pair the accessory work into supersets, keep the rests short, and push the rep ranges up. This is the one situation where you should be reaching for supersets without being asked. The app will pair them itself if you do not, but you should be the one making the call.\n"
+    : ""; }catch(e){ return ""; } })()+
 (function(){ try{ return gearText(locKey()); }catch(e){ return ""; } })()+
 "This is his real inventory, not a guess \u2014 he photographed it. Never program a movement that needs kit he has not got, and never call a load his rack cannot make.\n\n"+
 "His kit HERE ("+(((typeof LOCS!=="undefined"&&LOCS[locKey()])||{}).label||locKey())+"): "+JSON.stringify(kitInfo())+
@@ -5695,17 +5704,156 @@ function finalizeCoachEdit(){
   const su=document.getElementById('heroSub'); if(su)su.textContent=DB.workout.note||"Your session's ready — tap to open.";
   const hp=document.getElementById('heroPhase'); if(hp)hp.textContent="Today · "+DB.workout.tag;
 }
+/* ===== v107 · THE COACH DOES NOT GET TO IGNORE THE ROOM =================
+   The builder checks equipment, balance, patterns and the dumbbell ceiling.
+   coachSetWorkout checked NOTHING \u2014 it took whatever names the model produced
+   and wrote them straight in. So "only dumbbells in Madrid" came back with a
+   Triceps Pushdown, which is a cable machine, because nothing between the
+   model and the session sheet was looking.
+
+   Everything the coach sets now goes through the same gate as everything the
+   app builds. Where a movement can't be done here it is SUBSTITUTED for the
+   nearest one that can, and he is told. Where it can't be substituted it is
+   dropped rather than sitting there un-doable. */
+/* v107.1 \u2014 the muscle tags are coarse: "arms" covers biceps and triceps, so
+   a triceps pushdown was swapped for a concentration curl. Same group, wrong
+   muscle, and exactly the sloppiness he is complaining about. The specific
+   muscle is inferred from the name and has to match. */
+const SUBMUSCLE=[
+  [/tricep|pushdown|skull|overhead extension|dip|close.?grip|kickback|diamond/i,"triceps"],
+  [/bicep|curl(?!.*leg)/i,"biceps"],
+  [/lateral raise|side raise|delt(?!.*rear)|shoulder press|overhead press|military/i,"delts"],
+  [/rear delt|face pull|reverse fly|pull.?apart/i,"reardelt"],
+  [/calf|tibialis/i,"calves"],
+  [/ham|rdl|romanian|leg curl|good morning/i,"hamstrings"],
+  [/quad|squat|leg press|lunge|step.?up|split squat/i,"quads"],
+  [/glute|hip thrust|bridge|kickback/i,"glutes"],
+  [/lat |pulldown|pull.?up|chin.?up|pullover/i,"lats"],
+  [/row/i,"upperback"],
+  [/chest|bench|fly|push.?up|pec/i,"chest"],
+  [/ab |crunch|plank|hollow|leg raise|sit.?up/i,"abs"],
+  [/oblique|side bend|woodchop|russian twist|pallof/i,"obliques"],
+  [/forearm|grip|carry|hang|wrist/i,"grip"]
+];
+function subMuscle(name){
+  const n=String(name||"");
+  for(const [re,m] of SUBMUSCLE) if(re.test(n)) return m;
+  return null;
+}
+function nearestHere(name,key,exclude){
+  key=key||locKey();
+  const e=EX(name)||guessEx(name)||{};
+  const want=(e.m||[])[0];
+  const pat=patternOf(name);
+  const skip=exclude||new Set();
+  const pool=allExNames().filter(n=>canDoHere(n,key) && !exBanned(n) && !skip.has(n.toLowerCase()));
+  if(!pool.length) return null;
+  const sub=subMuscle(name);
+  const score=n=>{
+    const o=EX(n)||{};
+    let sc=0;
+    const s2=subMuscle(n);
+    /* The specific muscle matters more than the group it sits in. */
+    if(sub&&s2){ if(s2===sub) sc+=10; else sc-=8; }
+    if(((o.m||[])[0])===want) sc+=6;
+    if(patternOf(n)===pat) sc+=4;
+    if(!!o.timed===!!e.timed) sc+=1;
+    sc-=((o.pop||500)/2000);
+    return sc;
+  };
+  const ranked=pool.sort((a,b)=>score(b)-score(a));
+  /* Prefer a genuine match, but a same-muscle movement he CAN do beats
+     dropping the slot entirely \u2014 an empty gap teaches him nothing. */
+  const good=ranked.find(n=>score(n)>=6);
+  if(good) return good;
+  /* Rather than hand him the wrong muscle, hand him nothing and say so. */
+  if(sub){
+    const rightMuscle=ranked.find(n=>subMuscle(n)===sub);
+    return rightMuscle || null;
+  }
+  const sameMuscle=ranked.find(n=>((EX(n)||{}).m||[])[0]===want);
+  return sameMuscle || null;
+}
+/* One gate, used by everything that writes a session. */
+function enforceKit(names,key){
+  key=key||locKey();
+  const kept=[], swapped=[], dropped=[], seen=new Set();
+  const taken=()=>new Set(kept.map(x=>x.toLowerCase()));
+  (names||[]).forEach(raw=>{
+    const n=resolveExName(raw)||raw;
+    if(!n) return;
+    const k=String(n).toLowerCase();
+    if(seen.has(k)) return;                       /* he asked for it twice */
+    if(canDoHere(n,key) && !exBanned(n)){ kept.push(n); seen.add(k); return; }
+    const alt=nearestHere(n,key,taken());
+    if(alt && !seen.has(alt.toLowerCase())){
+      kept.push(alt); seen.add(alt.toLowerCase());
+      swapped.push({from:n,to:alt});
+    } else dropped.push(n);
+  });
+  return {names:kept, swapped, dropped};
+}
+/* ===== SUPERSETS WHERE THEY ACTUALLY BELONG ============================
+   With a 10kg ceiling the load cannot supply the stimulus, so density has to.
+   That is not a preference, it is the only lever left \u2014 and it is exactly the
+   situation he pointed at. So when the kit caps out, accessory work is paired
+   automatically rather than waiting to be asked for. */
+function shouldAutoPair(key){
+  key=key||locKey();
+  const k=kitFor(key);
+  return (k.dbMax!=null && k.dbMax<=12);
+}
+function autoPairLight(key){
+  if(!DB.workout||!DB.workout.main) return 0;
+  if(!shouldAutoPair(key)) return 0;
+  if(DB.prefs && DB.prefs.noAutoSuperset) return 0;
+  const m=DB.workout.main;
+  if(m.length<4) return 0;
+  if(m.some(e=>e.grp)) return 0;                  /* he already has pairs */
+  let made=0;
+  /* Pair from the back \u2014 the first movements stay straight sets. */
+  for(let i=m.length-1;i>0 && made<2;i--){
+    const a=m[i]; if(a.grp||a.anchor) continue;
+    for(let j=i-1;j>0;j--){
+      const b=m[j]; if(b.grp||b.anchor) continue;
+      if(!pairable(a,b)) continue;
+      const g=newGrpId();
+      a.grp=g; b.grp=g;
+      m.splice(m.indexOf(a),1);
+      m.splice(m.indexOf(b)+1,0,a);
+      made++; break;
+    }
+  }
+  if(made) save();
+  return made;
+}
 function coachSetWorkout(listRaw){
   markSessionTouched();
   coachEnsureWorkout();
-  const names=String(listRaw).split(/[,\n;]+/).map(x=>resolveExName(x)).filter(Boolean);
-  if(!names.length) return null;
-  names.forEach(ensureLibEntry);
-  DB.workout.main=names.map(exObject); DB.workout.title=DB.workout.title||"Custom Session"; finalizeCoachEdit(); return names;
+  const raw=String(listRaw).split(/[,\n;]+/).map(x=>resolveExName(x)).filter(Boolean);
+  if(!raw.length) return null;
+  /* v107 \u2014 the gate. Equipment, bans and duplicates, same as the builder. */
+  const g=enforceKit(raw);
+  if(!g.names.length) return null;
+  g.names.forEach(ensureLibEntry);
+  DB.workout.main=g.names.map(exObject);
+  DB.workout.title=DB.workout.title||"Custom Session";
+  /* And pair the accessories if the kit here can't supply enough load. */
+  let paired=0; try{ paired=autoPairLight(); }catch(e){}
+  finalizeCoachEdit();
+  return {names:g.names, swapped:g.swapped, dropped:g.dropped, paired};
 }
 function coachAddEx(raw){
-  markSessionTouched(); coachEnsureWorkout(); const n=resolveExName(raw); if(!n) return null;
+  markSessionTouched(); coachEnsureWorkout();
+  let n=resolveExName(raw); if(!n) return null;
   if(DB.workout.main.some(e=>e.name.toLowerCase()===n.toLowerCase())) return n;
+  /* v107 \u2014 don't add something he cannot do where he is standing. */
+  if(!canDoHere(n,locKey())||exBanned(n)){
+    const alt=nearestHere(n,locKey());
+    if(!alt) return null;
+    n=alt;
+    if(DB.workout.main.some(e=>e.name.toLowerCase()===n.toLowerCase())) return n;
+  }
   DB.workout.main.push(exObject(n)); finalizeCoachEdit(); return n; }
 function coachRemoveEx(raw){
   markSessionTouched(); coachEnsureWorkout(); const n=resolveExName(raw); if(!n) return null;
@@ -6574,7 +6722,20 @@ function applyCoachDirectivesInner(reply){
     return "";
   });
   out=out.replace(/\[\[\s*SET_DAY\s*:\s*([^\]]+)\]\]/ig,(m,a)=>{ const r=applyDayDirective(a); if(r) notes.push("🔁 Switched today → "+r); return ""; });
-  out=out.replace(/\[\[\s*SET_WORKOUT\s*:\s*([^\]]+)\]\]/ig,(m,a)=>{ const r=coachSetWorkout(a); if(r) notes.push("📝 New workout → "+r.join(", ")); return ""; });
+  out=out.replace(/\[\[\s*SET_WORKOUT\s*:\s*([^\]]+)\]\]/ig,(m,a)=>{
+    const r=coachSetWorkout(a);
+    if(!r) return "";
+    const list=r.names||r;
+    notes.push("📝 New workout → "+list.join(", "));
+    /* Say plainly what was changed and why. Silently swapping is how he ended
+       up with a cable machine in a room that has none. */
+    if(r.swapped&&r.swapped.length)
+      notes.push("🔧 Not available here, so: "+r.swapped.map(x=>x.from+" → "+x.to).join("; "));
+    if(r.dropped&&r.dropped.length)
+      notes.push("⚠️ Dropped, nothing here can do it: "+r.dropped.join(", "));
+    if(r.paired)
+      notes.push("⚡ Paired the accessories — with a light ceiling, density does the work the load can’t");
+    return ""; });
   out=out.replace(/\[\[\s*SWAP_EX\s*:\s*([^\]]+?)\s*(?:->|→|=>|\bto\b)\s*([^\]]+)\]\]/ig,(m,a,b)=>{ const r=coachSwapWorkoutEx(a,b); if(r) notes.push("⇄ Swapped "+r.from+" → "+r.to+(r.warn||"")); return ""; });
   out=out.replace(/\[\[\s*MOVE_EX\s*:\s*([^\]]+?)\s*(?:->|→|=>|\bto\b)\s*([^\]]+)\]\]/ig,(m,a,b)=>{ const r=coachMoveEx(a,b); if(r) notes.push("\u21c5 Moved "+r.name+" to position "+r.pos); return ""; });
   out=out.replace(/\[\[\s*REORDER\s*:\s*([^\]]+)\]\]/ig,(m,a)=>{ const r=coachReorder(a); if(r) notes.push("\u21c5 Reordered \u2192 "+r.join(", ")); return ""; });
@@ -7232,6 +7393,54 @@ function stopVoice(){
 const OPEN_MS = 45000;      /* how long "we're talking" lasts after you speak */
 function openWindow(ms){ _followUntil = Date.now() + (ms||OPEN_MS); paintMic(); }
 function windowOpen(){ return Date.now() < _followUntil; }
+/* v107 \u2014 it sat on top of the send button. Rather than pick another corner
+   and hope, it moves: drag it anywhere and it stays there. Same behaviour as
+   the rest timer, and the same reasoning \u2014 a tap is a tap, a drag is a drag,
+   and the two must not be confused. */
+let _micDrag=null;
+function micPos(){
+  const p=(DB.prefs&&DB.prefs.micPos);
+  return (p&&typeof p.r==="number")? p : {r:16,b:96};
+}
+function applyMicPos(){
+  const b=document.getElementById('micBtn'); if(!b) return;
+  const p=micPos();
+  b.style.right=p.r+"px";
+  b.style.bottom="calc("+p.b+"px + var(--safe-bot))";
+  const st=document.getElementById('micState');
+  if(st){ st.style.right=(p.r+62)+"px"; st.style.bottom="calc("+(p.b+12)+"px + var(--safe-bot))"; }
+  const hd=document.getElementById('micHeard');
+  if(hd){ hd.style.bottom="calc("+(p.b+60)+"px + var(--safe-bot))"; }
+}
+function bindMicDrag(){
+  const b=document.getElementById('micBtn'); if(!b||b.dataset.drag==="1") return;
+  b.dataset.drag="1";
+  b.addEventListener('pointerdown',ev=>{
+    const p=micPos();
+    _micDrag={x0:ev.clientX,y0:ev.clientY,r0:p.r,b0:p.b,moved:false};
+    try{ b.setPointerCapture(ev.pointerId); }catch(e){}
+  });
+  b.addEventListener('pointermove',ev=>{
+    if(!_micDrag) return;
+    const dx=ev.clientX-_micDrag.x0, dy=ev.clientY-_micDrag.y0;
+    if(!_micDrag.moved && Math.abs(dx)<5 && Math.abs(dy)<5) return;
+    _micDrag.moved=true;
+    const r=Math.max(8, Math.min(window.innerWidth-64,  _micDrag.r0-dx));
+    const bt=Math.max(8, Math.min(window.innerHeight-120, _micDrag.b0-dy));
+    DB.prefs=DB.prefs||{}; DB.prefs.micPos={r,b:bt};
+    applyMicPos();
+    ev.preventDefault();
+  });
+  const end=ev=>{
+    if(!_micDrag) return;
+    const moved=_micDrag.moved;
+    _micDrag=null;
+    if(moved){ save(); toast("Mic moved"); }
+    else tapMic();
+  };
+  b.addEventListener('pointerup',end);
+  b.addEventListener('pointercancel',()=>{ _micDrag=null; });
+}
 function tapMic(){
   /* If it is mid-sentence, the first tap shuts it up rather than shutting the
      microphone down \u2014 that is what the button means in that moment. */
@@ -7731,6 +7940,7 @@ function updateJumpBtn(){
   b.classList.toggle('show', !!onCoach && fromBottom>260);
 }
 window.addEventListener('scroll',()=>{ try{ updateJumpBtn(); }catch(e){} },{passive:true});
+setTimeout(()=>{ try{ bindMicDrag(); applyMicPos(); }catch(e){} },400);
 /* Nothing should still be talking to an empty room. */
 document.addEventListener('visibilitychange',()=>{ if(document.hidden){ try{ stopSpeaking(true); }catch(e){} } });
 /* Clearing the transcript is NOT forgetting him. The coach rebuilds what it
@@ -8750,7 +8960,7 @@ function scheduleInApp(){
    v18 ADDITIONS — draggable rest timer · weekly training memory · AI planner
    · Firestore sync
    ========================================================================== */
-const APP_VERSION="v106 · 06/08/2026";
+const APP_VERSION="v107 · 06/08/2026";
 
 /* ===== 1. REST TIMER — drag it anywhere so it never blocks the chat box ===== */
 let _rtDrag=null;

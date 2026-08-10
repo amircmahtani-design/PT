@@ -1,5 +1,65 @@
-AMIR PT — v106 · 06/08/2026
+AMIR PT — v107 · 06/08/2026
 ===========================
+
+Upload index.html AND sw.js.
+
+
+THE MADRID PROBLEM — AND WHY IT KEPT HAPPENING
+==============================================
+You told it dumbbells only and it gave you a Triceps Pushdown, which is a
+cable machine. Here's why, and it's not that the coach forgot.
+
+The BUILDER checks equipment, bans, duplicates, patterns and your dumbbell
+ceiling. coachSetWorkout — the thing the coach uses when it writes you a
+session — checked NOTHING. It took whatever names the model produced and wrote
+them straight to your sheet. Every rule the app has was sitting there being
+bypassed.
+
+Everything the coach sets now goes through the same gate as everything the app
+builds:
+
+    asked for   DB Curl, Hammer Curl, Overhead Triceps Extension,
+                Triceps Pushdown, Lateral Raise
+    you get     DB Curl, Hammer Curl, Overhead Triceps Extension,
+                DB Kickback, Lateral Raise
+    and it says "Not available here, so: Triceps Pushdown -> DB Kickback"
+
+It tells you what it changed rather than quietly handing you something else.
+
+Getting that substitution right took three passes, which is worth knowing:
+  - first attempt DROPPED the pushdown and left a gap
+  - second swapped it for a CONCENTRATION CURL — same "arms" tag, wrong muscle
+  - the muscle tags are too coarse, so it now infers the specific muscle from
+    the name. Triceps stays triceps.
+  - third offered a SKULL CRUSHER, which needs a bench you haven't got in
+    Madrid. My bench check had "skullcrusher" as one word and never matched
+    "DB Skull Crusher".
+
+DB Kickback is triceps, dumbbell, no bench. Right on all three.
+
+
+SUPERSETS, WITHOUT BEING ASKED
+==============================
+You're right that this is the obvious place for them. With a 10kg ceiling the
+load cannot supply the stimulus, so density has to — that's not a preference,
+it's the only lever left.
+
+Madrid now has that ceiling recorded (it didn't, which is why nothing was
+pairing), and when the kit caps at 12kg or under the accessories are paired
+automatically. The coach is also told, in as many words, that this is the one
+situation where it should reach for supersets unprompted.
+
+Duplicates are dropped too — ask for DB Curl twice and you get it once.
+
+
+THE MIC BUTTON MOVES NOW
+========================
+It was sitting on your send button. Rather than pick another corner and hope,
+drag it wherever you want and it stays there. A tap still taps; only an actual
+drag moves it.
+
+Default position moved up clear of the chat bar as well.
+
 
 Upload index.html AND sw.js.
 
