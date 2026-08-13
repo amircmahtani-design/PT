@@ -657,6 +657,14 @@ background:var(--card);border:1px solid var(--line);border-radius:18px;padding:1
 a{color:var(--orange);}
 .notebox{background:#0d0a07;border:1px dashed var(--line);border-radius:12px;padding:12px;font-size:13px;color:var(--muted);line-height:1.55;}
 .altpick{margin-top:10px;background:#0d0a07;border:1px solid var(--line);border-radius:14px;padding:12px;}
+.btabs{display:flex;gap:6px;overflow-x:auto;padding-bottom:8px;margin-bottom:8px;-webkit-overflow-scrolling:touch;}
+.btab{flex:0 0 auto;background:var(--pill);border:1px solid var(--line);color:var(--muted);
+  border-radius:10px;padding:7px 11px;font-size:12px;font-weight:700;white-space:nowrap;}
+.btab.on{background:#2a1c0e;border-color:var(--orange);color:var(--orange);}
+.btab span{opacity:.6;font-size:10.5px;margin-left:3px;}
+.browselist{max-height:min(46vh,340px);overflow-y:auto;-webkit-overflow-scrolling:touch;
+  display:flex;flex-direction:column;gap:7px;}
+.addrow{margin:14px 0 6px;}
 .altchip{display:flex;flex-direction:column;align-items:flex-start;gap:2px;width:100%;text-align:left;background:#0d0a07;border:1px solid var(--line);border-radius:11px;padding:11px 13px;margin-top:8px;color:var(--txt);transition:.15s;}
 .altchip:first-of-type{margin-top:0;}
 .altchip:active{transform:scale(.98);border-color:var(--cyan);}
@@ -1720,7 +1728,7 @@ function eqOf(name){ const e=EX(name); return (e&&e.eq)||"bw"; }
 /* v107.1 \u2014 "skullcrusher" as one word never matched "DB Skull Crusher", so a
    movement that needs somewhere to lie down was offered in a room with no
    bench. Names are matched loosely now. */
-const NEEDS_BENCH=/bench press|incline|decline|chest press|chest[- ]supported|lying|supine|step[- ]?up|bulgarian|split squat|hip thrust|glute bridge|preacher|skull ?crusher|pullover|chest fly|db fly|seated (?:db|dumbbell)/i;
+const NEEDS_BENCH=/bench press|bench dip|incline|decline|chest press|chest[- ]supported|lying|supine|step[- ]?up|bulgarian|split squat|hip thrust|glute bridge|preacher|skull ?crusher|pullover|chest fly|db fly|seated (?:db|dumbbell)|box jump|elevated/i;
 function needsBench(name){ return NEEDS_BENCH.test(String(name||"")); }
 function benchHere(key){
   key=key||locKey();
@@ -3752,7 +3760,9 @@ function renderWorkoutSheet(w){
   sessBarHTML()+
   sheetSec("warm","Warm-up",moveCount(w.warmup), w.warmup.map(m=>mvHTML(m)).join(''), false)+
   (showRowWarmup(w)? rowBlockHTML(w.travel) : "")+
-  "<div class='sheet-sec'><h3>◆ Main workout · log each set</h3>"+exHTML+"</div>"+
+  "<div class='sheet-sec'><h3>◆ Main workout · log each set</h3>"+exHTML+
+    "<div class='addrow'><button class='btn sec' onclick='toggleAddBox()'>➕ Add an exercise</button></div>"+
+    "<div id='addBox'></div></div>"+
   (cardio?cardioBlockHTML(cardio,true):"")+
   sheetSec("cool","Cool-down · timed",moveCount(w.cooldown),coolBodyHTML(w.cooldown),false)+
   sheetSec("rec","Recovery notes","","<div class='recovery'>"+w.recovery+"</div>",false)+
@@ -4248,6 +4258,93 @@ function muscleAlts(name){
     .map(o=>o.n);
 }
 let _swapAlts={};
+/* ===== v108 · PICKING EXERCISES YOURSELF ==============================
+   Swap only ever offered the same muscle, and there was no way to ADD anything
+   at all \u2014 so wanting a biceps movement on a push day meant asking the coach
+   and hoping. That is the app making him negotiate for something he should
+   just be able to do.
+
+   Two buttons now: SIMILAR (what swap always did) and DIFFERENT (the whole
+   catalogue, grouped by muscle, filtered to the room he is standing in). Plus
+   an Add button on the session itself. */
+function pickableHere(){
+  const key=locKey();
+  return allExNames().filter(n=>canDoHere(n,key) && !exBanned(n));
+}
+const MUSCLE_ORDER=["chest","back","shoulders","arms","legs","core"];
+const MUSCLE_LABEL={chest:"Chest",back:"Back",shoulders:"Shoulders",arms:"Arms",legs:"Legs",core:"Core"};
+/* Arms is too coarse to choose from, so it splits. */
+function browseGroups(){
+  const inSession=new Set(((DB.workout&&DB.workout.main)||[]).map(e=>e.name.toLowerCase()));
+  const out={};
+  pickableHere().forEach(n=>{
+    if(inSession.has(n.toLowerCase())) return;
+    const e=EX(n)||{};
+    let g=(e.m||[])[0]||"core";
+    if(g==="arms"){
+      const sm=subMuscle(n);
+      g = sm==="triceps"? "triceps" : sm==="biceps"? "biceps" : "arms";
+    }
+    (out[g]=out[g]||[]).push(n);
+  });
+  Object.keys(out).forEach(k=>out[k].sort((a,b)=>((EX(a)||{}).pop||500)-((EX(b)||{}).pop||500)));
+  return out;
+}
+const BROWSE_ORDER=["chest","back","shoulders","biceps","triceps","arms","legs","core"];
+const BROWSE_LABEL={chest:"Chest",back:"Back",shoulders:"Shoulders",biceps:"Biceps",
+  triceps:"Triceps",arms:"Arms",legs:"Legs",core:"Core"};
+let _browseFor=null, _browseGrp=null;
+/* mode: "swap" replaces exercise i, "add" appends. */
+function openBrowse(i,mode,grp){
+  _browseFor={i,mode};
+  const groups=browseGroups();
+  const keys=BROWSE_ORDER.filter(k=>groups[k]&&groups[k].length);
+  _browseGrp=grp||_browseGrp||keys[0];
+  if(!groups[_browseGrp]) _browseGrp=keys[0];
+  const box=(mode==="add")? document.getElementById('addBox')
+                          : document.getElementById('swap'+i);
+  if(!box) return;
+  box.dataset.open="1";
+  const tabs=keys.map(k=>"<button class='btab"+(k===_browseGrp?" on":"")+"' onclick='openBrowse("+i+",\""+mode+"\",\""+k+"\")'>"+
+    BROWSE_LABEL[k]+" <span>"+groups[k].length+"</span></button>").join('');
+  const list=(groups[_browseGrp]||[]).map(n=>{
+    const e=EX(n)||{};
+    const gear={bw:"bodyweight",db:"dumbbell",kb:"kettlebell",bb:"barbell",mach:"machine",band:"band",bar:"pull-up bar"}[eqOf(n)]||"";
+    return "<button class='altchip' onclick='pickBrowse("+JSON.stringify(n).replace(/"/g,"&quot;")+")'>"+
+      "<b>"+attrEsc(n)+"</b><span>"+(gear?gear:"")+(e.timed?" \u00b7 timed":"")+"</span></button>";
+  }).join('');
+  box.innerHTML="<div class='altpick'>"+
+    "<div class='sm' style='margin-bottom:8px'>"+
+      (mode==="add"? "Add an exercise" : "Replace with something different")+
+      " \u2014 everything you can do in <b>"+LOC().label+"</b>:</div>"+
+    "<div class='btabs'>"+tabs+"</div>"+
+    "<div class='browselist'>"+(list||"<div class='sm'>Nothing left in this group that isn\u2019t already in today\u2019s session.</div>")+"</div>"+
+  "</div>";
+}
+function pickBrowse(name){
+  if(!_browseFor||!DB.workout) return;
+  const {i,mode}=_browseFor;
+  if(mode==="add"){
+    const r=coachAddEx(name);
+    const box=document.getElementById('addBox'); if(box){ box.innerHTML=""; box.dataset.open="0"; }
+    if(!r){ toast("Can\u2019t do that one here"); return; }
+    markSessionTouched(); save();
+    renderWorkoutSheet(DB.workout);
+    toast("Added "+r);
+    return;
+  }
+  const cur=DB.workout.main[i]; if(!cur) return;
+  const old=cur.name;
+  if(!coachSwapWorkoutEx(old,name)){ toast("Couldn\u2019t swap that"); return; }
+  markSessionTouched(); save();
+  renderWorkoutSheet(DB.workout);
+  toast(old+" \u2192 "+name);
+}
+function toggleAddBox(){
+  const box=document.getElementById('addBox'); if(!box) return;
+  if(box.dataset.open==="1"){ box.innerHTML=""; box.dataset.open="0"; return; }
+  openBrowse(-1,"add");
+}
 function swapEx(i){
   if(!DB.workout||!DB.workout.main[i]) return;
   const cur=DB.workout.main[i]; const box=document.getElementById('swap'+i); if(!box) return;
@@ -4487,7 +4584,8 @@ function exBlockHTML(e,i){
     (e.stoppedEarly? "<div class='cue' style='color:var(--muted)'>Stopped early \u2014 that's logged.</div>":"")+
     (e.skipped? "<div class='cue' style='color:var(--red)'><b>Skipped today</b></div>":"")+
     lastTimeHTML(e.name)+
-    "<button class='swapbtn' onclick='swapEx("+i+")'>Swap this exercise</button>"+
+    "<button class='swapbtn' onclick='swapEx("+i+")'>Similar</button>"+
+    "<button class='swapbtn' onclick='openBrowse("+i+",\"swap\")'>Something different</button>"+
     "<button class='swapbtn' style='margin-left:7px' onclick='demoBtn("+i+")'>"+demoBtnLabel(e.name)+"</button>"+
     "<div id='demo"+i+"' data-open='0'></div>"+
     "<div id='swap"+i+"' data-open='0'></div>"+
@@ -8960,7 +9058,7 @@ function scheduleInApp(){
    v18 ADDITIONS — draggable rest timer · weekly training memory · AI planner
    · Firestore sync
    ========================================================================== */
-const APP_VERSION="v107 · 06/08/2026";
+const APP_VERSION="v108 · 06/08/2026";
 
 /* ===== 1. REST TIMER — drag it anywhere so it never blocks the chat box ===== */
 let _rtDrag=null;

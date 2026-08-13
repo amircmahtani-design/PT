@@ -1,5 +1,45 @@
-AMIR PT — v107 · 06/08/2026
+AMIR PT — v108 · 06/08/2026
 ===========================
+
+Upload index.html AND sw.js.
+
+
+PICK YOUR OWN EXERCISES
+=======================
+You couldn't add anything at all, and swap only ever offered the same muscle.
+So wanting biceps on a push day meant asking the coach and hoping. Fixed.
+
+ON EVERY EXERCISE, TWO BUTTONS
+  SIMILAR                same muscle, what swap always did
+  SOMETHING DIFFERENT    the whole catalogue, grouped by muscle
+
+AND AT THE BOTTOM OF THE SESSION
+  + ADD AN EXERCISE      same browser, appends rather than replaces
+
+BICEPS AND TRICEPS ARE THEIR OWN TABS
+  The muscle tags lump both under "arms", which is useless when you want one
+  specifically. The browser splits them:
+
+      Chest 5 · Back 16 · Shoulders 8 · Biceps 4 · Triceps 3 · Legs 36 · Core 36
+
+  That's Madrid. Every one of those is something you can actually do there —
+  the browser is filtered by the same gate as everything else, so nothing
+  needing a machine, a bench or a bar appears in a room without them.
+
+  Anything already in today's session isn't offered again, so you can't
+  accidentally add a duplicate.
+
+
+ONE THING THAT TEST CAUGHT
+==========================
+BENCH DIP was showing in the triceps list for Madrid. It needs a bench, or
+something to dip off, and you haven't got one there. My bench check didn't
+know the name.
+
+That's the second bench-related name it has missed (DB Skull Crusher was the
+first, yesterday). Both now covered, along with step-ups, box jumps and
+anything "elevated".
+
 
 Upload index.html AND sw.js.
 
