@@ -181,11 +181,23 @@ textarea.txtin{min-height:88px;resize:vertical;line-height:1.45;}
 .rowcard .big{font-weight:800;font-size:20px;color:#fff;}
 .rowcard .sm{font-size:13px;color:var(--muted);font-weight:600;margin-top:2px;}
 .setlog{display:flex;gap:8px;margin-top:12px;flex-wrap:wrap;}
+.setchip{position:relative;padding-right:26px;}
+.chipx{position:absolute;right:4px;top:50%;transform:translateY(-50%);
+  background:transparent;border:none;color:var(--muted);font-size:12px;font-weight:800;
+  padding:4px 5px;line-height:1;opacity:.65;}
+.chipx:active{opacity:1;color:var(--red);}
 .setchip{background:#0c2716;border:1px solid #154d2c;border-radius:9px;padding:7px 11px;font-size:13.5px;font-weight:700;color:var(--green);}
+.logrow.noweight input[inputmode='numeric']{flex:1 1 auto;}
 .logrow{display:flex;gap:8px;margin-top:12px;align-items:stretch;}
 .logrow input{flex:1 1 0;min-width:0;width:100%;text-align:center;padding:13px 6px;font-size:16px;}
 .logrow button{flex:0 0 82px;background:linear-gradient(100deg,#ff8a2b,#ff5a1a);color:#fff;border-radius:12px;font-weight:800;}
 .swapbtn{display:inline-block;margin-top:10px;background:var(--card2);border:1px solid var(--line);color:var(--muted);border-radius:9px;padding:7px 12px;font-size:12.5px;font-weight:700;}
+.posnote{font-size:11.5px;font-weight:700;color:var(--dim);margin:8px 0 4px;}
+.hpos{display:none;font-size:22px;font-weight:800;color:var(--green);
+  letter-spacing:.5px;margin:6px 0 2px;}
+.hpos.show{display:block;}
+.hpos.flash{animation:posflash .5s ease;}
+@keyframes posflash{0%{transform:scale(1);color:var(--orange)}40%{transform:scale(1.14);color:var(--orange)}100%{transform:scale(1);color:var(--green)}}
 .holdrow{display:flex;gap:10px;align-items:center;margin-top:12px;}
 .hold-cd{font-weight:800;font-size:30px;color:#fff;font-variant-numeric:tabular-nums;flex:0 0 auto;min-width:84px;text-align:center;}
 .holdbtn{flex:1;background:linear-gradient(100deg,#3fe08a,#1fbf68);color:#03260f;border-radius:12px;font-weight:800;padding:14px;font-size:15px;}
@@ -374,6 +386,13 @@ details.sec2[open] .secsum2:after{content:"\2212";}
 .timeline .cool{background:#1a150f;color:var(--label);}
 .setsbar .sm.over{color:#ff8f84;}
 .wxrow{display:flex;justify-content:space-between;gap:8px;font-size:12px;padding:5px 0;border-bottom:1px solid var(--line);}
+.restrow{display:flex;gap:10px;flex-wrap:wrap;margin-bottom:8px;}
+.restcell{flex:1 1 150px;min-width:0;display:flex;flex-direction:column;gap:6px;}
+.restcell .rl{font-size:10.5px;font-weight:800;letter-spacing:.4px;text-transform:uppercase;color:var(--label);}
+.restctl{display:flex;align-items:center;gap:8px;}
+.restctl .rv{font-size:15px;font-weight:800;color:var(--txt);min-width:64px;text-align:center;}
+.linkbtn{background:none;border:none;padding:0;color:var(--orange);font-weight:700;
+  font-size:inherit;text-decoration:underline;}
 .setsbar{padding:14px 16px;border-bottom:1px solid var(--line);}
 .setsbar .lab{margin-bottom:9px;}
 .setsrow{display:flex;gap:7px;margin-bottom:8px;}
@@ -1701,9 +1720,9 @@ const LOCS={
   madrid:{key:"madrid",label:"Madrid", emoji:"\uD83C\uDDEA\uD83C\uDDF8", tag:"Madrid · Dumbbells Only", gear:["bw","db","band"], rower:false, short:false, noBench:true,
           equipment:"Dumbbells only, plus bodyweight. No barbell, no machines, no rower.",
           blurb:"Dumbbells only — same intent, different tools."},
-  greece:{key:"greece",label:"Greece", emoji:"\uD83C\uDDEC\uD83C\uDDF7", tag:"Greece · No Equipment", gear:["bw"], rower:false, short:true,
-          equipment:"No equipment at all — bodyweight only.",
-          blurb:"No kit, holiday — short sharp bodyweight session."}
+  greece:{key:"greece",label:"Greece", emoji:"\uD83C\uDDEC\uD83C\uDDF7", tag:"Greece · Bands & Bodyweight", gear:["bw","band"], rower:false, short:true, noBench:true,
+          equipment:"Resistance bands and bodyweight. No dumbbells, no bar, no bench, no machines.",
+          blurb:"Bands and bodyweight — short, sharp, and it still counts."}
 };
 /* What Amir should be reaching for FIRST in each place. Dubai has a full gym,
    so barbell and dumbbell work outrank bodyweight there; Greece is the reverse. */
@@ -1879,6 +1898,59 @@ const EXTRA_LIB={
 /* v53 — real Pilates mat repertoire. "Pilates" was building dead bugs and bird
    dogs, which is generic core work, not Pilates. These are the actual mat
    exercises, in classical order. */
+/* ===== v111 · A REAL BAND LIBRARY =====================================
+   Greece was set to bodyweight only, so bands \u2014 the only resistance he has
+   there \u2014 were excluded outright. Opening the location up was one line, but
+   it exposed the bigger problem: the whole app knew exactly TWO band
+   exercises. A two-item pool cannot build a session, let alone a block.
+
+   These are the movements a band actually does well: pulling, which bodyweight
+   is worst at, plus loaded rotation, hip work and the small stuff that keeps
+   a shoulder healthy. A band's resistance curve is the opposite of a
+   dumbbell's \u2014 hardest at the end of the range \u2014 so the cues say where to
+   fight it rather than pretending it loads like iron. */
+const BAND_LIB={
+  /* --- pull: the reason bands matter when travelling --- */
+  "Band Row":{m:["back"],eq:"band",cue:"Anchor at chest height. Row to the ribs, squeeze, control the return.",wristAlt:"Neutral grip \u2014 fine"},
+  "Band Single-arm Row":{m:["back"],eq:"band",cue:"One arm, rotate the torso open at the top. Fixes side-to-side gaps.",wristAlt:"Neutral \u2014 fine"},
+  "Band Lat Pulldown":{m:["back"],eq:"band",cue:"Anchor high. Elbows down and in, chest tall, no leaning back.",wristAlt:"Neutral \u2014 fine"},
+  "Band Straight-arm Pulldown":{m:["back"],eq:"band",cue:"Arms long, drive down with the lats. Nothing at the elbow.",wristAlt:"Fine"},
+  "Band Face Pull":{m:["shoulders"],eq:"band",cue:"Pull to the forehead, elbows high, rotate out at the end.",wristAlt:"Neutral \u2014 ideal"},
+  "Band Pull-Apart":{m:["shoulders"],eq:"band",cue:"Arms straight, pull apart until the band touches the chest.",wristAlt:"Neutral \u2014 ideal"},
+  "Band Reverse Fly":{m:["shoulders"],eq:"band",cue:"Wide arc, squeeze the rear delts, do not shrug.",wristAlt:"Fine"},
+  "Band Upright Row":{m:["shoulders"],eq:"band",cue:"Elbows lead, stop at chest height. Wide grip if the shoulder grumbles.",wristAlt:"Wide grip, neutral"},
+  /* --- push --- */
+  "Band Chest Press":{m:["chest"],eq:"band",cue:"Anchor behind you at chest height. Press and squeeze at the front.",wristAlt:"Neutral \u2014 fine"},
+  "Band Chest Fly":{m:["chest"],eq:"band",cue:"Soft elbows, wide arc, meet in front. Slow on the way back.",wristAlt:"Neutral \u2014 fine"},
+  "Band Overhead Press":{m:["shoulders"],eq:"band",cue:"Stand on the band. Ribs down, press to lockout over the ears.",wristAlt:"Neutral grip"},
+  "Band Push-up":{m:["chest"],eq:"band",cue:"Band across the back. Hardest at the top, which is the point.",wristAlt:"Fists or handles \u2014 protects the wrist"},
+  "Band Triceps Pushdown":{m:["arms"],eq:"band",cue:"Anchor high. Elbows pinned, full extension, pause at the bottom.",wristAlt:"Neutral rope-style grip"},
+  "Band Overhead Triceps Extension":{m:["arms"],eq:"band",cue:"Band behind you, elbows narrow and high. Stretch at the bottom.",wristAlt:"Neutral \u2014 fine"},
+  /* --- arms --- */
+  "Band Curl":{m:["arms"],eq:"band",cue:"Stand on it. Elbows still, squeeze hard at the top where it is heaviest.",wristAlt:"Neutral if the wrist complains"},
+  "Band Hammer Curl":{m:["arms"],eq:"band",cue:"Neutral grip throughout. Kinder on the wrist than a supinated curl.",wristAlt:"Neutral \u2014 ideal"},
+  /* --- legs and hips --- */
+  "Band Squat":{m:["legs"],eq:"band",cue:"Band across the shoulders. Full depth, drive the knees out.",wristAlt:"No wrist load"},
+  "Band Romanian Deadlift":{m:["legs"],eq:"band",cue:"Stand on it, hinge at the hip, long spine. Feel the hamstrings.",wristAlt:"Neutral \u2014 fine"},
+  "Band Good Morning":{m:["legs"],eq:"band",cue:"Band on the shoulders, hinge forward, chest proud.",wristAlt:"No wrist load"},
+  "Band Glute Bridge":{m:["legs"],eq:"band",cue:"Band above the knees. Drive through the heels, knees pushing out.",wristAlt:"No wrist load"},
+  "Band Lateral Walk":{m:["legs"],eq:"band",cue:"Band above the knees, half squat, step sideways without bobbing.",wristAlt:"No wrist load"},
+  "Band Monster Walk":{m:["legs"],eq:"band",cue:"Band at the ankles, walk forward diagonally. Glutes burn fast.",wristAlt:"No wrist load"},
+  "Band Kickback":{m:["legs"],eq:"band",cue:"Band at the ankle, drive the leg back from the glute, no arching.",wristAlt:"No wrist load"},
+  "Band Clamshell":{m:["legs"],eq:"band",cue:"On your side, knees bent, open the top knee. Hips stay stacked.",wristAlt:"No wrist load"},
+  "Band Leg Curl":{m:["legs"],eq:"band",cue:"Anchor low, band at the ankle, curl the heel to the glute.",wristAlt:"No wrist load"},
+  "Band Calf Raise":{m:["legs"],eq:"band",cue:"Band under the toes, full stretch at the bottom, pause at the top.",wristAlt:"No wrist load"},
+  /* --- core and rotation: what a band does that bodyweight cannot --- */
+  "Band Pallof Press":{m:["core"],eq:"band",cue:"Anchor at chest height to your side. Press out and refuse to rotate.",wristAlt:"Neutral \u2014 fine"},
+  "Band Woodchop":{m:["core"],eq:"band",cue:"High to low across the body. Turn from the ribs, not the arms.",wristAlt:"Neutral \u2014 fine"},
+  "Band Anti-Rotation Hold":{m:["core"],eq:"band",cue:"Arms out, hold still against the pull. 20\u201330 seconds a side.",timed:true,wristAlt:"Neutral \u2014 fine"},
+  "Band Dead Bug":{m:["core"],eq:"band",cue:"Band anchored behind, arms locked. Low back stays flat.",wristAlt:"Neutral \u2014 fine"},
+  /* --- shoulder health, and his wrist --- */
+  "Band External Rotation":{m:["shoulders"],eq:"band",cue:"Elbow tucked at 90 degrees, rotate out. Slow. This protects the pressing.",wristAlt:"Neutral \u2014 ideal"},
+  "Band Internal Rotation":{m:["shoulders"],eq:"band",cue:"Elbow tucked, rotate in against the band. The other half of the cuff.",wristAlt:"Neutral \u2014 ideal"},
+  "Band Shoulder Dislocate":{m:["shoulders"],eq:"band",cue:"Wide grip, take it over and behind. Mobility, not strength \u2014 go slow.",wristAlt:"Neutral \u2014 ideal"},
+  "Band Wrist Extension":{m:["arms"],eq:"band",cue:"Forearm supported, extend the wrist against the band. Directly for the TFCC.",wristAlt:"This IS the wrist work"}
+};
 const PILATES_LIB={
  "The Hundred":{m:["core"],eq:"bw",d:"10 breaths · 100 pumps",cue:"Legs at tabletop or long, head and shoulders lifted, pump the arms. Breathe in for 5, out for 5, ten times.",timed:true,wristAlt:"No wrist load — good"},
  "Roll-Up":{m:["core"],eq:"bw",d:"×6",cue:"Peel the spine off the mat one vertebra at a time. Slow — no throwing yourself up.",wristAlt:"No wrist load — good"},
@@ -1963,18 +2035,18 @@ const VPOOLS={
  },
  greece:{
   legs:{anchor:["Bodyweight Squat","Walking Lunge","Pistol Squat","Cossack Squat","Split Squat"],
-        acc:["Reverse Lunge","Glute Bridge","Single-leg Glute Bridge","Calf Raise","Wall Sit","Jump Squat","Step-up","Curtsy Lunge","Lateral Lunge","Shrimp Squat","Single-leg Calf Raise","Skater Jump","Broad Jump","Wall Sit March","Nordic Negative","Tuck Jump"]},
-  push:{anchor:["Push-up","Pike Push-up","Diamond Push-up","Wide Push-up","Hindu Push-up"],
-        acc:["Bench Dip","Decline Push-up","Archer Push-up","Plank","Mountain Climber","Incline Push-up","Pseudo Planche Push-up","Plank Shoulder Tap","Plank Up-Down","Bear Crawl"]},
-  pull:{anchor:["Inverted Row","Superman Hold","Towel Row"],
-        acc:["Prone Y-T-W Raise","Reverse Snow Angel","Swimming","Swan","Hollow Hold","Prone Swimmer","Wall Angel","Reverse Plank","Reverse Snow Angel Hold","Bicycle Crunch","Hollow Rock"]},
-  upper:{anchor:["Push-up","Inverted Row","Pike Push-up","Wide Push-up","Hindu Push-up"],
-        acc:["Bench Dip","Diamond Push-up","Prone Y-T-W Raise","Plank","Archer Push-up","Incline Push-up","Towel Row","Prone Swimmer","Plank Shoulder Tap","Reverse Plank","Bear Crawl"]},
-  full:{anchor:["Bodyweight Squat","Push-up","Walking Lunge","Cossack Squat","Wide Push-up"],
-        acc:["Inverted Row","Hollow Hold","Burpee","Glute Bridge","Plank","Mountain Climber","Towel Row","Sprawl","Bear Crawl","Hollow Rock","Skater Jump","Single-leg Calf Raise"]},
-  core:{anchor:["Plank","Hollow Hold"],
-        acc:["Side Plank","Dead Bug","Bird Dog","Mountain Climber","Superman Hold","Criss-Cross","Leg Pull Front","Single Leg Stretch","Scissors","Bicycle Crunch","Leg Raise","V-Up","Russian Twist","Flutter Kick","Side Plank Rotation","Hollow Rock","Reverse Plank","Bear Crawl"]},
-  arms:{anchor:["Diamond Push-up","Bench Dip","Pseudo Planche Push-up"],
+        acc:["Band Romanian Deadlift","Band Glute Bridge","Band Lateral Walk","Band Leg Curl","Band Kickback","Reverse Lunge","Single-leg Glute Bridge","Band Calf Raise","Wall Sit","Jump Squat","Curtsy Lunge","Lateral Lunge","Skater Jump","Band Monster Walk","Wall Sit March","Nordic Negative"]},
+  push:{anchor:["Push-up","Band Chest Press","Band Overhead Press","Pike Push-up","Wide Push-up"],
+        acc:["Band Chest Fly","Band Triceps Pushdown","Band Overhead Triceps Extension","Diamond Push-up","Archer Push-up","Band Push-up","Incline Push-up","Plank Shoulder Tap","Band External Rotation","Bear Crawl"]},
+  pull:{anchor:["Band Row","Band Lat Pulldown","Inverted Row","Band Single-arm Row","Towel Row"],
+        acc:["Band Face Pull","Band Pull-Apart","Band Reverse Fly","Band Curl","Band Hammer Curl","Band Straight-arm Pulldown","Prone Y-T-W Raise","Reverse Snow Angel","Superman Hold","Prone Swimmer","Wall Angel","Band External Rotation","Reverse Plank","Hollow Rock"]},
+  upper:{anchor:["Push-up","Band Row","Band Overhead Press","Band Lat Pulldown","Pike Push-up"],
+        acc:["Band Face Pull","Band Curl","Band Triceps Pushdown","Diamond Push-up","Band Chest Fly","Band Pull-Apart","Archer Push-up","Prone Y-T-W Raise","Band External Rotation","Plank Shoulder Tap"]},
+  full:{anchor:["Bodyweight Squat","Push-up","Band Row","Walking Lunge","Band Overhead Press"],
+        acc:["Band Romanian Deadlift","Band Face Pull","Hollow Hold","Band Curl","Band Pallof Press","Plank","Band Glute Bridge","Burpee","Mountain Climber","Bear Crawl","Skater Jump","Band Calf Raise"]},
+  core:{anchor:["Plank","Band Pallof Press","Hollow Hold"],
+        acc:["Band Woodchop","Side Plank","Band Dead Bug","Bird Dog","Band Anti-Rotation Hold","Mountain Climber","Superman Hold","Leg Pull Front","Scissors","Bicycle Crunch","Leg Raise","V-Up","Flutter Kick","Hollow Rock","Reverse Plank","Bear Crawl"]},
+  arms:{anchor:["Band Curl","Band Triceps Pushdown","Diamond Push-up","Band Hammer Curl"],
         acc:["Archer Push-up","Inverted Row","Pike Push-up","Push-up","Wide Push-up","Incline Push-up","Plank Up-Down","Towel Row","Hindu Push-up","Bear Crawl"]},
   hiit:{anchor:["Burpee","Jump Squat","Sprawl","Squat Thrust"],
         acc:["Mountain Climber","Walking Lunge","Push-up","Bodyweight Squat","Reverse Lunge","High Knees","Jumping Jacks","Skater Jump","Tuck Jump","Broad Jump","Shadow Boxing","Bear Crawl","Bicycle Crunch"]},
@@ -2090,12 +2162,12 @@ function latestCheckin(){ return DB.checkins[DB.checkins.length-1] || null; }
 /* ===== Accessors: built-in data + anything the AI has added at runtime ===== */
 function EX(name){
   if(!name) return null;
-  return (DB.lib&&DB.lib[name]) || EXDB[name] || PILATES_LIB[name] || EXTRA_LIB[name] ||
+  return (DB.lib&&DB.lib[name]) || EXDB[name] || BAND_LIB[name] || PILATES_LIB[name] || EXTRA_LIB[name] ||
          (wxEnabled() && typeof WXIDX!=="undefined" && WXIDX[name]) ||
          (typeof fedEx==="function" && fedEx(name)) || null;
 }
 function allExNames(){
-  return [...new Set([...Object.keys(EXDB), ...Object.keys(PILATES_LIB), ...Object.keys(EXTRA_LIB),
+  return [...new Set([...Object.keys(EXDB), ...Object.keys(BAND_LIB), ...Object.keys(PILATES_LIB), ...Object.keys(EXTRA_LIB),
     ...Object.keys(DB.lib||{}),
     ...((wxEnabled()&&typeof WXIDX!=="undefined")?Object.keys(WXIDX):[]),
     ...(typeof fedNames==="function"? fedNames() : [])])];
@@ -3091,7 +3163,27 @@ function roundToKit(name,w){
    First exposure now gets a deliberate discount. The job of set one is to find
    out how it feels, not to prove anything. */
 const FIRST_TRY_FACTOR = 0.7;
+/* ===== v113 · SOME EXERCISES HAVE NO WEIGHT ============================
+   In Greece he has bands and his own bodyweight. Neither is measured in kilos.
+   The app was estimating "15.5kg" for a band curl by scaling off his dumbbell
+   lifts, which is a number that means nothing and cannot be entered. Worse,
+   the coach then repeated it back at him as an instruction.
+
+   Bodyweight and band work are logged as REPS, and progressed by reps, tempo
+   and band tension \u2014 not by a figure on a bar. */
+function isLoadless(name){
+  const eq=eqOf(name);
+  return eq==="bw" || eq==="band";
+}
+function bandProgressionNote(name){
+  const eq=eqOf(name);
+  if(eq==="band") return "No kilos on a band \u2014 progress with reps, then a slower negative, then a thicker band or more tension at the anchor.";
+  if(eq==="bw")   return "Bodyweight \u2014 progress with reps, then tempo, then a harder variation.";
+  return "";
+}
 function estimateStartLoad(name){
+  /* Nothing to estimate for something that has no weight. */
+  if(isLoadless(name)) return null;
   const key=String(name||"").toLowerCase().trim();
   const kg=(DB.profile&&DB.profile.weightKg)||83;
   if(DB.prefs && DB.prefs.noStartEstimates) return null;
@@ -3141,6 +3233,7 @@ function recommendLoadRaw(ex){
     if(pr.delta && topPrev!=null){ const w=Math.max(0,topPrev+pr.delta); return {text:w+"kg — coach added "+(pr.delta>0?"+":"")+pr.delta+"kg vs last time.",up:pr.delta>0,w}; }
   }
   if(!h||!h.length){
+    if(isLoadless(ex)) return {w:0, up:false, loadless:true, text:bandProgressionNote(ex)};
     /* Nothing logged for this lift. Work out a starting point from what he
        does lift, rather than telling him to guess. */
     try{
@@ -3151,6 +3244,20 @@ function recommendLoadRaw(ex){
     return null;
   }
   const last=lastStrengthSession(ex)||{}, sets=last.sets||[]; if(!sets.length) return null;
+  if(isLoadless(ex)){
+    /* Reps are the whole story here. */
+    const reps=sets.map(s=>s.r||0);
+    const lo=reps.length?Math.min(...reps):0;
+    const eff=sessionEffort(sets);
+    const need=masterySets();
+    if(eff!==null && eff>3.3)
+      return {w:0, up:false, loadless:true, text:"Drop the reps back a little \u2014 that was a grind. Own the range before you add to it."};
+    if(eff!==null && eff<=1.5)
+      return {w:0, up:false, loadless:true, text:"Too easy \u2014 go for "+(lo+4)+"+ reps, or slow the negative right down. "+bandProgressionNote(ex)};
+    if(sets.length>=need && lo>=12)
+      return {w:0, up:false, loadless:true, text:"Solid at "+lo+"+ reps. "+bandProgressionNote(ex)};
+    return {w:0, up:false, loadless:true, text:"Last time: "+reps.join(", ")+" reps. Beat the lowest of those. "+bandProgressionNote(ex)};
+  }
   const topW=Math.max(...sets.map(s=>s.w));
   const bump=loadStep(ex,topW);
   /* ===== v66 · MASTERY BEFORE LOAD ====================================
@@ -3211,7 +3318,8 @@ const GEAR_DEFAULTS = {
     has:["dumbbells up to 10kg","resistance bands"],
     note:"Dumbbells and bands only \u2014 no bench, no bar, no machines, and they stop at 10kg. Load cannot carry a session here, so density has to: supersets, short rests, higher reps." },
   greece: { dbMax:null, dbStep:null, bar:null, plates:[],
-    has:["bodyweight only"], note:"Nothing but bodyweight." }
+    has:["resistance bands","bodyweight"],
+    note:"Bands and bodyweight only \u2014 no dumbbells, bar, bench or machines. Bands are the only resistance, so use them for everything he cannot load with his own weight: rows, pulldowns, face pulls, curls, rotation and hip work. A band is hardest at the END of the range, the opposite of a dumbbell, so cue him to fight it at the top rather than expecting an iron-like curve." }
 };
 function gearProfile(loc){
   loc=loc||locKey();
@@ -3714,6 +3822,51 @@ function setsPickerHTML(w){
       ? "Manual \u2014 you set <b>"+cur+"</b>. Tap <b>Auto</b> to hand it back to the coach."
       : "Coach chose <b>"+cur+"</b> from your readiness. Tap a number to override for today.")+"</div></div>";
 }
+/* ===== v110 \u00b7 REST FOR THE WHOLE SESSION, WHERE HE IS LOOKING =========
+   Both rest defaults existed, buried in Settings. This is the screen he is on
+   when he wants to change them, and changing them here applies to the whole
+   session at once rather than exercise by exercise. */
+function restPickerHTML(w){
+  const d=restDefaults();
+  const anyOverride=((w&&w.main)||[]).some(e=>e.restSec>0);
+  return "<div class='setsbar'><div class='lab'>Rest</div>"+
+    "<div class='restrow'>"+
+      "<div class='restcell'>"+
+        "<span class='rl'>Between sets</span>"+
+        "<div class='restctl'>"+
+          "<button class='setspick' onclick='sheetRest(\"sets\",-15)'>\u2212</button>"+
+          "<span class='rv'>"+fmtRest(d.sets)+"</span>"+
+          "<button class='setspick' onclick='sheetRest(\"sets\",15)'>+</button>"+
+        "</div></div>"+
+      "<div class='restcell'>"+
+        "<span class='rl'>Between exercises</span>"+
+        "<div class='restctl'>"+
+          "<button class='setspick' onclick='sheetRest(\"ex\",-15)'>\u2212</button>"+
+          "<span class='rv'>"+fmtRest(d.ex)+"</span>"+
+          "<button class='setspick' onclick='sheetRest(\"ex\",15)'>+</button>"+
+        "</div></div>"+
+    "</div>"+
+    "<div class='sm'>Applies to every exercise today."+
+      (anyOverride? " Some have their own rest set \u2014 <button class='linkbtn' onclick='clearExRests()'>use these for all</button>." : "")+
+    "</div></div>";
+}
+function sheetRest(kind,delta){
+  setDefaultRest(kind,delta);
+  try{ if(DB.workout) renderWorkoutSheet(DB.workout); }catch(e){}
+  const d=restDefaults();
+  toast((kind==="sets"?"Between sets":"Between exercises")+" \u00b7 "+fmtRest(kind==="sets"?d.sets:d.ex));
+}
+/* Wipe the per-exercise overrides so the session-wide figure actually governs
+   everything \u2014 otherwise "applies to every exercise" would be a lie. */
+function clearExRests(){
+  if(!DB.workout||!DB.workout.main) return;
+  let n=0;
+  DB.workout.main.forEach(e=>{ if(e.restSec>0){ delete e.restSec; delete e.rest; n++; } });
+  if(!n) return;
+  markSessionTouched(); save();
+  try{ renderWorkoutSheet(DB.workout); }catch(e){}
+  toast(n+" exercise"+(n===1?"":"s")+" back to the session rest");
+}
 /* Collapsible block for the workout sheet. `key` remembers open/closed;
    the main workout is never collapsible \u2014 that's the thing he's using. */
 function sheetSec(key,title,meta,body,openDefault){
@@ -3757,6 +3910,7 @@ function renderWorkoutSheet(w){
     "<div class='meta'><span class='pill orange'>"+w.sets+" sets</span><span class='pill'>"+w.reps+"</span><span class='pill purple'>"+w.phase+"</span></div></div>"+
   timeBarHTML(w)+
   setsPickerHTML(w)+
+  restPickerHTML(w)+
   sessBarHTML()+
   sheetSec("warm","Warm-up",moveCount(w.warmup), w.warmup.map(m=>mvHTML(m)).join(''), false)+
   (showRowWarmup(w)? rowBlockHTML(w.travel) : "")+
@@ -3858,7 +4012,22 @@ function renderRestPrefs(){
 }
 /* +/- on the running timer, and it remembers rather than being a one-off. */
 function bumpRunningRest(delta){
-  if(!restActive) return;
+  /* v112 \u2014 restActive goes false the moment it hits zero, and this returned
+     early on that, so +15 died exactly when he wanted it: standing there at
+     0:00 wanting another twenty seconds. Adding time now RESTARTS it. */
+  if(!restActive){
+    if(delta<=0) return;                    /* nothing to take away from zero */
+    restEnd=Date.now()+delta*1000;
+    restActive=true; restBeeped=false;
+    const t=document.getElementById('restTimer'); if(t) t.classList.remove('due');
+    const l=document.getElementById('restLab');
+    if(l && _restCtx && _restCtx.kind==="pair") l.textContent="Back to it";
+    if(!restInt) restInt=setInterval(restTick,250);
+    requestWake();
+    try{ restTick(); }catch(e){}
+    toast("+"+delta+"s");
+    return;
+  }
   restEnd+=delta*1000;
   if(_restCtx.kind==="ex"){ setDefaultRest('ex',delta); }
   else if(_restCtx.idx!=null){
@@ -3890,7 +4059,7 @@ function restTick(){
 }
 let restDoneCb=null;
 function restDue(){
-  const t=document.getElementById('restTimer'); t.classList.add('due');
+  const t=document.getElementById('restTimer'); if(t) t.classList.add('due');
   const cb=restDoneCb; restDoneCb=null;
   const l=document.getElementById('restLab'); if(l)l.textContent = cb? "Done ✅" : "Next up — GO 💥";
   const cd=document.getElementById('restCd'); if(cd)cd.textContent="0:00";
@@ -4448,11 +4617,14 @@ function prefillNote(e){
   if(todaySets(e.name).length) return "";
   let s=null; try{ s=lastSessionOf(e.name); }catch(err){}
   if(!s||!s.sets||!s.sets.length){
+    if(isLoadless(e.name)) return "<div class='prefill'>First time on this one \u2014 pick a band tension you can control for 12\u201320 clean reps.</div>";
     return (e.rec&&e.rec.estimate)? "<div class='prefill'>Filled in with a suggested starting weight \u2014 first time on this one.</div>" : "";
   }
   const top=Math.max(...s.sets.map(x=>x.w||0));
   const when=(s.date&&s.date!=='prev')? ukDate(s.date) : "last session";
   const reps=s.sets.map(x=>x.r).join("/");
+  if(isLoadless(e.name))
+    return "<div class='prefill'>Last time "+when+": <b>"+reps+"</b> reps. Beat the lowest of those.</div>";
   const up=(e.rec&&e.rec.w&&e.rec.w>top);
   return "<div class='prefill'>Last time "+when+": <b>"+top+"kg</b> \u00d7 "+reps+
     (up? " \u00b7 filled in with <b>"+e.rec.w+"kg</b>, you earned the jump" : " \u00b7 filled in ready")+"</div>";
@@ -4524,12 +4696,38 @@ function schemeFor(name,n,ex){
                      : (tmd? "30\u201360s hold" : "8\u201312");
   return n+" sets \u00b7 "+tail;
 }
-function setChip(sset){
+/* v109 — a mis-tap logged a 1-second hold and there was no way to remove it
+   without going to the coach. The chip IS the set; tapping the x deletes it. */
+function setChip(sset,exIdx,setIdx){
   const e=effortOf(sset), m=e?EFFORT[e]:null;
   const dot=m? "<i class='effdot' style='background:"+m.col+"' title='"+m.lab+"'></i>" : "";
-  return sset.timed
-    ? "<span class='setchip'>"+dot+sset.r+"s hold</span>"
-    : "<span class='setchip'>"+dot+sset.w+"kg × "+sset.r+"</span>";
+  const body=sset.timed? (sset.r+"s hold") : (sset.w+"kg × "+sset.r);
+  if(exIdx==null) return "<span class='setchip'>"+dot+body+"</span>";
+  return "<span class='setchip'>"+dot+body+
+    "<button class='chipx' onclick='event.stopPropagation();delLoggedSet("+exIdx+","+setIdx+")' aria-label='delete this set'>\u2715</button></span>";
+}
+function delLoggedSet(exIdx,setIdx){
+  const ex=DB.workout&&DB.workout.main[exIdx]; if(!ex) return;
+  const arr=DB.strength[ex.name]||[];
+  const sess=arr.find(s=>s.date===today());
+  if(!sess||!sess.sets||!sess.sets[setIdx]) return;
+  const s=sess.sets[setIdx];
+  const label=s.timed? (s.r+"s hold") : (s.w+"kg × "+s.r);
+  if(!confirm("Delete this set?\n\n"+ex.name+" — "+label)) return;
+  sess.sets.splice(setIdx,1);
+  if(!sess.sets.length){
+    /* No sets left: drop the day's entry rather than leave an empty session
+       that still counts as "trained" in the volume figures. */
+    DB.strength[ex.name]=arr.filter(x=>x!==sess);
+    if(!DB.strength[ex.name].length) delete DB.strength[ex.name];
+  }
+  /* The load call came from what was logged, so it has to be recomputed. */
+  try{ ex.rec=recommendLoad(ex.name); }catch(e){}
+  delete ex.adjNote;
+  save();
+  try{ const el=document.getElementById('exb'+exIdx); if(el){ el.outerHTML=exBlockHTML(ex,exIdx); paintDemos(); } }catch(e){}
+  try{ renderStrengthPBs(); }catch(e){}
+  toast("Deleted · "+label);
 }
 /* WorkoutX ships real step-by-step instructions \u2014 better than my one-liners. */
 function stepsHTML(name){
@@ -4542,11 +4740,19 @@ function stepsHTML(name){
 function exBlockHTML(e,i){
   const rec=e.rec?"<div class='cue'><b>Load:</b> "+e.rec.text+"</div>":"";
   const wn=e.wristNote?"<div class='cue' style='color:var(--gold)'><b>⚠ TFCC swap:</b> "+e.wristNote+"</div>":"";
-  const chips=todaySets(e.name).map(setChip).join('');
+  const chips=todaySets(e.name).map((s,k)=>setChip(s,i,k)).join('');
   const input = e.timed
-    ? "<div class='holdrow'><div class='hold-cd' id='hcd"+i+"'>0:00</div><button class='holdbtn' id='hbtn"+i+"' onclick='toggleHold("+i+")'>▶ Start hold</button></div>"
-    : "<div class='logrow'><input id='w"+i+"' inputmode='decimal' placeholder='kg' value='"+prefillWeight(e)+"'><input id='r"+i+"' inputmode='numeric' placeholder='reps' value='"+prefillReps(e)+"'><button onclick='logSet("+i+")'>Log</button></div>"
-      + prefillNote(e);
+    ? ((function(){ const p=positionsFor(e.name);
+        return p? "<div class='posnote'>↻ "+p.join(" → ")+" · it beeps and calls each one</div>" : ""; })())+
+      "<div class='hpos' id='hpos"+i+"'></div>"+
+      "<div class='holdrow'><div class='hold-cd' id='hcd"+i+"'>0:00</div><button class='holdbtn' id='hbtn"+i+"' onclick='toggleHold("+i+")'>▶ Start hold</button></div>"
+    : (isLoadless(e.name)
+        /* v113 \u2014 a band has no kilos. Asking for a weight invites a number that
+           means nothing, and then the coach reads it back as an instruction. */
+        ? "<div class='logrow noweight'><input id='w"+i+"' type='hidden' value='0'><input id='r"+i+"' inputmode='numeric' placeholder='reps' value='"+prefillReps(e)+"'><button onclick='logSet("+i+")'>Log</button></div>"
+          + prefillNote(e)
+        : "<div class='logrow'><input id='w"+i+"' inputmode='decimal' placeholder='kg' value='"+prefillWeight(e)+"'><input id='r"+i+"' inputmode='numeric' placeholder='reps' value='"+prefillReps(e)+"'><button onclick='logSet("+i+")'>Log</button></div>"
+          + prefillNote(e));
   const total=((DB.workout&&DB.workout.main)||[]).length;
   const anchTag = e.anchor? "<div class='anchortag'>\u2693 Main lift \u00b7 held for this block</div>" : "";
   const grpTag = e.grp? ("<div class='grpband'>\u26a1 "+escapeHtml(grpLabel(e.grp))+
@@ -4644,13 +4850,90 @@ function commitOrder(newIdx,name){
   }catch(e){}
   toast(escapeHtml(name)+" \u2192 position "+(newIdx+1));
 }
+/* ===== v114 · MOVEMENTS WITH POSITIONS ================================
+   A neck isometric is four exercises wearing one name: front, back, left,
+   right. So is a side plank, a Cossack squat, a lunge. The hold timer counted
+   up in silence and left him watching the screen to know when to switch, which
+   defeats the point of a hold.
+
+   The positions are declared per movement, and the timer beeps and says which
+   one is next. Every position gets an equal slice of whatever hold length is
+   set \u2014 a minute across four positions is fifteen seconds each, which is what
+   he asked for. */
+const POSITION_SETS=[
+  {re:/isometric neck|neck (?:iso|hold|exercise)/i, pos:["Front","Back","Left","Right"]},
+  {re:/neck nods?/i,               pos:["Front","Back"]},
+  {re:/side plank|copenhagen/i,    pos:["Left","Right"]},
+  {re:/\b(?:single|one)[- ]?(?:leg|arm)|pistol|shrimp|bulgarian|split squat|cossack|curtsy|skater|clamshell|kickback|suitcase|windmill|concentration/i,
+                                   pos:["Left","Right"]},
+  {re:/lunge|step[- ]?up/i,        pos:["Left","Right"]},
+  {re:/lateral walk|monster walk/i,pos:["Out","Back"]},
+  {re:/bird ?dog|dead ?bug/i,      pos:["Left","Right"]},
+  {re:/pallof|woodchop|anti[- ]?rotation|side bend|external rotation|internal rotation/i,
+                                   pos:["Left","Right"]},
+  {re:/y[- ]?t[- ]?w|prone y/i,    pos:["Y","T","W"]}
+];
+function positionsFor(name){
+  const custom=(DB.rules&&DB.rules.positions)||{};
+  const k=String(name||"").toLowerCase();
+  if(Array.isArray(custom[k])) return custom[k].slice();
+  if(custom[k]===false) return null;                 /* he turned it off */
+  for(const p of POSITION_SETS) if(p.re.test(name||"")) return p.pos.slice();
+  return null;
+}
+function setPositions(name,arr){
+  DB.rules=DB.rules||{banned:{},prefer:{},kit:{}};
+  DB.rules.positions=DB.rules.positions||{};
+  DB.rules.positions[String(name).toLowerCase()] = arr===false? false : arr;
+  save();
+}
+/* How long the hold should be, so the slices can be worked out. */
+function holdTarget(e){
+  if(!e) return 60;
+  /* The scheme reads "3 sets \u00b7 60s hold", and a loose /(\d+)\s*s/ matched the
+     "3 sets" first \u2014 giving a 3-second hold split four ways. Only accept a
+     number that is actually followed by an s, and never the sets figure. */
+  const sch=String(e.scheme||"").replace(/^\s*\d+\s*sets?\s*[\u00b7.\-]?\s*/i,"");
+  const m=sch.match(/(\d+)\s*[\u2013\u2014-]\s*(\d+)\s*s\b/);
+  if(m) return Math.round((parseInt(m[1])+parseInt(m[2]))/2);
+  const m2=sch.match(/(\d+)\s*s\b/);
+  if(m2 && parseInt(m2[1])>=10) return parseInt(m2[1]);
+  return 60;
+}
+/* A short double-beep for a position change, distinct from the end-of-rest
+   alarm so he can tell them apart without looking. */
+function switchBeep(){
+  try{
+    const ctx=ensureCtx(); if(!ctx) return;
+    if(ctx.state==="suspended") ctx.resume();
+    [0,140].forEach((off,k)=>{
+      const o=ctx.createOscillator(), g=ctx.createGain();
+      o.type="sine"; o.frequency.value=k? 1180 : 880;
+      g.gain.setValueAtTime(0.0001,ctx.currentTime+off/1000);
+      g.gain.exponentialRampToValueAtTime(0.35,ctx.currentTime+off/1000+0.01);
+      g.gain.exponentialRampToValueAtTime(0.0001,ctx.currentTime+off/1000+0.12);
+      o.connect(g); g.connect(ctx.destination);
+      o.start(ctx.currentTime+off/1000); o.stop(ctx.currentTime+off/1000+0.14);
+    });
+  }catch(e){}
+  if(navigator.vibrate) try{ navigator.vibrate(90); }catch(e){}
+}
 let holdInt=null, holdStart=0, holdIdx=-1;
+let _holdPos={list:null,slice:0,at:-1,total:0};
+/* Say the position out loud if speech is on \u2014 the whole point is not having
+   to look at the phone. */
+function speakPos(name){
+  if(!(DB.prefs&&DB.prefs.voiceReply)) return;
+  try{ speak(name); }catch(e){}
+}
 function toggleHold(i){
   const ex=DB.workout&&DB.workout.main[i]; if(!ex) return;
   const btn=document.getElementById('hbtn'+i), cd=document.getElementById('hcd'+i);
   if(holdIdx===i && holdInt){
     const sec=Math.round((Date.now()-holdStart)/1000);
     clearInterval(holdInt); holdInt=null; holdIdx=-1; if(btn)btn.textContent="▶ Start hold"; if(cd)cd.textContent=fmtTime(sec);
+    _holdPos={list:null,slice:0,at:-1,total:0};
+    const pl=document.getElementById('hpos'+i); if(pl){ pl.classList.remove('show','flash'); pl.textContent=""; }
     releaseWake();
     saveSet(ex.name,{w:0,r:sec,timed:true}); markSession();
     const sl=document.getElementById('sl'+i); if(sl) sl.insertAdjacentHTML('beforeend',setChip({w:0,r:sec,timed:true}));
@@ -4659,7 +4942,37 @@ function toggleHold(i){
     const cb=document.getElementById('cb'+i); if(cb) cb.innerHTML="<div class='coachbubble'><div class='who'>◆ Coach</div>"+holdReply(sec)+"</div>";
   } else {
     unlockAudio(); autoStartSession(); requestWake(); if(holdInt) clearInterval(holdInt); holdIdx=i; holdStart=Date.now(); if(btn)btn.textContent="■ Stop & log";
-    holdInt=setInterval(function(){ const s=Math.round((Date.now()-holdStart)/1000); const c=document.getElementById('hcd'+i); if(c)c.textContent=fmtTime(s); },250);
+    /* v114 — split the hold across the movement's positions and call each one,
+       so he is not watching the screen to know when to switch. */
+    const pos=positionsFor(ex.name);
+    const total=holdTarget(ex);
+    const slice=pos? Math.max(5, Math.round(total/pos.length)) : 0;
+    _holdPos={list:pos, slice, at:-1, total};
+    const lab=document.getElementById('hpos'+i);
+    if(pos && lab){
+      lab.classList.add('show');
+      lab.textContent=pos[0]+"  ·  "+slice+"s each";
+      _holdPos.at=0;
+      speakPos(pos[0]);
+    }
+    holdInt=setInterval(function(){
+      const s=Math.round((Date.now()-holdStart)/1000);
+      const c=document.getElementById('hcd'+i); if(c)c.textContent=fmtTime(s);
+      if(_holdPos.list && _holdPos.slice>0){
+        const idx=Math.floor(s/_holdPos.slice);
+        if(idx!==_holdPos.at && idx<_holdPos.list.length){
+          _holdPos.at=idx;
+          const nm=_holdPos.list[idx];
+          const l=document.getElementById('hpos'+i);
+          if(l){ l.textContent=nm+"  ·  "+_holdPos.slice+"s each"; l.classList.remove('flash'); void l.offsetWidth; l.classList.add('flash'); }
+          switchBeep(); speakPos(nm);
+        } else if(idx>=_holdPos.list.length && _holdPos.at<_holdPos.list.length){
+          _holdPos.at=_holdPos.list.length;
+          const l=document.getElementById('hpos'+i); if(l) l.textContent="All positions done — stop when ready";
+          switchBeep();
+        }
+      }
+    },250);
   }
 }
 function holdReply(sec){ let v = sec>=60?"Beast — over a minute.":sec>=40?"Solid hold.":sec>=20?"Good — build on that.":"Every second counts."; return v+"<br>Logged <b>"+sec+"s</b>. Brace harder next round. 💪"; }
@@ -4700,6 +5013,7 @@ async function logSet(i){
   const exObj={name:ex.name, cue:ex.cue, rec:ex.rec, target, sets:todaySets(ex.name),
                finished:done>=target, nextName:(nextEx&&nextEx.name)||null,
                next: nextInfo,
+               loadless: (function(){ try{ return isLoadless(ex.name); }catch(e){ return false; } })(),
                ceiling: (function(){ try{ return atKitCeiling(ex.name,w); }catch(e){ return false; } })(),
                kit: (function(){ try{ return kitInfo(); }catch(e){ return null; } })()};
   const reply=await coachSetReply(exObj,{w,r});
@@ -4728,7 +5042,7 @@ async function coachSetReply(ex,set){
         ? "\nTHAT WAS HIS LAST SET OF THIS EXERCISE. Do NOT ask for another set and do NOT call a load for a next set — there isn't one. Give the verdict on the exercise as a whole, then point him at what's next."
         : "\nLOAD RULE. If a set felt ABOUT RIGHT, hold it \u2014 he works a weight for all "+(ex.target||4)+" sets and earns the increase between sessions. Do not congratulate him into a jump off one good set.\nBUT IF HE RATED IT EASY, that was never his working weight and there is nothing to master. Call the jump for the very next set \u2014 easy means the load was wrong, not that he has earned something. If he is already on his heaviest dumbbell, call more REPS instead.\nIf it was genuinely too heavy \u2014 form broke down, or he ground out far short of the target \u2014 drop it.\nGive: a short verdict, the load call for the next set, ONE technique cue, and the rest time.");
     const eff=sessionEffort(ex.sets), word=effortWord(eff);
-    const usr="Exercise: "+ex.name+". Just logged set "+setNo+" of "+target+": "+set.w+"kg × "+set.r+"."+
+    const usr="Exercise: "+ex.name+". Just logged set "+setNo+" of "+target+": "+(ex.loadless? (set.r+" reps") : (set.w+"kg × "+set.r))+"."+
       (ex.finished? " THAT COMPLETES THIS EXERCISE ("+target+" of "+target+" sets done)."+
                     (ex.next? ("\nNEXT EXERCISE: "+ex.next.name+" \u2014 "+ex.next.sets+" sets."+
                           "\n  What he lifted on it last time: "+(ex.next.last? ex.next.last+" ("+ex.next.lastWhen+")" : "no history yet, this is new to him")+
@@ -4738,6 +5052,7 @@ async function coachSetReply(ex,set){
                        : " That was the last exercise of the session.")
                   : " "+(target-setNo)+" set"+((target-setNo)===1?"":"s")+" still to go.")+
       (word? " Sets so far have felt "+word+" (avg RPE ~"+effortRPE(eff)+")." : " He hasn't rated effort yet.")+
+      (ex.loadless? "\nTHIS MOVEMENT HAS NO WEIGHT \u2014 it is a band or bodyweight. Do NOT mention kilos at all. The call is a REP target, or a slower negative, or more band tension. Quoting a weight here is meaningless and he cannot enter one." : "")+
       (ex.ceiling? "\nHE IS ON HIS HEAVIEST DUMBBELL ("+((ex.kit&&ex.kit.dbMax)||set.w)+"kg) \u2014 there is no heavier one. If that felt easy the progression is MORE REPS, so name a rep target. Past about 20 reps switch to tempo, a pause, or a harder single-limb version. Never tell him to add weight he does not own." : "")+
       " History start: "+(ex.rec?ex.rec.text:'n/a')+". Cue: "+ex.cue+".";
     const out=await callAI([{role:"system",content:sys},{role:"user",content:usr}],120);
@@ -5518,6 +5833,7 @@ coachingDoctrine()+
 "This is his real inventory, not a guess \u2014 he photographed it. Never program a movement that needs kit he has not got, and never call a load his rack cannot make.\n\n"+
 "His kit HERE ("+(((typeof LOCS!=="undefined"&&LOCS[locKey()])||{}).label||locKey())+"): "+JSON.stringify(kitInfo())+
 ". Kit is per LOCATION \u2014 the Dubai gym and the Madrid dumbbells are different.\n"+
+"BANDS AND BODYWEIGHT HAVE NO KILOS. Never quote a weight for one \u2014 not as a target, not as a suggestion, not \"aim for 15kg\". Progress them with REPS, then a slower negative, then a thicker band or a harder variation. If he is somewhere with only bands, every load call you make is a rep call.\n"+
 "ON HIS HEAVIEST DUMBBELL there is no next weight. Progress him with REPS, then tempo, pauses, or a harder single-limb variation.\n"+
 "Never recommend a jump his equipment cannot produce \u2014 a \"+1kg\" call on dumbbells is useless to him. If the next available weight is a big relative leap, KEEP THE WEIGHT AND ADD REPS instead, and say that\u2019s why. The app computes this and prints it as \"Load:\" \u2014 state that number.\n\n"
 "=== HOW HE PROGRESSES \u2014 THIS OVERRIDES YOUR INSTINCTS ===\n"+
@@ -9058,7 +9374,7 @@ function scheduleInApp(){
    v18 ADDITIONS — draggable rest timer · weekly training memory · AI planner
    · Firestore sync
    ========================================================================== */
-const APP_VERSION="v108 · 06/08/2026";
+const APP_VERSION="v114 · 06/08/2026";
 
 /* ===== 1. REST TIMER — drag it anywhere so it never blocks the chat box ===== */
 let _rtDrag=null;
@@ -9899,7 +10215,7 @@ function setEffort(i,setIdx,e){
     host.outerHTML="<div class='effdone' style='color:"+m.col+"'>Logged \u00b7 "+m.lab.toLowerCase()+"</div>";
   }
   const sl=document.getElementById('sl'+i);
-  if(sl) sl.innerHTML=todaySets(ex.name).map(setChip).join('');
+  if(sl) sl.innerHTML=todaySets(ex.name).map((s,k)=>setChip(s,i,k)).join('');
   try{ renderStrengthPBs(); }catch(err){}
 
   /* EASY: move it now, for the next set of this exercise. */
