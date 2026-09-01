@@ -620,8 +620,13 @@ background:var(--card);border:1px solid var(--line);border-radius:18px;padding:1
 .exsec[open]>summary{color:var(--orange);border-bottom:1px solid var(--line);}
 .exsec[open]>summary::after{transform:rotate(180deg);}
 .exsec>summary .m{font-size:11px;font-weight:600;color:var(--label);letter-spacing:0;}
-.exsecbody{padding:4px 13px 13px;}
-.exsecbody .exsets:first-child{margin-top:8px;}
+.exsecbody{padding:10px 13px 13px;}
+.exsecbody .exgrid{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:4px;}
+.exsecbody .exgrid .swapbtn{margin-top:0;width:100%;text-align:center;padding:11px 8px;
+  border-radius:11px;font-size:13px;color:var(--txt);}
+.exsecbody .exgrid .swapbtn.wide{grid-column:1/-1;}
+.exsecbody .exgrid .swapbtn .pfb{margin-left:6px;}
+.exsecbody .steps{margin-top:10px;}
 .repsin{flex:0 0 auto;width:96px;background:#15110d;border:1px solid var(--line);border-radius:10px;
   color:#fff;font-size:15px;font-weight:700;padding:7px 10px;text-align:center;}
 .exb.moved{outline:2px solid var(--orange);outline-offset:3px;transition:outline-color .4s;}
@@ -4139,6 +4144,11 @@ function buildMobilityFlow(){
 /* If the coach (or an old saved workout) gives us a bare name, attach the dose and cue we know. */
 function enrichMove(item){
   const o = (typeof item==="string")? {t:item} : Object.assign({},item);
+  /* v116 — the coach sometimes writes the dose into the NAME ("Standing Quad
+     Stretch 30s") and then the real dose field says something else, so the
+     card showed 30s and 45s each side at the same time. The dose has its own
+     field; take it out of the title. */
+  o.t=String(o.t||"").replace(/\s*[\u00b7\u2014-]?\s*\b\d+\s*(?:s|sec|secs|seconds|m|min|mins|minutes)\b\s*$/i,"").trim() || o.t;
   /* v115 — the library says "the TFCC side" because it was written before the
      app knew which side that was. It does now, so say it. */
   const nameSide=s=>String(s||"").replace(/\bthe TFCC side\b/gi, "your "+wristSide()+" wrist")
@@ -5528,12 +5538,14 @@ function exBlockHTML(e,i){
 
   /* 3 · swapping it, editing it, teaching it. */
   const change=
-    "<button class='swapbtn' onclick='swapEx("+i+")'>Similar</button>"+
-    "<button class='swapbtn' onclick='openBrowse("+i+",\"swap\")'>Something different</button>"+
-    "<button class='swapbtn' onclick='toggleEditor("+i+")'>Edit everything</button>"+
-    "<button class='swapbtn' onclick='togglePrefs("+i+")'>Preferences"+prefBadge(e.name)+"</button>"+
-    (e.grp? "" : "<button class='swapbtn' onclick='pairWithUI("+i+")'>Pair it</button>")+
-    "<button class='swapbtn' style='margin-left:7px' onclick='demoBtn("+i+")'>"+demoBtnLabel(e.name)+"</button>"+
+    "<div class='exgrid'>"+
+      "<button class='swapbtn' onclick='swapEx("+i+")'>Similar</button>"+
+      "<button class='swapbtn' onclick='openBrowse("+i+",\"swap\")'>Something different</button>"+
+      "<button class='swapbtn' onclick='togglePrefs("+i+")'>Preferences"+prefBadge(e.name)+"</button>"+
+      "<button class='swapbtn' onclick='demoBtn("+i+")'>"+demoBtnLabel(e.name)+"</button>"+
+      (e.grp? "" : "<button class='swapbtn' onclick='pairWithUI("+i+")'>Pair it</button>")+
+      "<button class='swapbtn"+(e.grp?" wide":"")+"' onclick='toggleEditor("+i+")'>Edit everything</button>"+
+    "</div>"+
     "<div id='edbox"+i+"' data-open='0'></div>"+
     "<div id='pfbox"+i+"' data-open='0'></div>"+
     "<div id='demo"+i+"' data-open='0'></div>"+
@@ -6951,6 +6963,12 @@ function resyncSections(){
   const ci=latestCheckin(); const wrist=!!(ci&&ci.date===today()&&/wrist|tfcc/i.test(ci.pain||""));
   if(!w.warmupLocked)   w.warmup   = buildWarmup(names,{travel:!!w.travel,wrist,firstEx:names[0]});
   if(!w.cooldownLocked) w.cooldown = buildCooldown(names,{wrist});
+  /* v116 — a locked section that has been cut down to one or two movements is
+     the result of the old set_section replacing the array wholesale. Repair it
+     in place: what he asked for stays at the front, the rest is filled back in.
+     This also rescues a session that was already saved in that state. */
+  if(w.warmupLocked   && (w.warmup||[]).length   < 3) w.warmup   = padSection('warmup',   w.warmup||[]);
+  if(w.cooldownLocked && (w.cooldown||[]).length < 4) w.cooldown = applyCoolDefaults(padSection('cooldown', w.cooldown||[]));
 }
 function finalizeCoachEdit(){
   resyncSections();
@@ -7162,14 +7180,47 @@ function coachSetSectionIcon(sec,match,emoji){
   if(idx<0||idx>=arr.length) return null;
   arr[idx].icon=emoji.trim(); delete arr[idx].img; finalizeCoachEdit(); return {sec:key,text:arr[idx].t}; }
 /* Replace an entire warm-up/cool-down list. Items separated by ';', optional 'text | emoji'. */
+/* ===== v116 · A SECTION EDIT MUST NOT GUT THE SECTION =====================
+   Both the coach action and the chat command replaced the whole array. Ask for
+   a quad stretch and you got a cool-down consisting of one quad stretch, with
+   cooldownLocked set so resyncSections would never top it back up again.
+
+   His movements stay, in his order, at the front. Everything after them is
+   filled from the same muscle-matched builder the automatic cool-down uses,
+   skipping anything that duplicates what he asked for, and the finishers are
+   always on the end because they are the point of a cool-down. */
+function padSection(key,items){
+  const w=DB.workout;
+  const floor = key==='warmup'? 3 : 4;
+  if(!w || !Array.isArray(w.main) || !w.main.length) return items;
+  if(items.length>=floor) return items;
+  const names=w.main.map(e=>e.name);
+  const ci=latestCheckin();
+  const wrist=!!(ci&&ci.date===today()&&/wrist|tfcc/i.test(ci.pain||""));
+  let pool=[];
+  try{
+    pool = key==='warmup'
+      ? buildWarmup(names,{travel:!!w.travel,wrist,firstEx:names[0]})
+      : buildCooldown(names,{wrist});
+  }catch(e){ return items; }
+  const seen=new Set(items.map(i=>mobKey(i.t)).filter(Boolean));
+  const out=items.slice();
+  pool.forEach(it=>{
+    const k=mobKey(it.t);
+    if(!k||seen.has(k)) return;
+    seen.add(k); out.push(it);
+  });
+  return out;
+}
 function coachSetSection(sec,listRaw){
   coachEnsureWorkout(); const key=/warm/i.test(sec)?'warmup':'cooldown';
   const items=String(listRaw).split(/\s*;\s*/).map(s=>s.trim()).filter(Boolean).map(chunk=>{
     const parts=chunk.split('|').map(x=>x.trim()); const o={t:parts[0]}; if(parts[1]) o.icon=parts[1]; return o; }).filter(o=>o.t);
   if(!items.length) return null;
-  if(key==='warmup'){ DB.workout.warmup=items.map(enrichMove); DB.workout.warmupLocked=true; }
-  else { DB.workout.cooldown=items.map(enrichMove); DB.workout.cooldownLocked=true; }
-  finalizeCoachEdit(); return {sec:key, names:items.map(i=>i.t)}; }
+  const full=padSection(key, items.map(enrichMove));
+  if(key==='warmup'){ DB.workout.warmup=full; DB.workout.warmupLocked=true; }
+  else { DB.workout.cooldown=applyCoolDefaults(full); DB.workout.cooldownLocked=true; }
+  finalizeCoachEdit(); return {sec:key, names:full.map(i=>i.t)}; }
 /* Re-derive every warm-up/cool-down icon from the movement name. */
 function coachFixIcons(){
   coachEnsureWorkout(); let n=0;
@@ -10105,7 +10156,7 @@ function scheduleInApp(){
    v18 ADDITIONS — draggable rest timer · weekly training memory · AI planner
    · Firestore sync
    ========================================================================== */
-const APP_VERSION="v116 · 01/09/2026";
+const APP_VERSION="v117 · 01/09/2026";
 
 /* ===== 1. REST TIMER — drag it anywhere so it never blocks the chat box ===== */
 let _rtDrag=null;
@@ -14570,7 +14621,7 @@ defAction("set_section",{
     return null;
   },
   apply:a=>{
-    const items=a.items.map(x=>enrichMove(typeof x==="string"?{t:x}:x));
+    const items=padSection(a.section, a.items.map(x=>enrichMove(typeof x==="string"?{t:x}:x)));
     if(a.section==="warmup"){ DB.workout.warmup=items; DB.workout.warmupLocked=true; }
     else { DB.workout.cooldown=applyCoolDefaults(items); DB.workout.cooldownLocked=true; }
     return {section:a.section, names:items.map(i=>i.t)};
