@@ -32,7 +32,7 @@ body{max-width:520px;margin:0 auto;position:relative;min-height:100vh;}
 button{font-family:inherit;cursor:pointer;border:none;background:none;color:inherit;}
 input,select,textarea{font-family:inherit;}
 ::-webkit-scrollbar{display:none;}
-#app{padding:calc(var(--safe-top) + 8px) 16px 140px 16px;}
+#app{padding:calc(var(--safe-top) + 8px) 16px calc(150px + var(--safe-bot)) 16px;}
 .screen{display:none;}
 .screen.active{display:block;animation:zoom .34s cubic-bezier(.2,.9,.3,1);}
 @keyframes zoom{from{opacity:0;transform:translateY(8px);}to{opacity:1;transform:none;}}
@@ -608,6 +608,22 @@ background:var(--card);border:1px solid var(--line);border-radius:18px;padding:1
 .exorder .ob{flex:0 0 auto;background:var(--pill);border:1px solid var(--line);color:var(--txt);
   border-radius:10px;padding:7px 11px;font-size:13px;font-weight:800;min-width:38px;}
 .exorder .ob[disabled]{opacity:.3;}
+.exorder .ob.del{color:var(--red);font-size:14px;padding:0 11px;}
+/* v116 — the card is collapsed by default: image, name, scheme, cue, log row.
+   Everything else lives behind one of three headers so Log is always in reach
+   without scrolling past a wall of controls. */
+.exsec{border:1px solid var(--line);border-radius:12px;background:#100d0a;margin-top:8px;overflow:hidden;}
+.exsec>summary{list-style:none;cursor:pointer;display:flex;align-items:center;gap:8px;
+  padding:11px 13px;font-size:12.5px;font-weight:800;letter-spacing:.3px;color:var(--txt);}
+.exsec>summary::-webkit-details-marker{display:none;}
+.exsec>summary::after{content:"\25be";margin-left:auto;color:var(--label);font-size:11px;transition:transform .18s;}
+.exsec[open]>summary{color:var(--orange);border-bottom:1px solid var(--line);}
+.exsec[open]>summary::after{transform:rotate(180deg);}
+.exsec>summary .m{font-size:11px;font-weight:600;color:var(--label);letter-spacing:0;}
+.exsecbody{padding:4px 13px 13px;}
+.exsecbody .exsets:first-child{margin-top:8px;}
+.repsin{flex:0 0 auto;width:96px;background:#15110d;border:1px solid var(--line);border-radius:10px;
+  color:#fff;font-size:15px;font-weight:700;padding:7px 10px;text-align:center;}
 .exb.moved{outline:2px solid var(--orange);outline-offset:3px;transition:outline-color .4s;}
 .approxchip{position:absolute;bottom:8px;left:8px;background:#0a0806e6;color:var(--gold);
   font-size:10.5px;font-weight:800;padding:3px 9px;border-radius:9px;border:1px solid var(--line);
@@ -762,7 +778,10 @@ a{color:var(--orange);}
 .eef{display:flex;align-items:center;gap:10px;padding:7px 0;border-bottom:1px solid #1d1710;}
 .eef:last-child{border-bottom:none;}
 .eef .k{flex:0 0 96px;font-size:11px;font-weight:700;letter-spacing:.6px;text-transform:uppercase;color:var(--label);}
-.eef .v{flex:1;display:flex;align-items:center;gap:8px;}
+.eef .v{flex:1;min-width:0;display:flex;align-items:center;gap:8px;justify-content:flex-end;}
+.eef .v>select.eein{-webkit-appearance:none;appearance:none;text-transform:capitalize;
+  background-image:linear-gradient(45deg,transparent 50%,#8a7a68 50%),linear-gradient(135deg,#8a7a68 50%,transparent 50%);
+  background-position:calc(100% - 16px) 52%,calc(100% - 11px) 52%;background-size:5px 5px,5px 5px;background-repeat:no-repeat;padding-right:30px;}
 .eef .v .n{min-width:26px;text-align:center;font-size:16px;font-weight:800;color:#fff;}
 .eeval{font-size:14px;font-weight:600;color:var(--txt);text-transform:capitalize;}
 .eein{flex:1;min-width:0;background:#15110d;border:1px solid var(--line);border-radius:10px;
@@ -1515,6 +1534,29 @@ const FB_CONFIG={
   appId:"1:547217019363:web:7a514c9009004780a350d6"
 };
 const FB_SYNC_DEFAULT="amir-9k3xq7";
+/* ===== v116 · THINGS HE CANNOT DO ========================================
+   Barbell hip thrusts and any bar-hanging vertical pull are out. They were
+   being programmed and then swapped away at the card, which wastes a slot and
+   makes him argue with the app mid-session. Excluding them at the source is
+   the honest version: the planner never offers one, and the slot is filled by
+   the substitute instead of being lost.
+
+   Declared once and used in three places — DEFAULTS (fresh install), the
+   migration (his existing state) and Preferences (where he can lift a ban or
+   add another). The substitute is a preference, not a guarantee: where it is
+   not available in the room he is standing in — there is no pulldown in
+   Saronida — the planner falls back to the nearest movement for the same
+   muscle that IS. */
+const EXCLUDE_116=[
+  {name:"Hip Thrust", sub:"Glute Bridge",  why:"barbell hip thrusts are out"},
+  {name:"Pull-up",    sub:"Lat Pulldown",  why:"pull-ups are out"},
+  {name:"Chin-up",    sub:"Lat Pulldown",  why:"chin-ups are out"}
+];
+EXCLUDE_116.banned =()=>{ const o={}; EXCLUDE_116.forEach(x=>o[x.name]=x.why); return o; };
+EXCLUDE_116.prefer =()=>{ const o={}; EXCLUDE_116.forEach(x=>o[x.name]=x.sub); return o; };
+EXCLUDE_116.exPrefs=()=>{ const o={}; EXCLUDE_116.forEach(x=>
+  o[x.name.toLowerCase()]={never:true, why:x.why, substitute:x.sub}); return o; };
+
 const DEFAULTS = {
   profile:{name:"Amir", location:"dubai", height:187, weightKg:83.7,
     goal:"Build real muscle while getting lean — a recomp, not a bulk and not just maintenance. The target look is lean and athletic: visible abs, clear shoulder-to-waist taper, obviously trained. NOT a bodybuilder and not bulky — shape and leanness over size. Just as important: genuinely more flexible and mobile. Strength AND range of motion, not weights alone. Judge progress by the mirror, photos, waist and the loads on the bar — not by bodyweight.", phase:"Lean Recomp / mini-cut", coachTone:"",
@@ -1533,7 +1575,12 @@ const DEFAULTS = {
   chat:[], streak:0, lastSessionDate:null, workout:null,
   integrations:{"Apple Watch":true,"Concept2 (manual)":true,"Photos":true,"Camera":false,"Notifications":true},
   lib:{}, dayTypes:{}, media:{}, mediaPicked:{}, exMap:{}, progression:{}, deadMedia:{}, demoPick:{},
-  rules:{ banned:{}, prefer:{}, kit:{} },   /* things that outlive today's session */
+  /* v116 — three movements he cannot do. They live in DEFAULTS as well as in
+     the migration so a fresh install (or a wipe-and-restore) starts with them
+     already excluded rather than programming a pull-up on day one. The ban is
+     editable in Preferences like any other; the migration is stamped so it
+     will not put back one he has lifted. */
+  rules:{ banned:EXCLUDE_116.banned(), prefer:EXCLUDE_116.prefer(), kit:{} },
   favourites:{},
   /* His nutritionist owns these. They live here only so the coach can see what
      the deficit is doing to his RECOVERY and program around it. */
@@ -1556,7 +1603,7 @@ const DEFAULTS = {
   injuries:null,          /* canonical injury records; null → seeded on first load */
   dayState:{},            /* per-date: was today deliberately cleared or made a rest day */
   logTypes:{},            /* permanent "log as" corrections, keyed by lowercase name */
-  exPrefs:{},             /* favourite / prefer / avoid / never / painful, per exercise */
+  exPrefs:EXCLUDE_116.exPrefs(),  /* favourite / prefer / avoid / never / painful, per exercise */
   programme:{priorities:[],notes:[],changes:[],startedAt:null,goalSnapshot:""},
   undo:[],                /* the one undo stack every screen writes to */
   migrations:{}
@@ -1762,6 +1809,22 @@ function migrate115(d){
     });
     done.exprefs115=true;
   }
+  /* 4b · v116 — three movements he cannot do, so they should never reach the
+     sheet in the first place rather than be offered and then swapped. Seeded
+     once: if he ever lifts one of these bans in Preferences it stays lifted,
+     because the stamp stops this running again. The substitute is a hint, not
+     a rule — where it isn't available (no pulldown in Greece) the planner
+     falls back to the nearest thing for the same muscle that is. */
+  if(!done.exclude116){
+    EXCLUDE_116.forEach(({name,sub,why})=>{
+      const k=name.toLowerCase();
+      d.rules.banned[name]=d.rules.banned[name]||why;
+      d.rules.prefer[name]=d.rules.prefer[name]||sub;
+      d.exPrefs[k]=Object.assign({why, substitute:sub}, d.exPrefs[k]||{}, {never:true});
+    });
+    done.exclude116=true;
+  }
+  d.eqOverride=d.eqOverride||{};
 
   /* 5 — the programme record. The block existed; what was missing was the
      written intent behind it, which is what the Programme view shows. */
@@ -1802,7 +1865,13 @@ function idbOpen(){ return new Promise(res=>{ try{
 }catch(e){res(null);} }); }
 async function idbSet(v,key){ try{ if(!_idb)_idb=await idbOpen(); if(!_idb)return; const tx=_idb.transaction(IDB_STORE,"readwrite"); tx.objectStore(IDB_STORE).put(v,key||STORE_KEY); }catch(e){} }
 async function idbGet(key){ try{ if(!_idb)_idb=await idbOpen(); if(!_idb)return null; return await new Promise(res=>{ const rq=_idb.transaction(IDB_STORE,"readonly").objectStore(IDB_STORE).get(key||STORE_KEY); rq.onsuccess=()=>res(rq.result||null); rq.onerror=()=>res(null); }); }catch(e){return null;} }
-function mergeDefaults(parsed){ const d={...structuredClone(DEFAULTS),...parsed};
+/* v116 — this was `const d`, so the `d=migrate115(d)` line further down threw
+   "Assignment to constant variable" on every single load. The throw was inside
+   a try/catch that only console.warn'd, and migrate115 mutates the object in
+   place as well as returning it, so the migration appeared to work and nobody
+   noticed. It would have silently lost any future migration step that returned
+   a NEW object rather than editing this one. */
+function mergeDefaults(parsed){ let d={...structuredClone(DEFAULTS),...parsed};
   if(!d.schedule) d.schedule=structuredClone(DEFAULTS.schedule); if(!d.dayOverride) d.dayOverride={date:null,split:null};
   /* v61 — photos gain a real timestamp and a pose label. Older ones only ever
      had a YYYY-MM-DD, so they're back-filled from that date at midday (so a
@@ -1923,6 +1992,7 @@ window.addEventListener('scroll',()=>{ _scrollMem[_curScreen]=window.scrollY||wi
 
 function go(s){
   rememberScroll();
+  _navving=true; setTimeout(()=>{ _navving=false; },200);
   document.querySelectorAll('.screen').forEach(x=>x.classList.remove('active'));
   document.getElementById('s-'+s).classList.add('active');
   document.querySelectorAll('.tab').forEach(t=>t.classList.toggle('active',t.dataset.s===s));
@@ -2119,7 +2189,20 @@ function gearRank(name,key){
 function locKey(){ const l=(DB.profile&&DB.profile.location)||"dubai"; if(l==="home") return "dubai"; return LOCS[l]?l:"dubai"; }
 function LOC(){ return LOCS[locKey()]; }
 function currentEquipment(){ const e=(DB.profile&&DB.profile.equip)||{}; return (e[locKey()]||"").trim() || LOC().equipment; }
-function eqOf(name){ const e=EX(name); return (e&&e.eq)||"bw"; }
+/* v116 — the library's equipment tag is a guess and it is sometimes wrong,
+   which then feeds the location gate, the kit rounding and the "pick a band
+   tension" copy. His answer wins and sticks. */
+function eqOf(name){
+  const o=(DB.eqOverride||{})[String(name||"").trim().toLowerCase()];
+  if(o) return o;
+  const e=EX(name); return (e&&e.eq)||"bw";
+}
+function setEqOverride(name,key){
+  DB.eqOverride=DB.eqOverride||{};
+  const k=String(name||"").trim().toLowerCase();
+  if(!key) delete DB.eqOverride[k]; else DB.eqOverride[k]=key;
+  save();
+}
 /* v95 — "dumbbells only" was a kit list and nothing more, so DB Bench Press
    passed the check in Madrid: the dumbbells are there, the bench is not.
    Some movements need something to lie on, and that is separate from what you
@@ -2487,14 +2570,34 @@ function exPreferred(name){
   const to=pr[name];
   return (to && !exBanned(to))? to : name;
 }
-/* Applied to every list the builder produces. */
+/* Applied to every list the builder produces.
+
+   v116 — a banned name used to be dropped and the slot backfilled from the
+   bottom of the pool, so blocking pull-ups quietly cost you the vertical pull
+   rather than replacing it. Now the ban resolves to a SUBSTITUTE: the mapping
+   he set if it works where he's standing, otherwise the nearest movement for
+   the same muscle that does. Only if neither exists is the slot dropped. */
+/* The stand-in for a name we cannot use: the substitute he set if it works in
+   the room he is standing in, otherwise the nearest movement for the same
+   muscle and pattern that does. */
+function subFor(n,avoid){
+  const pr=(DB.rules&&DB.rules.prefer)||{};
+  const alt=pr[n] || pr[String(n||"").toLowerCase()];
+  if(alt && !exBanned(alt) && canDoHere(alt) && !avoid.has(alt)) return alt;
+  try{ return nearestHere(n, locKey(), new Set([...avoid].map(x=>String(x).toLowerCase()))); }
+  catch(e){ return null; }
+}
 function applyRules(list){
   const out=[], seen=new Set();
   (list||[]).forEach(n=>{
-    if(exBanned(n)) return;
-    const sub=exPreferred(n);
-    if(seen.has(sub)) return;
-    seen.add(sub); out.push(sub);
+    const first = exBanned(n)? subFor(n,seen) : exPreferred(n);
+    if(first && !exBanned(first) && !seen.has(first)){ seen.add(first); out.push(first); return; }
+    /* Blocked, or it collided with something already on the list — a banned
+       anchor and a later accessory can both resolve to the lat pulldown. The
+       one that arrives second steps aside to its own nearest alternative
+       rather than dropping out and leaving the session a movement short. */
+    const alt=subFor(n,new Set([...seen, first].filter(Boolean)));
+    if(alt && !exBanned(alt) && !seen.has(alt)){ seen.add(alt); out.push(alt); }
   });
   return out;
 }
@@ -4332,7 +4435,33 @@ function bindSheetSecs(){
   });
 }
 function moveCount(a){ const n=(a||[]).length; return n+" move"+(n===1?"":"s"); }
+/* ===== v116 · THE SHEET NO LONGER THROWS YOU TO THE BOTTOM ================
+   Every mutation ends in refreshAllViews(), which rebuilds the whole sheet
+   with host.innerHTML=. Emptying the container collapses the page to almost
+   nothing, the browser clamps the scroll position to the new (tiny) maximum,
+   and when the content comes back you are at the bottom — whatever you had
+   just tapped is now off-screen.
+
+   The container's height is pinned across the swap so it never collapses, and
+   the scroll position is put back on the other side. Tab navigation keeps its
+   own restore, so the wrapper stands aside while go() is running rather than
+   fighting it. */
+let _navving=false;
 function renderWorkoutSheet(w){
+  const host=document.getElementById('workoutSheet');
+  if(!host || _navving || _curScreen!=='workout'){ return _renderSheetInner(w); }
+  const y=window.scrollY||window.pageYOffset||0;
+  const h=host.offsetHeight;
+  if(h) host.style.minHeight=h+"px";
+  try{ return _renderSheetInner(w); }
+  finally{
+    const put=()=>{ try{ window.scrollTo(0,y); }catch(e){} };
+    put();
+    requestAnimationFrame(()=>{ try{ host.style.minHeight=""; }catch(e){} put(); });
+    setTimeout(()=>{ try{ host.style.minHeight=""; }catch(e){} put(); },50);
+  }
+}
+function _renderSheetInner(w){
   const host=document.getElementById('workoutSheet');
   if(!host) return;
   /* v115 — a cleared day says so, rather than showing an empty sheet that
@@ -4536,6 +4665,7 @@ function startRest(sec,label,onDone){
   restApplyPos();
   document.getElementById('restLab').textContent=label||"Rest · next set in";
   restTick(); if(restInt) clearInterval(restInt); restInt=setInterval(restTick,250);
+  try{ sessAvoidRest(); }catch(e){}
 }
 function restTick(){
   if(!restActive) return;
@@ -4581,6 +4711,21 @@ function fmtDur(ms){
   const sec=Math.max(0,Math.round(ms/1000)), h=Math.floor(sec/3600), m=Math.floor((sec%3600)/60), ss=sec%60;
   return h? (h+":"+String(m).padStart(2,'0')+":"+String(ss).padStart(2,'0'))
           : (m+":"+String(ss).padStart(2,'0'));
+}
+/* v116 — the elapsed figure was already measured from wall-clock timestamps,
+   so it never drifts when the phone locks. What was missing was the anchor:
+   without seeing the time you started, a number you don't expect has nothing
+   to check itself against. Both ends are now on the card. */
+function clockOf(ms){
+  if(!ms) return "";
+  const d=new Date(ms);
+  return String(d.getHours()).padStart(2,'0')+":"+String(d.getMinutes()).padStart(2,'0');
+}
+function sessStartClock(){ const s=sess(); return (s&&s.segs&&s.segs.length)? clockOf(s.segs[0].s) : ""; }
+function sessEndClock(){
+  const s=sess(); if(!s||!s.segs||!s.segs.length) return "";
+  const last=s.segs[s.segs.length-1];
+  return last.e? clockOf(last.e) : "";
 }
 function fmtDurWords(ms){
   const mins=Math.round(ms/60000);
@@ -4644,16 +4789,18 @@ function sessBarHTML(){
     "</div>";
   }
   if(fin){
+    const span=(sessStartClock()&&sessEndClock())? sessStartClock()+" → "+sessEndClock()+" · " : "";
     return "<div class='sessbar' id='sessBar'>"+
       "<div class='sl'>Session clock · stopped</div>"+
       "<div class='sc' id='sessClock'>"+fmtDur(ms)+"</div>"+
-      "<div class='sm2'>"+fmtDurWords(ms)+" of actual training"+(sessPauseNote()||"")+".</div>"+
+      "<div class='sm2'>"+span+fmtDurWords(ms)+" of actual training"+(sessPauseNote()||"")+".</div>"+
       "<div class='sbtns'><button onclick='resumeSession()'>▶ Carry on</button>"+
         "<button onclick='resetSession()'>Reset</button></div>"+
     "</div>";
   }
+  const st=sessStartClock();
   return "<div class='sessbar "+(running?"on":"hold")+"' id='sessBar'>"+
-    "<div class='sl'>"+(running?"Training · clock running":"Paused")+"</div>"+
+    "<div class='sl'>"+(running?"Training · clock running":"Paused")+(st? " · started "+st : "")+"</div>"+
     "<div class='sc' id='sessClock'>"+fmtDur(ms)+"</div>"+
     "<div class='sm2'>"+(running
       ? "Tap pause if you get pulled away — the pill follows you down the page too."
@@ -4736,6 +4883,27 @@ function sessClamp(){
   x=Math.max(6,Math.min(window.innerWidth-w-6,x));
   y=Math.max(6,Math.min(window.innerHeight-h-6,y));
   f.style.left=x+"px"; f.style.top=y+"px";
+  sessAvoidRest();
+}
+/* v116 — both floats are draggable, so both can end up in the same place, and
+   when they do the session pill sits on the rest timer's +15 and Skip buttons
+   and you cannot reach them. Whoever moved last gives way: the pill steps
+   below the rest bar, or above it if there is no room underneath. */
+function sessAvoidRest(){
+  const f=document.getElementById('sessFloat');
+  const r=document.getElementById('restTimer');
+  if(!f||!r) return;
+  if(!f.classList.contains('show')||!r.classList.contains('show')) return;
+  const a=f.getBoundingClientRect(), b=r.getBoundingClientRect();
+  if(!a.height||!b.height) return;
+  const hit = a.left<b.right && a.right>b.left && a.top<b.bottom && a.bottom>b.top;
+  if(!hit) return;
+  f.classList.add('moved');
+  let y=b.bottom+8;
+  if(y+a.height > window.innerHeight-6) y=b.top-a.height-8;
+  y=Math.max(6,Math.min(window.innerHeight-a.height-6,y));
+  f.style.left=Math.max(6,Math.min(window.innerWidth-a.width-6,a.left))+"px";
+  f.style.top=y+"px";
 }
 let _sfDrag=null;
 /* v65.1 — the pill would not stay where it was put.
@@ -5094,7 +5262,13 @@ function lastTimeHTML(name){
   const s=lastSessionOf(name);
   if(!s||!(s.sets||[]).length){
     const L0=layoffInfo();
-    return "<div class='cue'><b>Last time:</b> first time on this one \u2014 pick a weight you can own for 8\u201312 clean reps."+
+    /* v116 — this said "pick a weight" on exercises that have no weight. */
+    const open = eqOf(name)==="band"
+      ? "first time on this one \u2014 pick a band tension you can control for every rep."
+      : isLoadless(name)
+        ? "first time on this one \u2014 find a rep number you can hit with clean form on every set."
+        : "first time on this one \u2014 pick a weight you can own for clean reps.";
+    return "<div class='cue'><b>Last time:</b> "+open+
       (L0.tier? " You're "+L0.gap+" days off training, so start lighter than you think." : "")+"</div>";
   }
   const timed=!!(EX(name)||{}).timed;
@@ -5157,7 +5331,10 @@ function prefillNote(e){
   if(todaySets(e.name).length) return "";
   let s=null; try{ s=lastSessionOf(e.name); }catch(err){}
   if(!s||!s.sets||!s.sets.length){
-    if(isLoadless(e.name)) return "<div class='prefill'>First time on this one \u2014 pick a band tension you can control for 12\u201320 clean reps.</div>";
+    /* v116 — isLoadless is true for bands AND bodyweight, so a crunch was
+       being told to pick a band tension. Say the thing that applies. */
+    if(eqOf(e.name)==="band") return "<div class='prefill'>First time on this one \u2014 pick a band tension you can control for 12\u201320 clean reps.</div>";
+    if(isLoadless(e.name)) return "<div class='prefill'>First time on this one \u2014 find a rep number you can hit with clean form on every set.</div>";
     return (e.rec&&e.rec.estimate)? "<div class='prefill'>Filled in with a suggested starting weight \u2014 first time on this one.</div>" : "";
   }
   const top=Math.max(...s.sets.map(x=>x.w||0));
@@ -5299,7 +5476,9 @@ function exBlockHTML(e,i){
      the line only appears where the panel has nothing to show. */
   const _prog=progressionHTML(e);
   const rec=(e.rec && !_prog)? "<div class='cue'><b>Load:</b> "+e.rec.text+"</div>" : "";
-  const wn=e.wristNote?"<div class='cue' style='color:var(--gold)'><b>⚠ "+wristSideLabel()+"-wrist swap:</b> "+e.wristNote+"</div>":"";
+  /* v116 — the wrist note used to print on every card. He knows about the
+     TFCC; the note is for the planner, not for him. The constraint still picks
+     and swaps the exercises, it just stops narrating itself. */
   const chips=todaySets(e.name).map((s,k)=>setChip(s,i,k)).join('');
   const input = logRowHTML(e,i);
   const total=((DB.workout&&DB.workout.main)||[]).length;
@@ -5310,22 +5489,12 @@ function exBlockHTML(e,i){
       "<button class='ob' onclick='moveExTop("+i+")'"+(i===0?" disabled":"")+" aria-label='move to top'>\u21c8 top</button>"+
       "<button class='ob' onclick='moveEx("+i+",-1)'"+(i===0?" disabled":"")+" aria-label='move up'>\u2191</button>"+
       "<button class='ob' onclick='moveEx("+i+",1)'"+(i>=total-1?" disabled":"")+" aria-label='move down'>\u2193</button>"+
+      "<button class='ob del' onclick='removeExUI("+i+")'"+(total<=1?" disabled":"")+" aria-label='remove this exercise'>\u2715</button>"+
     "</div>";
-  return "<div class='exb"+(e.grp?" grouped":"")+"' id='exb"+i+"'>"+order+exImgHTML(e.name,e.muscles)+
-    "<div class='name'>"+e.name+"</div><div class='scheme'>"+e.scheme+" · rest "+e.rest+"</div>"+
-    "<div class='exsets'><span class='l'>Sets</span>"+
-      "<button class='st' onclick='setExSets("+i+","+(exSets(e)-1)+")' aria-label='fewer sets'>−</button>"+
-      "<span class='n'>"+exSets(e)+"</span>"+
-      "<button class='st' onclick='setExSets("+i+","+(exSets(e)+1)+")' aria-label='more sets'>+</button>"+
-      "<span class='d'>"+todaySets(e.name).length+" logged</span></div>"+
-    "<div class='exsets'><span class='l'>Rest</span>"+
-      "<button class='st' onclick='bumpExRest("+i+",-15)' aria-label='less rest'>\u2212</button>"+
-      "<span class='n' style='min-width:62px'>"+fmtRest(restForEx(e))+"</span>"+
-      "<button class='st' onclick='bumpExRest("+i+",15)' aria-label='more rest'>+</button>"+
-      "<span class='d'>between sets</span></div>"+
-    /* v115 — six ways to log something, editable here, with the today-only
-       versus permanent choice asked at the moment it matters. */
-    logTypeRowHTML(e,i)+
+
+  /* The notes that change what you do THIS set stay on the face of the card.
+     Everything else is behind a header. */
+  const notes=
     (e.technique? "<div class='cue' style='color:var(--orange)'><b>\ud83d\udd25 "+escapeHtml(e.technique)+"</b></div>":"")+
     grpNoteHTML(e)+
     (e.superset? "<div class='cue' style='color:var(--gold)'><b>\u26a1 Superset:</b> straight into "+escapeHtml(e.superset)+", no rest</div>":"")+
@@ -5333,9 +5502,32 @@ function exBlockHTML(e,i){
     (e.tempo? "<div class='cue'><b>Tempo:</b> "+escapeHtml(e.tempo)+"</div>":"")+
     (e.adjNote? "<div class='cue' style='color:var(--gold)'><b>\u2195 Adjusted:</b> "+escapeHtml(e.adjNote)+"</div>":"")+
     (e.stoppedEarly? "<div class='cue' style='color:var(--muted)'>Stopped early \u2014 that's logged.</div>":"")+
-    (e.skipped? "<div class='cue' style='color:var(--red)'><b>Skipped today</b></div>":"")+
-    lastTimeHTML(e.name)+
-    _prog+
+    (e.skipped? "<div class='cue' style='color:var(--red)'><b>Skipped today</b></div>":"");
+
+  /* 1 · the prescription: sets, reps, rest, how it's logged. */
+  const meta=logMeta(e.name,e);
+  const repLabel = meta.unit==="time"? "Hold" : meta.unit==="distance"? "Distance" : "Reps";
+  const numbers=
+    "<div class='exsets'><span class='l'>Sets</span>"+
+      "<button class='st' onclick='setExSets("+i+","+(exSets(e)-1)+")' aria-label='fewer sets'>−</button>"+
+      "<span class='n'>"+exSets(e)+"</span>"+
+      "<button class='st' onclick='setExSets("+i+","+(exSets(e)+1)+")' aria-label='more sets'>+</button>"+
+      "<span class='d'>"+todaySets(e.name).length+" logged</span></div>"+
+    "<div class='exsets'><span class='l'>"+repLabel+"</span>"+
+      "<input class='repsin' id='cr"+i+"' value='"+attrEsc(shortTarget(e))+"' onchange='cardReps("+i+")' aria-label='"+repLabel.toLowerCase()+" per set'>"+
+      "<span class='d'>per set</span></div>"+
+    "<div class='exsets'><span class='l'>Rest</span>"+
+      "<button class='st' onclick='bumpExRest("+i+",-15)' aria-label='less rest'>\u2212</button>"+
+      "<span class='n' style='min-width:62px'>"+fmtRest(restForEx(e))+"</span>"+
+      "<button class='st' onclick='bumpExRest("+i+",15)' aria-label='more rest'>+</button>"+
+      "<span class='d'>between sets</span></div>"+
+    logTypeRowHTML(e,i);
+
+  /* 2 · what the coach has to say about the load. */
+  const coach=lastTimeHTML(e.name)+_prog+rec;
+
+  /* 3 · swapping it, editing it, teaching it. */
+  const change=
     "<button class='swapbtn' onclick='swapEx("+i+")'>Similar</button>"+
     "<button class='swapbtn' onclick='openBrowse("+i+",\"swap\")'>Something different</button>"+
     "<button class='swapbtn' onclick='toggleEditor("+i+")'>Edit everything</button>"+
@@ -5346,11 +5538,66 @@ function exBlockHTML(e,i){
     "<div id='pfbox"+i+"' data-open='0'></div>"+
     "<div id='demo"+i+"' data-open='0'></div>"+
     "<div id='swap"+i+"' data-open='0'></div>"+
-    "<div class='cue'><b>Cue:</b> "+e.cue+"</div>"+stepsHTML(e.name)+rec+wn+
-    "<div>"+e.muscles.map(m=>"<span class='mini'>"+m+"</span>").join('')+"</div>"+
+    stepsHTML(e.name);
+
+  return "<div class='exb"+(e.grp?" grouped":"")+"' id='exb"+i+"'>"+order+exImgHTML(e.name,e.muscles)+
+    "<div class='name'>"+e.name+"</div><div class='scheme'>"+e.scheme+" · rest "+e.rest+"</div>"+
+    exSec(e.name,"numbers","Sets, reps &amp; rest",exSetMeta(e),numbers)+
+    exSec(e.name,"coach","Coach","",coach)+
+    exSec(e.name,"change","Change this exercise","",change)+
+    notes+
+    "<div class='cue'><b>Cue:</b> "+e.cue+"</div>"+
     "<div class='setlog' id='sl"+i+"'>"+chips+"</div>"+input+
     "<button class='grouprest' onclick='groupRest("+i+")'>⏱ Rest before next exercise</button>"+
     "<div id='cb"+i+"'></div></div>";
+}
+/* ===== v116 · THE CARD IS COLLAPSED UNTIL YOU OPEN IT =====================
+   Mid-set you want three things: what the movement is, what you're aiming for,
+   and somewhere to type the numbers. Everything else got in the way of that.
+
+   Open/closed lives in a plain object rather than on the DOM node, because the
+   sheet is rebuilt from scratch after every change — a class on the element
+   would be wiped and every section would slam shut under your thumb. It is NOT
+   persisted: each time the app opens, everything starts closed again. */
+let _cardOpen={};
+function exSecKey(name,key){ return logKey(name)+"|"+key; }
+function exSec(name,key,title,meta,body){
+  const k=exSecKey(name,key);
+  return "<details class='exsec'"+(_cardOpen[k]?" open":"")+" data-ek='"+attrEsc(k)+"' ontoggle='exSecToggle(this)'>"+
+    "<summary><span class='t'>"+title+"</span>"+(meta? "<span class='m'>"+meta+"</span>":"")+"</summary>"+
+    "<div class='exsecbody'>"+body+"</div></details>";
+}
+function exSecToggle(d){ try{ _cardOpen[d.dataset.ek]=d.open; }catch(e){} }
+function exSetMeta(e){
+  const done=todaySets(e.name).length;
+  return done? (done+" of "+exSets(e)+" logged") : (exSets(e)+" × "+shortTarget(e));
+}
+/* Reps on the face of the card. 8–12 is a barbell default and it is wrong for
+   most bodyweight work — this is the number that gets changed most often, so
+   it should not be two taps inside an editor. */
+function cardReps(i){
+  const e=wkMain()[i]; if(!e) return;
+  const v=val('cr'+i);
+  const meta=logMeta(e.name,e);
+  if(meta.unit==="time"){
+    const s=secondsFrom(v);
+    if(s){ e.holdSec=s; e.reps=s+"s"; stampWorkout(); save(); refreshAllViews(); toast(e.name+" · "+s+"s hold"); }
+    return;
+  }
+  const res=runAction("set_reps",{name:e.name, reps:v});
+  if(!res.ok){ toast(res.error); return; }
+  toast(res.receipt.lines[0]);
+}
+/* Removing an exercise from the sheet. The sets you already logged are stored
+   against the exercise NAME, not its slot, so they stay in your history. */
+function removeExUI(i){
+  const e=wkMain()[i]; if(!e) return;
+  const logged=todaySets(e.name).length;
+  if(!confirm("Remove "+e.name+" from today's session?"+
+     (logged? "\n\nThe "+logged+" set"+(logged===1?"":"s")+" you already logged stay in your history." : ""))) return;
+  const res=runAction("remove_exercise",{name:e.name});
+  if(!res.ok){ toast(res.error); return; }
+  toast(res.receipt.lines[0]);
 }
 /* ===== v63.1 · REORDER THE SESSION BY HAND =============================
    Arrows rather than drag-and-drop: dragging inside a long scrolling sheet is
@@ -9858,7 +10105,7 @@ function scheduleInApp(){
    v18 ADDITIONS — draggable rest timer · weekly training memory · AI planner
    · Firestore sync
    ========================================================================== */
-const APP_VERSION="v115 · 01/09/2026";
+const APP_VERSION="v116 · 01/09/2026";
 
 /* ===== 1. REST TIMER — drag it anywhere so it never blocks the chat box ===== */
 let _rtDrag=null;
@@ -16105,8 +16352,10 @@ function editorHTML(e,i){
       (meta.weight? eeField("Weight (kg)","<input class='eein' id='eeW"+i+"' inputmode='decimal' value='"+attrEsc(String(wNow))+"' onchange='edLoad("+i+")'>") : "")+
       eeField("Rest","<button class='st' onclick='edRest("+i+",-15)'>−</button><span class='n' style='min-width:58px'>"+fmtRest(restForEx(e))+"</span><button class='st' onclick='edRest("+i+",15)'>+</button>")+
       eeField("Tempo","<input class='eein' id='eeT"+i+"' placeholder='3-1-1' value='"+attrEsc(e.tempo||"")+"' onchange='edTempo("+i+")'>")+
-      eeField("Technique","<input class='eein' id='eeQ"+i+"' placeholder='e.g. drop set on the last one' value='"+attrEsc(e.technique||"")+"' onchange='edTechnique("+i+")'>")+
-      eeField("Equipment","<span class='eeval'>"+escapeHtml(EQLABEL[eqOf(e.name)]||eqOf(e.name))+"</span>")+
+      eeField("Technique","<input class='eein' id='eeQ"+i+"' placeholder='e.g. drop set last set' value='"+attrEsc(e.technique||"")+"' onchange='edTechnique("+i+")'>")+
+      eeField("Equipment","<select class='eein' id='eeE"+i+"' onchange='edEquip("+i+")'>"+
+        Object.keys(EQLABEL).map(k=>"<option value='"+k+"'"+(k===eqOf(e.name)?" selected":"")+">"+
+          escapeHtml(EQLABEL[k])+"</option>").join("")+"</select>")+
       eeField("Grouping", e.grp? ("<span class='eeval'>"+escapeHtml(groupLabel(e.grp))+"</span><button class='st' style='width:auto;padding:0 10px;font-size:12px' onclick='breakGroupUI(\""+e.grp+"\")'>break</button>")
                                 : "<button class='st' style='width:auto;padding:0 10px;font-size:12px' onclick='pairWithUI("+i+")'>pair it</button>")+
     "</div></div>";
@@ -16137,6 +16386,16 @@ function edLoad(i){ edApply(i,"set_load",{kg:val('eeW'+i)}); }
 function edRest(i,d){ const e=wkMain()[i]; if(e) edApply(i,"set_rest",{rest:String(Math.max(10,restForEx(e)+d))+"s"}); }
 function edTempo(i){ edApply(i,"set_tempo",{tempo:val('eeT'+i)}); }
 function edTechnique(i){ edApply(i,"set_technique",{technique:val('eeQ'+i)}); }
+function edEquip(i){
+  const e=wkMain()[i]; if(!e) return;
+  const k=val('eeE'+i); if(!k) return;
+  setEqOverride(e.name,k);
+  /* The load recommendation is rounded to whatever the kit can actually make,
+     so it has to be recomputed against the new answer. */
+  try{ if(!isLoadless(e.name)) e.rec=recommendLoad(e.name); else delete e.rec; }catch(err){}
+  stampWorkout(); save(); refreshAllViews();
+  toast(e.name+" \u2192 "+(EQLABEL[k]||k));
+}
 
 /* ---- per-exercise preferences ------------------------------------------ */
 function prefBadge(name){
