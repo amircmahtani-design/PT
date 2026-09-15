@@ -1,3 +1,37 @@
+AMIR PT — v128 · 15/09/2026
+===========================
+
+Upload index.html AND sw.js.
+
+
+TAP THE WEIGHT GRAPH AND READ THE NUMBER
+========================================
+Every point on that chart already had a tooltip. It was an SVG <title>,
+which only appears on hover — and there is no hover on a phone. So the
+values were sitting there, unreachable on the only device you use it on.
+
+    ● 83.7kg   15/09/2026
+
+  Tap anywhere on the chart and it snaps to the nearest check-in: a
+  crosshair on that point, a ring around it, and the date and weight above
+  the graph. Drag your finger across to scrub through the whole block. The
+  reading stays up when you lift off — a number that vanishes the moment
+  you let go is no use on a touchscreen.
+
+  Vertical scrolling still works over the chart; only sideways movement
+  scrubs.
+
+IT IS EVERY CHART, NOT JUST BODYWEIGHT
+  The same renderer draws the per-exercise history on Progress, so tapping
+  that reads back the session too — top weight or volume, the date, and how
+  the sets felt:
+
+    ● 42.5kg   29/08/2026 · hard
+
+  Before you touch it, the readout shows the latest point, so the chart says
+  something useful at a glance either way.
+
+
 AMIR PT — v127 · 15/09/2026
 ===========================
 

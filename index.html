@@ -375,6 +375,12 @@ textarea.txtin{min-height:88px;resize:vertical;line-height:1.45;}
 .chartchips{display:flex;gap:7px;margin-bottom:10px;}
 .cchip{background:#0d0a07;border:1px solid var(--line);color:var(--muted);border-radius:9px;padding:7px 12px;font-size:12px;font-weight:700;}
 .cchip.on{background:#2a1c0e;border-color:#3d2a15;color:var(--orange);}
+.chartbox{position:relative;}
+.chartread{display:flex;align-items:baseline;gap:8px;margin-bottom:6px;min-height:22px;flex-wrap:wrap;}
+.chartread i{width:9px;height:9px;border-radius:3px;flex:0 0 9px;align-self:center;}
+.chartread .crv{font-size:17px;font-weight:800;color:var(--txt);font-variant-numeric:tabular-nums;letter-spacing:-.2px;}
+.chartread .crd{font-size:12px;font-weight:700;color:var(--muted);}
+.chartread .crh{font-size:11px;font-weight:700;color:var(--dim);margin-left:auto;}
 .chartfoot{display:flex;justify-content:space-between;gap:8px;margin-top:8px;font-size:11.5px;font-weight:700;color:var(--muted);flex-wrap:wrap;}
 .chartfoot .up{color:var(--green);}
 .chartfoot .down{color:#ff8f84;}
@@ -10394,7 +10400,8 @@ function drawChart(){
   const wrap=document.getElementById('wtWrap'); if(!wrap) return;
   const ser=weightSeries().slice(-40);
   if(ser.length<2){ wrap.innerHTML="<div class='muted' style='font-size:14px'>Log your bodyweight in the daily check-in \u2014 two entries and the trend appears here.</div>"; return; }
-  const pts=ser.map(x=>({x:shortDate(x.date),y:x.w}));
+  /* v128 — the readout wants a real date, not the axis's short one. */
+  const pts=ser.map(x=>({x:shortDate(x.date), y:x.w, full:x.date? ukDate(x.date):""}));
   const d=ser[ser.length-1].w-ser[0].w;
   wrap.innerHTML=chartSVG(pts,{unit:"kg",color:"#ffa54a"})+
     "<div class='chartfoot'><span>"+ser.length+" check-ins</span><span>now "+fmtNum(ser[ser.length-1].w)+"kg</span>"+
@@ -11210,7 +11217,7 @@ function scheduleInApp(){
    v18 ADDITIONS — draggable rest timer · weekly training memory · AI planner
    · Firestore sync
    ========================================================================== */
-const APP_VERSION="v127 · 15/09/2026";
+const APP_VERSION="v128 · 15/09/2026";
 
 /* ===== 1. REST TIMER — drag it anywhere so it never blocks the chat box ===== */
 let _rtDrag=null;
@@ -11923,13 +11930,79 @@ function chartSVG(pts,opt){
     xl="<text x='"+pl+"' y='"+(H-5)+"' fill='#71614e' font-size='11' font-weight='700'>"+attrEsc(pts[0].x)+"</text>"+
        "<text x='"+(W-pr)+"' y='"+(H-5)+"' fill='#71614e' font-size='11' font-weight='700' text-anchor='end'>"+attrEsc(pts[pts.length-1].x)+"</text>";
   }
-  return "<svg viewBox='0 0 "+W+" "+H+"' style='display:block;width:100%;height:auto' xmlns='http://www.w3.org/2000/svg'>"+
+  /* ===== v128 \u00b7 TAP THE CHART AND READ THE NUMBER ====================
+     Every point already carried an SVG <title>, which is a hover tooltip \u2014
+     and there is no hover on a phone, so the values were unreachable on the
+     only device he uses. A transparent hit layer over the plot picks the
+     nearest point to wherever his thumb is, draws a crosshair and a ring on
+     it, and prints the date and value above the chart. Dragging scrubs; the
+     reading stays up when he lifts off, because a value that vanishes the
+     moment you let go is no use on a touchscreen.
+
+     The readout is text in text colours with the marker beside it carrying
+     the series colour, rather than colouring the numbers themselves. */
+  const read=pts.map((p,i)=>({x:+X(i).toFixed(1), y:+Y(p.y).toFixed(1),
+                              v:p.y, lab:(p.full||p.x||""), t:p.t||""}));
+  const last=read[read.length-1];
+  const box="<div class='chartread'><i style='background:"+col+"'></i>"+
+      "<b class='crv'>"+fmtNum(last.v)+(opt.unit||"")+"</b>"+
+      "<span class='crd'>"+attrEsc(last.lab)+(last.t? " \u00b7 "+attrEsc(last.t):"")+"</span>"+
+      "<span class='crh'>tap the chart</span></div>";
+  const svg="<svg viewBox='0 0 "+W+" "+H+"' style='display:block;width:100%;height:auto' xmlns='http://www.w3.org/2000/svg'>"+
     "<defs><linearGradient id='"+gid+"' x1='0' y1='0' x2='0' y2='1'>"+
       "<stop offset='0' stop-color='"+col+"' stop-opacity='.35'/><stop offset='1' stop-color='"+col+"' stop-opacity='0'/></linearGradient></defs>"+
     grid+"<path d='"+area+"' fill='url(#"+gid+")'/>"+
     "<path d='"+line+"' fill='none' stroke='"+col+"' stroke-width='2.5' stroke-linejoin='round' stroke-linecap='round'/>"+
-    dots+lab+xl+"</svg>";
+    dots+lab+xl+
+    "<g class='xhair' style='display:none'>"+
+      "<line class='xh' y1='"+ptop+"' y2='"+(H-pbot)+"' stroke='#a9967f' stroke-width='1' stroke-dasharray='3 3'/>"+
+      "<circle class='xd' r='6.5' fill='none' stroke='"+col+"' stroke-width='2.5'/>"+
+    "</g>"+
+    "<rect class='hit' x='"+pl+"' y='0' width='"+(W-pl-pr)+"' height='"+H+"' fill='transparent' style='touch-action:pan-y'/>"+
+    "</svg>";
+  return "<div class='chartbox' data-unit='"+attrEsc(opt.unit||"")+"' data-pts='"+
+    attrEsc(JSON.stringify(read))+"' data-vw='"+W+"'>"+box+svg+"</div>";
 }
+/* One delegated handler for every chart on the page, bound once. */
+function chartRead(box, clientX){
+  try{
+    const svg=box.querySelector('svg'); if(!svg) return;
+    const pts=JSON.parse(box.getAttribute('data-pts')||"[]"); if(!pts.length) return;
+    const r=svg.getBoundingClientRect(); if(!r.width) return;
+    const vw=+box.getAttribute('data-vw')||520;
+    const vx=(clientX-r.left)/r.width*vw;
+    let best=0, bd=Infinity;
+    pts.forEach((p,i)=>{ const d=Math.abs(p.x-vx); if(d<bd){ bd=d; best=i; } });
+    const p=pts[best];
+    const g=svg.querySelector('.xhair');
+    if(g){
+      g.style.display="";
+      const ln=g.querySelector('.xh'), dot=g.querySelector('.xd');
+      if(ln){ ln.setAttribute('x1',p.x); ln.setAttribute('x2',p.x); }
+      if(dot){ dot.setAttribute('cx',p.x); dot.setAttribute('cy',p.y); }
+    }
+    const unit=box.getAttribute('data-unit')||"";
+    const v=box.querySelector('.crv'), d=box.querySelector('.crd'), h=box.querySelector('.crh');
+    if(v) v.textContent=fmtNum(p.v)+unit;
+    if(d) d.textContent=p.lab+(p.t? " \u00b7 "+p.t : "");
+    if(h) h.remove();
+  }catch(e){}
+}
+(function bindChartRead(){
+  const at=e=>{ const box=e.target.closest? e.target.closest('.chartbox') : null;
+    if(!box || !e.target.closest('svg')) return null; return box; };
+  document.addEventListener('pointerdown',e=>{
+    const box=at(e); if(!box) return;
+    box.dataset.scrub="1"; chartRead(box, e.clientX);
+  },{passive:true});
+  document.addEventListener('pointermove',e=>{
+    const box=at(e); if(!box || box.dataset.scrub!=="1") return;
+    chartRead(box, e.clientX);
+  },{passive:true});
+  const end=()=>{ document.querySelectorAll('.chartbox[data-scrub="1"]').forEach(b=>{ b.dataset.scrub="0"; }); };
+  document.addEventListener('pointerup',end,{passive:true});
+  document.addEventListener('pointercancel',end,{passive:true});
+})();
 /* Per-exercise history: top weight, total volume, or seconds for holds. */
 function exSeries(name){
   const timed=!!(EX(name)||{}).timed;
@@ -11954,7 +12027,9 @@ function exChartHTML(name){
   const unit= mode==="vol"? "kg" : mode==="hold"? "s" : "kg";
   const pts=s.map(p=>{
     const e=(p.eff==null)? null : (EFFORT[Math.round(p.eff)]||null);
-    return {x:shortDate(p.date), y:val(p), c:e?e.col:null, t:e?e.lab.toLowerCase():null};
+    /* v128 — the tap readout wants the full date, like the weight chart. */
+    return {x:shortDate(p.date), y:val(p), c:e?e.col:null, t:e?e.lab.toLowerCase():null,
+            full:p.date? ukDate(p.date):""};
   });
   const first=pts[0].y, last=pts[pts.length-1].y, best=Math.max.apply(null,pts.map(p=>p.y));
   const delta=last-first, pct=first? Math.round(delta/first*100):0;
