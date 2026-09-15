@@ -1,3 +1,78 @@
+AMIR PT — v118 · 15/09/2026
+===========================
+
+Upload index.html AND sw.js.
+
+
+WARM-UPS AND COOL-DOWNS: REAL PICTURES, AND THE RIGHT MOVEMENTS
+===============================================================
+Two complaints, one section of the app. Both fair.
+
+PICTURES INSTEAD OF EMOJI
+  Every exercise card has had a real demo for versions. The warm-up and
+  cool-down cards had a cartoon. They were never wired to the same pipeline.
+
+  They are now — but deliberately not by handing the names to the existing
+  matcher, because that matcher ALWAYS answers. Asked for cat-cow it offered
+  an air bike. Asked for box breathing it offered an air bike as well. A wrong
+  picture is worse than no picture, especially on a movement you don't already
+  know how to do.
+
+  So every movement the app programs now carries a hand-checked link to the
+  photographs that genuinely show it — cat-cow to the cat stretch, figure-4 to
+  the ankle-on-knee, the couch stretch to the kneeling hip flexor, and so on,
+  one at a time. Where nothing in the pack honestly shows the movement, the
+  field is left empty on purpose and the emoji stays. On a typical session
+  that's about two thirds of the list with a real photo, and the ones without
+  are the drills the pack simply doesn't have (wall slides, 90/90 switches,
+  ankle rocks, cobra).
+
+  The photos flip between start and end position, like the exercise demos, so
+  a stretch shows you the position it ends in. And the ramp sets now show the
+  demo of the lift itself, because that's what they are.
+
+  Two things fill the gaps if you want them: the free demo pack has to be on
+  the phone (Settings → the demo pack) for any of this, and a Giphy key still
+  hydrates anything left over.
+
+THE RIGHT MOVEMENTS FOR THE SESSION
+  These were picked by muscle group, which is close but not the same thing. A
+  squat and a deadlift are both "legs", and they want different preparation:
+  one needs ankles and a deep knee bend, the other needs hips, hamstrings and
+  a braced spine. Group tags can't tell them apart — so a leg day got two leg
+  items and filled the rest with whatever else the session touched. A press
+  day was finishing with a cobra stretch.
+
+  Every movement is now tagged with the PATTERNS it prepares or releases, and
+  both sections are built from the patterns in today's session, weighted by
+  how much of the session each one is. What that changes:
+
+    LEG DAY    was: wrist circles, leg swings, open-book, world's greatest,
+                    scapular pull-ups, cat-cow
+               now: leg swings, 90/90 hip switches, ankle rocks, cat-cow,
+                    glute bridge — then the squat and the deadlift each ramped
+
+    PUSH DAY   was: wrist circles, arm circles, pull-aparts, dislocates,
+                    dead hang
+               now: arm circles, doorway pec opener, scapular push-ups,
+                    wall slides, dislocates
+               and the cool-down no longer ends with a cobra stretch
+
+    PULL DAY   now: scapular pull-ups, dead hang, pull-aparts, Y-T-W raises,
+                    open-book rotations
+
+  RAMP SETS, PROPERLY. One easy set was never a ramp. The first lift now gets
+  a light set AND a near-working set (~50%, then ~75% × 3) before the first
+  working set, and the second big lift gets its own light set when it's a
+  different pattern. This is the part that makes a heavy first set feel normal
+  instead of a shock.
+
+  The coach has been told all of this: that the app builds both sections from
+  today's patterns and is right more often than a generic list, that writing
+  one by hand locks it for the day, and that using the app's own movement
+  names is what gets you the photo and the cue.
+
+
 AMIR PT — v117 · 15/09/2026
 ===========================
 

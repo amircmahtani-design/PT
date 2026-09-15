@@ -2906,7 +2906,7 @@ async function paintDemos(){
     fedAnimStart();
     /* A tile fell through to a bare link only because the pack isn't loaded.
        Fetch it (free) and redraw, rather than leaving him with links. */
-    if(!fedHas() && document.querySelector(".imgwrap[data-kind='link']")){
+    if(!fedHas() && document.querySelector(".imgwrap[data-kind='link'], [data-movewant]")){
       fedEnsure().then(n=>{ if(n){ try{ if(DB.workout) renderWorkoutSheet(DB.workout); }catch(e){} } });
     }
   }catch(e){}
@@ -4001,60 +4001,79 @@ function setMasterySets(d){
 /* ===== PREP & MOBILITY — warm-ups and cool-downs that match the actual session =====
    Every entry is a named movement with a dose and a cue, so it says exactly what to do.
    m = which muscle groups it prepares/releases. eq = kit needed (filtered by location). */
+/* ===== v118 · WARM-UP AND COOL-DOWN, BUILT FOR THE PATTERNS YOU ARE ABOUT
+   TO TRAIN ================================================================
+   These were picked by MUSCLE GROUP, which is close but not the same thing. A
+   squat and a deadlift are both "legs", and they want different preparation:
+   one needs ankles and a deep knee bend, the other needs hips, hamstrings and
+   a braced spine. Group tags could not tell them apart, so a leg day got two
+   leg items and filled the rest with whatever else the session touched.
+
+   Every item is now tagged with the MOVEMENT PATTERNS it actually prepares or
+   releases (the same patterns the app already classifies lifts into), and the
+   builders work from the patterns in today's session, weighted by how much of
+   the session each one is. A squat-and-deadlift day gets ankle rocks, 90/90s,
+   a glute bridge and a bodyweight squat, not a scapular pull-up.
+
+   `demo` names the movement in the free exercise pack whose photographs really
+   show this movement. Deliberately hand-checked one by one, and deliberately
+   absent where nothing in the pack is honest: the fuzzy matcher, left to its
+   own devices, illustrated cat-cow with an air bike and box breathing with an
+   air bike as well. A wrong picture is worse than no picture. */
 const PREP=[
   /* pulse raisers */
-  {t:"Concept2 row \u2014 easy",        d:"3 min",  tag:"raise", needs:"rower", cue:"Conversational pace. You're warming joints and raising the heart rate, nothing more."},
-  {t:"Brisk walk or skipping",       d:"3 min",  tag:"raise", cue:"Enough to feel slightly out of breath and a bit warm. Don't make it a workout."},
+  {t:"Concept2 row — easy",        d:"3 min",  tag:"raise", needs:"rower", demo:"Rowing, Stationary", cue:"Conversational pace. You're warming joints and raising the heart rate, nothing more."},
+  {t:"Brisk walk or skipping",     d:"3 min",  tag:"raise", demo:"Fast Skipping", cue:"Enough to feel slightly out of breath and a bit warm. Don't make it a workout."},
 
   /* shoulders / chest — pressing prep */
-  {m:["shoulders","chest"], t:"Arm circles",              d:"15 each way",   cue:"Start small and grow them. Loosens the shoulder capsule before anything overhead."},
-  {m:["shoulders","chest"], t:"Band pull-aparts",         d:"\u00d720",      eq:"band", cue:"Straight arms, squeeze the shoulder blades together. Wakes the upper back so the shoulders sit in a safe position."},
-  {m:["shoulders","chest"], t:"Wall slides",              d:"\u00d710",      cue:"Back, head and forearms flat on the wall. Slide the arms up without letting the ribs flare."},
-  {m:["chest"],             t:"Doorway pec opener",       d:"20s each side", cue:"Forearm on the frame at shoulder height, step gently through. Opens the chest so you can set your shoulder blades."},
-  {m:["shoulders","arms"],  t:"Band shoulder dislocates", d:"\u00d710",      eq:"band", cue:"Wide grip, arms straight, slowly over the head and back. Go wider if it pinches."},
-  {m:["shoulders"],         t:"Scapular push-ups",        d:"\u00d710",      cue:"Top of a push-up, arms locked. Only the shoulder blades move \u2014 pinch together, then push apart."},
+  {m:["shoulders","chest"], p:["hpush","vpush"], t:"Arm circles",              d:"15 each way",   demo:"Arm Circles", cue:"Start small and grow them. Loosens the shoulder capsule before anything overhead."},
+  {m:["shoulders","chest"], p:["hpull","vpull","hpush"], t:"Band pull-aparts", d:"×20",           eq:"band", demo:"Band Pull Apart", cue:"Straight arms, squeeze the shoulder blades together. Wakes the upper back so the shoulders sit in a safe position."},
+  {m:["shoulders","chest"], p:["vpush"], t:"Wall slides",                      d:"×10",           cue:"Back, head and forearms flat on the wall. Slide the arms up without letting the ribs flare."},
+  {m:["chest"],             p:["hpush"], t:"Doorway pec opener",               d:"20s each side", cue:"Forearm on the frame at shoulder height, step gently through. Opens the chest so you can set your shoulder blades."},
+  {m:["shoulders","arms"],  p:["vpush","hpush"], t:"Band shoulder dislocates", d:"×10",           eq:"band", demo:"Chest And Front Of Shoulder Stretch", cue:"Wide grip, arms straight, slowly over the head and back. Go wider if it pinches."},
+  {m:["shoulders"],         p:["hpush"], t:"Scapular push-ups",                d:"×10",           cue:"Top of a push-up, arms locked. Only the shoulder blades move — pinch together, then push apart."},
 
   /* back / pulling prep */
-  {m:["back","shoulders"], t:"Scapular pull-ups",     d:"\u00d78",       eq:"bar", cue:"Hang, then pull the shoulder blades down and back without bending the elbows."},
-  {m:["back"],             t:"Cat-cow",               d:"\u00d78",       cue:"Move the spine one segment at a time, breathe out as you round."},
-  {m:["back","core"],      t:"Open-book rotations",   d:"\u00d78 each side", cue:"Side lying, knees stacked and pinned. Follow your top hand with your eyes as it opens."},
-  {m:["back","arms"],      t:"Dead hang",             d:"20\u201330s",   eq:"bar", cue:"Let the shoulders and spine decompress. Breathe."},
-  {m:["back"],             t:"Prone Y-T-W raises",    d:"\u00d78 each",  cue:"Face down, thumbs up, lift from the shoulder blades not the arms. Tiny range is fine."},
+  {m:["back","shoulders"], p:["vpull","hpull","carry"], t:"Scapular pull-ups", d:"×8",       eq:"bar", demo:"Scapular Pull-Up", cue:"Hang, then pull the shoulder blades down and back without bending the elbows."},
+  {m:["back"],             p:["hinge","squat","rotate"], t:"Cat-cow",          d:"×8",       demo:"Cat Stretch", cue:"Move the spine one segment at a time, breathe out as you round."},
+  {m:["back","core"],      p:["rotate","hpull"], t:"Open-book rotations",      d:"×8 each side", cue:"Side lying, knees stacked and pinned. Follow your top hand with your eyes as it opens."},
+  {m:["back","arms"],      p:["vpull","carry"], t:"Dead hang",                 d:"20–30s",   eq:"bar", cue:"Let the shoulders and spine decompress. Breathe."},
+  {m:["back"],             p:["hpull","vpush"], t:"Prone Y-T-W raises",        d:"×8 each",  cue:"Face down, thumbs up, lift from the shoulder blades not the arms. Tiny range is fine."},
 
   /* legs prep */
-  {m:["legs"],        t:"Leg swings \u2014 front to back", d:"\u00d712 each leg", cue:"Hold something. Relaxed swing, let the range build \u2014 never force it."},
-  {m:["legs"],        t:"Leg swings \u2014 side to side",  d:"\u00d712 each leg", cue:"Opens the adductors and hips so you can sit into a squat."},
-  {m:["legs","core"], t:"World's greatest stretch",       d:"\u00d75 each side", cue:"Deep lunge, elbow inside the front foot, then rotate and reach up and open."},
-  {m:["legs"],        t:"90/90 hip switches",             d:"\u00d710",          cue:"Sit tall, rotate knee to knee slowly. Don't use your hands if you can help it."},
-  {m:["legs"],        t:"Ankle rocks on a wall",          d:"\u00d710 each side", cue:"Knee drives over the toe, heel stays glued down. This is what buys you squat depth."},
-  {m:["legs"],        t:"Glute bridge",                   d:"\u00d715",          cue:"Squeeze hard at the top. Switches the glutes on so your lower back doesn't take over."},
-  {m:["legs"],        t:"Bodyweight squat to depth",      d:"\u00d710",          cue:"Slow, all the way down, pause a beat in the bottom of each rep."},
+  {m:["legs"],        p:["hinge","squat","lunge"], t:"Leg swings — front to back", d:"×12 each leg", cue:"Hold something. Relaxed swing, let the range build — never force it."},
+  {m:["legs"],        p:["squat","lunge"], t:"Leg swings — side to side",          d:"×12 each leg", cue:"Opens the adductors and hips so you can sit into a squat."},
+  {m:["legs","core"], p:["lunge","squat","hinge"], t:"World's greatest stretch",   d:"×5 each side", demo:"World's Greatest Stretch", cue:"Deep lunge, elbow inside the front foot, then rotate and reach up and open."},
+  {m:["legs"],        p:["squat","lunge","hinge"], t:"90/90 hip switches",         d:"×10",          cue:"Sit tall, rotate knee to knee slowly. Don't use your hands if you can help it."},
+  {m:["legs"],        p:["squat","lunge"], t:"Ankle rocks on a wall",              d:"×10 each side", cue:"Knee drives over the toe, heel stays glued down. This is what buys you squat depth."},
+  {m:["legs"],        p:["hinge","squat"], t:"Glute bridge",                       d:"×15",          demo:"Butt Lift (Bridge)", cue:"Squeeze hard at the top. Switches the glutes on so your lower back doesn't take over."},
+  {m:["legs"],        p:["squat","lunge"], t:"Bodyweight squat to depth",          d:"×10",          demo:"Bodyweight Squat", cue:"Slow, all the way down, pause a beat in the bottom of each rep."},
 
   /* arms / wrist — your TFCC */
-  {m:["arms","chest","shoulders"], t:"Wrist circles & gentle flexor stretch", d:"\u00d710 each way", wrist:true,
-   cue:"Slow circles both directions, then a gentle flexor stretch. Stop well before any TFCC pain \u2014 this is prep, not a stretch session."},
-  {m:["arms"], t:"Light band curls & pushdowns", d:"\u00d715", eq:"band", cue:"Pump some blood into the elbows and forearms before you load them."},
+  {m:["arms","chest","shoulders"], p:["carry","hpush"], t:"Wrist circles & gentle flexor stretch", d:"×10 each way", wrist:true, demo:"Wrist Circles",
+   cue:"Slow circles both directions, then a gentle flexor stretch. Stop well before any TFCC pain — this is prep, not a stretch session."},
+  {m:["arms"], t:"Light band curls & pushdowns", d:"×15", eq:"band", cue:"Pump some blood into the elbows and forearms before you load them."},
 
   /* core */
-  {m:["core"], t:"Dead bug",  d:"\u00d78 each side", cue:"Low back pinned flat to the floor. Exhale as the arm and leg extend."},
-  {m:["core"], t:"Bird dog",  d:"\u00d78 each side", cue:"Hips square, no wobble. Slower is harder and better."}
+  {m:["core"], p:["rotate","hinge"], t:"Dead bug",  d:"×8 each side", demo:"Dead Bug", cue:"Low back pinned flat to the floor. Exhale as the arm and leg extend."},
+  {m:["core"], p:["rotate","hinge"], t:"Bird dog",  d:"×8 each side", cue:"Hips square, no wobble. Slower is harder and better."}
 ];
 
 const MOB=[
-  {m:["chest","shoulders"], t:"Doorway pec stretch",        d:"45s each side", cue:"Forearm on the frame, elbow at shoulder height, turn your body away until you feel the chest open."},
-  {m:["shoulders"],         t:"Cross-body shoulder stretch", d:"30s each side", cue:"Pull the arm across your chest, keep that shoulder pressed down."},
-  {m:["shoulders","arms"],  t:"Overhead triceps stretch",   d:"30s each side", cue:"Elbow pointing up, gently ease it back with the other hand."},
-  {m:["back"],              t:"Lat stretch on a doorframe", d:"45s each side", cue:"Hold the frame, sit the hips back and away. Breathe into the ribs on the stretched side."},
-  {m:["back"],              t:"Child's pose with side reach", d:"45s each side", cue:"From child's pose, walk both hands over to one side to open the lat."},
-  {m:["back","core"],       t:"Cobra stretch",              d:"30s",           cue:"Gentle spinal extension after all that pulling. Hips stay down, no cranking."},
-  {m:["legs"],              t:"Couch stretch (hip flexor)", d:"60s each side", cue:"Back foot up on a couch or wall, squeeze that glute and tuck the ribs down."},
-  {m:["legs"],              t:"Standing hamstring stretch", d:"45s each side", cue:"Hinge from the hip with a flat back \u2014 rounding over doesn't stretch the hamstring."},
-  {m:["legs"],              t:"Figure-4 glute stretch",     d:"45s each side", cue:"Ankle across the opposite knee, draw the leg in towards your chest."},
-  {m:["legs"],              t:"Calf stretch on a wall",     d:"45s each side", cue:"Back leg dead straight, heel pressed down."},
-  {m:["arms"],              t:"Wrist flexor & extensor stretch", d:"30s each side", wrist:true, cue:"Very gentle both directions. Back off immediately if the TFCC side complains."},
-  {m:["core"],              t:"Supine spinal twist",        d:"45s each side", cue:"Knees over to one side, both shoulders stay on the floor."},
-  {t:"Child's pose",  d:"60s",         tag:"finish", cue:"Sit back onto the heels, arms long, breathe into your back."},
-  {t:"Box breathing", d:"2\u20133 min", tag:"finish", cue:"In for 4, hold 4, out for 4, hold 4. This is what actually switches you into recovery."}
+  {m:["chest","shoulders"], p:["hpush","vpush"], t:"Doorway pec stretch",         d:"45s each side", cue:"Forearm on the frame, elbow at shoulder height, turn your body away until you feel the chest open."},
+  {m:["shoulders"],         p:["hpush","vpush","hpull"], t:"Cross-body shoulder stretch", d:"30s each side", demo:"Shoulder Stretch", cue:"Pull the arm across your chest, keep that shoulder pressed down."},
+  {m:["shoulders","arms"],  p:["vpush","hpush"], t:"Overhead triceps stretch",    d:"30s each side", demo:"Triceps Stretch", cue:"Elbow pointing up, gently ease it back with the other hand."},
+  {m:["back"],              p:["vpull","hpull","carry"], t:"Lat stretch on a doorframe", d:"45s each side", cue:"Hold the frame, sit the hips back and away. Breathe into the ribs on the stretched side."},
+  {m:["back"],              p:["vpull","hpull"], t:"Child's pose with side reach", d:"45s each side", demo:"Child's Pose", cue:"From child's pose, walk both hands over to one side to open the lat."},
+  {m:["back","core"],       p:["hinge","hpull","rotate"], t:"Cobra stretch",      d:"30s",           cue:"Gentle spinal extension after all that pulling. Hips stay down, no cranking."},
+  {m:["legs"],              p:["squat","lunge","hinge"], t:"Couch stretch (hip flexor)", d:"60s each side", demo:"Kneeling Hip Flexor", cue:"Back foot up on a couch or wall, squeeze that glute and tuck the ribs down."},
+  {m:["legs"],              p:["hinge","squat"], t:"Standing hamstring stretch",  d:"45s each side", demo:"Runner's Stretch", cue:"Hinge from the hip with a flat back — rounding over doesn't stretch the hamstring."},
+  {m:["legs"],              p:["squat","hinge","lunge"], t:"Figure-4 glute stretch", d:"45s each side", demo:"Ankle On The Knee", cue:"Ankle across the opposite knee, draw the leg in towards your chest."},
+  {m:["legs"],              p:["squat","lunge","carry"], t:"Calf stretch on a wall", d:"45s each side", demo:"Calf Stretch Hands Against Wall", cue:"Back leg dead straight, heel pressed down."},
+  {m:["arms"],              p:["carry","hpush"], t:"Wrist flexor & extensor stretch", d:"30s each side", wrist:true, demo:"Kneeling Forearm Stretch", cue:"Very gentle both directions. Back off immediately if the TFCC side complains."},
+  {m:["core"],              p:["rotate","hinge"], t:"Supine spinal twist",        d:"45s each side", cue:"Knees over to one side, both shoulders stay on the floor."},
+  {t:"Child's pose",  d:"60s",     tag:"finish", demo:"Child's Pose", cue:"Sit back onto the heels, arms long, breathe into your back."},
+  {t:"Box breathing", d:"2–3 min", tag:"finish", cue:"In for 4, hold 4, out for 4, hold 4. This is what actually switches you into recovery."}
 ];
 
 function gearOk(it){ return LOC().gear.indexOf(it.eq||"bw")>=0; }
@@ -4085,7 +4104,39 @@ function mobKey(t){
     .replace(/[^a-z ]/g,"").replace(/\s+/g," ").trim();
 }
 
-/* Warm-up built from what today actually trains. */
+/* Which movement patterns is today actually made of, and how much of the
+   session is each one? Ordered heaviest first, so the thing he is about to
+   spend the most sets on is the thing that gets prepared properly. */
+function sessionPatterns(names){
+  const w={};
+  (names||[]).forEach((n,idx)=>{
+    const k=patternOf(n);
+    if(!k || k==="mobility") return;
+    /* The first lift of the session is the one being prepared for. */
+    w[k]=(w[k]||0)+(idx===0?2:1);
+  });
+  return Object.keys(w).sort((a,b)=>w[b]-w[a]);
+}
+/* Items from a pool that genuinely serve one pattern, most specific first.
+   An item that lists this pattern FIRST is prep written for this movement;
+   one that lists it third merely happens to help. Without the sort a squat
+   day took cat-cow and the world's greatest stretch — both fine, neither the
+   ankle and hip work a squat actually needs — and never reached the ankle
+   rocks sitting further down the list. */
+function poolFor(pool,pat){
+  return pool.filter(i=>i.p && i.p.indexOf(pat)>=0 && !i.tag && !i.wrist)
+             .sort((a,b)=>a.p.indexOf(pat)-b.p.indexOf(pat));
+}
+/* Is this a lift worth ramping up on, or is it bodyweight, a band, or timed? */
+function rampable(name){
+  if(!name) return false;
+  if(typeof isLoadless==="function" && isLoadless(name)) return false;
+  const eq=(typeof eqOf==="function")? eqOf(name) : "";
+  if(eq==="bw"||eq==="band") return false;
+  return !((EX(name)||{}).timed);
+}
+/* Warm-up built from what today actually trains — the PATTERNS, not just the
+   muscle groups. See the note above PREP. */
 function buildWarmup(names,ctx){
   ctx=ctx||{};
   const out=[], seen=new Set();
@@ -4096,22 +4147,55 @@ function buildWarmup(names,ctx){
   const raisers=PREP.filter(i=>i.tag==="raise");
   const rowBlockShown = !ctx.travel && hasRower();
   if(!rowBlockShown) push(raisers.find(i=>i.needs!=="rower"));
-  /* 2. wrist prep goes in early, not last \u2014 the TFCC is non-negotiable before loading. */
-  /* Only when the session actually loads the hands \u2014 not on a pure leg day. */
+  /* 2. wrist prep goes in early, not last — the TFCC is non-negotiable before loading. */
+  /* Only when the session actually loads the hands — not on a pure leg day. */
   const loadsWrist=(names||[]).some(n=>{
     const m=((EX(n)||guessEx(n)).m)||[];
     return m.indexOf("chest")>=0||m.indexOf("shoulders")>=0||m.indexOf("arms")>=0;
   }) || (names||[]).some(n=>/push-?up|\bdip\b|hang|carry|burpee|climber/i.test(n));
   if(ctx.wrist||loadsWrist) push(PREP.find(i=>i.wrist));
-  /* 3. movement prep for what today actually trains */
-  const perGroup=ctx.travel?1:2, cap=ctx.travel?4:6;
-  topGroups(names,3).forEach(g=>{
-    PREP.filter(i=>i.m&&i.m.indexOf(g)>=0&&!i.tag&&!i.wrist&&gearOk(i)&&!seen.has(i.t)).slice(0,perGroup).forEach(push);
+  /* 3. prep for the PATTERNS today is made of, most of the session first.
+     The dominant pattern gets three pieces, the next two, the rest one each —
+     a squat-and-deadlift day should not be preparing the shoulder girdle. */
+  const pats=sessionPatterns(names);
+  const cap=ctx.travel?4:6;
+  pats.forEach((pat,idx)=>{
+    const want=ctx.travel?1:(idx===0?3:idx===1?2:1);
+    let taken=0;
+    poolFor(PREP,pat).forEach(it=>{ if(taken<want && push(it)) taken++; });
   });
+  /* 4. anything still short gets filled the old way, by muscle group, so an
+     unclassifiable session is never left with a two-item warm-up. */
+  if(out.length<Math.min(cap,4)){
+    topGroups(names,3).forEach(g=>{
+      PREP.filter(i=>i.m&&i.m.indexOf(g)>=0&&!i.tag&&!i.wrist).slice(0,2).forEach(push);
+    });
+  }
   const list=out.slice(0,cap);
-  /* 4. ramp-up set on the first lift */
-  if(ctx.firstEx) list.push({t:"Warm-up set \u2014 "+ctx.firstEx, d:"1 \u00d7 8 at ~50%",
-    cue:"One easy set of your first lift at about half your working weight. Groove the pattern, feel the range, then load it up."});
+  /* 5. ramp-up sets on the lifts themselves. One easy set was never a ramp:
+     a heavy compound wants a light set AND a near-working single-digit set
+     before the first working set, and the second big lift of the day wants its
+     own, because it is a different pattern with a different groove. */
+  const main=(names||[]).filter(Boolean);
+  const first=ctx.firstEx||main[0];
+  if(first){
+    if(rampable(first)){
+      list.push({t:"Warm-up set — "+first, d:"1 × 8 at ~50%",
+        cue:"One easy set of your first lift at about half your working weight. Groove the pattern, feel the range."});
+      list.push({t:"Ramp set — "+first, d:"1 × 3 at ~75%",
+        cue:"One short set close to your working weight. This is the one that makes the first working set feel normal instead of a shock."});
+    } else {
+      list.push({t:"Warm-up set — "+first, d:"1 × 8, easy",
+        cue:"One easy set of your first movement. Groove the pattern, feel the range, then get to work."});
+    }
+  }
+  /* The second lift only earns a ramp if it is loaded and a genuinely
+     different pattern — no point ramping a row you have just prepared. */
+  const second=main.find(n=>n!==first);
+  if(second && rampable(second) && patternOf(second)!==patternOf(first)){
+    list.push({t:"Warm-up set — "+second, d:"1 × 5 at ~60%",
+      cue:"Your second big lift is a different pattern. One light set before you load it."});
+  }
   return list;
 }
 /* Cool-down that releases what you just worked. */
@@ -4126,25 +4210,34 @@ function buildCooldown(names,ctx){
     if(!k || seen.has(k)) return false;      /* same movement, different wording */
     arr.push(pickItem(it)); seen.add(k); return true;
   };
-  /* v93 \u2014 stretch what today actually worked, in the order it was worked, and
-     weight it by how much of the session each group took. A leg day should not
-     finish with the same flow as a push day. */
-  const groups=topGroups(names,4,ctx.fallback);
-  const load={};
-  (names||[]).forEach(n=>{ ((EX(n)||guessEx(n)||{}).m||[]).forEach((g,idx)=>{ load[g]=(load[g]||0)+(idx===0?2:1); }); });
-  groups.sort((a,b)=>(load[b]||0)-(load[a]||0));
-  /* Two stretches for the group that did the most work, one for the others. */
-  groups.forEach((g,idx)=>{
-    const want=idx===0?2:1;
+  /* v118 — stretch what today actually DID, by pattern and in proportion. The
+     muscle-group version could not tell a squat from a deadlift, so a heavy
+     hinge day finished with the same flow as a squat day, and a press day
+     somehow finished with a cobra stretch. */
+  const pats=sessionPatterns(names);
+  pats.forEach((pat,idx)=>{
+    const want=idx===0?3:idx===1?2:1;
     let taken=0;
-    MOB.filter(i=>i.m&&i.m.indexOf(g)>=0&&!i.tag&&!i.wrist).forEach(it=>{
-      if(taken>=want) return;
-      if(push(targeted,it)) taken++;
-    });
+    poolFor(MOB,pat).forEach(it=>{ if(taken<want && push(targeted,it)) taken++; });
   });
+  /* Group-based fill, for a session the patterns could not classify. */
+  if(targeted.length<3){
+    const groups=topGroups(names,4,ctx.fallback);
+    const load={};
+    (names||[]).forEach(n=>{ ((EX(n)||guessEx(n)||{}).m||[]).forEach((g,idx)=>{ load[g]=(load[g]||0)+(idx===0?2:1); }); });
+    groups.sort((a,b)=>(load[b]||0)-(load[a]||0));
+    groups.forEach((g,idx)=>{
+      const want=idx===0?2:1;
+      let taken=0;
+      MOB.filter(i=>i.m&&i.m.indexOf(g)>=0&&!i.tag&&!i.wrist).forEach(it=>{
+        if(taken>=want) return;
+        if(push(targeted,it)) taken++;
+      });
+    });
+  }
   /* Anything that loaded the wrist gets its own piece, given the TFCC. */
   if(ctx.wrist) push(targeted,MOB.find(i=>i.wrist));
-  /* The finishers are the point of a cool-down \u2014 never let the cap eat them. */
+  /* The finishers are the point of a cool-down — never let the cap eat them. */
   const finish=[]; MOB.filter(i=>i.tag==="finish").forEach(it=>push(finish,it));
   return applyCoolDefaults(targeted.slice(0,5).concat(finish));
 }
@@ -4160,6 +4253,64 @@ function buildMobilityFlow(){
   return applyCoolDefaults(out);
 }
 /* If the coach (or an old saved workout) gives us a bare name, attach the dose and cue we know. */
+/* ===== v118 · A PICTURE OF THE MOVEMENT, OR NOTHING ======================
+   Warm-up and cool-down cards showed an emoji. Every one of them: a little
+   figure that tells you nothing about what a 90/90 hip switch looks like.
+   The exercise cards have had real demos for versions; these never got wired
+   to the same pipeline.
+
+   The reason not to simply hand them to the existing matcher is that it
+   ALWAYS answers. Asked for cat-cow it offers an air bike; asked for box
+   breathing it offers an air bike too. So the movements the app itself
+   programs carry a hand-checked `demo` naming the pack entry that genuinely
+   shows them, and where nothing in the pack is honest the field is absent and
+   the emoji stays. Only a movement the coach invented — which has no library
+   entry to consult — falls through to the matcher, and then only on a
+   confident match, never an approximate one. */
+function libMove(t){
+  const key=String(t||"").toLowerCase().trim();
+  if(!key) return null;
+  return [...PREP,...MOB].find(i=>{
+    const n=i.t.toLowerCase();
+    return n===key || key.indexOf(n)>=0 || n.indexOf(key)>=0;
+  })||null;
+}
+function moveDemo(name){
+  if(!name) return null;
+  try{
+    const dead=!!(DB.deadMedia&&DB.deadMedia[name]);
+    const saved=DB.media&&DB.media[name];
+    if(saved && !dead) return {kind:"gif", src:saved};
+    /* A ramp set IS the lift, so it shows the lift's own demo — the same one
+       on its exercise card. Without this the matcher read the label instead of
+       the movement and offered a banded bench press for a barbell one. */
+    const ramp=String(name).match(/^(?:warm-?up set|ramp set)\s*[\u2014\u2013-]\s*(.+)$/i);
+    if(ramp){
+      const d=demoFor(ramp[1].trim());
+      return (d.kind==="gif"||d.kind==="frames")? d : null;
+    }
+    const lib=libMove(name);
+    if(lib){
+      /* The downloaded catalogue, but ONLY on an exact name. Its fuzzy matcher
+         is the thing that hands cat-cow an air bike. */
+      const exact = k => (wxEnabled() && typeof WXIDX!=="undefined" && WXIDX[k] && WXIDX[k].gif)? WXIDX[k].gif : null;
+      const own = exact(lib.t) || exact(name);
+      if(own) return {kind:"gif", src:own, label:lib.t};
+      /* Hand-checked against the free pack, or deliberately nothing. */
+      if(!lib.demo) return null;
+      const r=fedNameIdx()[String(lib.demo).toLowerCase()];
+      if(r && r.f && r.f.length)
+        return {kind:"frames", frames:r.f.map(f=>fedImgBase()+f), label:r.n};
+      const cat=exact(lib.demo);
+      if(cat) return {kind:"gif", src:cat, label:lib.demo};
+      return null;                                 /* pack not on the phone yet */
+    }
+    const d=demoFor(name);
+    if(d.kind==="gif") return d;
+    if(d.kind==="frames" && !d.approx) return d;
+  }catch(e){}
+  return null;
+}
 function enrichMove(item){
   const o = (typeof item==="string")? {t:item} : Object.assign({},item);
   /* v116 — the coach sometimes writes the dose into the NAME ("Standing Quad
@@ -4214,12 +4365,24 @@ function mvHTML(item0,coolIdx){
   const item=enrichMove(item0);
   const name=item.t||"", nEsc=attrEsc(name);
   const media = item.img || (DB.media&&DB.media[name]);
+  const dm = media? null : moveDemo(name);
   let thumb;
   if(media){
     thumb="<div class='thumb'><img src='"+attrEsc(media)+"' alt='"+nEsc+"' loading='lazy' onerror=\"this.parentElement.classList.add('emo');this.parentElement.textContent='"+iconFor(name)+"'\"></div>";
+  } else if(dm && dm.kind==="frames"){
+    /* Two photographs, start and end, flipped by the same animator that runs
+       the exercise demos — so a stretch shows you the position it ends in. */
+    const f0=attrEsc(dm.frames[0]), f1=attrEsc(dm.frames[1]||dm.frames[0]);
+    thumb="<div class='thumb' title='"+attrEsc(dm.label||name)+"'><img src='"+f0+"' data-f0='"+f0+"' data-f1='"+f1+
+      "' data-on='0' alt='"+nEsc+"' loading='lazy' onerror='fedImgFail(this)'></div>";
+  } else if(dm && dm.kind==="gif"){
+    thumb="<div class='thumb'><img src='"+attrEsc(dm.src)+"' alt='"+nEsc+"' loading='lazy' onerror=\"this.parentElement.classList.add('emo');this.parentElement.textContent='"+iconFor(name)+"'\"></div>";
   } else {
+    /* data-movewant says a demo is wanted here and the pack has not arrived.
+       paintDemos() picks it up and fetches, rather than leaving him emoji. */
+    const wants = libMove(name)&&libMove(name).demo? " data-movewant='1'" : "";
     const attrs = mediaKey()? (" data-exmedia='"+nEsc+"' data-exq='"+attrEsc(name+" exercise how to")+"'") : "";
-    thumb="<div class='thumb emo'"+attrs+">"+(item.icon||iconFor(name))+"</div>";
+    thumb="<div class='thumb emo'"+wants+attrs+">"+(item.icon||iconFor(name))+"</div>";
   }
   /* v115 — the duration is a field now, so the card can show it plainly, say
      whether it is per side or total, and let him change it here. */
@@ -6946,7 +7109,10 @@ coachingDoctrine()+
 "WHOLE SESSION:\n"+
 "[[REGENERATE_KEEPING: Bench Press, Barbell Row]] · [[DELOAD_WORKOUT: -20%]] · [[SAVE_FAVOURITE: Big Push]] · [[LOAD_FAVOURITE: Big Push]] · [[RESET_WORKOUT]]\n\n"+
 "WARM-UP / COOL-DOWN & ICONS:\n"+
-"[[SET_WARMUP: Cat-cow ×8 | 🐈 ; Arm circles ×15 | 🔄]] · [[SET_COOLDOWN: Child's pose 60s | 🧘]] · [[SET_ICON: warmup | Cat-cow | 🐈]] · [[FIX_ICONS]]\n\n"+
+"[[SET_WARMUP: Cat-cow ×8 | 🐈 ; Arm circles ×15 | 🔄]] · [[SET_COOLDOWN: Child's pose 60s | 🧘]] · [[SET_ICON: warmup | Cat-cow | 🐈]] · [[FIX_ICONS]]\n"+
+"THE APP ALREADY BUILDS BOTH FROM TODAY’S MOVEMENT PATTERNS — a squat and hinge day gets ankle rocks, 90/90s and a glute bridge, a pressing day gets wall slides and pec work, and the first two big lifts get their own ramp sets. It is right far more often than a generic list, so only rewrite a section when he asks or when something about today genuinely needs it. Writing one LOCKS it for the day and it stops adapting to changes you make to the session afterwards.\n"+
+"USE THE APP’S OWN MOVEMENT NAMES where one fits — Cat-cow, 90/90 hip switches, Couch stretch, Figure-4 glute stretch, Dead bug, Scapular pull-ups and the rest. Those carry a hand-checked photo demo, a written cue and a dose. A name you invent gets an emoji and nothing else, so invent one only when nothing in the library does the job.\n"+
+"The emoji in these directives is only a fallback for when there is no photograph of that movement. Do not spend effort choosing them.\n\n"+
 "WEEKLY SCHEDULE & DAY TYPES:\n"+
 "HIS WEEK STARTS ON MONDAY \u2014 always list and think Mon-first, never Sunday-first.\n[[SET_WEEKDAY: Monday | Cardio Day]] · [[SET_WEEKLY_SCHEDULE: Mon Cardio Day; Tue Pull Day; Wed Full Body; Thu Push Day; Fri Legs & Core; Sat Upper Body; Sun Rest]] · [[CREATE_DAY_TYPE: Mobility Day]] · [[CREATE_DAY_TYPE: Cardio Day | kind:cardio | note:Zone 2 engine work]] · [[REMOVE_SCHEDULE_DAY_TYPE: Rest]]\n"+
 "(CREATE_DAY_TYPE options after the name, pipe-separated: kind:cardio|mobility|strength, main:Ex1,Ex2, sets:4, note:...)\n\n"+
@@ -10449,7 +10615,7 @@ function scheduleInApp(){
    v18 ADDITIONS — draggable rest timer · weekly training memory · AI planner
    · Firestore sync
    ========================================================================== */
-const APP_VERSION="v117 · 15/09/2026";
+const APP_VERSION="v118 · 15/09/2026";
 
 /* ===== 1. REST TIMER — drag it anywhere so it never blocks the chat box ===== */
 let _rtDrag=null;
