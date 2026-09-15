@@ -683,6 +683,7 @@ background:var(--card);border:1px solid var(--line);border-radius:18px;padding:1
 .coachline .v{font-size:14.5px;font-weight:700;color:var(--txt);line-height:1.45;font-variant-numeric:tabular-nums;}
 .coachline .v i{font-style:normal;font-weight:600;color:var(--dim);}
 .coachline .cl.now .v{color:var(--gold);}
+.coachline .cl.done .v{color:var(--green);}
 /* v130 — the single Edit line under the cue. It is a divider with a label,
    not another card: three cards stacked inside a fourth reads as a box of
    boxes. The panels inside keep their own borders. */
@@ -6269,9 +6270,12 @@ function firstSentence(t){
 function coachLineHTML(e){
   let p=null; try{ p=progressionFor(e.name); }catch(err){ p=null; }
   const rows=[];
+  /* Once there are sets on the board the row is today's, so it says so and
+     drops the date — "Last · today" reads like a contradiction. */
+  const onToday=!!(p && p.lastDate===today());
   if(p && p.last){
-    rows.push("<div class='cl'><span class='k'>Last</span><span class='v'>"+escapeHtml(p.last)+
-      (p.lastDate? " <i>"+ukDate(p.lastDate)+"</i>" : "")+"</span></div>");
+    rows.push("<div class='cl'><span class='k'>"+(onToday? "So far" : "Last")+"</span><span class='v'>"+escapeHtml(p.last)+
+      ((!onToday && p.lastDate)? " <i>"+ukDate(p.lastDate)+"</i>" : "")+"</span></div>");
   }
   /* A number beats a paragraph. Where the coach has actually settled on a
      weight, the row is that weight and the rep target and nothing else; the
@@ -6283,8 +6287,15 @@ function coachLineHTML(e){
   } else {
     todayTxt=firstSentence((p&&p.target) || (e.rec&&e.rec.text) || "");
   }
-  if(todayTxt){
-    rows.push("<div class='cl now'><span class='k'>Today</span><span class='v'>"+escapeHtml(todayTxt)+"</span></div>");
+  /* v136 — and once every set is in, a prescription is not what the row is
+     for. It said "Today 27.5kg × 8–12" over four completed sets at 25kg. */
+  const target=(typeof exSets==="function")? (exSets(e)||0) : 0;
+  const nDone=(p && p.doneToday)||0;
+  if(target && nDone>=target){
+    rows.push("<div class='cl done'><span class='k'>Done</span><span class='v'>all "+target+" sets logged</span></div>");
+  } else if(todayTxt){
+    const left=(target && nDone)? (" · "+(target-nDone)+" to go") : "";
+    rows.push("<div class='cl now'><span class='k'>Today</span><span class='v'>"+escapeHtml(todayTxt+left)+"</span></div>");
   }
   if(!rows.length) return "";
   return "<div class='coachline'>"+rows.join("")+"</div>";
@@ -11515,7 +11526,7 @@ function scheduleInApp(){
    v18 ADDITIONS — draggable rest timer · weekly training memory · AI planner
    · Firestore sync
    ========================================================================== */
-const APP_VERSION="v135 · 15/09/2026";
+const APP_VERSION="v136 · 15/09/2026";
 
 /* ===== 1. REST TIMER — drag it anywhere so it never blocks the chat box ===== */
 let _rtDrag=null;
@@ -17746,11 +17757,33 @@ function progressionFor(name){
   const prev=hist.filter(s=>s.date!==today()).slice(-1)[0]||null;
   const out={name, last:null, target:null, why:null, next:null, unit:meta.unit, weight:meta.weight};
 
-  if(prev && (prev.sets||[]).length){
-    out.last = meta.weight
-      ? (prev.sets[0].w+"kg × "+prev.sets.map(s=>s.r).join(", "))
-      : (meta.unit==="time"? prev.sets.map(s=>s.r+"s").join(", ") : prev.sets.map(s=>s.r).join(", "));
-    out.lastDate=prev.date;
+  /* ===== v136 · "LAST" MEANT "LAST TIME, NOT COUNTING TODAY" ==============
+     Four sets logged this morning and the card still read "Last 25kg × 12,
+     12, 12 — 01/09/2026". Today was deliberately filtered out, because the
+     progression maths has to compare against the PREVIOUS session: measure
+     today against itself and the target ratchets up a set at a time.
+
+     That reasoning is right for the maths and wrong for the line he reads.
+     The most recent thing he did is the most recent thing he did. So the
+     displayed row follows today once there is anything on the board, and the
+     maths below still reads prev. */
+  const doneToday=(typeof todaySets==="function")? (todaySets(name)||[]) : [];
+  out.doneToday=doneToday.length;
+  const shown = doneToday.length? {date:today(), sets:doneToday} : prev;
+  if(shown && (shown.sets||[]).length){
+    const sets=shown.sets;
+    if(!meta.weight){
+      out.last = (meta.unit==="time")? sets.map(x=>x.r+"s").join(", ") : sets.map(x=>x.r).join(", ");
+    } else {
+      /* One weight for the lot reads as "25kg × 12, 12, 12". A weight that
+         moved mid-exercise has to be spelled out set by set or the line
+         quietly misreports three of them. */
+      const ws=sets.map(x=>+x.w||0);
+      out.last = ws.every(w=>w===ws[0])
+        ? (fmtNum(ws[0])+"kg × "+sets.map(x=>x.r).join(", "))
+        : sets.map(x=>fmtNum(x.w)+"×"+x.r).join(", ");
+    }
+    out.lastDate=shown.date;
   }
   if(!meta.weight){
     /* Bands and bodyweight have no kilos, so progression is reps, then tempo,
@@ -17772,7 +17805,6 @@ function progressionFor(name){
     const todays=todaySets(name)||[];
     if(todays.length){
       const w0=todays[0].w;
-      out.last="today: "+w0+"kg × "+todays.map(s=>s.r).join(", ");
       out.target=w0+"kg for the rest of today's sets";
       out.why="First time on this one, so today sets the baseline. The weight does not change between sets.";
       out.next="Finish all "+(exSets(e)||todays.length)+" sets at "+w0+"kg with the reps holding up, and it goes up next session.";

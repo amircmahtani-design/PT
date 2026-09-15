@@ -1,7 +1,41 @@
-AMIR PT — v135 · 15/09/2026
+AMIR PT — v136 · 15/09/2026
 ===========================
 
 Upload index.html AND sw.js.
+
+
+"LAST" MEANT "LAST TIME, NOT COUNTING TODAY"
+============================================
+Four sets logged this morning, sitting right there on the card in green,
+and the line underneath still read:
+
+    LAST    25kg × 12, 12, 12    01/09/2026
+
+Today was being filtered out on purpose. The progression maths has to
+compare against the PREVIOUS session — measure today against itself and
+the target ratchets up a set at a time, all morning.
+
+That reasoning is right for the maths and wrong for the line you read.
+The most recent thing you did is the most recent thing you did. The row
+follows today the moment there is anything on the board; the maths
+underneath still reads the previous session, exactly as it did.
+
+    LAST      25kg × 12, 12, 12   01/09/2026     before you start
+    SO FAR    25kg × 12, 12                      once you are working
+
+  It says SO FAR rather than LAST, and drops the date — "Last · today"
+  reads like a contradiction.
+
+  A weight that moved mid-exercise is spelled out set by set, "25×12,
+  27.5×10", instead of quietly reporting them all at the first weight.
+
+AND THE ROW UNDER IT STOPPED PRESCRIBING ONCE YOU'D FINISHED
+  Same screenshot: four sets done, and it still said "Today 27.5kg ×
+  8–12". It counts down while there is work left and gets out of the way
+  when there isn't:
+
+    TODAY   27.5kg × 8–12 · 2 to go
+    DONE    all 4 sets logged
 
 
 WHY REARRANGING HOME NEVER STUCK
