@@ -675,6 +675,30 @@ background:var(--card);border:1px solid var(--line);border-radius:18px;padding:1
 /* v116 — the card is collapsed by default: image, name, scheme, cue, log row.
    Everything else lives behind one of three headers so Log is always in reach
    without scrolling past a wall of controls. */
+/* v130 — the single Edit line under the cue. It is a divider with a label,
+   not another card: three cards stacked inside a fourth reads as a box of
+   boxes. The panels inside keep their own borders. */
+.exmore{margin-top:14px;border-top:1px solid var(--hair);}
+.exmore>summary{list-style:none;cursor:pointer;display:flex;align-items:center;gap:8px;
+  padding:13px 2px;font-size:12px;font-weight:800;letter-spacing:.5px;text-transform:uppercase;color:var(--label);}
+.exmore>summary::-webkit-details-marker{display:none;}
+.exmore>summary::after{content:"\25be";margin-left:auto;font-size:11px;transition:transform .18s;}
+.exmore>summary .m{font-size:11px;font-weight:600;color:var(--dim);letter-spacing:0;text-transform:none;}
+.exmore[open]>summary{color:var(--orange);}
+.exmore[open]>summary::after{transform:rotate(180deg);}
+.exmorebody{padding-bottom:6px;}
+.exmorebody .exsec:first-child{margin-top:0;}
+@media (hover:hover) and (pointer:fine){ .exmore>summary:hover{color:var(--orange);} }
+@media (prefers-reduced-motion:reduce){ .exmore>summary::after{transition:none;} }
+/* The day picker and "New exercises", inside Session setup. */
+.setupday{margin-bottom:14px;}
+.setupday>label{display:flex;align-items:baseline;gap:8px;font-size:12px;font-weight:800;
+  letter-spacing:.5px;text-transform:uppercase;color:var(--label);margin-bottom:8px;}
+.setupday>label .traindaynote{margin-left:auto;font-size:11px;font-weight:700;letter-spacing:0;text-transform:none;}
+.daywarn{margin-top:8px;font-size:13px;font-weight:600;line-height:1.5;color:var(--gold);}
+.daywarn b{font-weight:800;}
+/* The small action in the page header, beside the screen title. */
+.head .headbtn{width:auto;min-height:44px;padding:0 15px;font-size:12px;line-height:1.2;white-space:nowrap;flex:0 0 auto;display:flex;align-items:center;justify-content:center;}
 .exsec{border:1px solid var(--line);border-radius:12px;background:#100d0a;margin-top:8px;overflow:hidden;}
 .exsec>summary{list-style:none;cursor:pointer;display:flex;align-items:center;gap:8px;
   padding:11px 13px;font-size:12.5px;font-weight:800;letter-spacing:.3px;color:var(--txt);}
@@ -1063,15 +1087,17 @@ a{color:var(--orange);}
 
   <section class="screen" id="s-workout">
     <div class="head"><div><div class="greet">Log as you go</div><h1 class="display">Train</h1></div>
-      <button class="btn sec" style="width:auto;padding:11px 14px;font-size:12px" onclick="rerollWorkout()">New exercises</button></div>
-    <div class="card" style="padding:14px 16px">
+      <button class="btn sec headbtn" id="planBtn" onclick="aiPlanToday(true)">Build today’s session</button></div>
+    <div id="planOut"></div>
+    <!-- v130 — the day picker only stands on its own when there is no session
+         on screen to put it inside. With a sheet up it lives in Session setup,
+         so Train opens on the workout itself. -->
+    <div class="card" id="trainDayCard" style="padding:14px 16px">
       <div class="field" style="margin-bottom:0">
-        <label>Today's session <span class="hint" style="float:right;font-weight:700" id="trainDayNote"></span></label>
-        <select class="txtin" id="trainDaySel" onchange="setTodaySplit(this.value)"></select>
+        <label>Today's session <span class="hint traindaynote" style="float:right;font-weight:700" id="trainDayNote"></span></label>
+        <select class="txtin traindaysel" id="trainDaySel" onchange="setTodaySplit(this.value)"></select>
       </div>
     </div>
-    <button class="btn blue mb" id="planBtn" onclick="aiPlanToday(true)">Build today’s session</button>
-    <div id="planOut"></div>
     <div id="workoutSheet"></div>
   </section>
 
@@ -4916,7 +4942,25 @@ function setupSummary(w){
 function exSetsLabel(w){ return (w&&w.sets? w.sets+" sets" : ""); }
 function setupSecHTML(w){
   return sheetSec("setup","Session setup", setupSummary(w),
-    timeBarHTML(w)+setsPickerHTML(w)+restPickerHTML(w), false);
+    dayPickHTML(w)+timeBarHTML(w)+setsPickerHTML(w)+restPickerHTML(w), false);
+}
+/* v130 — which day this is, and "give me different movements", used to sit
+   above the session as two pieces of chrome you scrolled past every time. They
+   are session settings, so they live with the other session settings. */
+function dayPickHTML(w){
+  const cur=pickSplit();
+  const built=(w&&w.title)||"";
+  const clash = built && built!==cur
+    ? "<div class='daywarn'>Today is set to <b>"+escapeHtml(cur)+"</b> but this sheet was built for <b>"+
+      escapeHtml(built)+"</b>. Tap New exercises to rebuild it.</div>"
+    : "";
+  return "<div class='setupday'>"+
+    "<label for='setupDaySel'>Today\u2019s session"+
+      "<span class='traindaynote' id='setupDayNote'></span></label>"+
+    "<select class='txtin traindaysel' id='setupDaySel' onchange='setTodaySplit(this.value)'></select>"+
+    clash+
+    "<button class='btn sec mt' onclick='rerollWorkout()'>New exercises</button>"+
+  "</div>";
 }
 function sheetSec(key,title,meta,body,openDefault){
   /* v115 — an id per section so a receipt can open Train at the right place. */
@@ -5001,8 +5045,8 @@ function _renderSheetInner(w){
   if(!host) return;
   /* v115 — a cleared day says so, rather than showing an empty sheet that
      invites the planner to fill it back in. */
-  if(todayCleared()){ host.innerHTML=clearedSheetHTML(); return; }
-  if(!w){ host.innerHTML=""; return; }
+  if(todayCleared()){ host.innerHTML=clearedSheetHTML(); try{ renderTrainDayPick(); }catch(e){} return; }
+  if(!w){ host.innerHTML=""; try{ renderTrainDayPick(); }catch(e){} return; }
   /* Requirement 16: nothing reaches the sheet unchecked, and anything the
      check CHANGED is disclosed rather than quietly applied. */
   let _v={fixes:[],warnings:[]};
@@ -5030,11 +5074,13 @@ function _renderSheetInner(w){
     cardioBlockHTML(cardio||{name:"Concept2 Row",duration:"30 min",zone:"Zone 2"})+
     sheetSec("cool","Cool-down · timed",moveCount(w.cooldown),coolBodyHTML(w.cooldown),false)+
     sheetSec("rec","Recovery notes","","<div class='recovery'>"+w.recovery+"</div>",false)+"</div>";
+    try{ renderTrainDayPick(); }catch(e){}
     return;
   }
   if(w.sets===0){
     host.innerHTML="<div class='sheet'>"+wkHeaderHTML(w)+"</div><div id='wkMenu' data-open='0'></div><div class='sheet-sec'><div class='recovery'>"+w.note+"</div></div>"+(cardio?cardioBlockHTML(cardio):"")+sheetSec("mob",(w.flowTitle|| (w.kind==='mobility'?'Mobility flow · timed':'Mobility · timed')),moveCount(w.cooldown),coolBodyHTML(w.cooldown),true)+"</div>";
     try{ bindSheetSecs(); }catch(e){}
+    try{ renderTrainDayPick(); }catch(e){}
     return;
   }
   const exHTML=w.main.map((e,i)=>exBlockHTML(e,i)).join('');
@@ -5060,7 +5106,17 @@ function _renderSheetInner(w){
     const host=document.getElementById('sheetTop')||document.getElementById('workoutSheet');
     if(host && w && w.blockWeek){
       let bar=document.getElementById('blockBar');
-      if(!bar){ bar=document.createElement('div'); bar.id='blockBar'; bar.className='blockbar'; host.insertBefore(bar, host.firstChild); }
+      if(!bar){
+        bar=document.createElement('div'); bar.id='blockBar'; bar.className='blockbar';
+        /* v130 — this used to go in above everything, so Train opened on
+           "Week 1 of 5 / Anchors / prehab" and you scrolled to find out what
+           you were doing. It belongs directly under the session header it
+           describes. Note .sheet wraps the WHOLE sheet, so the anchor is the
+           header card itself, not the wrapper. */
+        const hd=host.querySelector('#wkHeader');
+        if(hd && hd.parentNode) hd.parentNode.insertBefore(bar, hd.nextSibling);
+        else host.insertBefore(bar, host.firstChild);
+      }
       bar.innerHTML="<span class='bw'>Week "+w.blockWeek+" of "+w.blockWeeks+"</span>"+
         (w.trimNote? "<span class='bt'>\u23f3 "+escapeHtml(w.trimNote)+"</span>":"")+
         (w.deloadWeek? "<span class='bd'>Deload</span>":"")+
@@ -6115,16 +6171,30 @@ function exBlockHTML(e,i){
     "<div id='swap"+i+"' data-open='0'></div>"+
     stepsHTML(e.name);
 
+  /* v130 — the card is ordered the way the set actually goes: see the
+     movement, put the numbers in, read what the coach says about it. The three
+     panels that change the prescription are real work but they are not what
+     you are doing mid-set, so they fold into one "Edit" line underneath. */
   return "<div class='exb"+(e.grp?" grouped":"")+"' id='exb"+i+"'>"+order+exImgHTML(e.name,e.muscles)+
     "<div class='name'>"+e.name+"</div><div class='scheme'>"+e.scheme+" · rest "+e.rest+"</div>"+
-    exSec(e.name,"numbers","Sets, reps &amp; rest",exSetMeta(e),numbers)+
-    exSec(e.name,"coach","Coach","",coach)+
-    exSec(e.name,"change","Change this exercise","",change)+
+    "<div class='setlog' id='sl"+i+"'>"+chips+"</div>"+input+
     notes+
     "<div class='cue'><b>Cue:</b> "+e.cue+"</div>"+
-    "<div class='setlog' id='sl"+i+"'>"+chips+"</div>"+input+
+    exEditHTML(e.name,
+      exSec(e.name,"numbers","Sets, reps &amp; rest",exSetMeta(e),numbers)+
+      exSec(e.name,"coach","Coach","",coach)+
+      exSec(e.name,"change","Change this exercise","",change))+
     "<button class='grouprest' onclick='groupRest("+i+")'>⏱ Rest before next exercise</button>"+
     "<div id='cb"+i+"'></div></div>";
+}
+/* One line under the cue. Everything that was three headers on the face of the
+   card is behind it, and it remembers whether you left it open exactly the way
+   the panels inside it do. */
+function exEditHTML(name,inner){
+  const k=exSecKey(name,"edit");
+  return "<details class='exmore'"+(_cardOpen[k]?" open":"")+" data-ek='"+attrEsc(k)+"' ontoggle='exSecToggle(this)'>"+
+    "<summary><span class='t'>Edit</span><span class='m'>sets, reps &amp; rest · coach · swap</span></summary>"+
+    "<div class='exmorebody'>"+inner+"</div></details>";
 }
 /* ===== v116 · THE CARD IS COLLAPSED UNTIL YOU OPEN IT =====================
    Mid-set you want three things: what the movement is, what you're aiming for,
@@ -10358,19 +10428,25 @@ function splitSelectHTML(dow,id,cur,col){
    changing it is one tap instead of a trip back to Home's weekly plan. It
    writes the same day override the weekly plan writes, so the two never
    disagree, and it rebuilds the sheet immediately. */
+/* v130 — there are two of these now: one inside Session setup while a sheet
+   is up, one standing alone when there is nothing to train. Both are filled
+   from here, and only one is ever in the page at a time. */
 function renderTrainDayPick(){
-  const sel=document.getElementById('trainDaySel'); if(!sel) return;
+  const sels=document.querySelectorAll('select.traindaysel');
   const cur=pickSplit();
   const list=allSplits();
   if(!list.includes(cur)) list.unshift(cur);
-  sel.innerHTML=list.map(sp=>"<option value='"+attrEsc(sp)+"'"+(sp===cur?" selected":"")+">"+escapeHtml(sp)+"</option>").join("");
-  const note=document.getElementById('trainDayNote');
-  if(note){
-    const planned=DB.schedule[new Date().getDay()]||"Rest";
-    const over=DB.dayOverride&&DB.dayOverride.date===today()&&DB.dayOverride.split&&DB.dayOverride.split!==planned;
+  const opts=list.map(sp=>"<option value='"+attrEsc(sp)+"'"+(sp===cur?" selected":"")+">"+escapeHtml(sp)+"</option>").join("");
+  sels.forEach(sel=>{ sel.innerHTML=opts; sel.value=cur; });
+  const planned=DB.schedule[new Date().getDay()]||"Rest";
+  const over=DB.dayOverride&&DB.dayOverride.date===today()&&DB.dayOverride.split&&DB.dayOverride.split!==planned;
+  document.querySelectorAll('.traindaynote').forEach(note=>{
     note.textContent = over? ("swapped · "+planned+" was planned") : (LOC().label+" · planned");
     note.style.color = over? "var(--gold)" : "var(--label)";
-  }
+  });
+  /* The standalone card is a fallback, not a second copy. */
+  const card=document.getElementById('trainDayCard');
+  if(card) card.hidden = !!document.getElementById('setupDaySel');
 }
 function setTodaySplit(split){
   if(!split) return;
@@ -11334,7 +11410,7 @@ function scheduleInApp(){
    v18 ADDITIONS — draggable rest timer · weekly training memory · AI planner
    · Firestore sync
    ========================================================================== */
-const APP_VERSION="v129 · 15/09/2026";
+const APP_VERSION="v130 · 15/09/2026";
 
 /* ===== 1. REST TIMER — drag it anywhere so it never blocks the chat box ===== */
 let _rtDrag=null;

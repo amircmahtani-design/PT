@@ -1,7 +1,76 @@
-AMIR PT — v129 · 15/09/2026
+AMIR PT — v130 · 15/09/2026
 ===========================
 
 Upload index.html AND sw.js.
+
+
+TRAIN OPENS ON THE SESSION
+==========================
+It used to open on chrome. A day dropdown, a full-width Build button, then
+three rows of programme chips — and only then, below the fold, the thing
+you actually came to do.
+
+  Train now starts with the session card: DUBAI · HOME GYM, Legs & Core,
+  the sets and reps pills. Week 1 of 5, your anchors and the prehab note
+  slide underneath it, where they read as context for the session instead
+  of a queue in front of it.
+
+  "Build today's session" is the small button beside the title now, where
+  "New exercises" used to be. One tidy action in the header rather than a
+  full-width orange bar you scroll past every single time.
+
+  The day dropdown and "New exercises" both moved into Session setup, with
+  the time, the sets and the rest timers. They are session settings, so
+  they sit with the other session settings — one tap away, not in the way.
+
+  On a day with no session to hold them — a mobility day, or a day you
+  cleared — the day picker stands on its own again at the top, because
+  there is no Session setup to live in. Exactly one of them is ever on
+  screen.
+
+IF THE SHEET AND THE DAY DISAGREE, IT SAYS SO
+  Nothing rebuilds a session on its own — that would throw away sets you
+  had already logged. But if the day is set to one thing and the sheet in
+  front of you was built for another, Session setup now says which is
+  which and points at New exercises. It used to just show you two
+  different answers and let you work it out.
+
+
+THE EXERCISE CARD, IN THE ORDER YOU USE IT
+==========================================
+Every card opened with three headers — Sets reps & rest, Coach, Change
+this exercise — before it got anywhere near the box you type your weight
+into. Three taps of furniture between you and the set.
+
+  The order is the set now:
+
+    the picture         what the movement is
+    the numbers         weight, reps, Log — right under it
+    the coach's note    strength slot, tempo, the cue
+    EDIT                one quiet line, and that is the end of the card
+
+  Everything that was on the face of the card is still there. The three
+  panels live behind that single Edit line, under the cue, and it
+  remembers whether you left it open the same way they always did.
+  Nothing was removed, nothing became harder to reach — it is one tap
+  instead of permanent clutter.
+
+  Edit is a hairline and a label rather than another box. Three cards
+  stacked inside a fourth is what the card looked like before.
+
+
+TWO THINGS FOUND WHILE DOING IT
+===============================
+  THE EDIT LINE COLLIDED WITH "EDIT EVERYTHING"
+  .exedit was already the class on the Edit-everything panel, so the new
+  Edit line inherited its card border and came out as the boxed thing it
+  was meant to replace. Renamed.
+
+  A MOBILITY DAY COULD HAVE LOST ITS DAY PICKER
+  The mobility, cardio and cleared-day sheets all return early, before the
+  line that fills the picker in — so the standalone card would have stayed
+  hidden from the last lifting day with nothing to replace it. Every path
+  out of the renderer settles it now. Checked on all four.
 
 
 THE CHECK-IN IS TWO QUESTIONS NOW
