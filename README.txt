@@ -1,7 +1,76 @@
-AMIR PT — v131 · 15/09/2026
+AMIR PT — v133 · 15/09/2026
 ===========================
 
 Upload index.html AND sw.js.
+
+
+THE CHILD'S POSE PICTURE WAS OF SOMETHING ELSE
+==============================================
+You were right, and it took looking at the photograph to see it.
+
+  The free pack has a record called "Child's Pose" and the app matched it
+  at a score of 1.31 — the most confident the matcher ever gets. The
+  record's written instructions are correct: "lower your buttocks down to
+  sit on your heels." Its two photographs are not. In both frames the hips
+  stay high above the heels and the thighs are near vertical. That is a
+  kneeling tuck. Child's pose is defined by the hips resting ON the heels.
+
+  Right name, right instructions, high confidence, wrong picture — which
+  no amount of tuning a name matcher could ever catch. The record is named
+  and blocked outright, so nothing in the app can reach it again.
+
+  Both child's pose movements now show the "Watch how" link instead, which
+  opens a real demo. A wrong demo is worse than none: it gets copied,
+  mid-session, as form. DEMOS-NEEDED.txt says exactly what to shoot; drop
+  the two files in and they take over automatically.
+
+TWO THINGS WRONG WITH THE SAME CARD
+  The cue was the wrong movement's. "Child's pose" is in the cool-down
+  list, "Child's pose with side reach" is in the warm-up list, and the
+  matcher took the first entry whose name CONTAINED the one it was looking
+  for — array order deciding everything. The plain one could never win its
+  own name, so the card said "walk both hands over to one side to open the
+  lat" over a picture of a symmetric pose. An exact name beats a substring
+  now, and the same ranked resolver serves both places that were doing this
+  (they each carried their own copy of the broken matcher).
+
+  And the dose said "45s each side · 0:45 × 2 sides" for a movement with no
+  sides. Side-ness is meant to come from the movement, not from your
+  default — but it only ever read the item's own dose field, which a bare
+  movement name has not got yet, so it fell through to "each side". It asks
+  the library now. Checked all 38 warm-up and cool-down movements: 13 say
+  each side, 6 say total, 19 keep their own rep count, and not one of them
+  claims a side the library does not give it.
+
+
+HOME IS FOUR THINGS NOW
+=======================
+Gone, because each was somewhere better already:
+
+  TODAY'S WORKOUT   Train is a tab at the bottom of every screen
+  TOMORROW          it is in the weekly plan
+  YOUR NUMBERS      it is all on Progress
+
+  THE UP/DOWN ARROWS and the "Rearrange" buttons are gone from Home,
+  Progress and Food. An order you already saved is still honoured, so
+  anything you arranged stays arranged — there is just no longer a row of
+  controls on every card for something done once.
+
+  THE MICROPHONE BUBBLE is gone. It floated over every screen and you
+  never used it.
+
+  What is left on Home: the check-in button, the coach's read on today,
+  today's food, the weekly plan and the streak.
+
+WHILE REMOVING THEM
+  The rearrange list had collected duplicates — "Food today" and "Today's
+  workout" a dozen times each — because the saved order was filtered
+  against the real cards but never de-duplicated. Fixed at the source, so
+  the stored order cleans itself up on the next load.
+
+  "Your numbers" was the one card on the page written to without checking
+  it existed, and so was the hero title during boot. Both would have thrown
+  on every render once the cards went. Guarded.
 
 
 WHAT YOU DID, AND WHAT TO DO

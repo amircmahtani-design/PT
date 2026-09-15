@@ -991,20 +991,6 @@ a{color:var(--orange);}
     <button class="btn green mb" onclick="go('checkin')" style="font-size:16px;padding:16px">Start check-in</button>
     <div id="firstRun"></div>
     <div id="readyToday"></div>
-    <details class="hcard" data-hk="tmr" data-sk="tmr">
-      <summary class="hsum"><span class="t">Tomorrow</span><span class="chev">›</span></summary>
-      <div class="hbody">
-      <div class="card-title"><span>Coach's call for tomorrow</span></div>
-      <div id="tmrBox"></div>
-      </div>
-    </details>
-    <div class="card hero tap" data-sk="hero" data-nowrap="1" onclick="go('workout')">
-      <div class="glow"></div>
-      <div class="eyebrow" id="heroPhase">Today</div>
-      <h2 class="display" id="heroTitle">Today's Workout</h2>
-      <div class="sub" id="heroSub">Tap to open your session — log sets right on the exercise.</div>
-      <button class="cta" onclick="event.stopPropagation();generateWorkout()">Open Today's Workout</button>
-    </div>
     <details class="hcard" data-hk="intake" data-sk="intake">
       <summary class="hsum"><span class="t">Today’s food</span><span class="chev">›</span></summary>
       <div class="hbody">
@@ -1026,11 +1012,6 @@ a{color:var(--orange);}
         <div id="intakeMsg"></div>
       </div>
     </details>
-
-    <details class="hcard" data-hk="metrics" data-sk="metrics">
-      <summary class="hsum"><span class="t">Your numbers</span><span class="chev">›</span></summary>
-      <div class="hbody"><div class="grid" id="metricGrid"></div></div>
-    </details>
     <div id="nutriLine" data-sk="foodline" data-nowrap="1" style="display:none"></div>
     <details class="hcard" data-hk="week" data-sk="week" open>
       <summary class="hsum"><span class="t">Weekly plan</span><span class="chev">›</span></summary>
@@ -1050,7 +1031,7 @@ a{color:var(--orange);}
     </details>
 
     <div style="text-align:center;margin:14px 0 4px">
-      <button class="swapbtn" id="s-todayArrangeBtn" style="width:auto;padding:9px 16px;font-size:12.5px" onclick="toggleSecArrange('s-today')">Rearrange cards</button>
+
     </div>
   </section>
 
@@ -1218,7 +1199,7 @@ a{color:var(--orange);}
     </div>
 
     <div style="text-align:center;margin:14px 0 4px">
-      <button class="swapbtn" id="s-progressArrangeBtn" style="width:auto;padding:9px 16px;font-size:12.5px" onclick="toggleSecArrange('s-progress')">Rearrange sections</button>
+
     </div>
     <button class="btn sec" onclick="weeklyReview()">📊 Run Weekly Review</button>
     <div id="reviewOut"></div>
@@ -1292,7 +1273,7 @@ a{color:var(--orange);}
     </details>
 
     <div style="text-align:center;margin:14px 0 4px">
-      <button class="swapbtn" id="s-foodArrangeBtn" style="width:auto;padding:9px 16px;font-size:12.5px" onclick="toggleSecArrange('s-food')">Rearrange sections</button>
+
     </div>
   </section>
 
@@ -1597,12 +1578,9 @@ a{color:var(--orange);}
   </div>
 </div>
 <button class="jumpdown" id="jumpDown" onclick="jumpChatEnd()" aria-label="jump to latest">↓</button>
-<div class="micstate" id="micState"></div>
-<div class="micheard" id="micHeard"></div>
-<button class="micbtn" id="micBtn" aria-label="talk to your coach">
-  <svg viewBox="0 0 24 24" width="21" height="21" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
-    <rect x="9" y="2" width="6" height="11" rx="3"/><path d="M5 11a7 7 0 0 0 14 0"/><path d="M12 18v3"/></svg>
-</button>
+<!-- v133 — the microphone bubble is gone: never used, and it floated over
+     every screen. Everything that drives it is guarded on the button being
+     there, so the voice code simply never starts. -->
 <div class="toast" id="toast"></div>
 <script>
 
@@ -4569,20 +4547,50 @@ function buildMobilityFlow(){
    the emoji stays. Only a movement the coach invented — which has no library
    entry to consult — falls through to the matcher, and then only on a
    confident match, never an approximate one. */
+/* ===== v133 \u00b7 AN EXACT NAME HAS TO BEAT A SUBSTRING ====================
+   This was a single .find() over PREP then MOB, taking the first entry whose
+   name contained the query or was contained by it \u2014 array order deciding
+   everything. "Child's pose" is in MOB; "Child's pose with side reach" is in
+   PREP and contains it, so the plain one could never win its own name.
+
+   The cool-down therefore showed a photograph of a plain, symmetric child's
+   pose while telling him to walk both hands to one side for 45 seconds each
+   way. Two different movements on one card.
+
+   Ranked now, and the order is the point:
+     1  the same name, apostrophes and spacing aside
+     2  a library name sitting inside the query \u2014 longest first, so
+        "Child's pose with side reach 45s" keeps the side reach
+     3  the query sitting inside a library name \u2014 SHORTEST first, so a bare
+        "Child's pose" gets the plain entry rather than an embellished one */
+function libNorm(s){
+  return String(s||"").toLowerCase()
+    .replace(/[\u2018\u2019\u02bc]/g,"'")       /* curly apostrophes the coach writes */
+    .replace(/\s+/g," ").trim();
+}
 function libMove(t){
-  const key=String(t||"").toLowerCase().trim();
+  const key=libNorm(t);
   if(!key) return null;
-  return [...PREP,...MOB].find(i=>{
-    const n=i.t.toLowerCase();
-    return n===key || key.indexOf(n)>=0 || n.indexOf(key)>=0;
-  })||null;
+  const all=[...PREP,...MOB];
+  const exact=all.find(i=>libNorm(i.t)===key);
+  if(exact) return exact;
+  const inQuery=all.filter(i=>{ const n=libNorm(i.t); return n && key.indexOf(n)>=0; })
+                   .sort((a,b)=>libNorm(b.t).length-libNorm(a.t).length);
+  if(inQuery.length) return inQuery[0];
+  const inName=all.filter(i=>libNorm(i.t).indexOf(key)>=0)
+                  .sort((a,b)=>libNorm(a.t).length-libNorm(b.t).length);
+  return inName[0]||null;
 }
 function moveDemo(name){
   if(!name) return null;
   try{
     const dead=!!(DB.deadMedia&&DB.deadMedia[name]);
     const saved=DB.media&&DB.media[name];
-    if(saved && !dead) return {kind:"gif", src:saved};
+    /* v133 \u2014 this returned ANY cached copy first, so a saved frame of a
+       wrong remote match outranked a photograph shot for this app. A copy he
+       chose himself still wins; one the app merely cached does not. */
+    const picked=!!(DB.mediaPicked && DB.mediaPicked[name]);
+    if(saved && !dead && picked) return {kind:"gif", src:saved};
     /* A ramp set IS the lift, so it shows the lift's own demo — the same one
        on its exercise card. Without this the matcher read the label instead of
        the movement and offered a banded bench press for a barbell one. */
@@ -4592,9 +4600,12 @@ function moveDemo(name){
       return (d.kind==="gif"||d.kind==="frames")? d : null;
     }
     /* A photograph of this movement beats anything matched by name. */
-    const own=localDemo(name) || (libMove(name)? localDemo(libMove(name).t) : null);
-    if(own) return own;
     const lib=libMove(name);
+    /* One photograph covers every movement pointing at the same hand-checked
+       pack name, so a drop-in file needs no other wiring. */
+    const own=localDemo(name) || (lib? localDemo(lib.t) : null) || (lib&&lib.demo? localDemo(lib.demo) : null);
+    if(own) return own;
+    if(saved && !dead) return {kind:"gif", src:saved};
     if(lib){
       /* The downloaded catalogue, but ONLY on an exact name. Its fuzzy matcher
          is the thing that hands cat-cow an air bike. */
@@ -4604,7 +4615,7 @@ function moveDemo(name){
       /* Hand-checked against the free pack, or deliberately nothing. */
       if(!lib.demo) return null;
       const r=fedNameIdx()[String(lib.demo).toLowerCase()];
-      if(r && r.f && r.f.length)
+      if(r && !fedBlocked(r) && r.f && r.f.length)
         return {kind:"frames", frames:r.f.map(f=>fedImgBase()+f), label:r.n};
       const cat=exact(lib.demo);
       if(cat) return {kind:"gif", src:cat, label:lib.demo};
@@ -4629,11 +4640,10 @@ function enrichMove(item){
                                  .replace(/\bthe TFCC wrist\b/gi, "your "+wristSide()+" wrist");
   if(o.cue) o.cue=nameSide(o.cue);
   if(o.d && o.cue) return o;
-  const key=String(o.t||"").toLowerCase();
-  const hit=[...PREP,...MOB].find(i=>{
-    const n=i.t.toLowerCase();
-    return n===key || key.indexOf(n)>=0 || n.indexOf(key)>=0;
-  });
+  /* v133 \u2014 this was a second copy of libMove's broken matcher. One ranked
+     resolver now, so the dose and the cue can never come from a different
+     movement than the picture. */
+  const hit=libMove(o.t);
   if(hit){ if(!o.d) o.d=hit.d; if(!o.cue) o.cue=nameSide(hit.cue); }
   return o;
 }
@@ -10374,7 +10384,10 @@ function renderMetrics(){
   const ci=latestCheckin(); const w=ci&&ci.weight?ci.weight:DB.weights[DB.weights.length-1];
   const readiness = ci? Math.round((ci.sleep+ci.energy)/2*10) : null;
   const m=[{label:"⚖️ Weight",val:w?(w+"<small> kg</small>"):"—",bar:null},{label:" Sleep",val:ci?(ci.sleep+"<small>/10</small>"):"—",bar:ci?ci.sleep*10:0},{label:"⚡ Energy",val:ci?(ci.energy+"<small>/10</small>"):"—",bar:ci?ci.energy*10:0},{label:"🔋 Readiness",val:readiness!=null?(readiness+"<small>%</small>"):"—",bar:readiness}];
-  document.getElementById('metricGrid').innerHTML=m.map(x=>"<div class='metric'><div class='label'>"+x.label+"</div><div class='val'>"+x.val+"</div>"+(x.bar!=null?"<div class='bar'><span style='width:"+x.bar+"%'></span></div>":'')+"</div>").join('');
+  /* v133 — "Your numbers" left Home; it is all on Progress. This was the one
+     unguarded write on the page and it would throw on every render. */
+  { const mg=document.getElementById('metricGrid');
+    if(mg) mg.innerHTML=m.map(x=>"<div class='metric'><div class='label'>"+x.label+"</div><div class='val'>"+x.val+"</div>"+(x.bar!=null?"<div class='bar'><span style='width:"+x.bar+"%'></span></div>":'')+"</div>").join(''); }
 }
 function updateStatus(){
   const split=pickSplit();
@@ -11472,7 +11485,7 @@ function scheduleInApp(){
    v18 ADDITIONS — draggable rest timer · weekly training memory · AI planner
    · Firestore sync
    ========================================================================== */
-const APP_VERSION="v131 · 15/09/2026";
+const APP_VERSION="v133 · 15/09/2026";
 
 /* ===== 1. REST TIMER — drag it anywhere so it never blocks the chat box ===== */
 let _rtDrag=null;
@@ -13605,14 +13618,34 @@ function fedNear(name){
    confident match or a near one. */
 /* Matching only — knows nothing about his choices. demoFor() handles those,
    so there's exactly one place where precedence is decided. */
+/* ===== v133 \u00b7 A PACK PHOTOGRAPH THAT SHOWS THE WRONG MOVEMENT ==========
+   The free pack is matched by name, and the matcher can only judge names. It
+   cannot look at the picture. Childs_Pose matches "Child's pose" at a score of
+   1.31 \u2014 as confident as the matcher ever gets \u2014 and the record's own written
+   instructions are correct ("lower your buttocks down to sit on your heels").
+   Its two photographs are not: in both frames the hips stay high above the
+   heels and the thighs are near vertical. That is a kneeling tuck. Child's
+   pose is defined by the hips resting ON the heels.
+
+   So the name is right, the instructions are right, the confidence is high,
+   and the picture is of something else \u2014 which no amount of tuning the
+   matcher can catch. The record is named here and never used.
+
+   A wrong demo is worse than none: it is copied, mid-session, as form. With
+   nothing to show, the tile becomes the "Watch how" link it already falls back
+   to, which opens a real demo for the movement. Drop a photograph into
+   demos/child-s-pose-1.jpg and -2.jpg, add the slug to LOCAL_DEMOS and to
+   DEMOS in sw.js, and it takes over automatically \u2014 local always wins. */
+const FED_WRONG=new Set(["Childs_Pose"]);
+function fedBlocked(r){ return !!(r && FED_WRONG.has(r.i)); }
 function fedAuto(name){
   const strict=fedMatch(name);
   /* Comfortably above the bar = state it plainly. Only just over = show the
      photo but say it's the closest thing, so a wrong one is obvious at a
      glance instead of mid-set. */
-  if(strict) return {r:strict, approx:((_fedScore[name]||0) < 0.75)};
+  if(strict && !fedBlocked(strict)) return {r:strict, approx:((_fedScore[name]||0) < 0.75)};
   const near=fedNear(name);
-  if(near) return {r:near,approx:true};
+  if(near && !fedBlocked(near)) return {r:near,approx:true};
   return null;
 }
 /* Pick-aware view of the same thing, for callers that ask "what is this tile
@@ -14938,7 +14971,10 @@ function secOrder(screen){
   const host=document.getElementById(screen); if(!host) return [];
   const known=[...host.querySelectorAll(':scope > [data-sk]')].map(e=>e.dataset.sk);
   const saved=((DB.prefs&&DB.prefs.secOrder)||{})[screen]||[];
-  const out=saved.filter(k=>known.includes(k));
+  /* v133 \u2014 saved orders had collected repeats (Home listed "Food today" and
+     "Today's workout" a dozen times each), because this filtered the saved
+     list without ever de-duplicating it. */
+  const out=[]; saved.forEach(k=>{ if(known.includes(k) && !out.includes(k)) out.push(k); });
   known.forEach(k=>{ if(!out.includes(k)) out.push(k); });   /* new cards appear, never vanish */
   return out;
 }
@@ -14999,25 +15035,10 @@ function applySecOrder(screen){
   });
   mark.remove();
 }
-function moveSection(screen,k,dir){
-  const order=secOrder(screen);
-  const i=order.indexOf(k), j=i+dir;
-  if(i<0||j<0||j>=order.length) return;
-  order[i]=order[j]; order[j]=k;
-  DB.prefs=DB.prefs||{}; DB.prefs.secOrder=DB.prefs.secOrder||{};
-  DB.prefs.secOrder[screen]=order; save();
-  applySecOrder(screen); bindSections(screen);
-  const el=document.querySelector('#'+screen+' > [data-sk="'+k+'"]');
-  if(el){ el.scrollIntoView({behavior:'smooth',block:'center'});
-          el.classList.add('moved'); setTimeout(()=>el.classList.remove('moved'),1200); }
-  toast((SEC_TITLES[k]||k)+" \u2192 "+(order.indexOf(k)+1)+" of "+order.length);
-}
-function toggleSecArrange(screen){
-  DB.prefs=DB.prefs||{}; DB.prefs.secArrange=DB.prefs.secArrange||{};
-  DB.prefs.secArrange[screen]=!DB.prefs.secArrange[screen];
-  save(); bindSections(screen);
-  toast(DB.prefs.secArrange[screen]? "Move the sections, then tap Done" : "Done");
-}
+/* v133 \u2014 the up/down arrows and the "Rearrange" buttons are gone from
+   Home, Progress and Food. An order already saved is still honoured, so a
+   screen he arranged stays arranged; there is just no longer a row of
+   controls on every card for something done once. */
 /* ===== v120 · FOLDING THE PROSE ==========================================
    Deliberately conservative: a block is only folded if it is long AND has no
    controls inside it, so nothing tappable can ever be hidden by this. Blocks
@@ -15107,25 +15128,14 @@ document.addEventListener('toggle',()=>{ try{ dedupeHeadings(); foldProse(); }ca
 function bindSections(screen){
   buildSections(screen);
   applySecOrder(screen);
-  const arrange=!!((DB.prefs&&DB.prefs.secArrange)||{})[screen];
   const open=((DB.prefs&&DB.prefs.openSec)||{})[screen]||{};
-  const order=secOrder(screen);
   document.querySelectorAll('#'+screen+' > [data-sk]').forEach(d=>{
     const k=d.dataset.sk;
-    /* A block that isn't collapsible still needs its arrows, and they go in a
-       little bar above it rather than in a summary it hasn't got. */
+    /* A non-collapsible block used to carry a little bar of arrows above it.
+       Clear one left behind by an older build. */
     if(d.tagName!=="DETAILS"){
-      let bar=d.previousElementSibling;
-      if(bar && !bar.classList.contains('secbar')) bar=null;
-      if(arrange){
-        const i=order.indexOf(k);
-        const html="<span class='sbt'>"+escapeHtml(SEC_TITLES[k]||k)+"</span>"+
-          "<span class='smove'>"+
-          "<button class='hb' onclick=\"moveSection('"+screen+"','"+k+"',-1)\""+(i===0?" disabled":"")+">\u2191</button>"+
-          "<button class='hb' onclick=\"moveSection('"+screen+"','"+k+"',1)\""+(i===order.length-1?" disabled":"")+">\u2193</button></span>";
-        if(!bar){ bar=document.createElement('div'); bar.className='secbar'; d.parentNode.insertBefore(bar,d); }
-        bar.innerHTML=html;
-      } else if(bar){ bar.remove(); }
+      const bar=d.previousElementSibling;
+      if(bar && bar.classList && bar.classList.contains('secbar')) bar.remove();
       return;
     }
     /* Remember how the markup shipped it, then honour his choice above that.
@@ -15135,22 +15145,8 @@ function bindSections(screen){
     if(open[k]!==undefined) d.open=!!open[k];
     else d.open = d.dataset.initOpen==="1";
     const sum=d.querySelector('summary'); if(!sum) return;
-    let ctl=sum.querySelector('.smove');
-    if(arrange && !ctl){
-      ctl=document.createElement('span'); ctl.className='smove';
-      const i=order.indexOf(k);
-      ctl.innerHTML="<button class='hb' onclick=\"event.preventDefault();event.stopPropagation();moveSection('"+screen+"','"+k+"',-1)\""+(i===0?" disabled":"")+">\u2191</button>"+
-                    "<button class='hb' onclick=\"event.preventDefault();event.stopPropagation();moveSection('"+screen+"','"+k+"',1)\""+(i===order.length-1?" disabled":"")+">\u2193</button>";
-      const chev=sum.querySelector('.chev');
-      if(chev) sum.insertBefore(ctl,chev); else sum.appendChild(ctl);
-    } else if(arrange && ctl){
-      const i=order.indexOf(k), bs=ctl.querySelectorAll('.hb');
-      if(bs[0]) bs[0].disabled=(i===0);
-      if(bs[1]) bs[1].disabled=(i===order.length-1);
-    } else if(!arrange && ctl){ ctl.remove(); }
+    const ctl=sum.querySelector('.smove'); if(ctl) ctl.remove();
   });
-  const btn=document.getElementById(screen+'ArrangeBtn');
-  if(btn) btn.textContent = arrange? "Done" : "Rearrange sections";
 }
 /* v80 — ordering and the arrange controls moved to the generic section
    system, which now covers Home, Progress and Food. Two implementations of
@@ -15563,8 +15559,21 @@ function coolDur(item){
   const d=coolDefault();
   /* Per-side-ness is a property of the movement (a hip flexor stretch has two
      sides, box breathing does not), so it comes from the library. The
-     DURATION is his default. */
-  const perSide = parsed.found? (parsed.sides>1) : d.perSide;
+     DURATION is his default.
+
+     v133 \u2014 it only ever read the item's OWN d, and a movement that arrives as
+     a bare {t:"Child's pose"} has not got one yet, so it fell through to the
+     personal default of "each side". A child's pose is symmetric: the card
+     said "45s each side \u00b7 \u23f1 0:45 \u00d7 2 sides" and timed two halves of a
+     movement that has no halves. Ask the library for the movement's own dose
+     before assuming. Only the SIDE-NESS is taken from it; the seconds stay
+     his. */
+  let sides=parsed;
+  if(!sides.found){
+    const ld=libDoseFor(it.t);
+    if(ld) sides=parseDurRaw(ld);
+  }
+  const perSide = sides.found? (sides.sides>1) : d.perSide;
   return {sec:d.sec, perSide, source:"default"};
 }
 function coolDoseText(item){
@@ -18625,7 +18634,10 @@ function boot(){
   const split=pickSplit();
   if(todayCleared()){ renderWorkoutSheet(null); try{ renderHeroCard(); }catch(e){} }
   else if(DB.workout){ renderWorkoutSheet(DB.workout); try{ renderHeroCard(); }catch(e){} }
-  else { document.getElementById('heroTitle').textContent = split==="Rest"?"Rest & Recover":split; document.getElementById('heroPhase').textContent="Today · "+LOC().label; }
+  /* v133 — the hero card left Home, and this was the one place that wrote to
+     it without checking it was there. Everything it used to say is on Train. */
+  else { const t=document.getElementById('heroTitle'); if(t) t.textContent = split==="Rest"?"Rest & Recover":split;
+         const hp=document.getElementById('heroPhase'); if(hp) hp.textContent="Today · "+LOC().label; }
   renderWeek(); renderReadiness(); renderFirstRun(); renderTomorrow(); renderEquipFields(); renderCloudFields(); restApplyPos(); renderStorageStatus(); renderWxFields();
   try{ renderProgrammeView(); }catch(e){}
   try{ sessFloatSync(); if(sessRunning()) sessTickStart(); }catch(e){}

@@ -1,6 +1,32 @@
 DEMO IMAGES — DONE, AND WHAT'S LEFT
 ===================================
-v123 · 15/09/2026
+v133 · 15/09/2026
+
+
+ONE IS NEEDED: CHILD'S POSE
+===========================
+demos/child-s-pose-1.jpg and demos/child-s-pose-2.jpg
+
+The free pack has a record called "Child's Pose" and the app was matching it
+with total confidence — a score of 1.31, the highest the matcher produces.
+The record's written instructions are correct: "lower your buttocks down to
+sit on your heels". Its two photographs are not. In both frames the hips stay
+high above the heels and the thighs are near vertical, which is a kneeling
+tuck. Child's pose is defined by the hips resting ON the heels.
+
+The matcher reads names. It cannot look at a picture, so nothing in it could
+ever have caught this. The record is now named in FED_WRONG and never used,
+and both movements that pointed at it — "Child's pose" and "Child's pose with
+side reach" — fall back to the "Watch how" link until there is a photograph.
+
+  START   kneeling, hips down on the heels, back tall, arms resting
+  END     folded forward, hips still ON the heels, forehead to the mat,
+          arms long in front
+
+Drop the two files in, add "child-s-pose" to LOCAL_DEMOS in index.html and to
+DEMOS in sw.js, and it takes over on its own — a local photograph outranks
+every remote source. One file covers both movements.
+
 
 All 75 are in. demos/ holds 150 photographs, a start and an end frame each,
 and they are wired ahead of every remote source in the app.
