@@ -1,3 +1,59 @@
+AMIR PT — v122 · 15/09/2026
+===========================
+
+Upload index.html AND sw.js.
+
+
+WHY IT SAID "REST TODAY" AFTER YOU'D TRAINED
+============================================
+Two separate bugs stacked on the same card. The "null/10" in the reason was
+the tell.
+
+THE ONE THAT CAUSED IT
+  Logging food before you check in creates the day's record with sleep and
+  energy still empty. In JavaScript, null <= 4 is TRUE — null counts as zero
+  — so an untouched row was read as "slept 0/10, energy 0/10" and scored
+  +2.5 fatigue each. Five points against a rest threshold of four. The app
+  decided you needed a rest day because you logged your dinner.
+
+  The same comparison ran in two other places:
+
+    THE SESSION BUILDER   set lowEnergy on a blank check-in and cut every
+                          session to 2 sets with the note "Energy/sleep low
+                          — I cut volume ~30%"
+    THE CHECK-IN NOTE     would have told you your sleep was low about a
+                          number nobody had entered
+
+  A field you never filled now reads as UNKNOWN, and unknown is neutral,
+  never bad. Same in all three places. A real 3/10 still counts as 3/10.
+
+THE ONE THAT LET IT SHOW
+  The card is a morning call, and it kept giving one after the session was
+  already logged. Whatever the score says, what has already happened
+  outranks advice about whether to do it.
+
+      ✅  TODAY'S SESSION IS DONE          2D STREAK
+          You've trained today — it's all logged.
+          Reading: 12 sets across 3 movements logged today
+          [ Open today's session ]  [ Not done yet — show the call ]
+
+  It reads what you actually logged, not what was planned, so a session you
+  edited afterwards still counts. And if it's ever wrong, the second button
+  puts the normal call back.
+
+AND ONE MORE FOUND WHILE CHECKING
+  On a good day the note said "Recovered and firing — full volume" and the
+  sheet gave you 2 sets, because the clock trims the volume after the note
+  is written and nothing said so. Now it's one sentence that tells the truth:
+
+      Your 45 minutes (including the 10-minute row) fits 3 exercises at this
+      volume, so Incline Bench Press and Close-grip Bench Press are out and
+      the sets come down from 4 to 2. Drop the row or go to 60 minutes to
+      get it back.
+
+  At 75 minutes you get the four sets and no note at all.
+
+
 AMIR PT — v121 · 15/09/2026
 ===========================
 

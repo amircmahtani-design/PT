@@ -3355,7 +3355,9 @@ function pickPrehab(){
 }
 function buildWorkout(){
   const ci=latestCheckin(), key=locKey(), L=LOC();
-  const energy=ci?ci.energy:7, sleep=ci?ci.sleep:7;
+  /* Unknown reads as neutral, exactly as it did before any check-in existed —
+     never as a zero, which is what quietly cut sessions to two sets. */
+  const energy=ciVal(ci&&ci.energy,7), sleep=ciVal(ci&&ci.sleep,7);
   const pain=(ci&&ci.pain?ci.pain:"").toLowerCase();
   /* v115 — the wrist is read from the one injury record, so "which wrist" has
      a single answer everywhere in the app. */
@@ -3423,19 +3425,31 @@ function buildWorkout(){
      and never trim an anchor or the prehab slot — cut accessories first. */
   const wanted=main.slice();
   const fit=planForTime(main,tb,{anchors:anchors||[], keepLast:!!prehabPick});
+  /* v122 - the note above is written from readiness ("Recovered and firing -
+     full volume") and the clock then quietly cuts the sets underneath it, so
+     the sheet said 2 sets while the note promised 4 and nothing explained the
+     gap. Remember what was wanted and say so below. */
+  const wantedSets=sets;
   main=fit.names; sets=Math.min(sets,fit.sets);
   /* v86 — 4-set anchors take real time. If the clock forced exercises out, say
      so plainly and say what would buy them back, rather than quietly handing
      him a short session and letting him wonder why the programme shrank. */
+  /* One sentence about the clock, however many things it cost. */
   let trimNote="";
-  if(wanted.length>main.length){
+  {
     const lost=wanted.filter(n=>main.indexOf(n)<0);
-    const row=(tb.row?(tb.rowMins||0):0);
-    trimNote="Your "+tb.mins+" minutes"+(row?" (including the "+row+"-minute row)":"")+
-      " fits "+main.length+" exercises at this volume, so "+lost.join(" and ")+
-      (lost.length===1?" is":" are")+" out today. "+
-      (row? "Drop the row or go to "+(tb.mins+15)+" minutes and they come back."
-          : "Go to "+(tb.mins+15)+" minutes and they come back.");
+    const cut=(sets<wantedSets);
+    if(lost.length||cut){
+      const row=(tb.row?(tb.rowMins||0):0);
+      const costs=[];
+      if(lost.length) costs.push(lost.join(" and ")+(lost.length===1?" is":" are")+" out");
+      if(cut) costs.push("the sets come down from "+wantedSets+" to "+sets);
+      trimNote="Your "+tb.mins+" minutes"+(row?" (including the "+row+"-minute row)":"")+
+        " fits "+main.length+" exercise"+(main.length===1?"":"s")+" at this volume, so "+
+        costs.join(" and ")+". "+
+        (row? "Drop the row or go to "+(tb.mins+15)+" minutes to get it back."
+            : "Go to "+(tb.mins+15)+" minutes to get it back.");
+    }
   }
   const est0=estimateMinutes(main,sets,tb);
   note+=" "+tb.mins+" min available"+(est0.row?" (including a "+est0.row+" min row)":"")+" \u2014 "+main.length+" moves \u00d7 "+sets+" sets fits in about "+est0.total+".";
@@ -6274,15 +6288,16 @@ async function submitCheckin(){
 async function analyseCheckin(ci){
   if(DB.ai.provider==="openai"&&DB.ai.key){
     const sys=coachSystem()+"\nThe user just did their morning check-in. Warm, direct 3-4 sentence read: comment on the numbers, what it means for today's training/volume, what you're adjusting. Reference injuries/context if relevant.";
-    const usr="Morning check-in: weight "+(ci.weight||'—')+"kg, sleep "+ci.sleep+"/10, energy "+ci.energy+"/10, plan: "+ci.plan+", pain: "+(ci.pain||'none')+". Location today: "+LOC().label+" ("+currentEquipment()+"). Today scheduled: "+pickSplit()+". Use his last 7 days (above) to say what needs hitting today.";
+    const usr="Morning check-in: weight "+(ci.weight||'—')+"kg, sleep "+(ciNum(ci.sleep)!=null? ci.sleep+"/10":"not logged")+", energy "+(ciNum(ci.energy)!=null? ci.energy+"/10":"not logged")+", plan: "+(ci.plan||'not said')+", pain: "+(ci.pain||'none')+". Location today: "+LOC().label+" ("+currentEquipment()+"). Today scheduled: "+pickSplit()+". Use his last 7 days (above) to say what needs hitting today.";
     const out=await callAI([{role:"system",content:sys},{role:"user",content:usr}],220);
     if(out) return fmt(out);
   }
   let bits=[];
-  if(ci.sleep<=4) bits.push("Sleep's low — trimming volume ~30% so we don't dig a recovery hole. Protecting recovery is how we keep progressing.");
-  else if(ci.sleep>=7&&ci.energy>=8) bits.push("Slept well and high energy — green light for full volume today.");
+  const _slp=ciVal(ci.sleep,7), _eng=ciVal(ci.energy,7);
+  if(_slp<=4) bits.push("Sleep's low — trimming volume ~30% so we don't dig a recovery hole. Protecting recovery is how we keep progressing.");
+  else if(_slp>=7&&_eng>=8) bits.push("Slept well and high energy — green light for full volume today.");
   else bits.push("Recovery looks fine. Standard session today.");
-  if(ci.energy<=4) bits.push("Energy's flat — show up, move well. Consistency beats intensity.");
+  if(_eng<=4) bits.push("Energy's flat — show up, move well. Consistency beats intensity.");
   if(ci.pain){ const p=ci.pain.toLowerCase();
     if(p.includes("wrist")||p.includes("tfcc")) bits.push("Wrist flagged — swapped straight-wrist pressing for neutral-grip. Non-negotiable.");
     if(p.includes("knee")) bits.push("Knee flagged — pulling deep knee flexion, subbing hip-hinge work.");}
@@ -10859,7 +10874,7 @@ function scheduleInApp(){
    v18 ADDITIONS — draggable rest timer · weekly training memory · AI planner
    · Firestore sync
    ========================================================================== */
-const APP_VERSION="v121 · 15/09/2026";
+const APP_VERSION="v122 · 15/09/2026";
 
 /* ===== 1. REST TIMER — drag it anywhere so it never blocks the chat box ===== */
 let _rtDrag=null;
@@ -11222,6 +11237,26 @@ function perfTrend(){
   });
   return {down,up};
 }
+/* ===== v122 · A BLANK CHECK-IN FIELD IS NOT A ZERO =======================
+   Logging food before checking in creates the day's record with sleep and
+   energy still null. In JavaScript `null <= 4` is TRUE, because null coerces
+   to 0 — so an untouched row read as "slept 0/10, energy 0/10" and scored
+   +2.5 fatigue each. Five points, past the rest threshold of four, and the
+   app told him to rest on a day he had trained. It also printed the reason
+   as "you slept null/10".
+
+   The same comparison ran in the session builder, where it set lowEnergy and
+   quietly cut every session to two sets, and in the check-in note, where it
+   would have said "Sleep's low" about a number nobody had entered.
+
+   One helper now, used at all four sites: a field he never filled reads as
+   UNKNOWN, and unknown is neutral, never bad. */
+function ciNum(v){
+  if(v===null||v===undefined||v==="") return null;
+  const n=+v;
+  return isFinite(n)? n : null;
+}
+function ciVal(v,dflt){ const n=ciNum(v); return n==null? dflt : n; }
 function restAdvice(){
   const st=weekStats(7), ci=latestCheckin(), ciToday=(ci&&ci.date===today())?ci:null;
   let fatigue=0, fresh=0; const reasons=[], green=[];
@@ -11236,12 +11271,18 @@ function restAdvice(){
   else if(totalSets<=12 && st.sessions<=1){ fresh+=1; green.push("only "+totalSets+" sets logged this week"); }
 
   if(ciToday){
-    if(ciToday.sleep<=4){ fatigue+=2.5; reasons.push("you slept "+ciToday.sleep+"/10"); }
-    else if(ciToday.sleep<=5){ fatigue+=1; reasons.push("sleep "+ciToday.sleep+"/10"); }
-    else if(ciToday.sleep>=8){ fresh+=0.75; green.push("slept "+ciToday.sleep+"/10"); }
-    if(ciToday.energy<=4){ fatigue+=2.5; reasons.push("energy "+ciToday.energy+"/10"); }
-    else if(ciToday.energy<=5){ fatigue+=1; reasons.push("energy "+ciToday.energy+"/10"); }
-    else if(ciToday.energy>=8){ fresh+=0.75; green.push("energy "+ciToday.energy+"/10"); }
+    /* Only score what he actually entered. A null is a question not asked. */
+    const slp=ciNum(ciToday.sleep), eng=ciNum(ciToday.energy);
+    if(slp!=null){
+      if(slp<=4){ fatigue+=2.5; reasons.push("you slept "+slp+"/10"); }
+      else if(slp<=5){ fatigue+=1; reasons.push("sleep "+slp+"/10"); }
+      else if(slp>=8){ fresh+=0.75; green.push("slept "+slp+"/10"); }
+    }
+    if(eng!=null){
+      if(eng<=4){ fatigue+=2.5; reasons.push("energy "+eng+"/10"); }
+      else if(eng<=5){ fatigue+=1; reasons.push("energy "+eng+"/10"); }
+      else if(eng>=8){ fresh+=0.75; green.push("energy "+eng+"/10"); }
+    }
     if(ciToday.pain){ fatigue+=1.5; reasons.push("you flagged "+ciToday.pain); }
   }
 
@@ -11269,6 +11310,22 @@ function restAdvice(){
   return {verdict,score,fatigue,fresh,reasons,green,streak,sinceRest,totalSets,trendDown:tr.down,trendUp:tr.up,stale};
 }
 /* Advice + Amir's override for today. */
+/* Has today's training already happened? Read from what is logged, not from
+   what was planned — a session he logged and then edited still counts. */
+function trainedToday(){
+  try{
+    const rec=(DB.completed||{})[today()];
+    if(rec) return {done:true, finished:true, sets:rec.sets||0, exercises:rec.exercises||0};
+    const names=doneTodayNames();
+    if(names.length){
+      let sets=0; names.forEach(n=>{ sets+=todaySets(n).length; });
+      return {done:true, finished:false, sets, exercises:names.length, names};
+    }
+  }catch(e){}
+  return {done:false};
+}
+let _readyShowCall=false;
+function readinessShowCall(){ _readyShowCall=true; renderReadiness(); }
 function readinessCall(){
   const a=restAdvice();
   const ov=(DB.restCall && DB.restCall.date===today())? DB.restCall.override : null;
@@ -11276,6 +11333,11 @@ function readinessCall(){
   if(ov==="rest") a.verdict="rest";
   else if(ov==="train") a.verdict=(a.advised==="rest"?"deload":a.verdict);
   else if(ov==="push") a.verdict="push";
+  /* v122 - the card is a morning call, and once the session is logged it was
+     still giving one: "Rest today" on a day he had squatted and deadlifted.
+     What has already happened outranks any advice about whether to do it. */
+  a.trained=trainedToday();
+  if(a.trained.done && !_readyShowCall) a.verdict="done";
   return a;
 }
 function setRestOverride(v){
@@ -11292,19 +11354,28 @@ function readinessHTML(){
     rest :{icon:"\uD83D\uDE34",head:"Rest today",   pill:"gray"},
     deload:{icon:"\uD83E\uDEAB",head:"Train, but lighter", pill:"orange"},
     go   :{icon:"\uD83D\uDD25",head:"Green light",   pill:"green"},
-    push :{icon:"\uD83D\uDCAA",head:"Full volume \u2014 your call",  pill:"purple"}
+    push :{icon:"\uD83D\uDCAA",head:"Full volume \u2014 your call",  pill:"purple"},
+    done :{icon:"\u2705",head:"Today's session is done", pill:"green"}
   }[c.verdict];
-  const why = c.verdict==="rest" || c.verdict==="deload"
+  const t=c.trained||{};
+  const why = c.verdict==="done"
+    ? (t.sets? t.sets+" set"+(t.sets===1?"":"s")+" across "+t.exercises+" movement"+(t.exercises===1?"":"s")+" logged today" : "logged today")
+    : c.verdict==="rest" || c.verdict==="deload"
     ? (c.reasons.length? c.reasons.slice(0,3).join(" \u00b7 ") : "you've been at it hard")
     : (c.green.length? c.green.slice(0,3).join(" \u00b7 ") : "recovery looks fine")+(c.stale.length?" \u2014 "+c.stale.slice(0,2).join(" and ")+" need work":"");
   let body;
   if(c.verdict==="rest") body="Taking today off is the training decision. Walk, stretch, eat, sleep. You'll come back stronger than if you grind through this one.";
   else if(c.verdict==="deload") body="Session's on, but I've cut a set. Move well, leave two in the tank, don't chase a PB today.";
   else if(c.verdict==="push") body="You've overruled me and I respect it \u2014 full volume is loaded. Technique first. If a set feels wrong, stop it.";
+  else if(c.verdict==="done") body = t.finished
+    ? "That's today's work done and logged. Eat, sleep, and let it turn into something."
+    : "You've trained today \u2014 it's all logged. Finish the session off on Train when you're done, or leave it, the sets are already in your history.";
   else body="Nothing's flagging. Full session, own every rep.";
   let btns="";
   const B=(fn,cls,txt)=>"<button class='btn "+cls+"' style='flex:1;margin:0' onclick=\"setRestOverride("+fn+")\">"+txt+"</button>";
-  if(c.verdict==="rest") btns=B("'train'","green","\uD83D\uDCAA I feel good \u2014 train anyway")+B("null","ghost","Take the rest");
+  if(c.verdict==="done") btns="<button class='btn green' style='flex:1;margin:0' onclick=\"go('workout')\">Open today's session</button>"+
+      "<button class='btn ghost' style='flex:1;margin:0' onclick='readinessShowCall()'>Not done yet \u2014 show the call</button>";
+  else if(c.verdict==="rest") btns=B("'train'","green","\uD83D\uDCAA I feel good \u2014 train anyway")+B("null","ghost","Take the rest");
   else if(c.verdict==="deload") btns=B("'push'","green","\uD83D\uDCAA I can push more")+B("'rest'","ghost","\uD83D\uDE34 Actually, rest");
   else if(c.verdict==="push") btns=B("null","sec","\u21a9 Back to coach's call")+B("'rest'","ghost","\uD83D\uDE34 Rest instead");
   else btns=B("'rest'","ghost","\uD83D\uDE34 I need a rest day")+B("'push'","sec","\uD83D\uDCAA Add a set");
