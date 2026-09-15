@@ -1,3 +1,74 @@
+AMIR PT — v120 · 15/09/2026
+===========================
+
+Upload index.html AND sw.js.
+
+
+LESS TO READ, NOTHING REMOVED
+=============================
+You said there's a lot to read. There was. Measured on a three-exercise leg
+day: Train carried 474 words and 130 buttons, Home 295 words before you'd
+scrolled past the hero.
+
+Nothing has been deleted and nothing has moved to a different screen. What
+changed is what's shouting at you by default.
+
+THE APP EXPLAINED ITSELF ON EVERY RENDER
+  Every card carried the paragraph that taught it, and kept carrying it
+  forever — so the numbers you came to read sat inside prose you read months
+  ago. Long explanations now show their first two lines, which is where the
+  actionable sentence always is, with the rest one tap away. A block only
+  folds if it's genuinely too long AND has nothing tappable inside it, so no
+  control can ever be hidden by this.
+
+  Settings → "Explain as you go" turns it off entirely and puts every word
+  back, everywhere.
+
+FOUR CONTROL BARS BECAME ONE LINE
+  Between the session title and the first movement sat time available,
+  readiness, rest between sets and rest between exercises — four full-width
+  blocks, each with its own explanation, open every single day.
+
+      SESSION SETUP          45 min · 2 sets · rest 1m 30s        +
+
+  Same four controls, one line, values still readable at a glance. The
+  session clock keeps its own place below, because starting is what you came
+  to press.
+
+THIRTY-FIVE ADJUSTERS UNDER THE COOL-DOWN
+  Every stretch carried −15s / the number / +15s / each side / total. Seven
+  stretches, thirty-five controls, when the "ALL OF THEM 30s 45s 60s" row at
+  the top already does the common case. Each stretch now has one quiet
+  "adjust" that opens its controls in place. 46 controls on that screen
+  became 19.
+
+THE SAME WORD, THREE TIMES A ROW
+  The weekly plan drew a coloured bar, a coloured chip and a dropdown, all
+  saying "Push Day". The dropdown carries the colour now and says it once.
+
+ONE HEADING PER CARD
+  Cards written as collapsible sections kept their old title inside as well
+  as their new summary, so several printed their own name twice in two
+  different styles, one line under the other. The summary wins; any hint
+  that sat beside the old title moves up into it.
+
+FOUR BUTTONS ON TOP OF EVERY EXERCISE
+  ⇈ top / ↑ / ↓ / ✕ on every card, for something you do occasionally. Now
+  one labelled "move · remove" that opens them in place.
+
+AND ONE REAL BUG FOUND ON THE WAY
+  The stylesheet had no [hidden] rule, so any element with its own display
+  ignored the attribute entirely and stayed on screen and tappable. Fixed —
+  which is also what made the two new collapses above work at all.
+
+WHAT I DIDN'T DO
+  I didn't touch the exercise cards' own layout, the demo tiles, the log
+  row, or any wording in the coach's brief. And I didn't shrink type or
+  padding to fit more in: the point was fewer things competing, not smaller
+  things. If it still reads busy in use, tell me which screen and I'll go
+  again on that one.
+
+
 AMIR PT — v119 · 15/09/2026
 ===========================
 

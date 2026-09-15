@@ -23,6 +23,10 @@
   --pill:#261e15;--radius:20px;--safe-top:env(safe-area-inset-top,0px);--safe-bot:env(safe-area-inset-bottom,0px);
 }
 *{box-sizing:border-box;-webkit-tap-highlight-color:transparent;}
+/* v120 - hidden means hidden. Without this a wrapper with its own display
+   (display:contents on the reorder buttons, for one) quietly ignores the
+   attribute and the "hidden" controls stay on screen and tappable. */
+[hidden]{display:none!important;}
 html,body{margin:0;padding:0;background:var(--bg);color:var(--txt);
   font-family:-apple-system,BlinkMacSystemFont,"SF Pro Text","Segoe UI",Roboto,Helvetica,Arial,sans-serif;
   -webkit-font-smoothing:antialiased;overscroll-behavior-y:none;font-size:16px;line-height:1.5;}
@@ -695,6 +699,27 @@ background:var(--card);border:1px solid var(--line);border-radius:18px;padding:1
 .spin{width:18px;height:18px;border:2px solid #ffffff33;border-top-color:var(--orange);border-radius:50%;display:inline-block;animation:sp .7s linear infinite;vertical-align:-3px;}
 @keyframes sp{to{transform:rotate(360deg);}}
 a{color:var(--orange);}
+/* ===== v120 · THE APP EXPLAINS ITSELF ONCE, NOT ON EVERY RENDER ==========
+   Nothing here was wrong, there was just too much of it at the same volume.
+   Every card carried the paragraph that taught it, and kept carrying it
+   forever — so the numbers he came to read were surrounded by prose he read
+   months ago. Long explanatory blocks now show their first two lines, which
+   is where the actionable sentence always is, with the rest a tap away. No
+   text is removed and nothing becomes unreachable; it just stops shouting.
+   Settings -> "Explain as you go" turns the folding off entirely. */
+.folded{display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;}
+.foldmore{display:block;margin:2px 0 0;padding:3px 0;background:none;border:0;
+  color:var(--dim);font-size:11.5px;font-weight:700;letter-spacing:.3px;text-align:left;}
+.foldmore:active{color:var(--muted);}
+.blockbar .foldmore{flex:1 1 100%;margin-top:-4px;}
+.hsum .sumhint,.psec summary .sumhint{margin-left:auto;margin-right:10px;font-size:11px;color:var(--dim);
+  font-weight:600;text-transform:none;letter-spacing:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:48%;}
+.itin-split{flex:1;min-width:0;display:flex;flex-direction:column;gap:5px;align-items:flex-start;}
+.itin-split .splitsel{width:100%;max-width:none;font-weight:800;}
+.cooladj{display:block;margin-top:7px;background:none;border:0;padding:4px 0;color:var(--dim);font-size:11.5px;font-weight:700;letter-spacing:.3px;text-align:left;}
+.cooladj:active{color:var(--muted);}
+.ordbtns{display:contents;}
+.ob.ordtoggle{color:var(--dim);font-weight:700;}
 .notebox{background:#0d0a07;border:1px dashed var(--line);border-radius:12px;padding:12px;font-size:13px;color:var(--muted);line-height:1.55;}
 .altpick{margin-top:10px;background:#0d0a07;border:1px solid var(--line);border-radius:14px;padding:12px;}
 .btabs{display:flex;gap:6px;overflow-x:auto;padding-bottom:8px;margin-bottom:8px;-webkit-overflow-scrolling:touch;}
@@ -1258,6 +1283,10 @@ a{color:var(--orange);}
       <div class="set-row" style="margin-top:14px"><span class="k" style="color:var(--txt);font-weight:600">Suggest a weight for new exercises</span>
         <div class="switch" id="startEstSwitch" onclick="toggleStartEst(this)"></div></div>
       <div class="hint" style="margin-top:-4px">On, it offers a deliberately light feel-out weight for a movement you have never logged. Off, it just says it is new and leaves the judgement to you.</div>
+      <div class="field" style="display:flex;align-items:center;justify-content:space-between;gap:12px">
+        <label style="margin:0">Explain as you go</label>
+        <div class="switch" id="explainSwitch" onclick="toggleExplainAll(this)"></div></div>
+      <div class="hint" style="margin-top:-4px">Off (the default), long explanations show their first couple of lines with the rest a tap away, so the numbers aren't buried in prose you have already read. On, every explanation is shown in full, everywhere, the way it used to be. Nothing is ever deleted either way.</div>
     </div>
 
     <div class="section-h">Rest timers</div>
@@ -2046,6 +2075,7 @@ function go(s){
     try{ renderKit(); }catch(e){}
     try{ renderRestPrefs(); }catch(e){}
     try{ const se=document.getElementById('startEstSwitch'); if(se) se.classList.toggle('on', !(DB.prefs&&DB.prefs.noStartEstimates)); }catch(e){}
+    try{ const ex=document.getElementById('explainSwitch'); if(ex) ex.classList.toggle('on', !!(DB.prefs&&DB.prefs.explainAll)); }catch(e){}
     try{ const mv=document.getElementById('masteryVal'); if(mv) mv.textContent=masterySets()+" sets"; }catch(e){}
   }
   if(s==='checkin') syncCheckinLoc();
@@ -2055,6 +2085,7 @@ function go(s){
   if(s==='workout'){ ensureWorkout(); renderReadiness(); maybeAutoPlan(); }
   if(s==='today'){ renderNutrition(); renderWeek(); renderReadiness(); renderFirstRun(); renderTomorrow(); }
   _curScreen=s;
+  try{ dedupeHeadings(); foldProse(); }catch(e){}
   restoreScroll(s);
 }
 /* Tapping the tab you're already on is the universal "take me to the top" gesture. */
@@ -4402,7 +4433,13 @@ function mvHTML(item0,coolIdx){
     dose=fmtSecShort(c.sec)+(c.perSide? " each side":" total");
     const lab="⏱ "+fmtTime(c.sec)+(c.perSide?" × 2 sides":"");
     timerBtn="<button class='mvtime' data-ci='"+coolIdx+"' data-lab='"+attrEsc(lab)+"' onclick='coolTimer("+coolIdx+")'>"+lab+"</button>";
-    controls=coolControlsHTML(item,coolIdx)+"<div id='cside"+coolIdx+"'></div>";
+    /* v120 - five adjusters under every single stretch meant thirty-five
+       controls on one screen, when the whole-cooldown row at the top already
+       does the common case. The duration is on the timer button either way;
+       these open in place when he wants them. */
+    controls="<button class='cooladj' onclick='toggleCoolCtl("+coolIdx+")'>adjust</button>"+
+      "<div id='coolctl"+coolIdx+"'"+(_coolCtlOpen.has(coolIdx)?"":" hidden")+">"+coolControlsHTML(item,coolIdx)+"</div>"+
+      "<div id='cside"+coolIdx+"'></div>";
   }
   return "<div class='mvb' id='"+(coolIdx!=null? "mv"+coolIdx : "mvw"+Math.random().toString(36).slice(2,6))+"'>"+thumb+"<div class='txt'>"+
     "<div class='n'>"+name+(dose?"<span class='d'>"+escapeHtml(dose)+"</span>":"")+"</div>"+
@@ -4617,6 +4654,30 @@ function clearExRests(){
 }
 /* Collapsible block for the workout sheet. `key` remembers open/closed;
    the main workout is never collapsible \u2014 that's the thing he's using. */
+/* ===== v120 · ONE SESSION SETUP INSTEAD OF FOUR STACKED BARS =============
+   Between the title of the session and the first movement sat four separate
+   full-width control blocks — time available, readiness, rest between sets
+   and between exercises, each with its own explanation underneath. All four
+   are worth having and none of them is worth having open every day: the
+   defaults are right most mornings and he is on this screen to lift, not to
+   configure.
+
+   They fold into one section with their current values on the header, so the
+   numbers are still readable at a glance and every control is one tap away.
+   The session clock keeps its own place below, because starting the session
+   is the thing he actually came here to press. */
+function setupSummary(w){
+  const bits=[];
+  try{ const t=timeBudget(); if(t&&t.mins) bits.push(t.mins+" min"); }catch(e){}
+  try{ bits.push(exSetsLabel(w)); }catch(e){ if(w&&w.sets) bits.push(w.sets+" sets"); }
+  try{ const r=restDefaults(); bits.push("rest "+fmtRest(r.sets)); }catch(e){}
+  return bits.filter(Boolean).join(" \u00b7 ");
+}
+function exSetsLabel(w){ return (w&&w.sets? w.sets+" sets" : ""); }
+function setupSecHTML(w){
+  return sheetSec("setup","Session setup", setupSummary(w),
+    timeBarHTML(w)+setsPickerHTML(w)+restPickerHTML(w), false);
+}
 function sheetSec(key,title,meta,body,openDefault){
   /* v115 — an id per section so a receipt can open Train at the right place. */
   const st=(DB.prefs&&DB.prefs.openSheet)||{};
@@ -4662,6 +4723,7 @@ function renderWorkoutSheet(w){
   if(h) host.style.minHeight=h+"px";
   try{ return _renderSheetInner(w); }
   finally{
+    try{ foldProse(host); }catch(e){}
     const put=()=>{ try{
       if(anchor){
         const el=document.getElementById(anchor.id);
@@ -4742,9 +4804,7 @@ function _renderSheetInner(w){
   "<div id='wkMenu' data-open='0'></div>"+
   fixBar+
   circuitBarHTML()+
-  timeBarHTML(w)+
-  setsPickerHTML(w)+
-  restPickerHTML(w)+
+  setupSecHTML(w)+
   sessBarHTML()+
   sheetSec("warm","Warm-up",moveCount(w.warmup), w.warmup.map(m=>mvHTML(m)).join(''), false)+
   (showRowWarmup(w)? rowBlockHTML(w.travel) : "")+
@@ -5647,6 +5707,12 @@ function toggleTiming(i){
   try{ const el=document.getElementById('exb'+i); if(el){ el.outerHTML=exBlockHTML(e,i); paintDemos(); } }catch(err){}
   toast(e.name+" \u2192 "+(next? "timed hold" : "reps"));
 }
+const _ordOpen=new Set();
+function toggleOrderBtns(i){
+  const el=document.getElementById('ordb'+i); if(!el) return;
+  if(el.hasAttribute('hidden')){ el.removeAttribute('hidden'); _ordOpen.add(i); }
+  else { el.setAttribute('hidden',''); _ordOpen.delete(i); }
+}
 function exSets(e){
   if(!e) return (DB.workout&&DB.workout.sets)||3;
   const n=(typeof e==="object")? e.sets : null;
@@ -5745,12 +5811,17 @@ function exBlockHTML(e,i){
   const total=((DB.workout&&DB.workout.main)||[]).length;
   const anchTag = e.anchor? "<div class='anchortag'>\u2693 Main lift \u00b7 held for this block</div>" : "";
   const grpTag = groupBandHTML(e);
+  /* v120 - four buttons on top of every card for something he does
+     occasionally. Behind one labelled tap now, still on the card. */
   const order=anchTag+grpTag+"<div class='exorder'>"+
       "<span class='pos'>"+(i+1)+" of "+total+"</span>"+
-      "<button class='ob' onclick='moveExTop("+i+")'"+(i===0?" disabled":"")+" aria-label='move to top'>\u21c8 top</button>"+
-      "<button class='ob' onclick='moveEx("+i+",-1)'"+(i===0?" disabled":"")+" aria-label='move up'>\u2191</button>"+
-      "<button class='ob' onclick='moveEx("+i+",1)'"+(i>=total-1?" disabled":"")+" aria-label='move down'>\u2193</button>"+
-      "<button class='ob del' onclick='removeExUI("+i+")'"+(total<=1?" disabled":"")+" aria-label='remove this exercise'>\u2715</button>"+
+      "<button class='ob ordtoggle' onclick='toggleOrderBtns("+i+")' aria-label='move or remove this exercise'>move \u00b7 remove</button>"+
+      "<span class='ordbtns' id='ordb"+i+"'"+(_ordOpen.has(i)?"":" hidden")+">"+
+        "<button class='ob' onclick='moveExTop("+i+")'"+(i===0?" disabled":"")+" aria-label='move to top'>\u21c8 top</button>"+
+        "<button class='ob' onclick='moveEx("+i+",-1)'"+(i===0?" disabled":"")+" aria-label='move up'>\u2191</button>"+
+        "<button class='ob' onclick='moveEx("+i+",1)'"+(i>=total-1?" disabled":"")+" aria-label='move down'>\u2193</button>"+
+        "<button class='ob del' onclick='removeExUI("+i+")'"+(total<=1?" disabled":"")+" aria-label='remove this exercise'>\u2715</button>"+
+      "</span>"+
     "</div>";
 
   /* The notes that change what you do THIS set stay on the face of the card.
@@ -9796,9 +9867,11 @@ function renderItin(){
     const last=lastDoneOf(split);
     html+="<div class='itin-row "+(isToday?'today':'')+"' style='border-left:3px solid "+col+"'>"+
       "<div class='itin-day'>"+DOW[dow]+(isToday?"<span class='istoday'>today</span>":"")+"</div>"+
-      "<div class='itin-split'><span class='splitchip' style='color:"+col+";border-color:"+col+"44;background:"+col+"1a'>"+split+"</span>"+
+      /* v120 - the coloured left border, the chip and the dropdown all said
+         the same word. The dropdown carries the colour now and says it once. */
+      "<div class='itin-split'>"+splitSelectHTML(dow,"sel"+dow,split,col)+
         (last? "<span class='itin-last'>"+last+"</span>" : "")+"</div>"+
-      splitSelectHTML(dow,"sel"+dow,split)+"</div>"; });
+      "</div>"; });
   el.innerHTML=html+"<button class='addday' onclick='addDayTypePrompt()'>+ Add a session type (Pilates, Core, HIIT…)</button>";
 }
 /* "when did I last actually do this?" \u2014 read from what he logged, not the plan. */
@@ -9862,11 +9935,12 @@ function addDayTypePrompt(){
 }
 /* v51 — pick a session type from a list instead of tapping through them.
    cycleDay() is kept because the coach's God-mode commands still call it. */
-function splitSelectHTML(dow,id,cur){
+function splitSelectHTML(dow,id,cur,col){
   const opts=allSplits().map(sp=>
     "<option value='"+attrEsc(sp)+"'"+(sp===cur?" selected":"")+">"+escapeHtml(sp)+"</option>").join("");
+  const tint=col? " style='color:"+col+";border-color:"+col+"44'" : "";
   return "<select class='splitsel' id='"+id+"' onchange='setDaySplit("+dow+",this.value)' "+
-         "onclick='event.stopPropagation()'>"+opts+"</select>";
+         "onclick='event.stopPropagation()'"+tint+">"+opts+"</select>";
 }
 /* v61 — the Train tab shows today's session type as a real dropdown, so
    changing it is one tap instead of a trip back to Home's weekly plan. It
@@ -10756,7 +10830,7 @@ function scheduleInApp(){
    v18 ADDITIONS — draggable rest timer · weekly training memory · AI planner
    · Firestore sync
    ========================================================================== */
-const APP_VERSION="v119 · 15/09/2026";
+const APP_VERSION="v120 · 15/09/2026";
 
 /* ===== 1. REST TIMER — drag it anywhere so it never blocks the chat box ===== */
 let _rtDrag=null;
@@ -14138,6 +14212,83 @@ function toggleSecArrange(screen){
   save(); bindSections(screen);
   toast(DB.prefs.secArrange[screen]? "Move the sections, then tap Done" : "Done");
 }
+/* ===== v120 · FOLDING THE PROSE ==========================================
+   Deliberately conservative: a block is only folded if it is long AND has no
+   controls inside it, so nothing tappable can ever be hidden by this. Blocks
+   he has opened stay open for the session, because the app re-renders
+   constantly and re-folding under his eyes would be worse than the noise. */
+const FOLD_MIN=70;
+const _unfolded=new Set();
+function foldKey(t){ return String(t||"").replace(/\s+/g," ").trim().slice(0,70); }
+function foldProse(root){
+  try{
+    const scope=root||document;
+    const all=scope.querySelectorAll('.hint,.notebox,.recovery,.sm,.hero .sub,.cue,.blockbar .bt,.blockbar .bp');
+    all.forEach(el=>{
+      if(el.dataset.fold) return;
+      /* Never fold anything with something to press inside it. */
+      if(el.querySelector('button,input,select,textarea,a,details,label')){ el.dataset.fold="skip"; return; }
+      const t=(el.textContent||"").trim();
+      if(t.length<FOLD_MIN){ el.dataset.fold="skip"; return; }
+      el.dataset.fold="1";
+      const k=foldKey(t);
+      if(_unfolded.has(k) || (DB.prefs&&DB.prefs.explainAll)) return;
+      el.classList.add('folded');
+      /* If two lines already hold all of it, there is nothing to open and a
+         "more" that does nothing is worse than the sentence it hides. */
+      if(el.scrollHeight<=el.clientHeight+2){ el.classList.remove('folded'); return; }
+      const btn=document.createElement('button');
+      btn.type="button"; btn.className="foldmore"; btn.textContent="more";
+      const open=()=>{ el.classList.remove('folded'); _unfolded.add(k); btn.remove(); };
+      btn.addEventListener('click',e=>{ e.stopPropagation(); open(); });
+      el.addEventListener('click',open);
+      el.insertAdjacentElement('afterend', btn);
+    });
+  }catch(e){}
+}
+/* ===== v120 · ONE HEADING PER CARD =======================================
+   A card written as a <details> in the page carries its own summary AND the
+   .card-title it had before it was collapsible, so several cards printed
+   their own name twice, one line under the other, in two different styles.
+   The summary wins; the duplicate is hidden and any hint that sat beside it
+   moves up into the summary rather than being lost. */
+function dedupeHeadings(root){
+  try{
+    (root||document).querySelectorAll('details[data-sk] > summary').forEach(sum=>{
+      const d=sum.parentElement;
+      if(d.dataset.dedup==="1") return;
+      d.dataset.dedup="1";
+      const t=d.querySelector('.card-title'); if(!t) return;
+      const head=((sum.querySelector('.t,.pst')||sum).textContent||"").trim().toLowerCase();
+      const inner=(((t.querySelector('span')||{}).textContent)||"").trim().toLowerCase();
+      if(!head||!inner||head!==inner) return;
+      const extra=(t.children.length>1)? t.children[1] : null;
+      if(extra){
+        extra.classList.add('sumhint');
+        const chev=sum.querySelector('.chev');
+        chev? sum.insertBefore(extra,chev) : sum.appendChild(extra);
+      }
+      t.style.display='none';
+    });
+  }catch(e){}
+}
+/* Unfold everything on the page, for the Settings switch. */
+function unfoldAll(){
+  try{
+    document.querySelectorAll('.folded').forEach(el=>{ el.classList.remove('folded'); _unfolded.add(foldKey(el.textContent)); });
+    document.querySelectorAll('.foldmore').forEach(b=>b.remove());
+  }catch(e){}
+}
+function toggleExplainAll(el){
+  DB.prefs=DB.prefs||{};
+  DB.prefs.explainAll=!DB.prefs.explainAll;
+  save();
+  if(el) el.classList.toggle('on', !!DB.prefs.explainAll);
+  if(DB.prefs.explainAll) unfoldAll(); else { _unfolded.clear(); document.querySelectorAll('[data-fold]').forEach(x=>delete x.dataset.fold); foldProse(); }
+  toast(DB.prefs.explainAll? "Showing every explanation in full" : "Explanations folded \u2014 tap any one to open it");
+}
+/* Content revealed by opening a section needs the same treatment. */
+document.addEventListener('toggle',()=>{ try{ dedupeHeadings(); foldProse(); }catch(e){} }, true);
 function bindSections(screen){
   buildSections(screen);
   applySecOrder(screen);
@@ -14307,6 +14458,7 @@ function refreshAllViews(){
     try{ refreshTimeBar(); }catch(e){}
     try{ refreshDoneCard(); }catch(e){}
     try{ updateStatus(); }catch(e){}
+    try{ dedupeHeadings(); foldProse(); }catch(e){}
   } finally { _refreshing=false; }
 }
 /* The hero card on Home restates today's session, so it has to move too. */
@@ -17154,6 +17306,14 @@ function progressionHTML(e){
 }
 
 /* ---- cool-down cards gain their own timing ------------------------------ */
+/* Which per-stretch adjusters he has opened, so a re-render leaves them open. */
+const _coolCtlOpen=new Set();
+function toggleCoolCtl(i){
+  const el=document.getElementById('coolctl'+i); if(!el) return;
+  const show=el.hasAttribute('hidden');
+  if(show){ el.removeAttribute('hidden'); _coolCtlOpen.add(i); }
+  else { el.setAttribute('hidden',''); _coolCtlOpen.delete(i); }
+}
 function coolControlsHTML(item,i){
   const c=coolDur(item);
   return "<div class='coolctl'>"+
