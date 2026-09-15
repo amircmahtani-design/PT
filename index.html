@@ -4462,14 +4462,46 @@ function renderWorkoutSheet(w){
   if(!host || _navving || _curScreen!=='workout'){ return _renderSheetInner(w); }
   const y=window.scrollY||window.pageYOffset||0;
   const h=host.offsetHeight;
+  /* v117 — a raw pixel restore is right only while nothing above you changed
+     height. Swap an exercise for one with a longer name, a "last time" line or
+     a different demo tile and every card below it shifts. So we remember WHICH
+     card was under your eyes and how far down the screen it sat, and put that
+     card back in the same place. The pixel offset stays as the fallback. */
+  const anchor=sheetAnchor();
   if(h) host.style.minHeight=h+"px";
   try{ return _renderSheetInner(w); }
   finally{
-    const put=()=>{ try{ window.scrollTo(0,y); }catch(e){} };
+    const put=()=>{ try{
+      if(anchor){
+        const el=document.getElementById(anchor.id);
+        if(el){
+          const now=el.getBoundingClientRect().top+(window.scrollY||window.pageYOffset||0);
+          const max=Math.max(0,document.body.scrollHeight-window.innerHeight);
+          window.scrollTo(0,Math.max(0,Math.min(now-anchor.top,max)));
+          return;
+        }
+      }
+      window.scrollTo(0,y);
+    }catch(e){} };
     put();
     requestAnimationFrame(()=>{ try{ host.style.minHeight=""; }catch(e){} put(); });
     setTimeout(()=>{ try{ host.style.minHeight=""; }catch(e){} put(); },50);
   }
+}
+/* The exercise card nearest the top of the viewport, and how far below the top
+   of the window it is sitting. Anything already scrolled past counts as long as
+   part of it is still on screen, so the card you are working on wins. */
+function sheetAnchor(){
+  try{
+    const cards=document.querySelectorAll('#workoutSheet .exb[id]');
+    for(const el of cards){
+      const r=el.getBoundingClientRect();
+      if(r.bottom<=0) continue;                 /* scrolled well past it */
+      if(r.top>window.innerHeight) break;       /* and the rest are below the fold */
+      return {id:el.id, top:r.top};
+    }
+    return null;
+  }catch(e){ return null; }
 }
 function _renderSheetInner(w){
   const host=document.getElementById('workoutSheet');
@@ -8479,7 +8511,20 @@ function renderChat(){
   const w=document.getElementById('chatWrap');
   if(!DB.chat.length){ DB.chat.push({role:"ai",text:"Morning Amir 👊 I've got your whole history and I can run the whole app for you now. Tell me anything — <b>\"make Monday cardio forever\"</b>, <b>\"add seated cable row to my library\"</b>, <b>\"swap bench for incline\"</b>, <b>\"I'm in Greece\"</b>, <b>\"log my check-in: weight 84.8, sleep 9\"</b>, <b>\"set protein target 170g\"</b> — and I'll change your schedule, workout, library, cardio, media, check-ins, nutrition or settings on the spot. Log lifts too — e.g. \"bench 40 x8 x8 x8\"."}); }
   w.innerHTML=DB.chat.map(m=> m.role==='log' ? "<div class='logchip'>"+m.text+"</div>" : "<div class='msg "+(m.role==='me'?'me':'ai')+"'>"+m.text+"</div>").join('');
-  setTimeout(()=>window.scrollTo(0,document.body.scrollHeight),50);
+  /* v117 — this used to scroll the WINDOW to the bottom every single time,
+     whichever tab you were looking at. Every change to the session writes a
+     receipt into the chat log, so swapping an exercise in Train ran
+     announceChange → renderChat → and 50ms later the page you were reading
+     jumped to the bottom of Train. The chat pinning itself to the newest
+     message is only ever right when you are actually ON the coach screen. */
+  if(chatIsOnScreen()) setTimeout(()=>{ if(chatIsOnScreen()) window.scrollTo(0,document.body.scrollHeight); },50);
+}
+/* True only when the coach screen is the one in front of you. */
+function chatIsOnScreen(){
+  try{
+    const c=document.getElementById('s-coach');
+    return !!(c && c.classList.contains('active'));
+  }catch(e){ return false; }
 }
 /* v115 — sendChat and localCoachReply are defined in the chat section further
    down. The turn now runs the action layer BEFORE the model is asked anything,
