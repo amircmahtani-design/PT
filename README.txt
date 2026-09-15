@@ -1,3 +1,39 @@
+AMIR PT — v121 · 15/09/2026
+===========================
+
+Upload index.html AND sw.js.
+
+
+THE REST TIMER LIVES AT THE TOP NOW
+===================================
+It sat at the bottom, above the tab bar, in the corner where the session
+pill, the jump button and the mic already live and where your thumb is
+already busy. The number you're actually waiting on belongs at the top of
+the screen, where your eyes go first and nothing else is competing.
+
+It's fixed there, so it holds its spot however far you scroll — the sheet
+moves under it.
+
+    REST BEFORE DEADLIFT
+    1:30      −15   +15   −   Skip
+
+DRAGGING IS UNCHANGED
+  Drag it anywhere you like and it stays there, exactly as before. This only
+  changes where it starts. Double-tap the grip to send it back to the top.
+
+ONE THING THAT WOULD HAVE MADE THIS LOOK BROKEN
+  You'd dragged it somewhere under the old bottom default, and a stored
+  position overrides the default — so nothing would have moved and you'd
+  have thought the change didn't work. That stored position is cleared once,
+  on this update only. Anywhere you drag it from here is yours and sticks.
+
+AND THE LABEL FITS NOW
+  Squeezed next to four buttons it was being cut to "REST BEFO…", which is
+  no use when the point of the label is telling you WHICH rest this is. It
+  gets its own line above the clock. "Barbell Back Squat · next set in"
+  fits, and so does every cool-down label with its side-1-of-2 suffix.
+
+
 AMIR PT — v120 · 15/09/2026
 ===========================
 

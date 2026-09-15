@@ -212,22 +212,38 @@ textarea.txtin{min-height:88px;resize:vertical;line-height:1.45;}
 .typing i{width:6px;height:6px;border-radius:50%;background:var(--cyan);animation:tp 1s infinite;}
 .typing i:nth-child(2){animation-delay:.15s;}.typing i:nth-child(3){animation-delay:.3s;}
 @keyframes tp{0%,60%,100%{opacity:.25;transform:translateY(0);}30%{opacity:1;transform:translateY(-3px);}}
-.resttimer{position:fixed;left:50%;transform:translateX(-50%);bottom:calc(74px + var(--safe-bot));width:min(520px,calc(100vw - 16px));z-index:44;
+/* v121 - the rest timer lived above the tab bar, at the bottom, where it sat
+   among the session pill, the jump button and the mic and where his thumb was
+   already busy. The number he is waiting on belongs at the top of the screen,
+   out of the way of everything else and in the place his eyes go first. It is
+   fixed, so it holds that spot however far he scrolls. Dragging still puts it
+   anywhere he likes and that choice is still remembered; this only changes
+   where it starts. */
+.resttimer{position:fixed;left:50%;transform:translateX(-50%);top:calc(8px + var(--safe-top));bottom:auto;width:min(520px,calc(100vw - 16px));z-index:44;
   background:#1a120b;border:1px solid #3d2a15;border-radius:16px;padding:9px 11px;
-  display:none;align-items:center;gap:9px;box-shadow:0 12px 34px #000b;touch-action:none;}
+  display:none;flex-direction:column;align-items:stretch;gap:3px;box-shadow:0 12px 34px #000b;touch-action:none;}
 .resttimer.show{display:flex;}
-.resttimer.overchat{bottom:calc(140px + var(--safe-bot));}
+.resttimer .rt-row{display:flex;align-items:center;gap:9px;}
+/* Nothing to dodge at the top, so the chat-bar offset is a no-op now. It is
+   kept because go() still toggles the class. */
+.resttimer.overchat{top:calc(8px + var(--safe-top));bottom:auto;}
 .resttimer.moved{left:0;top:0;right:auto;bottom:auto;transform:none;width:auto;min-width:238px;max-width:calc(100vw - 16px);}
-.resttimer.moved.overchat{bottom:auto;}
+.resttimer.moved.overchat{bottom:auto;top:auto;}
 .resttimer.due{background:linear-gradient(100deg,#0c2716,#12100d);border-color:#1fbf68;}
 .resttimer .grip{flex:0 0 auto;color:var(--label);font-size:19px;font-weight:800;letter-spacing:-3px;padding:8px 5px;cursor:grab;user-select:none;-webkit-user-select:none;}
 .resttimer.drag .grip{cursor:grabbing;color:var(--orange);}
 .resttimer .rt-main{flex:1 1 auto;min-width:0;}
-.resttimer .lab{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.7px;color:var(--orange);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.resttimer .lab{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.7px;color:var(--orange);
+  white-space:nowrap;overflow:hidden;text-overflow:ellipsis;padding:0 2px;}
 .resttimer.due .lab{color:var(--green);}
 .resttimer .cd{font-weight:800;font-size:27px;color:#fff;letter-spacing:-1px;font-variant-numeric:tabular-nums;line-height:1.12;}
-.resttimer .x{flex:0 0 auto;background:var(--card2);border:1px solid var(--line);border-radius:10px;padding:8px 11px;font-weight:800;font-size:13px;color:var(--muted);}
+/* v121 - at the top of the screen the label is the first thing he reads, and
+   four full-width buttons squeezed it to "REST BEFO...". Slightly tighter
+   buttons, same tap height, and the whole exercise name fits. */
+.resttimer .x{flex:0 0 auto;background:var(--card2);border:1px solid var(--line);border-radius:10px;padding:8px 10px;font-weight:800;font-size:13px;color:var(--muted);text-align:center;}
+.resttimer .grip{padding:8px 3px;}
 .resttimer.mini{width:auto;min-width:0;padding:7px 9px;}
+.resttimer.mini .rt-row{gap:7px;}
 .resttimer.mini .lab,.resttimer.mini .rt-skip{display:none;}
 .resttimer.mini .cd{font-size:20px;}
 
@@ -1464,12 +1480,18 @@ a{color:var(--orange);}
 </div>
 
 <div class="resttimer" id="restTimer">
-  <div class="grip" id="restGrip">⋮⋮</div>
-  <div class="rt-main"><div class="lab" id="restLab">Rest</div><div class="cd" id="restCd">1:30</div></div>
-  <button class="x" onclick="bumpRunningRest(-15)" aria-label="15 seconds less">−15</button>
-  <button class="x" onclick="bumpRunningRest(15)" aria-label="15 seconds more">+15</button>
-  <button class="x" id="restMiniBtn" onclick="restToggleMini()">–</button>
-  <button class="x rt-skip" onclick="stopRest()">Skip</button>
+  <!-- v121 — the label is what tells him WHICH rest this is, so it gets its own
+       line rather than being squeezed next to four buttons and ellipsed to
+       "REST BEFO…". The row below carries the clock and the controls. -->
+  <div class="lab" id="restLab">Rest</div>
+  <div class="rt-row">
+    <div class="grip" id="restGrip">⋮⋮</div>
+    <div class="rt-main"><div class="cd" id="restCd">1:30</div></div>
+    <button class="x" onclick="bumpRunningRest(-15)" aria-label="15 seconds less">−15</button>
+    <button class="x" onclick="bumpRunningRest(15)" aria-label="15 seconds more">+15</button>
+    <button class="x" id="restMiniBtn" onclick="restToggleMini()">–</button>
+    <button class="x rt-skip" onclick="stopRest()">Skip</button>
+  </div>
 </div>
 
 <div class="sessfloat" id="sessFloat">
@@ -1963,6 +1985,13 @@ function mergeDefaults(parsed){ let d={...structuredClone(DEFAULTS),...parsed};
   /* v119 — he corrected the brief: he is building WHILE losing, and the plan
      is three things (mobility, strength, building) rather than a physique with
      a date. Upgrade the v117 wording; leave anything he typed himself. */
+  /* v121 - the timer's home moved from the bottom of the screen to the top.
+     A position he dragged it to under the OLD default would quietly override
+     the new one and the change would look like it did nothing, so that stored
+     position is cleared once. Anywhere he drags it from here is his choice and
+     sticks. */
+  if(!d.prefs) d.prefs={};
+  if(!d.prefs.restPosV121){ d.prefs.restPosV121=true; d.prefs.restPos=null; }
   if(!d.profile.goalV119){
     d.profile.goalV119=true;
     if(/Two stages, one date/i.test(d.profile.goal||"")) d.profile.goal=DEFAULTS.profile.goal;
@@ -10830,7 +10859,7 @@ function scheduleInApp(){
    v18 ADDITIONS — draggable rest timer · weekly training memory · AI planner
    · Firestore sync
    ========================================================================== */
-const APP_VERSION="v120 · 15/09/2026";
+const APP_VERSION="v121 · 15/09/2026";
 
 /* ===== 1. REST TIMER — drag it anywhere so it never blocks the chat box ===== */
 let _rtDrag=null;
@@ -10857,7 +10886,7 @@ function restToggleMini(){
   const t=restEl(); if(!t) return;
   DB.prefs.restMini=!t.classList.contains('mini'); save(); restApplyPos();
 }
-function restResetPos(){ DB.prefs.restPos=null; save(); restApplyPos(); toast("Timer back to its usual spot"); }
+function restResetPos(){ DB.prefs.restPos=null; save(); restApplyPos(); toast("Timer back to the top"); }
 function initRestDrag(){
   const t=restEl(); if(!t) return;
   const handles=[document.getElementById('restGrip'), t.querySelector('.rt-main')].filter(Boolean);
