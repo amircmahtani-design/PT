@@ -2,13 +2,14 @@
    Network-first for the app itself, so a redeploy is ALWAYS picked up
    (the version stamp in Settings stays a reliable check).
    Cache-first for third-party assets, so the app opens with no signal. */
-const CACHE = "amirpt-v133";
+const CACHE = "amirpt-v134";
 const SHELL = ["./", "./index.html", "./manifest.json"];
 /* v123 — his own demo photographs. Pre-cached one at a time rather than with
    addAll, because addAll is atomic: a single 404 would throw away the whole
    install and leave him with no offline app at all. */
 const DEMOS = [
   "90-90-hip-switches", "ab-wheel", "ankle-rocks-on-a-wall", "band-chest-fly",
+  "child-s-pose",
   "band-clamshell", "band-lat-pulldown", "band-reverse-fly", "band-row",
   "band-shoulder-dislocate", "band-woodchop", "band-wrist-extension", "bear-crawl",
   "bird-dog", "box-breathing", "broad-jump", "burpee", "cable-fly", "chest-supported-row",

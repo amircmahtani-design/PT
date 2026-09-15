@@ -2935,8 +2935,11 @@ function setDemoPick(name,p){
    ABOVE every remote source and below only a demo he has deliberately picked
    himself \u2014 a photograph of the actual movement beats a fuzzy match to a
    stranger's exercise database every time. */
+/* v134 — child-s-pose is his own photograph of the movement the free pack
+   could not supply. Keep this list and DEMOS in sw.js in step. */
 const LOCAL_DEMOS=new Set([
   "90-90-hip-switches", "ab-wheel", "ankle-rocks-on-a-wall", "band-chest-fly",
+  "child-s-pose",
   "band-clamshell", "band-lat-pulldown", "band-reverse-fly", "band-row",
   "band-shoulder-dislocate", "band-woodchop", "band-wrist-extension", "bear-crawl",
   "bird-dog", "box-breathing", "broad-jump", "burpee", "cable-fly", "chest-supported-row",
@@ -2979,9 +2982,19 @@ function ownImgFail(img){
   }catch(e){}
 }
 function localDemo(name){
+  const ok=k=>!!(k && LOCAL_DEMOS.has(k) && !_deadLocal.has(k));
+  const tile=k=>({kind:"frames", frames:["demos/"+k+"-1.jpg","demos/"+k+"-2.jpg"], label:"your demo", mine:true, local:true});
   const k=demoSlug(name);
-  if(!k || !LOCAL_DEMOS.has(k) || _deadLocal.has(k)) return null;
-  return {kind:"frames", frames:["demos/"+k+"-1.jpg","demos/"+k+"-2.jpg"], label:"your demo", mine:true, local:true};
+  if(ok(k)) return tile(k);
+  /* v134 — one photograph covers every movement pointing at the same
+     hand-checked pack name. "Child's pose with side reach" names "Child's
+     Pose", so it gets his photograph instead of falling through to the link.
+     moveDemo() already did this; doing it here means the browse lists, the
+     thumbnails and the coverage report agree with the card. */
+  const lib=(typeof libMove==="function")? libMove(name) : null;
+  const k2=(lib && lib.demo)? demoSlug(lib.demo) : null;
+  if(k2 && k2!==k && ok(k2)) return tile(k2);
+  return null;
 }
 function demoFor(name){
   if(!name) return {kind:"link"};
@@ -11485,7 +11498,7 @@ function scheduleInApp(){
    v18 ADDITIONS — draggable rest timer · weekly training memory · AI planner
    · Firestore sync
    ========================================================================== */
-const APP_VERSION="v133 · 15/09/2026";
+const APP_VERSION="v134 · 15/09/2026";
 
 /* ===== 1. REST TIMER — drag it anywhere so it never blocks the chat box ===== */
 let _rtDrag=null;
@@ -13631,11 +13644,12 @@ function fedNear(name){
    and the picture is of something else \u2014 which no amount of tuning the
    matcher can catch. The record is named here and never used.
 
-   A wrong demo is worse than none: it is copied, mid-session, as form. With
-   nothing to show, the tile becomes the "Watch how" link it already falls back
-   to, which opens a real demo for the movement. Drop a photograph into
-   demos/child-s-pose-1.jpg and -2.jpg, add the slug to LOCAL_DEMOS and to
-   DEMOS in sw.js, and it takes over automatically \u2014 local always wins. */
+   A wrong demo is worse than none: it is copied, mid-session, as form.
+
+   v134 \u2014 Amir shot the movement himself and it is in demos/child-s-pose-*.jpg,
+   so both child's pose movements show his photograph now. The block stays: a
+   local file always wins anyway, and if one ever fails to load the fallback
+   must be the "Watch how" link rather than back to this. */
 const FED_WRONG=new Set(["Childs_Pose"]);
 function fedBlocked(r){ return !!(r && FED_WRONG.has(r.i)); }
 function fedAuto(name){

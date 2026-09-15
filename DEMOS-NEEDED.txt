@@ -1,64 +1,29 @@
 DEMO IMAGES — DONE, AND WHAT'S LEFT
 ===================================
-v133 · 15/09/2026
+v134 · 15/09/2026
 
-
-ONE IS NEEDED: CHILD'S POSE
-===========================
-demos/child-s-pose-1.jpg and demos/child-s-pose-2.jpg
-
-The free pack has a record called "Child's Pose" and the app was matching it
-with total confidence — a score of 1.31, the highest the matcher produces.
-The record's written instructions are correct: "lower your buttocks down to
-sit on your heels". Its two photographs are not. In both frames the hips stay
-high above the heels and the thighs are near vertical, which is a kneeling
-tuck. Child's pose is defined by the hips resting ON the heels.
-
-The matcher reads names. It cannot look at a picture, so nothing in it could
-ever have caught this. The record is now named in FED_WRONG and never used,
-and both movements that pointed at it — "Child's pose" and "Child's pose with
-side reach" — fall back to the "Watch how" link until there is a photograph.
-
-  START   kneeling, hips down on the heels, back tall, arms resting
-  END     folded forward, hips still ON the heels, forehead to the mat,
-          arms long in front
-
-Drop the two files in, add "child-s-pose" to LOCAL_DEMOS in index.html and to
-DEMOS in sw.js, and it takes over on its own — a local photograph outranks
-every remote source. One file covers both movements.
-
-
-All 75 are in. demos/ holds 150 photographs, a start and an end frame each,
+All 76 are in. demos/ holds 152 photographs, a start and an end frame each,
 and they are wired ahead of every remote source in the app.
 
-    WARM-UP + COOL-DOWN     38 of 38 have a picture   (17 of them yours)
-    LIBRARY EXERCISES       0 of 1049 with no demo    (60 of them yours)
-    WRONG OR APPROXIMATE    33 left, all from the list below
-
-Nothing on the tier 1-4 lists is outstanding. What follows is the tier I told
-you to skip, unchanged, so it is on the record if one of them ever annoys you
-enough to shoot it.
+    WARM-UP + COOL-DOWN     38 of 38 have a picture
+    LIBRARY EXERCISES       0 of 1049 with no demo
+    WRONG OR APPROXIMATE    33 left, all on the "not worth your time" list
 
 
-NOT WORTH YOUR TIME
-===================
-The app flags these as approximate, but the picture is the same movement or
-near enough to be useful. Checked one by one:
+CHILD'S POSE — SHOT, AND IN (v134)
+==================================
+demos/child-s-pose-1.jpg and -2.jpg, 720×480, both frames from one photo
+Amir supplied: hands and knees, then folded with the hips down on the heels.
 
-  Band Anti-Rotation Hold      showing "Pallof Press With Rotation"
-  Band Kickback                showing "Glute Kickback"
-  Band Lateral Walk            showing "Monster Walk"
-  DB Chest Fly                 showing "Decline Dumbbell Flyes"
-  DB Swing                     showing "Vertical Swing"
-  DB Thruster                  showing "Kettlebell Thruster"
-  DB Windmill                  showing "Windmills"
-  Plank Shoulder Tap           showing "Plank"
-  Superman Hold                showing "Superman"
+The free pack's own "Child's Pose" record was matching at 1.31 — the highest
+score the matcher produces — and its written instructions were right ("sit on
+your heels") while both of its photographs showed the hips high above the
+heels. A name matcher cannot look at a picture, so nothing could have caught
+it. That record stays named in FED_WRONG: a local file wins anyway, and if one
+ever fails to load the fallback must be the "Watch how" link, not back to it.
 
-Also left alone: 21 entries whose names came from the downloaded catalogue
-("Bench Press - With Bands" and the like), and 3 that are already correct and
-only flagged because the matcher scored itself low.
-
+One file covers both movements — "Child's pose" by its own slug, and "Child's
+pose with side reach" through the pack name it points at.
 
 
 WHERE THEY LIVE

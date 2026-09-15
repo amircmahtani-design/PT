@@ -1,7 +1,36 @@
-AMIR PT — v133 · 15/09/2026
+AMIR PT — v134 · 15/09/2026
 ===========================
 
-Upload index.html AND sw.js.
+Upload index.html AND sw.js — and the two new files in demos/.
+
+
+CHILD'S POSE HAS YOUR PHOTOGRAPH
+================================
+You sent one shot with both halves of the movement in it, so it is split
+into the two frames the tile animates between:
+
+    START   hands and knees
+    END     folded, hips down on the heels, forehead to the mat, arms long
+
+Both cropped to 720×480 so they share an aspect — the tile cross-fades
+between them, and two different shapes would have read as a resize rather
+than as a movement.
+
+  ONE FILE COVERS BOTH MOVEMENTS. "Child's pose" finds it by its own name.
+  "Child's pose with side reach" finds it through the pack name it points
+  at, which is how every hand-checked movement now resolves — so the
+  browse lists, the thumbnails and the coverage report all agree with the
+  card instead of one of them still showing a link.
+
+  THE BAD RECORD STAYS BLOCKED. Your photograph wins on its own, but if a
+  local file ever fails to load the fallback has to be the "Watch how"
+  link, not back to the picture with the hips in the air.
+
+  Pre-cached by the service worker with the other 150, so it works in a
+  basement with no signal.
+
+    WARM-UP + COOL-DOWN     38 of 38 have a picture
+    LOCAL PHOTOGRAPHS       76 movements, 152 files
 
 
 THE CHILD'S POSE PICTURE WAS OF SOMETHING ELSE
