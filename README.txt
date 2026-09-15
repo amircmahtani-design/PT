@@ -1,7 +1,44 @@
-AMIR PT — v130 · 15/09/2026
+AMIR PT — v131 · 15/09/2026
 ===========================
 
 Upload index.html AND sw.js.
+
+
+WHAT YOU DID, AND WHAT TO DO
+============================
+Every anchor lift opened with the same paragraph:
+
+    🏋 Strength slot: the heavy one today — 4–6 reps, three minutes'
+    rest, stop a rep or two short of failure. Everything after this is
+    built for size.
+
+Three lines, identical every session, and two thirds of it was already
+on the line under the exercise name. It is replaced by the two facts a
+set actually needs:
+
+    LAST    32.5kg × 5, 5, 4   12/09/2026
+    TODAY   32.5kg × 4–6
+
+Both come from the same place the full Coach panel reads, so this is a
+summary of it and never a second opinion. Where the coach has settled on
+a weight, the Today row is that weight and the rep target — nothing else.
+The reasoning, the Why and the Next are one tap away under Edit, which
+is what Edit is for.
+
+  Nothing is invented. No history means no Last row. No recommendation
+  means no block at all. Bands and bodyweight have no kilos, so those
+  fall back to the coach's own opening sentence.
+
+  What survives of the strength slot is the only part that changes how
+  the set is performed: "Heavy set: stop a rep or two short of failure."
+  One line.
+
+THE PRE-FILL NOTE STOPPED SAYING IT TWICE
+  Under the weight box sat "Last time 12/09/2026: 32.5kg × 5/5/4 · filled
+  in ready" — which, with the Last and Today rows now directly beneath
+  it, was the same sentence twice in a row. It does the one job it was
+  written for again: telling you the number in the box was put there for
+  you and can be typed over.
 
 
 TRAIN OPENS ON THE SESSION

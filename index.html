@@ -675,6 +675,14 @@ background:var(--card);border:1px solid var(--line);border-radius:18px;padding:1
 /* v116 — the card is collapsed by default: image, name, scheme, cue, log row.
    Everything else lives behind one of three headers so Log is always in reach
    without scrolling past a wall of controls. */
+/* v131 \u2014 Last and Today, aligned on one pair of edges. Two rows, no box:
+   the card already has enough boxes in it. */
+.coachline{margin-top:12px;display:grid;grid-template-columns:auto 1fr;gap:5px 14px;align-items:baseline;}
+.coachline .cl{display:contents;}
+.coachline .k{font-size:10.5px;font-weight:800;letter-spacing:.5px;text-transform:uppercase;color:var(--label);}
+.coachline .v{font-size:14.5px;font-weight:700;color:var(--txt);line-height:1.45;font-variant-numeric:tabular-nums;}
+.coachline .v i{font-style:normal;font-weight:600;color:var(--dim);}
+.coachline .cl.now .v{color:var(--gold);}
 /* v130 — the single Edit line under the cue. It is a divider with a label,
    not another card: three cards stacked inside a fourth reads as a box of
    boxes. The panels inside keep their own borders. */
@@ -5954,14 +5962,17 @@ function prefillNote(e){
     if(isLoadless(e.name)) return "<div class='prefill'>First time on this one \u2014 find a rep number you can hit with clean form on every set.</div>";
     return (e.rec&&e.rec.estimate)? "<div class='prefill'>Filled in with a suggested starting weight \u2014 first time on this one.</div>" : "";
   }
+  /* v131 \u2014 this used to restate last session's numbers, which the Last/Today
+     summary two lines below now says properly and in line. All that is left
+     for it to do is the job it was written for: make clear the number in the
+     box was put there for him, and can be typed over. */
   const top=Math.max(...s.sets.map(x=>x.w||0));
-  const when=(s.date&&s.date!=='prev')? ukDate(s.date) : "last session";
-  const reps=s.sets.map(x=>x.r).join("/");
   if(isLoadless(e.name))
-    return "<div class='prefill'>Last time "+when+": <b>"+reps+"</b> reps. Beat the lowest of those.</div>";
+    return "<div class='prefill'>Beat your lowest set from last time.</div>";
   const up=(e.rec&&e.rec.w&&e.rec.w>top);
-  return "<div class='prefill'>Last time "+when+": <b>"+top+"kg</b> \u00d7 "+reps+
-    (up? " \u00b7 filled in with <b>"+e.rec.w+"kg</b>, you earned the jump" : " \u00b7 filled in ready")+"</div>";
+  return up
+    ? "<div class='prefill'>Filled in with the jump you earned \u2014 type over it if it\u2019s wrong.</div>"
+    : "<div class='prefill'>Filled in for you \u2014 type over it if it\u2019s wrong.</div>";
 }
 /* ===== v97 · REPS OR TIME IS HIS CALL ==================================
    Most of the timed flags are right — a carry, a plank, a dead hang are held,
@@ -6123,7 +6134,10 @@ function exBlockHTML(e,i){
   /* The notes that change what you do THIS set stay on the face of the card.
      Everything else is behind a header. */
   const notes=
-    (e.strengthSlot? "<div class='cue' style='color:var(--gold)'><b>\ud83c\udfcb Strength slot:</b> the heavy one today \u2014 "+STRENGTH_REPS+" reps, three minutes' rest, stop a rep or two short of failure. Everything after this is built for size.</div>":"")+
+    /* v131 \u2014 three lines that said the same thing on every anchor, and two
+       thirds of it was already on the scheme line above. What is left is the
+       only part that changes how the set is performed. */
+    (e.strengthSlot? "<div class='cue' style='color:var(--gold)'><b>Heavy set:</b> stop a rep or two short of failure.</div>":"")+
     (e.technique? "<div class='cue' style='color:var(--orange)'><b>\ud83d\udd25 "+escapeHtml(e.technique)+"</b></div>":"")+
     grpNoteHTML(e)+
     (e.superset? "<div class='cue' style='color:var(--gold)'><b>\u26a1 Superset:</b> straight into "+escapeHtml(e.superset)+", no rest</div>":"")+
@@ -6178,6 +6192,7 @@ function exBlockHTML(e,i){
   return "<div class='exb"+(e.grp?" grouped":"")+"' id='exb"+i+"'>"+order+exImgHTML(e.name,e.muscles)+
     "<div class='name'>"+e.name+"</div><div class='scheme'>"+e.scheme+" · rest "+e.rest+"</div>"+
     "<div class='setlog' id='sl"+i+"'>"+chips+"</div>"+input+
+    coachLineHTML(e)+
     notes+
     "<div class='cue'><b>Cue:</b> "+e.cue+"</div>"+
     exEditHTML(e.name,
@@ -6186,6 +6201,53 @@ function exBlockHTML(e,i){
       exSec(e.name,"change","Change this exercise","",change))+
     "<button class='grouprest' onclick='groupRest("+i+")'>⏱ Rest before next exercise</button>"+
     "<div id='cb"+i+"'></div></div>";
+}
+/* ===== v131 \u00b7 WHAT YOU DID, AND WHAT TO DO ============================
+   The card used to open a paragraph about what a strength slot is. It said
+   the same thing every session and repeated the reps and rest that are
+   already on the line under the name.
+
+   Two rows replace it, and they are the two facts a set actually needs:
+   what you lifted last time, and what to go for now. Both come from
+   progressionFor(), which is the same source the full Coach panel reads \u2014
+   this is a summary of it, not a second opinion. The panel behind Edit still
+   holds the reasoning, the Why and the Next.
+
+   Nothing here is invented: with no history there is no Last row, and with
+   no recommendation there is no block at all. */
+/* The opening sentence, without splitting "32.5kg" down the middle: a full
+   stop only ends a sentence when what follows is whitespace then a capital,
+   or the end of the string. */
+function firstSentence(t){
+  const str=String(t||"").trim();
+  if(!str) return "";
+  const m=str.match(/^[\s\S]*?[.!?](?=\s+[A-Z\u2014]|\s*$)/);
+  let out=(m? m[0] : str).trim();
+  if(out.length>92) out=out.slice(0,90).replace(/[\s,;:\u2014-]+$/,"")+"\u2026";
+  return out;
+}
+function coachLineHTML(e){
+  let p=null; try{ p=progressionFor(e.name); }catch(err){ p=null; }
+  const rows=[];
+  if(p && p.last){
+    rows.push("<div class='cl'><span class='k'>Last</span><span class='v'>"+escapeHtml(p.last)+
+      (p.lastDate? " <i>"+ukDate(p.lastDate)+"</i>" : "")+"</span></div>");
+  }
+  /* A number beats a paragraph. Where the coach has actually settled on a
+     weight, the row is that weight and the rep target and nothing else; the
+     reasoning is a tap away under Edit, which is what Edit is for. Bands and
+     bodyweight have no kilos, so those fall back to the first sentence. */
+  let todayTxt="";
+  if(p && p.recommended!=null){
+    todayTxt=fmtNum(p.recommended)+"kg \u00d7 "+shortTarget(e);
+  } else {
+    todayTxt=firstSentence((p&&p.target) || (e.rec&&e.rec.text) || "");
+  }
+  if(todayTxt){
+    rows.push("<div class='cl now'><span class='k'>Today</span><span class='v'>"+escapeHtml(todayTxt)+"</span></div>");
+  }
+  if(!rows.length) return "";
+  return "<div class='coachline'>"+rows.join("")+"</div>";
 }
 /* One line under the cue. Everything that was three headers on the face of the
    card is behind it, and it remembers whether you left it open exactly the way
@@ -11410,7 +11472,7 @@ function scheduleInApp(){
    v18 ADDITIONS — draggable rest timer · weekly training memory · AI planner
    · Firestore sync
    ========================================================================== */
-const APP_VERSION="v130 · 15/09/2026";
+const APP_VERSION="v131 · 15/09/2026";
 
 /* ===== 1. REST TIMER — drag it anywhere so it never blocks the chat box ===== */
 let _rtDrag=null;
