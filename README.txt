@@ -1,3 +1,73 @@
+AMIR PT — v117 · 15/09/2026
+===========================
+
+Upload index.html AND sw.js.
+
+
+THE TARGET HAS A NAME, AND THE PLAN HAS A DATE
+==============================================
+Until now the brief was "lean and athletic". True, but not specific enough to
+program against and impossible to pace. You've now given both halves:
+
+    STAGE 1   a flat stomach
+    STAGE 2   as close to MARIO CASAS as you can get
+    BY        March 2027
+
+Both are in the app now instead of in your head, because both change the
+programming.
+
+WHAT THE COACH KNOWS
+  The look, in the terms it actually programs in: it is a LEANNESS look before
+  it is a muscle look (10-12% body fat is where the abs and the hip line turn
+  up); shoulders and upper back carry it; chest defined rather than thick; arms
+  hard at a moderate size; the waist stays thin, so no loaded oblique work ever;
+  legs lean, not built for size. And that at 187cm you are taller than the man
+  in the photo, which means the shoulder width and the low body fat matter more
+  to you, not less.
+
+  It is told what NOT to do just as plainly: anything that adds size outside the
+  shoulders and upper back is probably the wrong call.
+
+THE TWO STAGES ARE NOW A SCHEDULE
+  They already existed. What they never had was a clock. Stage 2 needs at least
+  10 weeks of eating at or above maintenance before it puts anything on, so the
+  switch out of stage 1 has a date on it — and the app works it out rather than
+  you guessing:
+
+    24 weeks to March 2027 · switch to building by 21/12/2026
+
+  With a body-fat figure logged it does the rest of the arithmetic: how many
+  kilos to 11%, how fast they're actually coming off from your own weigh-ins,
+  what week stage 1 lands on, and whether that still fits. Without one it says
+  so instead of pretending — one rough estimate in Progress → Measurements is
+  the difference between a schedule and a guess.
+
+WHAT IT WILL NOT DO
+  Chase the date at the cost of the muscle. If the pace slips, the coach is
+  told to say so out loud and name the real options — a shorter build, or
+  arriving in March lean and sharper but not bigger. Cutting harder and adding
+  cardio are explicitly off the table: without the muscle there is no
+  resemblance, just a smaller version of you.
+
+  It also won't nag. The date comes up when it's decision-relevant — at the
+  switch, when the pace changes, when you ask. You set a goal, not a countdown.
+
+WHERE IT SHOWS
+  Progress → The plan. The card now carries the target, the weeks left, the
+  switch-by date and an honest line about whether you're on pace.
+
+  Settings → Target physique and Target date, if either ever changes.
+
+  And you can just tell the coach: "make it June 2027" or "I want to look like
+  someone else" both land, and both are remembered.
+
+ONE THING WORTH SAYING PLAINLY
+  1500 kcal against roughly 2679 maintenance is a 44% deficit. That's your
+  nutritionist's call and the app doesn't second-guess it — but it's steep
+  enough that holding muscle is the whole job of stage 1, and the coach now
+  programs on that basis.
+
+
 AMIR PT — v108 · 06/08/2026
 ===========================
 

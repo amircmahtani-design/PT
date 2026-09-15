@@ -1362,6 +1362,10 @@ a{color:var(--orange);}
         <div class="hint mt">Dubai = full gym. Madrid = dumbbells only. Greece = no equipment. Your daily check-in sets this too, so the coach always knows what you can actually lift.</div></div>
       <div class="field"><label>Goal</label><input class="txtin" id="setGoal" value="Build the physique I want — not chase bodyweight" /></div>
       <div class="field"><label>Current Phase</label><input class="txtin" id="setPhase" value="Lean Recomp / mini-cut" /></div>
+      <div class="field"><label>Target physique</label><input class="txtin" id="setTarget" placeholder="Mario Casas" />
+        <div class="hint mt">The look you're aiming at. The coach programs the ratios that build it — and refuses the ones that don't.</div></div>
+      <div class="field"><label>Target date</label><input class="txtin" type="date" id="setDeadline" />
+        <div class="hint mt">When you want to be as close to it as possible. It sets the switch-over from stripping fat to building, and it's why the plan can tell you whether you're on pace.</div></div>
       <div class="field"><label>🏠 Dubai equipment</label>
         <textarea class="txtin" id="setEquipDubai"></textarea></div>
       <div class="field"><label>🇪🇸 Madrid equipment</label>
@@ -1564,7 +1568,7 @@ EXCLUDE_116.exPrefs=()=>{ const o={}; EXCLUDE_116.forEach(x=>
 
 const DEFAULTS = {
   profile:{name:"Amir", location:"dubai", height:187, weightKg:83.7,
-    goal:"Build real muscle while getting lean — a recomp, not a bulk and not just maintenance. The target look is lean and athletic: visible abs, clear shoulder-to-waist taper, obviously trained. NOT a bodybuilder and not bulky — shape and leanness over size. Just as important: genuinely more flexible and mobile. Strength AND range of motion, not weights alone. Judge progress by the mirror, photos, waist and the loads on the bar — not by bodyweight.", phase:"Lean Recomp / mini-cut", coachTone:"",
+    goal:"Two stages, one date. STAGE 1: a flat stomach — hold the deficit and strip the fat while keeping every gram of muscle. STAGE 2: build the shape — as close to Mario Casas, the Spanish actor, as possible: lean and defined rather than big, visible abs, shoulder-to-waist taper, obviously trained. NOT a bodybuilder and not bulky. As close to that as I can get by March 2027. Just as important: genuinely more flexible and mobile — strength AND range of motion, not weights alone. Judge progress by the mirror, photos, waist and the loads on the bar — not by bodyweight.", phase:"Lean Recomp / mini-cut", coachTone:"",
     equip:{dubai:"",madrid:"",greece:""},
     equipment:"Adjustable dumbbells, barbell + plates, bench, pull-up bar, Concept2 rower, resistance bands",
     injuries:"TFCC tear (left wrist) — avoid loaded wrist extension and heavy pressing on a straight wrist. Neutral grip wherever possible. Klinefelter syndrome — recovery is the limiting factor, not effort. Patient strength curve, consistent progressive overload, no heroics.",
@@ -1573,6 +1577,10 @@ const DEFAULTS = {
   memory:"", reminder:"07:00",
   schedule:{0:"Rest",1:"Push Day",2:"Pull Day",3:"Legs & Core",4:"Push Day",5:"Pull Day",6:"Legs & Core"},
   dayOverride:{date:null,split:null},
+  /* v117 — the two stages, the look he is aiming at and the date he wants it
+     by. DB.plan used to be created on the fly the first time the phase was
+     switched, which meant the target and the deadline had nowhere to live. */
+  plan:{phase:1, changed:null, target:"Mario Casas", deadline:"2027-03-01"},
   checkins:[],
   strength:{},
   weights:[],
@@ -1910,6 +1918,16 @@ function mergeDefaults(parsed){ let d={...structuredClone(DEFAULTS),...parsed};
     d.profile.goal=DEFAULTS.profile.goal; d.profile.goalV69=true;
   }
   if(!d.profile.weightKg) d.profile.weightKg=83.7;
+  /* v117 — he named the look and put a date on it. Fill both in without
+     touching a target or a date he has set himself, and upgrade the goal text
+     only while it is still the untouched v69 wording. */
+  d.plan=Object.assign({phase:1, changed:null}, DEFAULTS.plan, d.plan||{});
+  if(!d.plan.target) d.plan.target=DEFAULTS.plan.target;
+  if(!d.plan.deadline) d.plan.deadline=DEFAULTS.plan.deadline;
+  if(!d.profile.goalV117){
+    d.profile.goalV117=true;
+    if(/a recomp, not a bulk/i.test(d.profile.goal||"")) d.profile.goal=DEFAULTS.profile.goal;
+  }
   d.nutrition=d.nutrition||{};
   if(d.nutrition.calorieTarget==null) d.nutrition.calorieTarget=1500;
   d.profile=Object.assign(structuredClone(DEFAULTS.profile),d.profile||{});
@@ -6033,17 +6051,211 @@ const PHYSIQUE_PRIORITY={
 
    The coach needs to know which phase it is programming for, because "should
    I add volume here?" has opposite answers in each. */
+/* ===== v117 - THE TARGET HAS A NAME, AND THE PLAN HAS A DATE ============
+   Until now the brief was "lean and athletic". True, but not specific enough
+   to program against and impossible to pace. He has since given both halves
+   of what he actually wants, and a date:
+
+     STAGE 1   a flat stomach
+     STAGE 2   as close to MARIO CASAS, the Spanish actor, as he can get
+     BY        March 2027
+
+   Both belong in the app rather than in his head. A named look tells the coach
+   which ratios matter and, just as usefully, which ones to refuse. A date turns
+   "get lean, then build" into a schedule: there is a switch-over point, stage 2
+   needs a minimum number of weeks to be worth running at all, and that makes
+   the arithmetic honest - how much fat is left, how fast it is actually coming
+   off, and whether the date still holds.
+
+   The two stages themselves are not new (v70). What is new is that they have a
+   target, a clock, and a verdict on the pace that nobody has to guess at. */
+const TARGET_LOOK={
+  name:"Mario Casas",
+  who:"the Spanish actor",
+  /* Described as a LOOK, in coaching terms, and the figures are what that look
+     costs AMIR at 187cm - not claims about anyone else's body. */
+  reads:[
+    "It is a LEANNESS look before it is a muscle look. The abs, the obliques and the line at the hip only show up at roughly 10-12% body fat. Getting there does more for the resemblance than any amount of extra training.",
+    "Shoulders and upper back carry it. Capped side delts and lat width are what make a waist look narrow on camera.",
+    "The chest is defined rather than thick — the upper line under the collarbone, not slabs.",
+    "The arms are hard and visible at a moderate size. Nothing about that look is arm-driven.",
+    "The waist stays thin. No loaded oblique work, ever — it is the one thing that would actively move him away from this.",
+    "Legs lean and athletic. Trained, obviously not built for size.",
+    "He is 187cm and taller than the man in the photo, which cuts both ways: extra height spreads the same muscle further, so the shoulder width and the low body fat matter MORE to him, not less. A long frame carrying that look reads better than a short one, once it is there."
+  ],
+  refuse:"Not a bodybuilder, not blocky, not heavy. If a decision would add size anywhere except the shoulders and upper back, it is probably the wrong decision."
+};
+const STAGE={
+  1:{name:"Flat stomach",     short:"strip the fat"},
+  2:{name:"The Casas shape",  short:"build it"}
+};
+const PLAN_DEADLINE="2027-03-01";   /* March 2027. His date, not mine. */
+const TARGET_BF=11;                 /* the band is 10-12; the arithmetic aims at 11 */
+const STAGE2_MIN_WEEKS=10;          /* the shortest building block worth running */
+
+function planDeadline(){ return (DB.plan&&DB.plan.deadline)||PLAN_DEADLINE; }
+function planTargetName(){ return (DB.plan&&DB.plan.target)||TARGET_LOOK.name; }
+function stageName(n){ return (STAGE[n===2?2:1]||{}).name||""; }
+const MONTHS=["January","February","March","April","May","June","July","August","September","October","November","December"];
+/* "March 2027" reads like a plan. "01/03/2027" reads like an appointment. */
+function monthYear(iso){
+  const m=String(iso||"").match(/^(\d{4})-(\d{2})/);
+  return m? (MONTHS[(+m[2])-1]+" "+m[1]) : String(iso||"");
+}
+/* NB: there is an isoPlusDays(n) further down that works off today, not off a
+   given date. Different job, so this one gets its own name. */
+function isoShift(iso,n){ const t=dnum(iso); return isNaN(t)? null : new Date(t+n*864e5).toISOString().slice(0,10); }
+
+/* How fast the scale is ACTUALLY moving, from his own weigh-ins. Negative is
+   losing. Needs a fortnight of spread before it means anything - a week of
+   water weight is not a trend. */
+function weightRate(days){
+  const all=weightSeries().filter(p=>p.date);
+  if(all.length<2) return null;
+  const cut=dnum(today())-(days||42)*864e5;
+  const win=all.filter(p=>dnum(p.date)>=cut);
+  const use=win.length>=2? win : all.slice(-2);
+  const a=use[0], b=use[use.length-1];
+  const wk=(dnum(b.date)-dnum(a.date))/864e5/7;
+  if(!(wk>=2)) return null;
+  return {kgWeek:Math.round(((b.w-a.w)/wk)*100)/100, weeks:Math.round(wk*10)/10, from:a.w, to:b.w};
+}
+/* What stage 1 has left in it, in kilos and in weeks.
+   The lean mass is assumed HELD, which is the entire job of the training in
+   stage 1 - if that assumption breaks, the number of weeks is the least of
+   the problems. */
+function fatLossPlan(){
+  const kg=(DB.profile&&DB.profile.weightKg)||null;
+  if(!kg) return null;
+  const bf=latestBodyFat();
+  const en=energyContext();
+  /* 7700 kcal to a kilo. The deficit he is running says what the scale should
+     do; his weigh-ins say what it is doing. Prefer the weigh-ins. */
+  const expected = en? Math.round((en.gap*7/7700)*100)/100 : null;
+  const meas = weightRate(42);
+  const actual = (meas && meas.kgWeek<0)? Math.abs(meas.kgWeek) : null;
+  let goalKg=null, lose=null, fatKg=null;
+  if(bf){
+    fatKg=Math.round(kg*(bf.pct/100)*10)/10;
+    const lean=kg*(1-bf.pct/100);
+    goalKg=Math.round((lean/(1-TARGET_BF/100))*10)/10;
+    lose=Math.max(0,Math.round((kg-goalKg)*10)/10);
+  }
+  const rate = actual!=null? actual : expected;
+  const rateSrc = actual!=null? ("his own weigh-ins, "+meas.weeks+" weeks of them") : "the size of his deficit, not yet confirmed on the scale";
+  const weeksNeeded = (lose!=null && rate>0)? Math.ceil(lose/rate) : null;
+  return {kg, bfPct:bf?bf.pct:null, bfSrc:bf?bf.src:null, fatKg, goalKg, lose,
+          expected, actual, rate, rateSrc, weeksNeeded,
+          doneBy: weeksNeeded!=null? isoShift(today(),weeksNeeded*7) : null};
+}
+/* The clock. Everything the coach and the card need to say something true
+   about the date without either of them doing arithmetic in prose. */
+function planClock(){
+  const dl=planDeadline();
+  const days=Math.round((dnum(dl)-dnum(today()))/864e5);
+  const weeks=Math.round(days/7);
+  const stage=trainingPhase();
+  const switchBy=isoShift(dl,-STAGE2_MIN_WEEKS*7);
+  const weeksToSwitch=Math.round((dnum(switchBy)-dnum(today()))/864e5/7);
+  const f=fatLossPlan();
+  /* Two voices for the same verdict. WHY goes to the coach, which is told ABOUT
+     him. MINE goes on the card, which is read BY him — and a card that refers
+     to its reader in the third person is how an app ends up sounding like
+     paperwork. */
+  let pace="unknown", why="", mine="";
+  if(days<0){
+    pace="past";
+    why="The date has gone by. Ask him what the new one is rather than carrying on against a dead deadline.";
+    mine="That date has passed. Tell the coach the new one and the plan re-paces itself.";
+  } else if(stage===2){
+    pace = weeks>=STAGE2_MIN_WEEKS? "on" : "tight";
+    why = weeks>=STAGE2_MIN_WEEKS
+      ? "He is in the building stage with "+weeks+" weeks left, which is enough to show. Volume up on the groups that build the shape, and watch the waist weekly."
+      : "Only "+weeks+" weeks of building left — too few for much new size. Spend them on the shoulders and back, hold everything else, and keep him lean so what is there shows.";
+    mine = weeks>=STAGE2_MIN_WEEKS
+      ? "You're building, with "+weeks+" weeks left — enough to show. Shoulders and back lead, and keep an eye on the waist."
+      : "Only "+weeks+" weeks of building left. Spend them on shoulders and back and stay lean — that is what will read in the photos.";
+  } else if(!f || f.lose==null){
+    pace="unknown";
+    why="Nobody can pace stage 1 because no body-fat figure has ever been logged. Ask him ONCE for an estimate — Progress → Measurements takes it, or the photo estimate will guess it — and the whole schedule stops being a guess.";
+    mine="None of this can be paced until there is a body-fat figure. Log a rough one in Progress → Measurements and this becomes a schedule instead of a guess.";
+  } else if(f.weeksNeeded==null){
+    pace="unknown";
+    why="He has "+f.lose+"kg of fat to lose to hit "+TARGET_BF+"%, but nothing is logged that says how fast it is coming off. A weekly weigh-in on the check-in is all it takes.";
+    mine=f.lose+"kg to lose to reach "+TARGET_BF+"%, but nothing logged says how fast it is coming off. A weekly weigh-in on the check-in is all it takes.";
+  } else if(f.weeksNeeded<=weeksToSwitch-3){
+    pace="ahead";
+    why="Stage 1 needs about "+f.weeksNeeded+" more weeks and he has "+weeksToSwitch+" before the switch. He is ahead of the date — do not let that turn into cutting harder, let it turn into a longer building stage.";
+    mine="About "+f.weeksNeeded+" weeks of stage 1 left, and "+weeksToSwitch+" before the switch — you are ahead. That buys a longer build, not a harder cut.";
+  } else if(f.weeksNeeded<=weeksToSwitch){
+    pace="on";
+    why="Stage 1 needs about "+f.weeksNeeded+" more weeks and the switch is "+weeksToSwitch+" weeks away. It fits, with very little spare. Hold the course and protect the muscle — that is what makes stage 2 worth anything.";
+    mine="About "+f.weeksNeeded+" weeks of stage 1 left against "+weeksToSwitch+" before the switch. It fits, with little spare — hold the course and protect the muscle.";
+  } else {
+    pace="behind";
+    why="Stage 1 needs about "+f.weeksNeeded+" weeks at the rate he is going and there are only "+weeksToSwitch+" before the switch. Say this out loud rather than hoping: either stage 2 gets shorter, or he arrives in "+monthYear(dl)+" lean and in better shape but not bigger. Both are honest answers. Cutting harder is NOT — it costs the muscle that the whole look is made of.";
+    mine="At this rate stage 1 needs about "+f.weeksNeeded+" weeks and there are "+weeksToSwitch+" before the switch. Something gives: a shorter build, or you arrive in "+monthYear(dl)+" lean and sharper but not bigger. Cutting harder is not the answer — that costs the muscle the look is made of.";
+  }
+  return {deadline:dl, label:monthYear(dl), days, weeks, past:days<0,
+          stage, stageName:stageName(stage), target:planTargetName(),
+          switchBy, switchByLabel:ukDate(switchBy), weeksToSwitch, fat:f, pace, why, mine};
+}
+/* One line, for anywhere that has room for one line. */
+function planStatusLine(){
+  try{
+    const c=planClock();
+    if(c.past) return "Stage "+c.stage+" · "+c.label+" has passed — he needs to set a new date.";
+    return "Stage "+c.stage+" of 2 ("+c.stageName+") · "+c.weeks+" weeks to "+c.label+
+           (c.stage===1? " · switch to building by "+c.switchByLabel : "");
+  }catch(e){ return ""; }
+}
+/* The section the coach reads. It is allowed to be blunt about the date
+   because the alternative - finding out in February - is worse. */
+function planClockText(){
+  try{
+    const c=planClock(), f=c.fat;
+    let t="=== THE DATE, AND WHETHER IT STILL HOLDS ===\n"+
+      "He wants to be as close to "+c.target+"'s build as he can get by "+c.label+". That is "+
+      (c.past? "a date that has already passed" : c.weeks+" weeks away")+", and it is why the stages are a schedule rather than a mood.\n";
+    if(c.stage===1){
+      t+="Stage 2 needs at least "+STAGE2_MIN_WEEKS+" weeks of eating at or above maintenance before it puts anything on, so the switch out of stage 1 has to happen by about "+c.switchByLabel+" — "+c.weeksToSwitch+" weeks from now. Miss it and he arrives in "+c.label+" lean but no closer in SHAPE, which is the half he cares about.\n";
+    }
+    if(f && f.lose!=null){
+      t+="THE ARITHMETIC: "+f.kg+"kg at "+f.bfPct+"% body fat ("+f.bfSrc+") is about "+f.fatKg+"kg of fat. Holding his lean mass, "+TARGET_BF+"% lands him near "+f.goalKg+"kg — "+f.lose+"kg to lose.\n";
+      if(f.rate) t+="He is losing about "+f.rate+"kg a week ("+f.rateSrc+"), which puts the end of stage 1 around "+(f.doneBy?ukDate(f.doneBy):"—")+".\n";
+    }
+    t+=c.why+"\n";
+    t+="RULES ABOUT THE DATE:\n"+
+      "  • NEVER solve a slipping date by cutting harder, adding cardio, or turning a session into a calorie burn. The deadline is not worth the muscle — without the muscle there is no resemblance, just a smaller version of him.\n"+
+      "  • The leanness is the part that can be delivered by "+c.label+". Size keeps arriving for years afterwards. If something has to give, say which one and why.\n"+
+      "  • Bring the date up when it is DECISION-RELEVANT — at the switch, when the pace changes, when he asks. Not in every message. He set a goal, he did not ask for a countdown.\n\n";
+    return t;
+  }catch(e){ return ""; }
+}
 function renderPhaseCard(){
   const b=document.getElementById('phaseBody'); if(!b) return;
   const ph=trainingPhase();
-  const t=document.getElementById('phaseTag'); if(t) t.textContent="Phase "+ph+" of 2";
+  const c=planClock();
+  const t=document.getElementById('phaseTag'); if(t) t.textContent=c.target+" by "+c.label;
   const a=intakeAvg(7), en=energyContext();
   b.innerHTML=
     "<div class='notebox mb'>"+
       (ph===1
-        ? "<b>Phase 1 \u2014 strip the fat.</b> Hold the deficit until the stomach is flat. Training exists to keep every gram of muscle you have and add what it can on top. The diet does the fat loss; the workout never becomes cardio to chase calories."
-        : "<b>Phase 2 \u2014 build.</b> Calories are up and the same framework goes to work adding muscle. Volume climbs on the groups that build your shape; the waist is the thing to watch.")+
+        ? "<b>Stage 1 of 2 \u2014 "+stageName(1)+".</b> Hold the deficit until the stomach is flat. Training exists to keep every gram of muscle you have and add what it can on top. The diet does the fat loss; the workout never becomes cardio to chase calories."
+        : "<b>Stage 2 of 2 \u2014 "+stageName(2)+".</b> Calories are up and the same framework goes to work adding muscle. Volume climbs on the groups that build your shape; the waist is the thing to watch.")+
     "</div>"+
+    /* v117 \u2014 the date, and the honest state of it. */
+    "<div class='hint mb'>"+(c.past
+        ? "<b>"+c.label+" has passed.</b> Tell the coach your new date, or change it in Settings."
+        : "<b>"+c.weeks+" weeks</b> to "+c.label+
+          (ph===1? " \u00b7 switch to building by <b>"+c.switchByLabel+"</b> ("+c.weeksToSwitch+" weeks) so stage 2 has time to show"
+                 : " \u00b7 "+STAGE2_MIN_WEEKS+" weeks is the minimum build worth running"))+"</div>"+
+    (ph!==1? ""
+      : c.fat&&c.fat.lose!=null
+      ? "<div class='hint mb'>At "+c.fat.bfPct+"% ("+c.fat.bfSrc+") that is about <b>"+c.fat.lose+"kg</b> to lose to reach "+TARGET_BF+"%"+
+        (c.fat.rate? ", and you are losing about "+c.fat.rate+"kg a week \u2014 stage 1 lands around <b>"+ukDate(c.fat.doneBy)+"</b>" : "")+".</div>"
+      : "<div class='hint mb'>No body-fat figure logged, so none of this can be paced properly. Add an estimate in Progress \u2192 Measurements \u2014 a rough one is enough.</div>")+
+    "<div class='hint mb'>"+c.mine+"</div>"+
     (en? "<div class='hint mb'>"+(en.fromLog? "Averaging <b>"+en.kcal+" kcal</b> over your last "+en.days+" logged days" : "Around <b>"+en.kcal+" kcal</b> a day")+
           " against roughly "+en.maint+" maintenance at 187cm / "+((DB.profile&&DB.profile.weightKg)||"?")+"kg \u2014 about a "+en.pct+"% deficit.</div>" : "")+
     (a? "<div class='hint mb'>Logged, last "+a.days+" day"+(a.days===1?"":"s")+": "+
@@ -6053,7 +6265,7 @@ function renderPhaseCard(){
         (a.fat!=null? " \u00b7 "+a.fat+"g fat":"")+"</div>"
       : "<div class='hint mb'>No daily intake logged yet \u2014 there are fields on the check-in. The coach uses them to decide how hard to push you, not to comment on your diet.</div>")+
     "<button class='btn sec' onclick='setTrainingPhase("+(ph===1?2:1)+")'>"+
-      (ph===1? "Phase 1 is done \u2014 switch to building" : "Back to phase 1 \u2014 stripping fat")+"</button>"+
+      (ph===1? "Stage 1 is done \u2014 switch to building" : "Back to stage 1 \u2014 stripping fat")+"</button>"+
     "<div class='hint mt'>The milestone is the mirror and the waist, not a bodyweight. Ask the coach if you're close.</div>";
 }
 function trainingPhase(){
@@ -6509,8 +6721,11 @@ function coachingDoctrine(){
   const en=energyContext();
   return "\n=== HOW YOU PROGRAM \u2014 THE METHODOLOGY, NOT VIBES ===\n"+
 "You are not a chatbot that suggests exercises. You are the coach responsible for this man's physique, and you work from a framework.\n\n"+
-"=== THE BODY HE IS ACTUALLY AFTER ===\n"+
-"187cm, "+((DB.profile&&DB.profile.weightKg)||"?")+"kg. He has shown you the target and it is specific: LEAN AND ATHLETIC. Visible abs, clear shoulder-to-waist taper, obviously trained, looks good in a t-shirt and better without one.\n"+
+"=== THE BODY HE IS ACTUALLY AFTER \u2014 IT HAS A NAME ===\n"+
+"187cm, "+((DB.profile&&DB.profile.weightKg)||"?")+"kg. The target is not a vibe and it is not yours to interpret: he wants to look like "+TARGET_LOOK.name+", "+TARGET_LOOK.who+", and he wants to be as close to it as he can get by "+monthYear(planDeadline())+".\n"+
+"WHAT THAT BUILD ACTUALLY IS, in the terms you program in:\n"+
+TARGET_LOOK.reads.map(x=>"  \u2022 "+x).join("\n")+"\n"+
+"  \u2022 "+TARGET_LOOK.refuse+"\n"+
 "He has said plainly: NOT a bodybuilder, NOT bulky. Take that literally.\n"+
 "That is a SHAPE AND LEANNESS target, not a size target, and it changes everything:\n"+
 "  \u2022 The look is a RATIO. Shoulders and lats at one end, a tight waist at the other. Widening the top half is the whole job; thickening the middle undoes it.\n"+
@@ -6519,10 +6734,11 @@ function coachingDoctrine(){
 "  \u2022 The abs come from being lean, not from ab volume. Never load the obliques heavily \u2014 a thicker waist directly ruins the ratio.\n"+
 "  \u2022 At his height, 187cm, a little muscle goes a long way visually. He does not need much size to look like that photo; he needs the right distribution and low body fat.\n"+
 "If he ever asks for something that would make him bulkier than that target, say so before doing it.\n\n"+
-"=== THE PLAN HAS TWO PHASES. YOU ARE PROGRAMMING FOR PHASE "+trainingPhase()+" ===\n"+
-"PHASE 1 (now): hold the deficit and strip the fat until the stomach is flat. Training exists to KEEP every gram of muscle he has, and add whatever the deficit allows on top. The diet does the fat loss \u2014 the workout does not, and you never turn a session into cardio to chase calories.\n"+
-"PHASE 2 (after that): calories come up and the same framework goes to work BUILDING. Same doctrine, more fuel, higher volumes.\n"+
-"He is in phase "+trainingPhase()+". Program for that one and say which phase a decision belongs to when it matters.\n\n"+
+"=== THE PLAN HAS TWO STAGES, IN HIS WORDS. YOU ARE PROGRAMMING FOR STAGE "+trainingPhase()+" ===\n"+
+"STAGE 1 \u2014 "+STAGE[1].name.toUpperCase()+": hold the deficit and strip the fat until the stomach is flat. Training exists to KEEP every gram of muscle he has, and add whatever the deficit allows on top. The diet does the fat loss \u2014 the workout does not, and you never turn a session into cardio to chase calories.\n"+
+"STAGE 2 \u2014 "+STAGE[2].name.toUpperCase()+": calories come up and the same framework goes to work BUILDING the shape described above. Same doctrine, more fuel, higher volumes.\n"+
+"They are one plan, not two projects. Stage 1 exists to make stage 2 worth doing \u2014 which is exactly why muscle lost during it costs more than the weeks it saves.\n"+
+"He is in stage "+trainingPhase()+". Program for that one, and say which stage a decision belongs to when it matters.\n\n"+
 (trainingPhase()===1 ? (
 "PHASE 1 RULES:\n"+
 "  \u2022 HIS POSITION, IN HIS WORDS: he is happy to MAINTAIN muscle while the fat comes off, and hopes to build off his fat stores on top. That is the right expectation \u2014 maintenance is the floor, building is the upside. Program so the floor is guaranteed and the upside is possible.\n"+
@@ -6534,15 +6750,17 @@ function coachingDoctrine(){
 "  \u2022 KEEP ENOUGH VOLUME TO GROW where he can. Sit between the minimum and the target figure. Do NOT scrape down to the minimum \u2014 that is how people finish a cut smaller and softer.\n"+
 "  \u2022 NEVER TRADE LOAD FOR SWEAT. Higher reps with lighter weight to 'burn more' is the single worst thing you could do to him right now.\n"+
 "  \u2022 CUT JUNK BEFORE WORK. If recovery is short, remove filler exercises \u2014 not working sets on the movements that hold his shape.\n"+
-"  \u2022 THE STOMACH IS THE MILESTONE, not a bodyweight. Waist measurement and photos decide when phase 1 is done, and you should tell him when you think he is close.\n"+
+"  \u2022 THE STOMACH IS THE MILESTONE, not a bodyweight. Waist measurement and photos decide when stage 1 is done, and you should tell him when you think he is close \u2014 he should not have to ask, and he certainly should not sit in a deficit a month longer than he needs to.\n"+
 "  \u2022 EXPECT FLAT WEEKS. Holding the same loads while the waist drops IS the win \u2014 name it as one, because on the scale it looks like nothing is happening.\n"
 ) : (
 "PHASE 2 RULES:\n"+
 "  \u2022 The brake is off. Push volume toward the target and ceiling figures on the groups that build his shape.\n"+
 "  \u2022 Progressive overload is now the main event \u2014 expect the loads to move most weeks and chase that.\n"+
 "  \u2022 He still does not want bulky. Bias to shoulders, back and upper chest; hold legs and arms at proportionate rather than maximal.\n"+
-"  \u2022 Watch the waist. If it starts thickening, that is the signal the surplus is too large \u2014 flag it once and let his nutritionist handle it.\n"
+"  \u2022 Watch the waist. If it starts thickening, that is the signal the surplus is too large \u2014 flag it once and let his nutritionist handle it. Stage 1 was paid for; do not let it be spent.\n"+
+"  \u2022 BIAS EVERYTHING TO THE SHAPE. Shoulders and upper back first, upper chest second, everything else held at proportionate. With a fixed date, volume spent on legs and biceps is volume not spent on the ratio he is actually chasing.\n"
 ))+"\n"+
+planClockText()+
 (en? ("=== WHAT HE IS ACTUALLY RUNNING ON ===\n"+
 (en.fromLog
   ? ("Actually eating about "+en.kcal+" kcal a day (his own logs, "+en.days+" days) against roughly "+en.maint+" maintenance for 187cm / "+((DB.profile&&DB.profile.weightKg)||"?")+"kg \u2014 about a "+en.pct+"% deficit"+(en.steep?", a steep one":"")+".\n")
@@ -6705,7 +6923,8 @@ coachingDoctrine()+
 "SET_SETS changes EVERY exercise. For one lift always use SET_EX_SETS. \"4 sets of 6 with 3 minutes rest\" is three directives, not a rebuild.\n\n"+
 "LOAD CAN GO DOWN TOO: [[DELOAD: Bench Press | -10%]] or [[DECREASE_LOAD_NEXT_TIME: Squat | -5kg]] \u2014 use these when he is beaten up, in pain, or coming back from a layoff. Do not only ever add weight.\n\n"+
 "HIS PROGRAMME, GOALS AND LIMITS:\n"+
-"[[SET_TRAINING_PHASE: 2]] moves him from stripping fat to building — ONLY when he says phase 1 is done, or when you made the case and he agreed.\n"+
+"[[SET_TRAINING_PHASE: 2]] moves him from stripping fat (stage 1) to building (stage 2) — ONLY when he says stage 1 is done, or when you made the case and he agreed.\n"+
+"[[SET_TARGET_LOOK: Mario Casas]] · [[SET_TARGET_DATE: 2027-03-01]] — the physique he is aiming at and the date he wants it by. Use them when he names a different look or moves the date, never on your own initiative.\n"+
 "[[SET_GOAL: ...]] · [[SET_PHASE: Strength block]] · [[SET_INJURY: left shoulder — no overhead pressing]] · [[CLEAR_INJURY]] · [[SET_TIME_BUDGET: 30 min]]\n"+
 "SET_INJURY and SET_TIME_BUDGET rebuild today's session around the new constraint automatically. If he mentions pain or being short of time, USE THEM rather than just sympathising.\n\n"+
 "BODY DATA:\n"+
@@ -6777,7 +6996,7 @@ coachingDoctrine()+
 "\n\n"+readinessContext()+
 "\n\n"+trainingContext()+
 "\n\nCONCEPT2 / CARDIO LOG:\n"+rowing;
-  return "You are Amir's personal trainer — the ONLY coach he has. You know him deeply and remember everything. This app stores his data; you are the coaching brain."+mem+"\n\nPERSONALITY: "+(prefs.coachStyle||"Warm, confident and direct")+".\nWARM means you are on his side and it shows: you know his week, you notice when something is hard, you talk to him like someone you actually train rather than a case. It does not mean soft, and it does not mean praise he has not earned.\nCONFIDENT means you make the call. Not 'you could try' or 'maybe consider' - say what he is doing and why. If you are genuinely unsure, say that plainly too; hedging every sentence is not humility, it is noise.\nDIRECT means the point comes first and the explanation second, in one line. No preamble, no throat-clearing, no repeating his own words back at him.\nNever robotic or generic. Challenge him, explain WHY in a line, and name a real win when there is one. Keep it tight.\n\nPERMANENT RULES:\n- Goal: "+p.goal+". The physique he wants, NOT bodyweight targets.\n- Klinefelter syndrome — respect recovery/fatigue, patient strength curve.\n- "+injuryText()+"\n- WHICH WRIST: it is his "+wristSide().toUpperCase()+" wrist — never name the other one. Loaded wrist extension and straight-wrist heavy pressing are out; neutral grip wherever possible. If he reports wrist pain, change the session immediately rather than sympathising.\n- Technique beats weight. Never ego lift. Only add load after current weight is MASTERED with clean form.\n- FLEXIBILITY AND MOBILITY ARE A REAL GOAL, not a warm-up formality. He wants to get measurably more supple and move better, alongside the physique. Program for it: proper cool-down stretching every session with held durations, hip/shoulder/thoracic/ankle mobility, and dedicated mobility or Pilates-style days when the week allows. Track range of motion the way you track load, ask about stiff spots, and never let mobility be the thing that gets dropped when time is short.\n- He never chooses workouts — YOU decide and tell him exactly what to do.\n- You may invent whole session types when his week needs one — Pilates, Core Day, Mobility, HIIT, Arms, Conditioning — with [[CREATE_DAY_TYPE: Name]] then [[SET_WEEKDAY: Monday | Name]]. Don't restrict yourself to push/pull/legs if the gaps say otherwise.\n"+
+  return "You are Amir's personal trainer — the ONLY coach he has. You know him deeply and remember everything. This app stores his data; you are the coaching brain."+mem+"\n\nPERSONALITY: "+(prefs.coachStyle||"Warm, confident and direct")+".\nWARM means you are on his side and it shows: you know his week, you notice when something is hard, you talk to him like someone you actually train rather than a case. It does not mean soft, and it does not mean praise he has not earned.\nCONFIDENT means you make the call. Not 'you could try' or 'maybe consider' - say what he is doing and why. If you are genuinely unsure, say that plainly too; hedging every sentence is not humility, it is noise.\nDIRECT means the point comes first and the explanation second, in one line. No preamble, no throat-clearing, no repeating his own words back at him.\nNever robotic or generic. Challenge him, explain WHY in a line, and name a real win when there is one. Keep it tight.\n\nPERMANENT RULES:\n- Goal: "+p.goal+". The physique he wants, NOT bodyweight targets.\n- THE TARGET HAS A NAME AND A DATE: "+planTargetName()+"'s build, in two stages \u2014 stage 1 a flat stomach, stage 2 the shape \u2014 and he wants to be as close to it as possible by "+monthYear(planDeadline())+". "+planStatusLine()+". Every programming decision answers to that, and you never chase the date at the cost of the muscle the look is made of.\n- Klinefelter syndrome — respect recovery/fatigue, patient strength curve.\n- "+injuryText()+"\n- WHICH WRIST: it is his "+wristSide().toUpperCase()+" wrist — never name the other one. Loaded wrist extension and straight-wrist heavy pressing are out; neutral grip wherever possible. If he reports wrist pain, change the session immediately rather than sympathising.\n- Technique beats weight. Never ego lift. Only add load after current weight is MASTERED with clean form.\n- FLEXIBILITY AND MOBILITY ARE A REAL GOAL, not a warm-up formality. He wants to get measurably more supple and move better, alongside the physique. Program for it: proper cool-down stretching every session with held durations, hip/shoulder/thoracic/ankle mobility, and dedicated mobility or Pilates-style days when the week allows. Track range of motion the way you track load, ask about stiff spots, and never let mobility be the thing that gets dropped when time is short.\n- He never chooses workouts — YOU decide and tell him exactly what to do.\n- You may invent whole session types when his week needs one — Pilates, Core Day, Mobility, HIIT, Arms, Conditioning — with [[CREATE_DAY_TYPE: Name]] then [[SET_WEEKDAY: Monday | Name]]. Don't restrict yourself to push/pull/legs if the gaps say otherwise.\n"+
 (p.rules? "\nHIS OWN STANDING RULES (he wrote these — follow them):\n"+p.rules+"\n":"")+
 (p.injuries? "\nINJURIES AND LIMITATIONS:\n"+p.injuries+"\n":"")+
 (p.coachTone? "\nHOW HE WANTS YOU TO TALK TO HIM — match this voice exactly, it overrides the generic personality line above:\n"+p.coachTone+"\n":"")+
@@ -7583,6 +7802,29 @@ function coachDecreaseLoad(a){
   return {n:name,d};
 }
 /* ---- goals, phase, limits: core PT settings with no verb until now ---- */
+/* v117 — the target look and the date are his to move, by saying so. */
+function coachSetTargetLook(v){
+  const t=String(v).trim(); if(!t) return null;
+  DB.plan=DB.plan||{}; DB.plan.target=t; DB.plan.changed=today(); save();
+  try{ renderPhaseCard(); }catch(e){}
+  return t;
+}
+function coachSetTargetDate(v){
+  const t=String(v).trim();
+  /* An ISO date, or a bare month and year, which is how he actually says it. */
+  let iso=null;
+  const m1=t.match(/(\d{4})-(\d{2})(?:-(\d{2}))?/);
+  if(m1) iso=m1[1]+"-"+m1[2]+"-"+(m1[3]||"01");
+  else{
+    const m2=t.match(/([A-Za-z]+)\s+(\d{4})/);
+    if(m2){ const i=MONTHS.findIndex(x=>x.toLowerCase().startsWith(m2[1].slice(0,3).toLowerCase()));
+            if(i>=0) iso=m2[2]+"-"+String(i+1).padStart(2,"0")+"-01"; }
+  }
+  if(!iso || isNaN(dnum(iso))) return null;
+  DB.plan=DB.plan||{}; DB.plan.deadline=iso; DB.plan.changed=today(); save();
+  try{ renderPhaseCard(); }catch(e){}
+  return iso;
+}
 function coachSetGoal(v){
   const t=String(v).trim(); if(!t) return null;
   DB.profile.goal=t; save();
@@ -8109,6 +8351,8 @@ function applyCoachDirectivesInner(reply){
   out=out.replace(/\[\[\s*SUPERSET\s*:\s*([^|\]+]+?)\s*(?:\+|\||with)\s*([^\]]+)\]\]/ig,(m,a,b)=>{ const h=directiveVia("group_exercises",{names:[String(a).trim(),String(b).trim()],kind:"superset"}); if(h) notes.push(h); return ""; });
   out=out.replace(/\[\[\s*(?:DECREASE_LOAD_NEXT_TIME|DELOAD)\s*:\s*([^\]]+)\]\]/ig,(m,a)=>{ const r=coachDecreaseLoad(a); if(r) notes.push("\u2b07 "+r.n+" "+r.d+" next time"); return ""; });
   out=out.replace(/\[\[\s*SET_GOAL\s*:\s*([^\]]+)\]\]/ig,(m,a)=>{ const r=coachSetGoal(a); if(r) notes.push("\ud83c\udfaf Goal updated"); return ""; });
+  out=out.replace(/\[\[\s*SET_TARGET_LOOK\s*:\s*([^\]]+)\]\]/ig,(m,a)=>{ const r=coachSetTargetLook(a); if(r) notes.push("\ud83c\udfaf Target look → "+r); return ""; });
+  out=out.replace(/\[\[\s*SET_TARGET_DATE\s*:\s*([^\]]+)\]\]/ig,(m,a)=>{ const r=coachSetTargetDate(a); if(r) notes.push("\ud83d\udcc5 Target date → "+monthYear(r)); else notes.push("\u26a0\ufe0f Couldn't read that as a date"); return ""; });
   out=out.replace(/\[\[\s*SET_TRAINING_PHASE\s*:\s*(\d)\s*\]\]/ig,(m,a)=>{ const r=setTrainingPhase(+a); notes.push("\ud83d\udcc8 Now programming for phase "+r); return ""; });
   out=out.replace(/\[\[\s*SET_PHASE\s*:\s*([^\]]+)\]\]/ig,(m,a)=>{ const r=coachSetPhase(a); if(r) notes.push("\ud83d\udcc8 Phase \u2192 "+r); return ""; });
   out=out.replace(/\[\[\s*SET_INJURY\s*:\s*([^\]]+)\]\]/ig,(m,a)=>{ const r=coachSetInjury(a); if(r) notes.push("\ud83e\ude79 Injury noted \u2014 today's session rebuilt around it"); return ""; });
@@ -10128,6 +10372,10 @@ function renderEquipFields(){
 }
 function saveProfile(){
   DB.profile.name=val('setName'); DB.profile.goal=val('setGoal'); DB.profile.phase=val('setPhase');
+  DB.plan=DB.plan||{};
+  const tgt=val('setTarget').trim(); if(tgt) DB.plan.target=tgt;
+  const dl=val('setDeadline').trim(); if(dl && !isNaN(dnum(dl))) DB.plan.deadline=dl;
+  try{ renderPhaseCard(); }catch(e){}
   DB.profile.injuries=val('setInjuries'); DB.profile.rules=val('setRules'); DB.profile.coachTone=val('setTone');
   DB.profile.equip=DB.profile.equip||{};
   DB.profile.equip.dubai=val('setEquipDubai').trim(); DB.profile.equip.madrid=val('setEquipMadrid').trim(); DB.profile.equip.greece=val('setEquipGreece').trim();
@@ -10201,7 +10449,7 @@ function scheduleInApp(){
    v18 ADDITIONS — draggable rest timer · weekly training memory · AI planner
    · Firestore sync
    ========================================================================== */
-const APP_VERSION="v117 · 01/09/2026";
+const APP_VERSION="v117 · 15/09/2026";
 
 /* ===== 1. REST TIMER — drag it anywhere so it never blocks the chat box ===== */
 let _rtDrag=null;
@@ -16982,6 +17230,7 @@ function boot(){
   document.getElementById('setMemory').value=DB.memory||""; memInfo();
   document.getElementById('setRemindTime').value=DB.reminder||"07:00";
   document.getElementById('setName').value=DB.profile.name; document.getElementById('setGoal').value=DB.profile.goal; document.getElementById('setPhase').value=DB.profile.phase;
+  try{ document.getElementById('setTarget').value=planTargetName(); document.getElementById('setDeadline').value=planDeadline(); }catch(e){}
   document.getElementById('setInjuries').value=DB.profile.injuries; document.getElementById('setRules').value=DB.profile.rules;
   { const el=document.getElementById('setTone'); if(el) el.value=DB.profile.coachTone||""; }
   syncCheckinLoc();
