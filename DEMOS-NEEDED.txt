@@ -1,0 +1,193 @@
+DEMO IMAGES STILL NEEDED — v119 · 15/09/2026
+============================================
+
+Every movement the app can put in front of you with NO picture or the WRONG
+one, in priority order. Tier 1 is the one that matters: those are on screen
+every single session.
+
+HOW TO HAND THEM OVER
+---------------------
+Either form works, animated is better:
+
+  demos/<name>.gif                an animated clip, 2-4 seconds, looping
+  demos/<name>-1.jpg and -2.jpg   or two stills: START position, END position
+
+  · square-ish; 400-600px on the short side is plenty
+  · GIFs under ~1.5MB each, stills under ~200KB — they get cached on the phone
+  · keep the exact file name listed against each movement and the wiring is
+    mechanical on my side
+  · put them in a demos/ folder in the repo, or send me URLs
+
+EASIEST ACCURATE ROUTE: film yourself. Ten seconds per movement, phone
+propped side-on. Tier 1 is 17 clips, about twenty minutes of work, perfectly
+accurate, and no question about whose images they are — which stock photos
+and YouTube stills on a published app very much are.
+
+
+TIER 1 — WARM-UP AND COOL-DOWN (17)
+====================================
+On screen every session, currently an emoji. The free exercise pack has
+nothing honest for any of these. This is the list worth doing.
+
+WARM-UP (12)
+  [ ] Wall slides                    demos/wall-slides
+      shoulders/chest · Back, head and forearms flat on a wall; arms slide up and down without the ribs flaring.
+  [ ] Doorway pec opener             demos/doorway-pec-opener
+      chest · Forearm on the door frame at shoulder height, stepping gently through.
+  [ ] Scapular push-ups              demos/scapular-push-ups
+      shoulders · Top of a push-up, arms locked straight; only the shoulder blades move.
+  [ ] Open-book rotations            demos/open-book-rotations
+      back/core · Side lying, knees stacked; top arm opens across the body.
+  [ ] Dead hang                      demos/dead-hang
+      back/arms · Hanging from a bar, both hands, shoulders relaxed.
+  [ ] Prone Y-T-W raises             demos/prone-y-t-w-raises
+      back · Face down, thumbs up, arms lifting into a Y, a T and a W.
+  [ ] Leg swings — front to back     demos/leg-swings-front-to-back
+      legs · Standing, holding support, one leg swinging forward and back.
+  [ ] Leg swings — side to side      demos/leg-swings-side-to-side
+      legs · Standing, holding support, one leg swinging across the body.
+  [ ] 90/90 hip switches             demos/90-90-hip-switches
+      legs · Seated, both knees bent at 90°, rotating knee to knee.
+  [ ] Ankle rocks on a wall          demos/ankle-rocks-on-a-wall
+      legs · Half-kneeling or standing, knee driving over the toe with the heel down.
+  [ ] Light band curls & pushdowns   demos/light-band-curls-and-pushdowns
+      arms · A light band curl and a band pushdown.
+  [ ] Bird dog                       demos/bird-dog
+      core · Hands and knees, opposite arm and leg extended, hips square.
+
+COOL-DOWN (5)
+  [ ] Doorway pec stretch            demos/doorway-pec-stretch
+      chest/shoulders · Forearm on the frame, elbow at shoulder height, body turned away.
+  [ ] Lat stretch on a doorframe     demos/lat-stretch-on-a-doorframe
+      back · Holding the frame, hips sitting back and away, one side lengthened.
+  [ ] Cobra stretch                  demos/cobra-stretch
+      back/core · Face down, hips on the floor, gentle spinal extension on straight-ish arms.
+  [ ] Supine spinal twist            demos/supine-spinal-twist
+      core · On the back, knees over to one side, both shoulders staying down.
+  [ ] Box breathing                  demos/box-breathing
+      finisher · OPTIONAL — a still of an upright seated breathing posture, or leave the emoji.
+
+
+TIER 2 — EXERCISES THE BUILDER ACTUALLY PROGRAMS (5)
+====================================================
+Of the 30 exercises the automatic builder can draw from, these five carry a
+picture of something else.
+
+  Wrong movement:
+  [ ] Farmer Carry                   demos/farmer-carry
+      showing "Spell Caster" — a rotational dumbbell movement, nothing like a carry
+      Walking with a heavy dumbbell in each hand, arms straight, ribs down.
+  [ ] DB Reverse Fly                 demos/db-reverse-fly
+      showing "Dumbbell Incline Row" — a row on an incline bench — wrong movement
+      Chest down, arms wide and straight, rear delts.
+  [ ] Band Row                       demos/band-row
+      showing "Upright Row - With Bands" — an upright row — wrong movement entirely
+      Band anchored in front, elbows driving back past the ribs.
+
+  Right movement, wrong equipment — both are Greece, where you have bands only:
+  [ ] Band Lat Pulldown              demos/band-lat-pulldown
+      showing "One Arm Lat Pulldown" — right movement, but a cable machine and one-armed
+      Band anchored overhead, both arms pulling down to the chest.
+  [ ] Band Reverse Fly               demos/band-reverse-fly
+      showing "Cable Rear Delt Fly" — right movement, but on a cable crossover you haven't got
+      Band held in front, arms opening wide, rear delts.
+
+
+TIER 3 — THE PILATES MAT REPERTOIRE (18)
+==========================================
+The coach can build a classical mat flow and every movement in it is
+illustrated with something unrelated. One batch if Pilates is staying in the
+week; skip the tier entirely if it is not.
+
+  [ ] The Hundred                  demos/the-hundred                    now "Cocoons"
+  [ ] Roll-Up                      demos/roll-up                        now "Body-Up"
+  [ ] Roll Over                    demos/roll-over                      now "Cross Over - With Bands"
+  [ ] Single Leg Circles           demos/single-leg-circles             now "Knee Circles"
+  [ ] Rolling Like a Ball          demos/rolling-like-a-ball            now "Hug A Ball"
+  [ ] Single Leg Stretch           demos/single-leg-stretch             now "Cat Stretch"
+  [ ] Double Leg Stretch           demos/double-leg-stretch             now "Dancer's Stretch"
+  [ ] Criss-Cross                  demos/criss-cross                    now "Cross Over - With Bands"
+  [ ] Spine Stretch Forward        demos/spine-stretch-forward          now "Cross-Body Crunch"
+  [ ] Saw                          demos/saw                            now "Cocoons"
+  [ ] Swan                         demos/swan                           now "Pyramid"
+  [ ] Shoulder Bridge              demos/shoulder-bridge                now "Side Bridge"
+  [ ] Spine Twist                  demos/spine-twist                    now "Russian Twist"
+  [ ] Teaser                       demos/teaser                         now "Cocoons"
+  [ ] Swimming                     demos/swimming                       now "Pyramid"
+  [ ] Side Kick Series             demos/side-kick-series               now "Moving Claw Series"
+  [ ] Leg Pull Front               demos/leg-pull-front                 now "Front Leg Raises"
+  [ ] Mermaid Stretch              demos/mermaid-stretch                now "Cat Stretch"
+
+
+TIER 4 — REACHABLE FROM "SOMETHING DIFFERENT" OR THE COACH (37)
+===============================================================
+Not in the automatic rotation, but you can pick any of these from the
+browser and the coach can program any of them. All showing a wrong picture.
+Do them last, or never.
+
+  [ ] Ab Wheel                     demos/ab-wheel                       now "Conan's Wheel"
+  [ ] Band Chest Fly               demos/band-chest-fly                 now "Bench Press - With Bands"
+  [ ] Band Clamshell               demos/band-clamshell                 now "Band Good Morning"
+  [ ] Band Shoulder Dislocate      demos/band-shoulder-dislocate        now "Band Pull Apart"
+  [ ] Band Woodchop                demos/band-woodchop                  now "Deadlift with Bands"
+  [ ] Band Wrist Extension         demos/band-wrist-extension           now "Hip Extension with Bands"
+  [ ] Bear Crawl                   demos/bear-crawl                     now "Spider Crawl"
+  [ ] Bird Dog                     demos/bird-dog                       now "Air Bike"
+  [ ] Broad Jump                   demos/broad-jump                     now "Bench Jump"
+  [ ] Burpee                       demos/burpee                         now "Adductor"
+  [ ] Cable Fly                    demos/cable-fly                      now "Cable Rear Delt Fly"
+  [ ] Chest-supported Row          demos/chest-supported-row            now "Seated Cable Rows"
+  [ ] Curtsy Lunge                 demos/curtsy-lunge                   now "Barbell Lunge"
+  [ ] DB Suitcase Carry            demos/db-suitcase-carry              now "Dumbbell Side Bend"
+  [ ] Dead Hang                    demos/dead-hang                      now "Hang Clean"
+  [ ] High Knees                   demos/high-knees                     now "Elbow to Knee"
+  [ ] Hip Abduction                demos/hip-abduction                  now "Cable Hip Adduction"
+  [ ] Hollow Rock                  demos/hollow-rock                    now "Air Bike"
+  [ ] Jumping Jacks                demos/jumping-jacks                  now "Bench Jump"
+  [ ] Landmine Press               demos/landmine-press                 now "Clean and Press"
+  [ ] Lateral Lunge                demos/lateral-lunge                  now "Barbell Lunge"
+  [ ] Nordic Negative              demos/nordic-negative                now "Bench Jump"
+  [ ] Plank Up-Down                demos/plank-up-down                  now "Jackknife Sit-Up"
+  [ ] Prone Swimmer                demos/prone-swimmer                  now "Chin-Up"
+  [ ] Prone Y-T-W Raise            demos/prone-y-t-w-raise              now "Calf Raises - With Bands"
+  [ ] Reverse Snow Angel           demos/reverse-snow-angel             now "Latissimus Dorsi-SMR"
+  [ ] Reverse Snow Angel Hold      demos/reverse-snow-angel-hold        now "Catch and Overhead Throw"
+  [ ] Shadow Boxing                demos/shadow-boxing                  now "Back Flyes - With Bands"
+  [ ] Side Plank Rotation          demos/side-plank-rotation            now "Torso Rotation"
+  [ ] Skater Jump                  demos/skater-jump                    now "Bench Jump"
+  [ ] Sprawl                       demos/sprawl                         now "Adductor"
+  [ ] Squat Thrust                 demos/squat-thrust                   now "Barbell Hip Thrust"
+  [ ] Step-up                      demos/step-up                        now "Body-Up"
+  [ ] Towel Row                    demos/towel-row                      now "Upright Row - With Bands"
+  [ ] Wall Angel                   demos/wall-angel                     now "Chin-Up"
+  [ ] Wall Sit                     demos/wall-sit                       now "Sit-Up"
+  [ ] Wall Sit March               demos/wall-sit-march                 now "90/90 Hamstring"
+
+
+NOT WORTH YOUR TIME
+===================
+The app flags these as approximate, but the picture is the same movement or
+near enough to be useful. Checked one by one:
+
+  Band Anti-Rotation Hold      showing "Pallof Press With Rotation"
+  Band Kickback                showing "Glute Kickback"
+  Band Lateral Walk            showing "Monster Walk"
+  DB Chest Fly                 showing "Decline Dumbbell Flyes"
+  DB Swing                     showing "Vertical Swing"
+  DB Thruster                  showing "Kettlebell Thruster"
+  DB Windmill                  showing "Windmills"
+  Plank Shoulder Tap           showing "Plank"
+  Superman Hold                showing "Superman"
+
+Also left alone: 21 entries whose names came from the downloaded catalogue
+("Bench Press - With Bands" and the like), and 3 that are already correct and
+only flagged because the matcher scored itself low.
+
+
+WHAT HAPPENS WHEN THEY ARRIVE
+=============================
+The demos/ folder goes into the service worker so they cache on the phone
+and work offline, a local-first lookup goes in ahead of every other source,
+and the emoji fallback stays for whatever is still missing. Nothing else
+changes, and nothing already working gets touched.
+
