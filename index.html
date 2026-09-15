@@ -162,12 +162,20 @@ textarea.txtin{min-height:88px;resize:vertical;line-height:1.45;}
 .exb:last-child{border-bottom:none;margin-bottom:0;padding-bottom:0;}
 .exb .imgwrap{width:100%;height:200px;border-radius:16px;overflow:hidden;border:1px solid var(--line);background:#fff;position:relative;}
 .exb .imgwrap img{width:100%;height:100%;object-fit:contain;display:block;background:#fff;}
+/* v124 — his own photographs are dark, shot in a dark gym, and the tile was
+   built for the catalogue's line drawings on white. On white they sat in a
+   bright letterbox that fought everything around them. On their own ground
+   they read as part of the app, and the taller box lets a standing figure be
+   a figure rather than a thumbnail of one. */
+.exb .imgwrap.own{height:264px;background:#0d0a07;}
+.exb .imgwrap.own img{background:transparent;}
+.exb .imgwrap.own .fedphase{background:#0a0806e6;}
 .imgwrap.watch{background:#141019;border:1px solid #2a2333;text-decoration:none;cursor:pointer;display:flex;align-items:center;justify-content:center;}
 .imgwrap.watch:active{transform:scale(.99);}
 .watchlink{display:flex;flex-direction:column;align-items:center;justify-content:center;width:100%;height:100%;text-decoration:none;text-align:center;padding:12px;}
 .watchlink b{display:block;font-size:17px;color:var(--gold);}
 .watchlink span{display:block;font-size:12.5px;color:var(--muted);margin-top:5px;}
-.demoover{position:absolute;right:8px;bottom:8px;background:rgba(0,0,0,.62);color:#fff;font-size:12px;font-weight:700;padding:4px 9px;border-radius:9px;text-decoration:none;backdrop-filter:blur(2px);}
+.demoover{position:absolute;right:8px;bottom:8px;background:rgba(0,0,0,.62);color:#fff;font-size:12px;font-weight:700;padding:9px 12px;border-radius:10px;text-decoration:none;backdrop-filter:blur(2px);}
 .exb .name{font-weight:800;font-size:19px;letter-spacing:-.2px;margin-top:12px;}
 .exb .scheme{color:var(--gold);font-size:14px;font-weight:700;margin-top:4px;}
 .exb .cue{color:var(--muted);font-size:14px;margin-top:8px;line-height:1.5;}
@@ -276,7 +284,7 @@ textarea.txtin{min-height:88px;resize:vertical;line-height:1.45;}
 .sessfloat.paused .sfd{color:var(--gold);}
 
 /* Cool-down / mobility timers */
-.mvb .mvtime{margin-top:7px;background:#1a120b;border:1px solid #3d2a15;color:var(--orange);border-radius:10px;
+.mvb .mvtime{margin-top:7px;min-height:40px;background:#1a120b;border:1px solid #3d2a15;color:var(--orange);border-radius:10px;
   padding:7px 12px;font-size:12.5px;font-weight:800;}
 .mvb .mvtime.run{background:#0c2716;border-color:#1fbf68;color:var(--green);}
 .splitsel{flex:0 0 auto;background:var(--card2);color:var(--txt);border:1px solid var(--line);border-radius:10px;
@@ -310,14 +318,39 @@ textarea.txtin{min-height:88px;resize:vertical;line-height:1.45;}
 .wkrow.stale .tr span{background:#5c3a15;}
 .mvb{display:flex;gap:12px;align-items:flex-start;padding:13px 0;border-bottom:1px solid #1d1710;}
 .mvb:last-child{border-bottom:none;}
-.mvb .thumb{flex:0 0 68px;height:68px;border-radius:13px;overflow:hidden;border:1px solid var(--line);background:#0d0a07;display:flex;align-items:center;justify-content:center;}
-.mvb .thumb img{width:100%;height:100%;object-fit:cover;display:block;}
+/* v124 — 68px was sized for an emoji. These are photographs of a man doing
+   the movement now, and at 76 the figure is a figure. The rows are set by
+   their text, so the extra height costs almost nothing. */
+.mvb .thumb{flex:0 0 76px;height:76px;border-radius:13px;overflow:hidden;border:1px solid var(--line);background:#0d0a07;display:flex;align-items:center;justify-content:center;}
+/* v124 — contain, not cover, for every demo thumbnail. These are
+   instructions: cover cropped the top and bottom off a standing figure, which
+   on "ankle rocks" removed the ankles. It also means his portrait photographs
+   and the pack's landscape ones sit the same way on the same ground instead
+   of one bleeding to the edges and the other floating inside them. */
+.mvb .thumb img{width:100%;height:100%;object-fit:contain;display:block;}
+/* A stretch photograph is instructions, so nothing in it can be cropped away.
+   The catalogue's square-ish frames still fill the tile; the portrait ones sit
+   whole on the tile's own ground. */
+
+/* The free pack's photographs are bright studio stock — a red gym, a blue
+   mat — and next to his they shouted. Eased down just enough to sit in the
+   same room. Deliberately gentle: these are instructions, and washing them
+   out to match a palette would be the wrong trade. */
+.mvb .thumb:not(.own) img{filter:saturate(.82) brightness(.94);}
 .mvb .thumb.emo{font-size:29px;}
 .mvb .txt{flex:1;min-width:0;}
 .mvb .n{font-weight:700;font-size:15px;line-height:1.35;}
 .mvb .n .d{display:inline-block;margin-left:8px;font-size:12px;font-weight:800;color:var(--gold);white-space:nowrap;}
 .mvb .c{font-size:13px;color:var(--muted);line-height:1.5;margin-top:4px;}
-.mvb .demo{display:inline-block;margin-top:6px;font-size:12px;font-weight:700;color:var(--orange);text-decoration:none;}
+/* v124 — "Watch how" sits on every movement in the session and was an 18px
+   target, which is a miss on a phone with chalk on your hands. Padding grows
+   the hit area to a proper 44px and the negative margin gives the pixels
+   back, so nothing moves on screen. Same trick on the two other text
+   buttons that repeat down the sheet. */
+.mvb .demo{display:inline-block;margin-top:-7px;padding:13px 10px 13px 0;font-size:12px;font-weight:700;color:var(--orange);text-decoration:none;}
+.foldmore{min-height:40px;min-width:56px;padding:11px 14px 11px 0;margin-top:-6px;}
+.cooladj{min-height:40px;padding:11px 12px 11px 0;margin-top:0;}
+
 .effrow{margin-top:12px;background:#0d0a07;border:1px solid var(--line);border-radius:13px;padding:11px 12px;animation:pop .25s ease;}
 .efflab{margin-bottom:9px;}
 .effchips{display:flex;gap:6px;}
@@ -411,8 +444,8 @@ details.sec2[open] .secsum2:after{content:"\2212";}
 .restcell .rl{font-size:10.5px;font-weight:800;letter-spacing:.4px;text-transform:uppercase;color:var(--label);}
 .restctl{display:flex;align-items:center;gap:8px;}
 .restctl .rv{font-size:15px;font-weight:800;color:var(--txt);min-width:64px;text-align:center;}
-.linkbtn{background:none;border:none;padding:0;color:var(--orange);font-weight:700;
-  font-size:inherit;text-decoration:underline;}
+.linkbtn{background:none;border:none;padding:10px 2px;color:var(--orange);font-weight:700;
+  font-size:inherit;text-decoration:underline;margin:-10px 0;}
 .setsbar{padding:14px 16px;border-bottom:1px solid var(--line);}
 .setsbar .lab{margin-bottom:9px;}
 .setsrow{display:flex;gap:7px;margin-bottom:8px;}
@@ -546,7 +579,7 @@ details.sec2[open] .secsum2:after{content:"\2212";}
 .timingrow{display:flex;align-items:center;gap:7px;margin:10px 0 4px;flex-wrap:wrap;}
 .timingrow .tl{font-size:10.5px;font-weight:800;letter-spacing:.5px;text-transform:uppercase;color:var(--label);margin-right:2px;}
 .tbtn{background:var(--pill);border:1px solid var(--line);color:var(--muted);
-  border-radius:10px;padding:7px 12px;font-size:12px;font-weight:700;}
+  border-radius:10px;padding:7px 12px;font-size:12px;font-weight:700;min-height:38px;}
 .tbtn.on{background:#2a1c0e;border-color:var(--orange);color:var(--orange);}
 .prefill{margin-top:7px;font-size:11.5px;font-weight:600;color:var(--dim);line-height:1.45;}
 .prefill b{color:var(--txt);}
@@ -735,7 +768,7 @@ a{color:var(--orange);}
 .cooladj{display:block;margin-top:7px;background:none;border:0;padding:4px 0;color:var(--dim);font-size:11.5px;font-weight:700;letter-spacing:.3px;text-align:left;}
 .cooladj:active{color:var(--muted);}
 .ordbtns{display:contents;}
-.ob.ordtoggle{color:var(--dim);font-weight:700;}
+.ob.ordtoggle{color:var(--dim);font-weight:700;min-height:38px;padding-left:12px;padding-right:12px;}
 .notebox{background:#0d0a07;border:1px dashed var(--line);border-radius:12px;padding:12px;font-size:13px;color:var(--muted);line-height:1.55;}
 .altpick{margin-top:10px;background:#0d0a07;border:1px solid var(--line);border-radius:14px;padding:12px;}
 .btabs{display:flex;gap:6px;overflow-x:auto;padding-bottom:8px;margin-bottom:8px;-webkit-overflow-scrolling:touch;}
@@ -841,7 +874,9 @@ a{color:var(--orange);}
 .coolctl .tbtn{padding:6px 10px;font-size:11.5px;}
 .coolall-ctl{display:flex;align-items:center;gap:7px;flex-wrap:wrap;margin:0 0 12px;}
 .coolall-ctl .k{font-size:11px;font-weight:700;letter-spacing:.6px;text-transform:uppercase;color:var(--label);}
-.coolall-ctl .swapbtn{margin-top:0;}
+/* v124 — the cool-down's own controls were 30px tall, and this is the
+     screen he uses with a timer running and sweat on his hands. */
+.coolall-ctl .swapbtn{margin-top:0;min-height:40px;}
 .sideprompt{background:#2a1c0e;border:1px solid var(--gold);border-radius:12px;padding:10px 13px;
   margin-top:8px;font-size:14px;font-weight:700;color:var(--gold);}
 
@@ -2891,9 +2926,27 @@ function demoSlug(name){
   return String(name||"").toLowerCase().replace(/&/g," and ").replace(/\//g," ")
     .replace(/[^a-z0-9]+/g,"-").replace(/^-+|-+$/g,"");
 }
+/* If one of these ever fails to load — a file missed out of an upload, a
+   half-written cache — the tile must fall back down the ladder rather than
+   sit there as an empty box. fedImgFail can't help: it only knows how to
+   retry the free pack's mirrors, and these are ours. */
+const _deadLocal=new Set();
+function ownImgFail(img){
+  try{
+    if(img) img.onerror=null;
+    const src=String(img&&img.getAttribute('data-f0')||img&&img.src||"");
+    const m=src.match(/demos\/([a-z0-9-]+)-[12]\.jpg/);
+    if(m) _deadLocal.add(m[1]);
+    const name=img&&img.getAttribute('alt');
+    const wrap=img&&img.closest? img.closest('.imgwrap') : null;
+    if(wrap && name){ wrap.outerHTML=demoTileHTML(name); paintDemos(); return; }
+    const thumb=img&&img.closest? img.closest('.thumb') : null;
+    if(thumb){ thumb.classList.add('emo','own-failed'); thumb.textContent=iconFor(name||""); }
+  }catch(e){}
+}
 function localDemo(name){
   const k=demoSlug(name);
-  if(!k || !LOCAL_DEMOS.has(k)) return null;
+  if(!k || !LOCAL_DEMOS.has(k) || _deadLocal.has(k)) return null;
   return {kind:"frames", frames:["demos/"+k+"-1.jpg","demos/"+k+"-2.jpg"], label:"your demo", mine:true, local:true};
 }
 function demoFor(name){
@@ -2964,10 +3017,10 @@ function demoTileHTML(name){
   }
   if(d.kind==="frames"){
     const f0=attrEsc(d.frames[0]), f1=attrEsc(d.frames[1]||d.frames[0]);
-    return "<div class='imgwrap' data-ex='"+nEsc+"' data-exname='"+nEsc+"' data-kind='frames'>"+
+    return "<div class='imgwrap"+(d.local?" own":"")+"' data-ex='"+nEsc+"' data-exname='"+nEsc+"' data-kind='frames'>"+
       "<img src='"+f0+"' data-f0='"+f0+"' data-f1='"+f1+"' data-on='0' "+
         "data-fedid='"+attrEsc(d.id)+"' data-fedname='"+nEsc+"' alt='"+nEsc+
-        "' loading='lazy' onerror='fedImgFail(this)'>"+
+        "' loading='lazy' onerror='"+(d.local?"ownImgFail(this)":"fedImgFail(this)")+"'>"+
       "<span class='fedphase'>start</span>"+approx+demoLink+"</div>";
   }
   return watchTileHTML(name," data-exname='"+nEsc+"' data-kind='link'");
@@ -4505,8 +4558,8 @@ function mvHTML(item0,coolIdx){
     /* Two photographs, start and end, flipped by the same animator that runs
        the exercise demos — so a stretch shows you the position it ends in. */
     const f0=attrEsc(dm.frames[0]), f1=attrEsc(dm.frames[1]||dm.frames[0]);
-    thumb="<div class='thumb' title='"+attrEsc(dm.label||name)+"'><img src='"+f0+"' data-f0='"+f0+"' data-f1='"+f1+
-      "' data-on='0' alt='"+nEsc+"' loading='lazy' onerror='fedImgFail(this)'></div>";
+    thumb="<div class='thumb"+(dm.local?" own":"")+"' title='"+attrEsc(dm.label||name)+"'><img src='"+f0+"' data-f0='"+f0+"' data-f1='"+f1+
+      "' data-on='0' alt='"+nEsc+"' loading='lazy' onerror='"+(dm.local?"ownImgFail(this)":"fedImgFail(this)")+"'></div>";
   } else if(dm && dm.kind==="gif"){
     thumb="<div class='thumb'><img src='"+attrEsc(dm.src)+"' alt='"+nEsc+"' loading='lazy' onerror=\"this.parentElement.classList.add('emo');this.parentElement.textContent='"+iconFor(name)+"'\"></div>";
   } else {
@@ -10922,7 +10975,7 @@ function scheduleInApp(){
    v18 ADDITIONS — draggable rest timer · weekly training memory · AI planner
    · Firestore sync
    ========================================================================== */
-const APP_VERSION="v123 · 15/09/2026";
+const APP_VERSION="v124 · 15/09/2026";
 
 /* ===== 1. REST TIMER — drag it anywhere so it never blocks the chat box ===== */
 let _rtDrag=null;

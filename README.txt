@@ -1,3 +1,54 @@
+AMIR PT — v124 · 15/09/2026
+===========================
+
+Upload index.html AND sw.js.
+
+
+THE POLISH PASS ON THE PHOTOGRAPHS
+==================================
+Screenshotted every screen at phone width with all 150 photographs and the
+free pack loaded, and fixed what the pictures showed.
+
+THE WHITE LETTERBOX
+  The exercise card's image tile was built for the catalogue's line drawings,
+  which are black on white — so it had a white background. Your photographs
+  are dark, shot in a dark gym, and they sat in a bright white box that fought
+  everything around it. Your photos now get the app's own ground and a taller
+  tile, so a standing figure is a figure rather than a thumbnail of one.
+
+THE CROP WAS CUTTING THE POINT OFF
+  Thumbnails filled their square by cropping the top and bottom, which on
+  "ankle rocks on a wall" removed the ankles. Every demo thumbnail now shows
+  the whole frame — nothing in an instruction gets cropped away — and that
+  also means your portrait photos and the pack's landscape ones sit the same
+  way instead of one bleeding to the edges and the other floating inside them.
+
+BIGGER, AND IN THE SAME ROOM
+  68px was a size chosen for an emoji. At 76 the figure reads, and the rows
+  are set by their text so it costs almost nothing. The free pack's stock
+  photos — a red gym, a blue mat — are eased down slightly so they sit beside
+  yours instead of shouting over them. Gently: they are instructions, and
+  washing them out to match a palette would be the wrong trade.
+
+TAP TARGETS
+  "Watch how" sits under every movement in the session and was an 18px target.
+  So were "more", "adjust", the cool-down's 30s/45s/60s row and its timers.
+  All of them are 38-44px now, grown with padding and given the pixels back
+  with negative margins, so nothing moved on screen. Nothing on any screen is
+  under 32px any more.
+
+AND A HOLE THAT WOULD HAVE SHOWN ONE DAY
+  If one of your photographs ever fails to load — a file missed out of an
+  upload, a half-written cache — the tile used to sit there as an empty box.
+  The pack's failure handler could not help, because all it knows how to do is
+  retry the pack's own mirrors. Now it falls back down the ladder to the
+  catalogue, the pack, and finally the emoji, and it stops retrying that file.
+  Tested by pointing the app at a file that does not exist.
+
+Checked and clean: no horizontal overflow at 390px, no console errors, no
+failed image requests, on all six screens.
+
+
 AMIR PT — v123 · 15/09/2026
 ===========================
 
