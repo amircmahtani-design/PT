@@ -1,3 +1,75 @@
+AMIR PT — v126 · 15/09/2026
+===========================
+
+Upload index.html AND sw.js.
+
+
+PILATES, WITH A PLAN
+====================
+The whole classical mat repertoire was already in the app and the flow
+rotated so it varied — but every session was the same difficulty. Day one
+handed you the Teaser and the Roll Over alongside the fundamentals. That is
+a shuffle, not a plan, and it is not how mat work is taught.
+
+THREE LEVELS, EARNED BY SESSIONS DONE
+    LEVEL 1    the fundamentals: breath, spinal articulation, low back down
+               The Hundred · Roll-Up · Single Leg Circles · Rolling Like a
+               Ball · Single & Double Leg Stretch · Spine Stretch Forward ·
+               Swan · Shoulder Bridge · Side Kick Series
+
+    LEVEL 2    after 5 sessions — rotation and extension
+               Scissors · Criss-Cross · Saw · Single Leg Kick · Spine Twist
+               · Swimming · Mermaid
+
+    LEVEL 3    after 11 — the full repertoire
+               Roll Over · Teaser · Leg Pull Front
+
+  Earned by sessions actually done, not weeks on a calendar: miss a
+  fortnight and you come back to the same level, which is correct. The order
+  within a session is always the classical one, and The Hundred always opens.
+
+  The two that wait deserve to. The Teaser needs the control the
+  fundamentals build. The Roll Over puts load through the neck and should
+  never be anyone's first mat session.
+
+  The sheet says where you are — "Pilates mat flow · one round · level 1 of
+  3" — and what the next level adds, so it is a plan you can see.
+
+WHY IT IS IN THE WEEK AT ALL
+  The coach is told what Pilates is FOR in your plan, not just what it is:
+  it trains the deep core by control rather than load, which is the only way
+  the midsection gets worked without thickening the waist — and the waist is
+  one end of the ratio the whole physique depends on. It is real training at
+  low fatigue cost, which is what a steep deficit and a recovery-limited
+  condition want the day after something heavy.
+
+  Where it belongs: between two hard lifting days. Not instead of a lifting
+  day when weights are already short, not on the same day as the heaviest
+  session. One a week is a habit, two is a programme, three means the
+  weights are being crowded out. It is not a rest day — a rest day is a day
+  off — and it does not replace the cool-down on lifting days.
+
+  The weekly plan check now flags a week with no Pilates or mobility day in
+  it at all.
+
+A BUG THIS TURNED UP, AND IT WAS A REAL ONE
+  Every Pilates movement was showing "45s each side" with a timer offering
+  45 seconds a side — of The Hundred, which is ten breaths, and the Roll-Up,
+  which is six reps. The app stamps your default hold onto every cool-down
+  movement, and validateWorkout ran that over the mat flow too, overwriting
+  each movement's own prescription while the cue underneath still said to
+  peel the spine up one vertebra at a time.
+
+  A rep is not a hold. Movements that count reps or breaths keep their own
+  dose now, and the clock stands down to a pacing timer. Stretches are
+  unchanged. And the big button on a mat day says "Run the whole flow"
+  rather than calling your session a cool-down.
+
+  Also fixed: the note at the top of a Pilates day was being clipped
+  mid-sentence against its own border — same fold bug as the plan card,
+  because .recovery is a bordered box too.
+
+
 AMIR PT — v125 · 15/09/2026
 ===========================
 

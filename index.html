@@ -3658,9 +3658,12 @@ function buildCustomDay(name,ctx){
   }
   if(kind==="pilates"){
     const flow=(dt.main&&dt.main.length)? dt.main.map(enrichMove) : buildPilatesFlow(11);
+    const pl=(function(){ try{ return pilatesPlan(); }catch(e){ return null; } })();
     return {title:name, tag: LOC().tag+" · Pilates", phase:DB.profile.phase, kind:"mobility", loc:locKey(),
-      flowTitle:"Pilates mat flow · one round",
-      note: dt.note || "Classical mat order. One round \u2014 do the movement, then move on. No sets, no weight: slow, controlled and breath-led. Quality over quantity every time.",
+      flowTitle:"Pilates mat flow · one round"+(pl? " · level "+pl.level+" of 3" : ""),
+      pilates: pl,
+      note: dt.note || ("Classical mat order. One round \u2014 do the movement, then move on. No sets, no weight: slow, controlled and breath-led."+
+        (pl? " "+pl.note+(pl.toNext? " "+pl.toNext+" more session"+(pl.toNext===1?"":"s")+" and "+pl.adds.slice(0,3).join(", ")+" come in." : "") : "")),
       reps:"—", sets:0, warmup:[], main:[], cooldown:flow,
       recovery:"Breathe, hydrate, and notice how much taller you stand. Mobility is training."};
   }
@@ -3715,11 +3718,70 @@ const PILATES_ORDER=["The Hundred","Roll-Up","Roll Over","Single Leg Circles","R
   "Single Leg Stretch","Double Leg Stretch","Scissors","Criss-Cross","Spine Stretch Forward","Saw",
   "Swan","Single Leg Kick","Shoulder Bridge","Spine Twist","Teaser","Swimming","Side Kick Series",
   "Leg Pull Front","Mermaid Stretch"];
+/* ===== v126 · PILATES WITH A PLAN ======================================
+   The mat repertoire was all here and the flow rotated so it varied, but
+   every session was the same difficulty: day one handed him the Teaser and
+   the Roll Over alongside the fundamentals. That is not how mat work is
+   taught, and it is not a plan, it is a shuffle.
+
+   Classical mat is taught in levels, so the app teaches it in levels. The
+   order within a session stays the classical one; what changes is WHICH
+   movements are unlocked, and that is earned by sessions actually done
+   rather than by weeks on a calendar - miss a fortnight and you come back to
+   the same level, which is correct.
+
+   The two that wait until last deserve to: the Teaser needs the control the
+   fundamentals build, and the Roll Over puts load through the neck and
+   should never be anybody\u2019s first mat session. */
+const PILATES_LEVELS={
+  1:["The Hundred","Roll-Up","Single Leg Circles","Rolling Like a Ball","Single Leg Stretch",
+     "Double Leg Stretch","Spine Stretch Forward","Swan","Shoulder Bridge","Side Kick Series"],
+  2:["Scissors","Criss-Cross","Saw","Single Leg Kick","Spine Twist","Swimming","Mermaid Stretch"],
+  3:["Roll Over","Teaser","Leg Pull Front"]
+};
+const PILATES_LEVEL_AT={2:5, 3:11};      /* sessions done before each unlocks */
+const PILATES_LEVEL_NOTE={
+  1:"Level 1 \u2014 the fundamentals: breath, spinal articulation, and keeping the low back down. Everything later is built on these.",
+  2:"Level 2 \u2014 rotation and extension added. The obliques get trained by CONTROL rather than load, which is the only way they get worked here without thickening the waist.",
+  3:"Level 3 \u2014 the full repertoire, Teaser and Leg Pull Front included. Roll Over is in the order now: skip it on any day the neck has something to say."
+};
+/* Sessions actually done, counted off what was logged rather than the
+   calendar. Any day with mat work on it counts once. */
+function pilatesSessions(){
+  const days=new Set();
+  try{
+    PILATES_ORDER.forEach(n=>{
+      ((DB.strength||{})[n]||[]).forEach(x=>{ if(x&&x.date&&x.date!=="prev") days.add(x.date); });
+    });
+    (DB.mobility||[]).forEach(m=>{ if(m&&m.t&&PILATES_ORDER.indexOf(m.t)>=0) days.add(m.d); });
+    Object.entries(DB.completed||{}).forEach(([d,rec])=>{
+      if(/pilates/i.test(String(rec&&rec.title||""))) days.add(d);
+    });
+  }catch(e){}
+  return days.size;
+}
+function pilatesLevel(){
+  const n=pilatesSessions();
+  if(n>=PILATES_LEVEL_AT[3]) return 3;
+  if(n>=PILATES_LEVEL_AT[2]) return 2;
+  return 1;
+}
+function pilatesPlan(){
+  const lvl=pilatesLevel(), done=pilatesSessions();
+  const unlocked=[];
+  for(let L=1;L<=lvl;L++) unlocked.push.apply(unlocked,PILATES_LEVELS[L]);
+  const next=lvl<3? PILATES_LEVEL_AT[lvl+1]-done : 0;
+  return {level:lvl, done, unlocked, toNext:Math.max(0,next),
+          adds:lvl<3? PILATES_LEVELS[lvl+1] : [], note:PILATES_LEVEL_NOTE[lvl]};
+}
 function buildPilatesFlow(total){
   total=total||11;
   /* The Hundred opens every class — it's the warm-up, never rotated out. */
   const opener="The Hundred";
-  const rest=PILATES_ORDER.filter(n=>n!==opener);
+  /* v126 — only what the level has unlocked, still in classical order. */
+  let pool=PILATES_ORDER;
+  try{ const pl=pilatesPlan(); if(pl.unlocked.length) pool=PILATES_ORDER.filter(n=>pl.unlocked.indexOf(n)>=0); }catch(e){}
+  const rest=pool.filter(n=>n!==opener);
   /* Rotate by what he's done least, then put the chosen ones BACK into
      classical order so the sequence still flows properly. */
   const scored=rest.map(n=>({n,days:lastDoneDays(n)}))
@@ -4544,7 +4606,11 @@ function iconFor(t){ const s=String(t||"").toLowerCase(); for(const [re,e] of IC
 function coolBodyHTML(list){
   list=list||[];
   const head = list.length>1
-    ? "<button class='coolall' onclick='coolRunAll()'>▶ Run the whole cool-down ("+list.length+" movements)</button>"+coolAllHTML()
+    /* v126 — on a Pilates or mobility day this list IS the session, so calling
+       it a cool-down was simply the wrong word on the biggest button. */
+    ? "<button class='coolall' onclick='coolRunAll()'>▶ Run the whole "+
+        ((DB.workout&&DB.workout.kind==="mobility")? "flow" : "cool-down")+
+        " ("+list.length+" movements)</button>"+coolAllHTML()
     : "";
   return head+list.map((m,i)=>mvHTML(m,i)).join('');
 }
@@ -4576,8 +4642,14 @@ function mvHTML(item0,coolIdx){
   let timerBtn="", controls="", dose=item.d;
   if(coolIdx!=null){
     const c=coolDur(item);
-    dose=fmtSecShort(c.sec)+(c.perSide? " each side":" total");
-    const lab="⏱ "+fmtTime(c.sec)+(c.perSide?" × 2 sides":"");
+    /* v126 - a stretch is held for a number of seconds, and the timer IS its
+       dose. A Pilates mat movement is six roll-ups or ten breaths, and
+       stamping "45s each side" over the top of that contradicted the cue
+       directly underneath it. Where the movement counts reps, its own dose
+       stays and the timer stands down to a pacing clock. */
+    const reps = item.repDose===true || (item.repDose===undefined && isRepDose(item.d)) || isRepDose(libDoseFor(item.t));
+    dose = reps? item.d : (fmtSecShort(c.sec)+(c.perSide? " each side":" total"));
+    const lab= reps? ("⏱ pace "+fmtTime(c.sec)) : ("⏱ "+fmtTime(c.sec)+(c.perSide?" × 2 sides":""));
     timerBtn="<button class='mvtime' data-ci='"+coolIdx+"' data-lab='"+attrEsc(lab)+"' onclick='coolTimer("+coolIdx+")'>"+lab+"</button>";
     /* v120 - five adjusters under every single stretch meant thirty-five
        controls on one screen, when the whole-cooldown row at the top already
@@ -6737,6 +6809,12 @@ function weekPlanCheck(){
   else out.strong.push(out.cardio+" cardio");
   if(out.weights<3) out.gaps.push(out.weights+" lifting day"+(out.weights===1?"":"s")+" is not enough to build on");
   else out.strong.push(out.weights+" lifting days");
+  /* v126 \u2014 mobility happens in every cool-down, so this is not about
+     whether he stretches. It is about whether the week has a session that IS
+     mobility \u2014 a Pilates or mobility day \u2014 which is the one he asked to have
+     in the plan and the one that gets quietly dropped first. */
+  if(!out.mobility) out.gaps.push("no Pilates or mobility day is scheduled \u2014 the cool-downs are not the same thing");
+  else out.strong.push(out.mobility+" mobility");
   ["shoulders","back"].forEach(g=>{ if(!out.groups[g]) out.gaps.push("nothing in the week trains "+g+", and the shape is built on it"); });
   let run=0, worst=0;
   for(let k=0;k<14;k++){ const d=out.days[k%7]; if(d.kind==="rest") run=0; else { run++; worst=Math.max(worst,run); } }
@@ -7566,6 +7644,17 @@ coachingDoctrine()+
 "3. If it felt hard, or the reps fell away, or he didn\u2019t finish the sets \u2014 same weight next time. Say so plainly; that is a good session, not a failure.\n"+
 "4. Adding weight because a single set looked good is exactly the ego lifting he asked you to prevent.\n"+
 "The app already computes the correct call and shows it as \"Load:\" on the exercise. STATE THAT NUMBER. Do not invent a different one.\n\n"+
+"=== PILATES IS A PILLAR, NOT A FILLER ===\n"+
+(function(){ try{ const pl=pilatesPlan();
+  return "He is on LEVEL "+pl.level+" of 3, "+pl.done+" mat session"+(pl.done===1?"":"s")+" in. "+pl.note+"\n"+
+    (pl.toNext? "  "+pl.toNext+" more session"+(pl.toNext===1?"":"s")+" unlocks "+pl.adds.join(", ")+". Do not hand him those early: the level is earned by sessions done, and the app will not program them until it is.\n" : "  Everything is unlocked. Progress it now with tempo, longer holds and cleaner transitions rather than by adding movements.\n");
+}catch(e){ return ""; } })()+
+"WHAT IT IS FOR, in his plan specifically:\n"+
+"  \u2022 It trains the deep core by CONTROL rather than load, which is the only way the midsection gets worked without thickening the waist \u2014 and the waist is one end of the ratio the whole physique depends on.\n"+
+"  \u2022 It is spinal articulation and hip mobility, so it counts toward the mobility pillar rather than sitting outside the plan.\n"+
+"  \u2022 It is real training at low fatigue cost, which is exactly what a steep deficit and a recovery-limited condition want on the day after a heavy session.\n"+
+"WHERE IT BELONGS IN THE WEEK: between two hard lifting days, or on a day that would otherwise be junk volume. NOT instead of a lifting day when weights are already short for the week, and NOT on the same day as the heaviest session. One a week is a habit; two is a programme; three means the weights are being crowded out.\n"+
+"IT DOES NOT REPLACE THE COOL-DOWN on lifting days, and it is not a rest day \u2014 a rest day is a day off.\n\n"+
 "=== PILATES MEANS PILATES ===\n"+
 "If he asks for Pilates that is the CLASSICAL MAT REPERTOIRE: The Hundred, Roll-Up, Roll Over, Single Leg Circles, Rolling Like a Ball, Single and Double Leg Stretch, Scissors, Criss-Cross, Spine Stretch Forward, Saw, Swan, Single Leg Kick, Shoulder Bridge, Spine Twist, Teaser, Swimming, Side Kick Series, Leg Pull Front, Mermaid. Bodyweight, breath-led, in order, one round, no sets and no weight.\n"+
 "It is NOT dumbbell core work. A Russian twist holding a dumbbell is not Pilates.\n"+
@@ -11121,7 +11210,7 @@ function scheduleInApp(){
    v18 ADDITIONS — draggable rest timer · weekly training memory · AI planner
    · Firestore sync
    ========================================================================== */
-const APP_VERSION="v125 · 15/09/2026";
+const APP_VERSION="v126 · 15/09/2026";
 
 /* ===== 1. REST TIMER — drag it anywhere so it never blocks the chat box ===== */
 let _rtDrag=null;
@@ -14574,10 +14663,10 @@ function foldKey(t){ return String(t||"").replace(/\s+/g," ").trim().slice(0,70)
 function foldProse(root){
   try{
     const scope=root||document;
-    /* .notebox is deliberately not in here: it is a bordered box, and a
-       line-clamp inside one cuts the last line against the border, which looks
-       like a rendering fault rather than a fold. */
-    const all=scope.querySelectorAll('.hint,.recovery,.sm,.hero .sub,.cue,.blockbar .bt,.blockbar .bp');
+    /* .notebox and .recovery are deliberately not in here: both are bordered
+       boxes, and a line-clamp inside one cuts the last line against the
+       border, which reads as a rendering fault rather than as a fold. */
+    const all=scope.querySelectorAll('.hint,.sm,.hero .sub,.cue,.blockbar .bt,.blockbar .bp');
     all.forEach(el=>{
       if(el.dataset.fold) return;
       /* Never fold anything with something to press inside it. */
@@ -15118,6 +15207,33 @@ function fmtSecShort(sec){
 }
 /* Stamp resolved values onto a freshly built list so the saved workout
    carries them and nothing has to re-derive them later. */
+/* ===== v126 · A REP IS NOT A HOLD =======================================
+   This function stamps his default hold onto every cool-down movement, and
+   validateWorkout runs it over every session's flow. Correct for a stretch,
+   where the seconds ARE the dose. Wrong for a Pilates mat flow, where the
+   dose is six roll-ups or ten breaths: it overwrote "\u00d76" with "45s each
+   side" while the cue underneath still said to peel the spine up one vertebra
+   at a time, and the timer offered 45 seconds a side of a movement that has
+   no sides.
+
+   The canonical dose is read from the library by NAME rather than from the
+   item, because by the time a stored session reaches here its own dose may
+   already have been overwritten by an older version of this bug. */
+function isRepDose(d){
+  const t=String(d||"");
+  if(!t) return false;
+  if(/\bs\b|sec|min|\bhold\b/i.test(t)) return false;
+  return /[\u00d7x]\s*\d|\breps?\b|breath|pumps|each direction/i.test(t);
+}
+function libDoseFor(name){
+  try{
+    const e=(typeof EX==="function")? EX(name) : null;
+    if(e && e.d) return e.d;
+    const m=(typeof libMove==="function")? libMove(name) : null;
+    if(m && m.d) return m.d;
+  }catch(e){}
+  return null;
+}
 function applyCoolDefaults(list){
   return (list||[]).map(item=>{
     const it=(typeof item==="string")? {t:item} : Object.assign({},item);
@@ -15125,6 +15241,13 @@ function applyCoolDefaults(list){
       const c=coolDur(it);
       it.sec=c.sec; it.perSide=c.perSide; it.secSource=c.source;
     }
+    const ld=libDoseFor(it.t);
+    if(isRepDose(ld)){
+      /* Its own prescription stands. The clock stays, as a pace for the flow. */
+      it.repDose=true; it.perSide=false; it.d=ld;
+      return it;
+    }
+    it.repDose=false;
     it.d=coolDoseText(it);
     return it;
   });
