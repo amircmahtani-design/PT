@@ -3673,7 +3673,10 @@ function buildWorkout(){
       const tmd = (typeof isTimed==="function")? isTimed(n, e.timed) : !!e.timed;
       return {name:n, muscles:e.m, cue:e.cue, wristNote: flagged[n]||null, timed:tmd,
         sets:n_sets, anchor:isAnchor,
-        scheme: travel? (n_sets+" sets \u00b7 "+(tmd?"40\u201360s hold":"12\u201320 reps")) : (n_sets+" sets \u00b7 "+(tmd?"30\u201360s hold":"8\u201312")),
+        /* v138 \u2014 was a third hand-written copy of the same string, so a rep
+           range he had earned or typed was thrown away by every rebuild.
+           One function decides what a scheme says. */
+        scheme: schemeFor(n, n_sets, {timed:tmd}),
         rest: travel? "45\u201360s":"90s", rec: tmd?null:recommendLoad(n)};}),
     cooldown:coolFor, recovery: travel?"Hydrate between drinks \ud83d\ude04. Grab some protein when you can. You're maintaining beautifully \u2014 don't stress the holiday.":"Hydrate (aim 3L). 30\u201340g protein within the hour. Lights out by 11. Recovery builds the physique."};
   /* v115 — readiness ADJUSTS the built session rather than replacing the
@@ -5762,7 +5765,10 @@ function exObject(name){
   ensureLibEntry(name);
   const e=EX(name)||{m:["core"],cue:"Control the rep."};
   const travel=DB.workout?!!DB.workout.travel:!!LOC().short; const sets=DB.workout?DB.workout.sets:3; const timed=!!e.timed;
-  const detail = e.scheme ? e.scheme : (e.time? ("40–60s") : (e.reps||null));
+  /* v138 — a stored rep range is his and outranks the catalogue's suggestion.
+     Holds are left alone: their dose is seconds, not reps. */
+  const _rr = (!timed && typeof repRangeStored==="function")? repRangeStored(name) : null;
+  const detail = _rr? _rr.text : (e.scheme ? e.scheme : (e.time? ("40–60s") : (e.reps||null)));
   const schemeTail = detail ? detail : (travel? (e.m.includes('core')?"40–60s hold":"12–20 reps") : (timed?"30–60s hold":"8–12"));
   const ci=latestCheckin(); const wristFlag=!!(ci&&/wrist|tfcc/i.test(ci.pain||""));
   /* v115 — the object is built from the canonical logging type, so a
@@ -6088,14 +6094,103 @@ function setExSets(i,n){
   if(!res.ok){ toast(res.error); return; }
   toast(res.receipt.lines[0]);
 }
+/* ===== v138 \u00b7 THE RANGE FOLLOWS WHAT HE ACTUALLY DOES =================
+   "If I write I did 20 then it should also change the range just for that
+   exercise in future."
+
+   Every exercise came out of the library at 8-12 whatever he actually trains
+   it in, and correcting it lasted exactly one session: set_reps wrote to the
+   session's copy of the exercise and nothing remembered it.
+
+   Now a rep range is a per-exercise fact, stored beside the other per-exercise
+   facts in DB.exPrefs, and it is learned from his log. A set that merely
+   overshoots still means "add weight" \u2014 that is what progression IS \u2014 so the
+   range only moves when what he does is a long way outside it: five reps clear
+   of the top or the bottom. 8-12 with a 15 in it is a light weight; 8-12 with
+   a 20 in it is a different exercise than the library thinks it is.
+
+   It is derived from today's sets each time he logs one, so deleting a
+   mis-tapped chip recomputes it rather than leaving a wrong range behind. And
+   a range HE types is marked as his and is never overwritten by the learner. */
+function repRangeStored(name){
+  const p=(DB.exPrefs||{})[logKey(name)]||{};
+  const r=String(p.reps||"").trim();
+  if(!r) return null;
+  const m=r.match(/^(\d+)\s*[-\u2013\u2014]\s*(\d+)$/);
+  if(m) return {lo:+m[1], hi:+m[2], text:m[1]+"\u2013"+m[2], from:p.repsFrom||"user"};
+  const one=r.match(/^(\d+)$/);
+  if(one) return {lo:+one[1], hi:+one[1], text:one[1], from:p.repsFrom||"user"};
+  return null;
+}
+function repRangeDefault(name,ex){
+  const e=EX(name)||{}; const travel=DB.workout?!!DB.workout.travel:!!LOC().short;
+  const tmd=(typeof isTimed==="function")? isTimed(name, ex? ex.timed : e.timed) : !!e.timed;
+  if(tmd) return null;
+  return travel? {lo:12,hi:20,text:"12\u201320"} : {lo:8,hi:12,text:"8\u201312"};
+}
+function repRangeFor(name,ex){ return repRangeStored(name) || repRangeDefault(name,ex); }
 function schemeFor(name,n,ex){
   const e=EX(name)||{}; const travel=DB.workout?!!DB.workout.travel:!!LOC().short;
-  /* v97 — this read the LIBRARY flag, so switching an exercise to reps left
+  /* v97 \u2014 this read the LIBRARY flag, so switching an exercise to reps left
      the line underneath still saying "30-60s hold". His override wins. */
   const tmd=(typeof isTimed==="function")? isTimed(name, ex? ex.timed : e.timed) : !!e.timed;
-  const tail = travel? ((e.m||[]).includes('core')||tmd? "40\u201360s hold" : "12\u201320 reps")
-                     : (tmd? "30\u201360s hold" : "8\u201312");
+  let tail;
+  if(tmd) tail = travel? "40\u201360s hold" : "30\u201360s hold";
+  else {
+    const r=repRangeFor(name,ex);
+    tail = (r? r.text : (travel? "12\u201320" : "8\u201312")) + (travel && !repRangeStored(name)? " reps" : "");
+  }
   return n+" sets \u00b7 "+tail;
+}
+/* His own words win and are never relearned over. */
+function setRepRange(name,text,from){
+  const key=logKey(name); if(!key) return null;
+  DB.exPrefs=DB.exPrefs||{};
+  const p=DB.exPrefs[key]=DB.exPrefs[key]||{};
+  const t=String(text||"").trim().replace(/\s*(?:to|\u2013|\u2014)\s*/g,"-");
+  if(!t){ delete p.reps; delete p.repsFrom; delete p.repsAt; }
+  else { p.reps=t; p.repsFrom=from||"user"; p.repsAt=today(); }
+  return p;
+}
+function clearRepRange(name){
+  setRepRange(name,"",null);
+  try{ const e=wkFind(name); if(e && !e.reps) e.scheme=schemeFor(name,exSets(e),e); }catch(err){}
+  stampWorkout(); save(); refreshAllViews();
+  toast(name+" \u2192 back to its normal range");
+}
+/* Called after every log and every delete, so it is always a function of what
+   is actually on the board rather than a running tally that can drift. */
+function learnRepRange(name){
+  try{
+    const ex=wkFind(name);
+    if(ex && ex.reps) return;                       /* a target set for today */
+    const meta=logMeta(name,ex);
+    if(meta.unit!=="reps") return;                  /* holds and distances are not reps */
+    const stored=repRangeStored(name);
+    if(stored && stored.from==="user") return;      /* his number, not ours to move */
+    const sets=(todaySets(name)||[]).map(x=>+x.r).filter(n=>n>0).sort((a,b)=>a-b);
+    if(!sets.length) return;
+    const med=sets[Math.floor(sets.length/2)];
+    /* Always judged against the LIBRARY range, never against a range this
+       function itself put there. A learned range is provisional: it exists
+       only while his log still justifies it, so deleting the sets that earned
+       it, or simply going back to training the lift normally, drops it again
+       instead of leaving a number that quietly drifted. */
+    const def=repRangeDefault(name,ex); if(!def) return;
+    const refresh=()=>{ if(ex && !ex.reps){ try{ ex.scheme=schemeFor(name,exSets(ex),ex); }catch(e){} } save(); };
+    /* Overshooting the top is "add weight" \u2014 that is what progression IS.
+       Only a long way out is a different rep range. */
+    if(med<=def.hi+4 && med>=def.lo-4){
+      if(stored){ setRepRange(name,"",null); refresh(); toast(name+" \u2192 back to "+def.text+" reps"); }
+      return;
+    }
+    const half=med>=8? 2 : 1;
+    const lo=Math.max(1,med-half), hi=med+half;
+    if(stored && stored.lo===lo && stored.hi===hi) return;
+    setRepRange(name, lo+"-"+hi, "logged");
+    refresh();
+    toast(name+" \u2192 "+lo+"\u2013"+hi+" reps from now on");
+  }catch(e){}
 }
 /* v109 — a mis-tap logged a 1-second hold and there was no way to remove it
    without going to the coach. The chip IS the set; tapping the x deletes it. */
@@ -6126,6 +6221,8 @@ function delLoggedSet(exIdx,setIdx){
   }
   /* The load call came from what was logged, so it has to be recomputed. */
   try{ ex.rec=recommendLoad(ex.name); }catch(e){}
+  /* So does the rep range, or a mis-tapped 20 would outlive the chip. */
+  try{ learnRepRange(ex.name); }catch(e){}
   delete ex.adjNote;
   save();
   try{ const el=document.getElementById('exb'+exIdx); if(el){ el.outerHTML=exBlockHTML(ex,exIdx); paintDemos(); } }catch(e){}
@@ -6215,6 +6312,16 @@ function exBlockHTML(e,i){
     "<div class='exsets'><span class='l'>"+repLabel+"</span>"+
       "<input class='repsin' id='cr"+i+"' value='"+attrEsc(shortTarget(e))+"' onchange='cardReps("+i+")' aria-label='"+repLabel.toLowerCase()+" per set'>"+
       "<span class='d'>per set</span></div>"+
+    /* v138 \u2014 a range that is no longer the library's says so, and can be put
+       back. Nothing should quietly become permanent. */
+    (function(){
+      const rr=(typeof repRangeStored==="function")? repRangeStored(e.name) : null;
+      if(!rr) return "";
+      return "<div class='hint mt'>"+
+        (rr.from==="logged"? "Learned from your sets: " : "You set this: ")+
+        "<b>"+rr.text+" reps</b> every session, not just today. "+
+        "<button class='foldmore' onclick='clearRepRange(\""+jsAttr(e.name)+"\")'>back to normal</button></div>";
+    })()+
     "<div class='exsets'><span class='l'>Rest</span>"+
       "<button class='st' onclick='bumpExRest("+i+",-15)' aria-label='less rest'>\u2212</button>"+
       "<span class='n' style='min-width:62px'>"+fmtRest(restForEx(e))+"</span>"+
@@ -6562,6 +6669,8 @@ async function logSet(i){
   const rec={w:isNaN(w)?0:w, r};
   if(meta.unit==="distance") rec.dist=true;
   unlockAudio(); autoStartSession(); saveSet(ex.name,rec); markSession();
+  /* v138 \u2014 what he actually did teaches the exercise its rep range. */
+  try{ learnRepRange(ex.name); }catch(e){}
   /* Recompute from what he has now actually done, so the load call and the
      progression panel agree with the set he just logged. */
   try{ if(logNeedsWeight(ex.name,ex)) ex.rec=recommendLoad(ex.name); }catch(e){}
@@ -7734,7 +7843,7 @@ Object.keys(PHYSIQUE_PRIORITY).map(g=>"  "+g+": "+PHYSIQUE_PRIORITY[g]).join("\n
 "  4. Does it respect the wrist? Neutral grip and landmine/dumbbell variants over straight-wrist barbell pressing.\n\n"+
 (strengthSlotOn()
  ? "THE STRENGTH SLOT IS ON. The app marks the first genuinely loaded compound of the day as the heavy one: "+STRENGTH_REPS+" reps, three minutes' rest, and everything after it in the 8-12 that builds size. He asked for that, so do not quietly put that lift back to 8-12 and do not add a second heavy movement on top of it. If you give an exercise its own rep target the app steps aside and the slot moves to the next lift, so only do that deliberately.\n\n"
- : "HIS REP RANGE IS 8-12 AND IT IS HIS. He told me so directly. Do not drop a lift to 4-6, or to any other range, to make it \"the heavy one\" \u2014 there is a setting for that and he has it switched off. Program a different range only when he asks for it, or when the movement itself demands it (a carry, a hold), and say why.\n\n")+
+ : "REP RANGES ARE HIS, PER EXERCISE. The default is 8-12. Where the sheet shows something else it is because he trains that lift that way \u2014 either he typed it or the app learned it from his own logged sets \u2014 and it is stored against the exercise, not the session. Program what the sheet says. Do not drop a lift to 4-6 to make it \"the heavy one\" (there is a setting for that and it is switched off), and do not pull a range back to 8-12 because it looks unusual. A different range only when he asks, or when the movement itself demands it (a carry, a hold), and say why.\n\n")+
 "REP RANGES \u2014 by what he's trying to cause, not by habit:\n"+
 "  3-6   heavy compounds, strength and tendon/connective work. Long rests.\n"+
 "  6-12  the bulk of hypertrophy work.\n"+
@@ -11543,7 +11652,7 @@ function scheduleInApp(){
    v18 ADDITIONS — draggable rest timer · weekly training memory · AI planner
    · Firestore sync
    ========================================================================== */
-const APP_VERSION="v137 · 15/09/2026";
+const APP_VERSION="v138 · 15/09/2026";
 
 /* ===== 1. REST TIMER — drag it anywhere so it never blocks the chat box ===== */
 let _rtDrag=null;
@@ -16134,6 +16243,10 @@ defAction("set_reps",{
     targets.forEach(e=>{ if(!e) return;
       e.reps=a.reps;
       e.scheme=exSets(e)+" sets · "+a.reps+(/\bs$|sec/i.test(a.reps)?"":" reps");
+      /* v138 — this used to write to the session's copy and nothing else, so
+         a rep range he set was gone by the next session. It is a per-exercise
+         fact now, marked as HIS, which also stops the learner moving it. */
+      if(!/\bs$|sec/i.test(a.reps)){ try{ setRepRange(e.name, a.reps, "user"); }catch(err){} }
     });
     return {n:targets.length, reps:a.reps};
   },

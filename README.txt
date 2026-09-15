@@ -1,7 +1,58 @@
-AMIR PT — v137 · 15/09/2026
+AMIR PT — v138 · 15/09/2026
 ===========================
 
 Upload index.html AND sw.js.
+
+
+THE REP RANGE FOLLOWS WHAT YOU ACTUALLY DO
+==========================================
+"If I write I did 20 then it should also change the range just for that
+exercise in future."
+
+It does now, and a range you type sticks too — which it never did before.
+set_reps wrote to the session's copy of the exercise and nothing remembered
+it, so correcting a range lasted exactly one session.
+
+A rep range is a per-exercise fact now, stored beside the other per-exercise
+facts, and it is learned from your own log.
+
+WHAT COUNTS AS EVIDENCE
+  A set that merely overshoots is NOT a range change — that is what
+  progression is for. 8–12 with a 14 in it means the weight is light, and
+  the coach will tell you to add some. 8–12 with a 20 in it means the app
+  had the wrong idea about the exercise.
+
+  So the range only moves when what you do is five or more clear of the
+  top or the bottom:
+
+      logged 14, 14       8–12    unchanged — add weight
+      logged 20, 20      18–22    learned
+      logged 3, 3         2–4     learned
+
+IT IS PROVISIONAL, NOT PERMANENT
+  A learned range is always judged against the library's 8–12, never
+  against itself, so it cannot drift a step at a time. Delete the mis-tapped
+  chip that earned it, or just go back to training the lift normally, and it
+  drops away on its own. It re-derives from what is on the board every time
+  you log a set or delete one.
+
+A RANGE YOU TYPE IS YOURS
+  Type one into the reps box and it is marked as yours: the learner will not
+  move it, whatever you log afterwards. Either kind shows up under Edit →
+  Sets, reps & rest, saying where it came from, with "back to normal" next
+  to it.
+
+THREE COPIES OF THE SAME STRING
+  The reason it survived one session and not the next: schemeFor() decided
+  what a scheme said, and then the session builder and the single-exercise
+  builder each wrote their own copy of "8-12" instead of calling it. Both go
+  through the one function now, which is why a learned range survives a
+  rebuild.
+
+THE COACH IS TOLD
+  Its brief now says rep ranges are yours and per-exercise, that the sheet is
+  the authority, and not to pull one back to 8-12 because it looks unusual.
+  Otherwise it would have undone this on the next session it planned.
 
 
 NOTHING CHANGES YOUR REP RANGE BUT YOU
