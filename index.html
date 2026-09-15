@@ -3695,7 +3695,9 @@ const KIND_NOTE={
 };
 function inferDayKind(name){ const s=String(name).toLowerCase();
   if(/mobility|recovery|yoga|stretch|flexib/.test(s)) return "mobility";
-  if(/\brow\b|erg|\brun\b|jog|bike|cycle|spin|zone ?2|steady state|liss/.test(s)) return "cardio";
+  /* v125 - "cardio" itself was missing from this list, so a day named Cardio
+     Day fell through to "strength" and built a lifting session. */
+  if(/cardio|\brow\b|erg|\brun\b|jog|bike|cycle|spin|zone ?2|steady state|liss|swim|walk|elliptical/.test(s)) return "cardio";
   /* v52: these used to fall through to "strength", and a strength day with no
      exercise list fell back to the FULL BODY pool — so "Pilates", "Core Day"
      and "HIIT" all silently built the same generic squat/bench/row session.
@@ -6581,10 +6583,28 @@ function fatLossPlan(){
    the one nobody could answer for. logMobility() fixes that, and this reads
    all three back. */
 const PILLARS={
+  rest:    {label:"Rest",     how:"full days off, and how long since the last one"},
   mobility:{label:"Mobility", how:"held ranges, logged when you run the cool-down"},
-  strength:{label:"Strength", how:"the loads on your main lifts over recent sessions"},
-  size:    {label:"Building", how:"hard sets per muscle group against the target for your shape"}
+  cardio:  {label:"Cardio",   how:"rows and cardio sessions in the last 7 days"},
+  weights: {label:"Weights",  how:"hard sets against the target, and whether the loads are moving"}
 };
+/* v125 - he named the four himself: REST, MOBILITY, CARDIO, WEIGHTS. The app
+   was judging three of them - strength and size kept apart, and no idea at all
+   about cardio or rest - which meant the two things most likely to go wrong in
+   a 44% deficit were the two it could not see: too little rest, and cardio
+   quietly creeping up and eating the recovery the muscle depends on.
+
+   Weights folds volume and strength back together, because they are one thing
+   to him. Cardio and rest are new, and both are judged as BANDS rather than
+   ladders: more is not better in either direction. */
+const CARDIO_TARGET={min:2, max:4};      /* easy sessions a week */
+/* min and maxStreak have to agree with each other: one rest day in seven
+   ALWAYS means six training days in a row, so a 5-day ceiling would warn
+   about every single-rest-day week and the warning would mean nothing. One
+   is the floor, seven-in-a-row is the fault, and two is what this deficit
+   actually wants - which is advice, not an alarm. */
+const REST_TARGET={min:1, better:2, maxStreak:6};
+
 /* Are the loads going anywhere? Judged across the lifts he actually repeats,
    comparing the most recent top set with the one two sessions before it. */
 function strengthTrend(){
@@ -6595,59 +6615,160 @@ function strengthTrend(){
     const top=x=>Math.max(...((x.sets||[]).map(s=>+s.w||0)),0);
     const now=top(h[h.length-1]), then=top(h[h.length-3]);
     if(!now || !then) return;
-    if(now>then){ up++; moved.push(name+" "+then+"→"+now+"kg"); }
+    if(now>then){ up++; moved.push(name+" "+then+"—"+now+"kg"); }
     else if(now<then) down++;
     else flat++;
   });
   const n=up+flat+down;
-  return {up, flat, down, n, moved:moved.slice(0,4),
+  return {up, flat, down, n, moved:moved.slice(0,3),
     state: !n? "nothing repeated often enough to judge yet"
          : up>=Math.max(1,Math.round(n*0.3))? "climbing"
          : down>up? "slipping"
          : "holding"};
 }
+/* Cardio actually done in the last 7 days: logged rows, plus any completed
+   session the schedule calls cardio. */
+function cardioWeek(days){
+  const cut=new Date(Date.now()-((days||7)-1)*864e5).toISOString().slice(0,10);
+  const daysWith=new Set();
+  (DB.rowing||[]).forEach(r=>{ if(r&&r.date&&r.date>=cut) daysWith.add(r.date); });
+  Object.entries(DB.completed||{}).forEach(([d,rec])=>{
+    if(d>=cut && /cardio|row|run|bike|conditioning|hiit/i.test(String(rec&&rec.title||""))) daysWith.add(d);
+  });
+  return daysWith;
+}
+/* Full days off in the last 7: nothing logged, or a day he called rest. */
+function restWeek(days){
+  const n=days||7, out=new Set();
+  let trained=new Set();
+  try{ trained=trainedDates(); }catch(e){}
+  for(let k=0;k<n;k++){
+    const d=new Date(Date.now()-k*864e5).toISOString().slice(0,10);
+    const st=(DB.dayState||{})[d];
+    if((st&&st.restDay) || !trained.has(d)) out.add(d);
+  }
+  return out;
+}
 function pillarStatus(){
-  /* MOBILITY — days with held ranges against days he actually trained. */
+  /* REST */
+  const rest7=restWeek(7), streak=consecutiveTrainingDays();
+  const rest={n:rest7.size, streak,
+    state: streak>REST_TARGET.maxStreak? "not enough"
+         : rest7.size>=REST_TARGET.min? "on track" : "not enough",
+    note: rest7.size
+      ? rest7.size+" full day"+(rest7.size===1?"":"s")+" off in the last 7"+
+        (streak>REST_TARGET.maxStreak? ", but "+streak+" training days in a row right now" : "")
+      : "no full day off in the last 7, and "+streak+" training days in a row"};
+  /* MOBILITY */
   const cut=new Date(Date.now()-6*864e5).toISOString().slice(0,10);
-  const trained=new Set(Object.keys(DB.completed||{}).filter(d=>d>=cut));
-  const mob=mobilityDays(7);
-  const mobMins=Math.round(mobilitySecs(7)/60);
-  const want=Math.max(3,trained.size);          /* every training day, at least three */
+  const trainedN=new Set(Object.keys(DB.completed||{}).filter(d=>d>=cut)).size;
+  const mob=mobilityDays(7), mobMins=Math.round(mobilitySecs(7)/60);
+  const want=Math.max(3,trainedN);
   const mobility={n:mob.size, of:want, mins:mobMins,
     state: mob.size>=want? "on track" : mob.size? "short" : "not happening",
-    /* Neutral wording on purpose: this line is read both on the card and in
-       the coach's brief, and "your shape" in one is "he" in the other. */
     note: mob.size>=want
       ? mob.size+" day"+(mob.size===1?"":"s")+" of held ranges this week, "+mobMins+" min in total"
       : mob.size
         ? "only "+mob.size+" day"+(mob.size===1?"":"s")+" of held ranges against "+want+" training days"
         : "no cool-down run this week — mobility stays invisible unless the cool-down timer runs"};
-  /* STRENGTH — are the loads moving? */
-  const st=strengthTrend();
-  const strength=Object.assign({},st,{note: st.n
-    ? st.up+" of "+st.n+" repeated lifts up over the last three sessions, "+st.down+" down"+(st.moved.length? " ("+st.moved.join(", ")+")":"")
-    : "not enough repeated sessions on any lift to call it yet"});
-  /* BUILDING — hard sets against the target for his shape. */
-  const vs=volumeStatus(7);
-  const groups=Object.keys(vs);
+  /* CARDIO */
+  const cw=cardioWeek(7);
+  const cardio={n:cw.size,
+    state: cw.size<CARDIO_TARGET.min? "short" : cw.size>CARDIO_TARGET.max? "too much" : "on track",
+    note: cw.size===0? "nothing logged in 7 days"
+        : cw.size>CARDIO_TARGET.max
+          ? cw.size+" cardio sessions in 7 days — more than this plan wants while the deficit is this steep"
+          : cw.size+" cardio session"+(cw.size===1?"":"s")+" in 7 days"};
+  /* WEIGHTS */
+  const vs=volumeStatus(7), groups=Object.keys(vs);
   const atTarget=groups.filter(g=>vs[g].sets>=vs[g].goal-2);
   const below=groups.filter(g=>vs[g].sets<vs[g].mev);
-  const size={at:atTarget.length, of:groups.length, below,
-    state: below.length? "below minimum somewhere" : atTarget.length>=groups.length-1? "on track" : "under target",
+  const st=strengthTrend();
+  const weights={at:atTarget.length, of:groups.length, below, trend:st,
+    state: below.length? "below minimum somewhere"
+         : st.state==="slipping"? "loads slipping"
+         : atTarget.length>=groups.length-1? "on track" : "under target",
     note: atTarget.length+" of "+groups.length+" groups at the volume target for this physique"+
-      (below.length? ", and "+below.join(", ")+" below the minimum that maintains anything" : "")};
-  return {mobility, strength, size};
+      (below.length? ", and "+below.join(", ")+" below the minimum that maintains anything" : "")+
+      (st.n? " \u00b7 loads "+st.state+" ("+st.up+" of "+st.n+" repeated lifts up)" : "")};
+  return {rest, mobility, cardio, weights};
+}
+/* ===== v125 · IS THE WEEK HE HAS PLANNED CAPABLE OF DELIVERING IT? ======
+   Everything above judges what he DID. This reads the schedule and judges what
+   the coming week is even set up to do, which catches the problem a week
+   earlier: seven days with no rest day in them, a fortnight with no cardio
+   anywhere, a split that never trains the shoulders and back the whole shape
+   depends on. A gap in the plan is cheaper to fix than a gap in the history. */
+const SPLIT_COVERS={
+  legs:["legs","core"], push:["chest","shoulders","arms"], pull:["back","arms"],
+  arms:["shoulders","arms"], core:["core"], upper:["chest","back","shoulders","arms"],
+  full:["chest","back","shoulders","arms","legs","core"],
+  other:["chest","back","shoulders","arms","legs","core"]
+};
+function weekPlanCheck(){
+  const sched=DB.schedule||{};
+  const out={rest:0, cardio:0, mobility:0, weights:0, days:[], groups:{}, gaps:[], strong:[]};
+  for(let dow=0;dow<7;dow++){
+    const split=sched[dow]||"Rest";
+    const key=((typeof splitInfo==="function")? splitInfo(split) : {}).key || "other";
+    const kind = key==="rest"? "rest"
+               : key==="cardio"? "cardio"
+               : key==="pilates"? "mobility"
+               : "weights";
+    out.days.push({dow, split, kind});
+    out[kind]++;
+    /* What a split of this type is capable of training. Taken from the split
+       TYPE rather than from a pool lookup: the first version of this asked
+       poolForKind, which answers "full body" for everything it does not
+       specifically know, and so announced that nothing in the week trained
+       shoulders on a week with two push days in it. A check that cries wolf
+       is worse than no check. An unrecognised custom day counts as covering
+       everything, so it can never be the reason for a warning. */
+    if(kind==="weights") (SPLIT_COVERS[key]||SPLIT_COVERS.other).forEach(g=>{ out.groups[g]=(out.groups[g]||0)+1; });
+  }
+  if(out.rest<REST_TARGET.min) out.gaps.push("no full rest day is scheduled");
+  else{
+    out.strong.push(out.rest+" rest day"+(out.rest===1?"":"s"));
+    if(out.rest<REST_TARGET.better) out.notes=(out.notes||[]).concat(
+      "one rest day is the floor \u2014 at this deficit two recovers better");
+  }
+  if(out.cardio<CARDIO_TARGET.min) out.gaps.push(out.cardio? "only "+out.cardio+" cardio day scheduled" : "no cardio anywhere in the week");
+  else if(out.cardio>CARDIO_TARGET.max) out.gaps.push(out.cardio+" cardio days is more than this plan wants at this deficit");
+  else out.strong.push(out.cardio+" cardio");
+  if(out.weights<3) out.gaps.push(out.weights+" lifting day"+(out.weights===1?"":"s")+" is not enough to build on");
+  else out.strong.push(out.weights+" lifting days");
+  ["shoulders","back"].forEach(g=>{ if(!out.groups[g]) out.gaps.push("nothing in the week trains "+g+", and the shape is built on it"); });
+  let run=0, worst=0;
+  for(let k=0;k<14;k++){ const d=out.days[k%7]; if(d.kind==="rest") run=0; else { run++; worst=Math.max(worst,run); } }
+  out.longestRun=Math.min(worst,7);
+  if(out.longestRun>REST_TARGET.maxStreak) out.gaps.push(out.longestRun+" training days back to back with no day off between them");
+  return out;
+}
+function weekPlanText(){
+  try{
+    const w=weekPlanCheck();
+    return "=== THE WEEK AS HE HAS IT SCHEDULED ===\n"+
+      w.days.map(d=>"  "+DOW[d.dow]+": "+d.split+" ("+d.kind+")").join("\n")+"\n"+
+      "That is "+w.weights+" lifting, "+w.cardio+" cardio, "+w.mobility+" mobility and "+w.rest+" rest.\n"+
+      (w.gaps.length
+        ? "GAPS IN THE PLAN ITSELF, before he has missed anything: "+w.gaps.join("; ")+".\n"+
+          "Fix the SCHEDULE for these with SET_WEEKDAY or SET_WEEKLY_SCHEDULE rather than patching one day at a time. A gap in the plan is cheaper to fix than a gap in the history.\n"
+        : "The plan itself covers all four. If something goes missing it is because a day did not happen, not because it was never scheduled.\n")+"\n";
+  }catch(e){ return ""; }
 }
 /* The pillars, for the coach, in the order he says them. */
 function pillarText(){
   try{
     const p=pillarStatus();
-    return "=== THE THREE THINGS HE IS TRAINING FOR, AND WHERE EACH ONE STANDS ===\n"+
-      "In his own words the plan is MOBILITY, STRENGTH and BUILDING, and the building happens WHILE the fat comes off. Not a cut with maintenance training bolted on — a recomposition. Every session should serve all three; a session that serves one of them is a session you programmed badly.\n"+
+    return "=== THE FOUR THINGS HE IS TRAINING, AND WHERE EACH ONE STANDS ===\n"+
+      "In his own words the week is REST, MOBILITY, CARDIO and WEIGHTS, and the building happens WHILE the fat comes off. Not a cut with maintenance training bolted on — a recomposition. You are programming a WEEK, not a series of days, and that includes noticing which of the four is quietly being dropped.\n"+
+      "  REST — "+p.rest.state.toUpperCase()+": "+p.rest.note+".\n"+
       "  MOBILITY — "+p.mobility.state.toUpperCase()+": "+p.mobility.note+".\n"+
-      "  STRENGTH — "+p.strength.state.toUpperCase()+": "+p.strength.note+".\n"+
-      "  BUILDING — "+p.size.state.toUpperCase()+": "+p.size.note+".\n"+
-      "Name the one that is behind and fix it in the next session rather than mentioning it. If they are all on track, say so once and push on.\n\n";
+      "  CARDIO — "+p.cardio.state.toUpperCase()+": "+p.cardio.note+".\n"+
+      "  WEIGHTS — "+p.weights.state.toUpperCase()+": "+p.weights.note+".\n"+
+      "CARDIO IS A BAND, NOT A LADDER: "+CARDIO_TARGET.min+"-"+CARDIO_TARGET.max+" easy sessions a week. Below it he loses the engine; above it, at this deficit, it eats the recovery the muscle depends on. More cardio is NOT how the fat comes off faster here — the diet does that, and you never turn a session into a calorie burn.\n"+
+      "REST IS PROGRAMMED WORK: at least "+REST_TARGET.min+" full day off every 7, and never more than "+REST_TARGET.maxStreak+" training days in a row. With Klinefelter, recovery is the limiting factor rather than effort, so a rest day he has earned is not a day lost — say so plainly when he needs one.\n"+
+      "Name the one that is behind and fix it, in the next session or in the week\u2019s schedule, rather than just mentioning it. If all four are on track, say so once and push on.\n\n";
   }catch(e){ return ""; }
 }
 /* The clock. Everything the coach and the card need to say something true
@@ -6758,13 +6879,17 @@ function renderPhaseCard(){
         (c.fat.rate? ", and you are losing about "+c.fat.rate+"kg a week \u2014 stage 1 lands around <b>"+ukDate(c.fat.doneBy)+"</b>" : "")+".</div>"
       : "<div class='hint mb'>No body-fat figure logged, so none of this can be paced properly. Add an estimate in Progress \u2192 Measurements \u2014 a rough one is enough.</div>")+
     "<div class='hint mb'>"+c.mine+"</div>"+
-    /* v119 \u2014 the three things he is actually training for, each with the
-       one number that says whether it is happening. */
+    /* v125 \u2014 the four he named, each with the one number that says whether
+       it is happening. This threw silently for a version: it still asked for
+       "strength" and "size", which stopped existing when the pillars became
+       his four, and the whole block vanished into the catch. */
     (function(){ try{
       const ps=pillarStatus();
-      const dot=st=>(st==="on track"||st==="climbing")? "var(--green)" : (st==="not happening"||st==="slipping"||st==="below minimum somewhere")? "var(--red)" : "var(--gold)";
-      return "<div class='notebox mb'><b>The three things you're training for</b>"+
-        ["mobility","strength","size"].map(k=>
+      const dot=st=>(st==="on track")? "var(--green)"
+        : (st==="not happening"||st==="not enough"||st==="slipping"||st==="loads slipping"||st==="below minimum somewhere"||st==="too much")? "var(--red)"
+        : "var(--gold)";
+      return "<div class='notebox mb'><b>Your week \u00b7 rest, mobility, cardio, weights</b>"+
+        ["rest","mobility","cardio","weights"].map(k=>
           "<div class='hint' style='margin-top:7px'><b style='color:"+dot(ps[k].state)+"'>"+PILLARS[k].label+"</b> \u00b7 "+
           escapeHtml(ps[k].note)+"</div>").join("")+
         "</div>";
@@ -7275,6 +7400,7 @@ TARGET_LOOK.reads.map(x=>"  \u2022 "+x).join("\n")+"\n"+
 "  \u2022 BIAS EVERYTHING TO THE SHAPE. Shoulders and upper back first, upper chest second, everything else held at proportionate. With a fixed date, volume spent on legs and biceps is volume not spent on the ratio he is actually chasing.\n"
 ))+"\n"+
 pillarText()+
+weekPlanText()+
 planClockText()+
 (en? ("=== WHAT HE IS ACTUALLY RUNNING ON ===\n"+
 (en.fromLog
@@ -7364,12 +7490,18 @@ async function weeklyReview(){
     if(!h.length) return null;
     return n+": "+h.map(s=>s.date.slice(5)+" "+(s.sets||[]).map(x=>x.w+"×"+x.r).join("/")).join(" | ");
   }).filter(Boolean).join("\n");
-  const usr="Review my training week as my coach.\n\nVOLUME (hard sets, 7 days):\n"+volumeDoctrineText()+
+  const usr="Review my training week as my coach.\n\n"+
+    /* v125 - this sent volume and fatigue only, so a review could call a week
+       good while the cardio, the rest and the mobility had all quietly gone
+       missing. It sees the same four pillars everything else does now. */
+    (function(){ try{ return pillarText()+weekPlanText(); }catch(e){ return ""; } })()+
+    "VOLUME (hard sets, 7 days):\n"+volumeDoctrineText()+
     "\n\nFATIGUE SIGNALS: "+(f.reasons.join("; ")||"none")+
     "\n\nRECENT SESSIONS PER LIFT:\n"+(lifts||"(nothing logged)")+
     "\n\nGive me: what actually went well (be specific, use the numbers), the single biggest problem with the week, "+
+    "which of the four — rest, mobility, cardio, weights — is being dropped and what you are doing about it, "+
     "what you're changing for next week and why, and whether I need a deload. Be direct. No cheerleading. "+
-    "If you're changing the programme, emit the directives to do it.";
+    "If you're changing the programme or the schedule, emit the directives to do it.";
   try{
     const reply=await callAI([{role:"system",content:coachSystem()},{role:"user",content:usr}],700);
     let shown=reply, notes=[];
@@ -10017,7 +10149,21 @@ function renderItin(){
       "<div class='itin-split'>"+splitSelectHTML(dow,"sel"+dow,split,col)+
         (last? "<span class='itin-last'>"+last+"</span>" : "")+"</div>"+
       "</div>"; });
-  el.innerHTML=html+"<button class='addday' onclick='addDayTypePrompt()'>+ Add a session type (Pilates, Core, HIIT…)</button>";
+  /* v125 — the planner drew seven dropdowns and never said whether the
+     week they add up to is any good. It reads its own schedule now: no rest
+     day, no cardio, nothing training the shoulders or back, or a run of days
+     with nothing off between them — all shown before the week starts. */
+  let check="";
+  try{
+    const w=weekPlanCheck();
+    check = w.gaps.length
+      ? "<div class='notebox mt' style='border-color:#5c3712'><b style='color:var(--gold)'>This week is missing something</b>"+
+        w.gaps.map(g=>"<div class='hint' style='margin-top:6px'>· "+escapeHtml(g)+"</div>").join("")+
+        "<div class='hint' style='margin-top:8px'>Change a dropdown above, or ask the coach to fix the week.</div></div>"
+      : "<div class='notebox mt'><b style='color:var(--green)'>The week covers all four</b>"+
+        "<div class='hint' style='margin-top:6px'>"+escapeHtml(w.weights+" lifting · "+w.cardio+" cardio · "+w.mobility+" mobility · "+w.rest+" rest")+"</div></div>";
+  }catch(e){}
+  el.innerHTML=html+"<button class='addday' onclick='addDayTypePrompt()'>+ Add a session type (Pilates, Core, HIIT…)</button>"+check;
 }
 /* "when did I last actually do this?" \u2014 read from what he logged, not the plan. */
 function lastDoneOf(split){
@@ -10975,7 +11121,7 @@ function scheduleInApp(){
    v18 ADDITIONS — draggable rest timer · weekly training memory · AI planner
    · Firestore sync
    ========================================================================== */
-const APP_VERSION="v124 · 15/09/2026";
+const APP_VERSION="v125 · 15/09/2026";
 
 /* ===== 1. REST TIMER — drag it anywhere so it never blocks the chat box ===== */
 let _rtDrag=null;
@@ -14418,13 +14564,20 @@ function toggleSecArrange(screen){
    controls inside it, so nothing tappable can ever be hidden by this. Blocks
    he has opened stay open for the session, because the app re-renders
    constantly and re-folding under his eyes would be worse than the noise. */
-const FOLD_MIN=70;
+/* v125 \u2014 70 characters was too eager. A three-line hint clamped to two
+   saves one line and spends one on the "more" underneath it, so the page got
+   no shorter and read worse: a column of half-sentences. Only genuinely long
+   prose \u2014 four lines and up \u2014 is worth folding. */
+const FOLD_MIN=200;
 const _unfolded=new Set();
 function foldKey(t){ return String(t||"").replace(/\s+/g," ").trim().slice(0,70); }
 function foldProse(root){
   try{
     const scope=root||document;
-    const all=scope.querySelectorAll('.hint,.notebox,.recovery,.sm,.hero .sub,.cue,.blockbar .bt,.blockbar .bp');
+    /* .notebox is deliberately not in here: it is a bordered box, and a
+       line-clamp inside one cuts the last line against the border, which looks
+       like a rendering fault rather than a fold. */
+    const all=scope.querySelectorAll('.hint,.recovery,.sm,.hero .sub,.cue,.blockbar .bt,.blockbar .bp');
     all.forEach(el=>{
       if(el.dataset.fold) return;
       /* Never fold anything with something to press inside it. */

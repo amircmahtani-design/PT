@@ -1,3 +1,72 @@
+AMIR PT — v125 · 15/09/2026
+===========================
+
+Upload index.html AND sw.js.
+
+
+REST · MOBILITY · CARDIO · WEIGHTS
+==================================
+You named four. The app was judging three, and not those three: it had
+strength and size kept apart as separate pillars, and no idea at all about
+cardio or rest. Which meant the two things most likely to go wrong in a 44%
+deficit were the two it could not see — too little rest, and cardio quietly
+creeping up and eating the recovery the muscle depends on.
+
+    REST      full days off, and how long the current run is
+    MOBILITY  held ranges, from the cool-down timer
+    CARDIO    rows and cardio sessions in the last 7 days
+    WEIGHTS   hard sets against target, and whether the loads are moving
+
+Weights folds volume and strength back together, because they are one thing
+to you. On Progress → The plan, each with a colour and the one number that
+says whether it is happening.
+
+CARDIO AND REST ARE BANDS, NOT LADDERS
+  Cardio: 2-4 easy sessions a week. Below it you lose the engine. Above it,
+  at this deficit, it eats the recovery — and more cardio is NOT how the fat
+  comes off faster here, the diet does that.
+
+  Rest: at least one full day off every 7, never more than six in a row. Two
+  recovers better at this deficit, and the app says so without nagging.
+
+IT READS THE WEEK YOU HAVE PLANNED, NOT JUST THE ONE YOU DID
+  New, and the real answer to your question. Everything before this judged
+  what already happened. The weekly plan now reads its own schedule and says
+  what the coming week is even set up to deliver:
+
+      THIS WEEK IS MISSING SOMETHING
+      · no cardio anywhere in the week
+
+  Your current schedule — push/pull/legs twice with Sunday off — trips
+  exactly that. It also catches no rest day at all, seven days back to back,
+  and too few lifting days. A gap in the plan is cheaper to fix than a gap in
+  the history.
+
+THE WEEKLY REVIEW WAS HALF BLIND
+  "Review my week" sent volume and fatigue signals only, so it could call a
+  week good while the cardio, the rest and the mobility had all gone missing.
+  It now sees all four pillars and the planned week, and it is asked directly
+  which of the four is being dropped and what it is doing about it.
+
+AND A BUG WORTH KNOWING ABOUT
+  A day named "Cardio Day" was not recognised as cardio. The word "cardio"
+  was missing from the list the app matches against, so it fell through to
+  "strength" and built a lifting session. Fixed, along with swim, walk and
+  elliptical.
+
+TWO THINGS I GOT WRONG AND CAUGHT
+  The first version of the plan check asked the app which exercises a split
+  would use, got "full body" for anything it did not specifically recognise,
+  and announced that nothing in your week trained shoulders — on a week with
+  two push days in it. A check that cries wolf is worse than no check, so it
+  now reads the split TYPE, and an unrecognised custom day counts as covering
+  everything rather than triggering a warning.
+
+  And my own rest targets contradicted each other: one rest day in seven
+  ALWAYS means six training days in a row, so a five-day ceiling would have
+  warned about every ordinary week.
+
+
 AMIR PT — v124 · 15/09/2026
 ===========================
 
