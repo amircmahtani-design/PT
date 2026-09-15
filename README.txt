@@ -1,7 +1,87 @@
-AMIR PT — v128 · 15/09/2026
+AMIR PT — v129 · 15/09/2026
 ===========================
 
 Upload index.html AND sw.js.
+
+
+THE CHECK-IN IS TWO QUESTIONS NOW
+=================================
+You said it: weight, and where you are. That is the whole screen.
+
+  Gone from it: how long you have got, sleep, energy, training today,
+  pain, the progress-photo buttons, and the food macros. What is left
+  fits above the fold on your phone and takes about eight seconds.
+
+  Nothing was deleted. Sleep, energy, "training today?" and pain live
+  under "Add more detail", folded shut. Open it on a morning that
+  actually needs saying something, ignore it the rest of the time.
+  If you filled any of them in earlier today, the fold opens itself so
+  you can see what is already on the record.
+
+A SLIDER YOU NEVER TOUCHED IS NO LONGER A 7
+  Those sliders used to sit at 7/10 and get saved at 7/10 whether or not
+  you had looked at them. That was fine while they were on screen; now
+  that they are folded away it would have put a number you never gave
+  into the record every single morning, and the coach plans off that
+  record. So each one is only written once you move it. Untouched means
+  "not logged", and the coach says "not logged" rather than inventing a
+  figure.
+
+YOUR FOOD LEFT THE CHECK-IN ENTIRELY
+  It is logged on the home screen and on Food, where it always belonged,
+  and it still lands on the same day record — the coach reads it exactly
+  as before. Photos are the same story: Progress is where they live, and
+  the check-in no longer asks for them twice.
+
+65 MINUTES IS THE STANDARD SESSION
+  It was 45, which was never what you actually train for. 65 is the
+  figure the app assumes now, everywhere: the planner, the coach's time
+  budget, what fits in a session. Your saved setting is moved up for you
+  unless you had already chosen your own length, and the Train screen
+  still lets you say "I have only got 30 today" whenever that is true.
+
+
+A PLACE TO PUT YOUR WEIGHT WHEN YOU MISS THE MORNING
+====================================================
+You forgot the check-in, so the day was simply gone off the chart. There
+was nowhere else to put the number and no way to fix one typed wrong.
+
+  Progress → Bodyweight now opens with the graph, a date, a weight box
+  and a Log this weight button, plus your last six entries with an ✕
+  on each. Set the date back and add Tuesday's weigh-in on Thursday.
+
+  It writes to exactly the same place the check-in writes — the day's
+  record — so the chart, the coach, the trend line and the plan clock all
+  see it whichever door you came in by. One number, one home.
+
+  A back-dated entry does not become "what you weigh now": the profile
+  weight always follows the newest date on record, not the last thing
+  typed. Anything under 30kg or over 250 is refused, as is a date in the
+  future.
+
+
+THREE THINGS THAT WERE QUIETLY WRONG
+====================================
+Found while building the above.
+
+  EVERY HINT OUTSIDE A FORM FIELD WAS RENDERING AS BODY TEXT
+  Only `.field .hint` had ever been given a size and a colour. A hint
+  written straight into a card — "Nothing logged yet", "Add a photo
+  first", "Put your height in first" and a dozen more — came out
+  full-size and white, so it read as a paragraph competing with the
+  card instead of a note underneath it. All of them are quiet now.
+
+  EVERY COLLAPSIBLE CARD PRINTED ITS HINT TWICE
+  Two bits of the v120 tidy-up both moved the little grey note from a
+  card's title up into its header: one copied it, the other moved the
+  original. So "Your lifts" said "tap one for its chart · tap one for
+  its chart", and so did every other section on Progress and Home. Once
+  each now.
+
+  THE KIT LIST ON THE CHECK-IN
+  Five lines of equipment inventory on a screen whose whole point is
+  that it is short. It folds to two lines with a "more", same as every
+  other long note in the app.
 
 
 TAP THE WEIGHT GRAPH AND READ THE NUMBER

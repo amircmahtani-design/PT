@@ -138,6 +138,10 @@ h2.display{font-size:25px;font-weight:800;letter-spacing:-.4px;margin:6px 0;colo
 .btn:disabled{opacity:.5;}
 .field{margin-bottom:18px;}
 .field label{display:block;font-size:14px;font-weight:700;color:var(--gold);margin-bottom:10px;}
+/* v129 — only `.field .hint` was ever styled, so a hint written straight
+   into a card rendered at full body size in white and read as a paragraph.
+   A base rule gives every hint the same voice; inline styles still win. */
+.hint{color:var(--dim);font-weight:600;font-size:13px;line-height:1.5;}
 .field .hint{color:var(--dim);font-weight:600;font-size:13px;}
 input[type=range]{-webkit-appearance:none;width:100%;height:9px;border-radius:6px;outline:none;background:linear-gradient(90deg,#ff7a1a,#f0b24a);}
 input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:28px;height:28px;border-radius:50%;background:radial-gradient(circle at 35% 30%,#fff,#ffd9a3);box-shadow:0 2px 8px #000a;border:2px solid #ff7a1a;}
@@ -1032,47 +1036,27 @@ a{color:var(--orange);}
       </div>
     </div>
     <div class="card">
-      <div class="field"><label>Bodyweight <span class="hint" style="float:right;font-weight:700;color:var(--gold)">kg</span></label>
-        <input class="txtin" id="ciWeight" inputmode="decimal" placeholder="e.g. 84.2" /></div>
-      <div class="field"><label>How long have you got?</label>
-        <div class="timerow"><input class="timein" id="ciTime" type="number" inputmode="numeric" min="10" max="150" placeholder="45" /><span class="u">minutes</span></div>
-        <div class="hint mt" id="ciTimeHint"></div></div>
-      <div class="field"><label>Sleep <span class="slideval"><span id="ciSleepV">7</span>/10</span></label>
-        <input type="range" min="1" max="10" value="7" id="ciSleep" oninput="ciSleepV.textContent=this.value" /></div>
-      <div class="field"><label>Energy <span class="slideval"><span id="ciEnergyV">7</span>/10</span></label>
-        <input type="range" min="1" max="10" value="7" id="ciEnergy" oninput="ciEnergyV.textContent=this.value" /></div>
-      <div class="field"><label>Training today?</label>
-        <div class="seg" id="ciPlanSeg"><button class="on" data-v="Yes" onclick="segPick(this)">Yes</button>
-          <button data-v="Maybe" onclick="segPick(this)">Maybe</button><button data-v="Rest" onclick="segPick(this)">Rest</button></div></div>
-      <div class="field"><label>Pain / injuries flaring? <span class="hint">(optional)</span></label>
-        <input class="txtin" id="ciPain" placeholder="e.g. left knee, none" /></div>
-      <div class="field">
-        <label>Progress photos <span class="hint" style="float:right;font-weight:700">optional</span></label>
-        <div class="hint" style="margin:-4px 0 10px">Same photos as Progress — this is just a second way in, for when you’re already stood here doing the check-in.</div>
-        <div class="posebtns">
-          <label class="btn sec">📷 Front photo
-            <input type="file" accept="image/*" capture="environment" style="display:none" onchange="addPhoto(this,'Front')" /></label>
-          <label class="btn sec">📷 Side photo
-            <input type="file" accept="image/*" capture="environment" style="display:none" onchange="addPhoto(this,'Side')" /></label>
-        </div>
-        <div id="ciPhotos"></div>
-      </div>
-
-      <div class="field">
-        <label>What you actually ate</label>
-        <div class="hint" style="margin:-4px 0 10px">Optional. Your nutritionist sends the food, so it varies day to day — just record what it was. The coach reads it to judge how hard to push you.</div>
-        <div class="intgrid">
-          <div class="intcell"><span class="k">Calories</span>
-            <input class="txtin" id="ciKcal" inputmode="decimal" placeholder="1500" /></div>
-          <div class="intcell"><span class="k">Protein (g)</span>
-            <input class="txtin" id="ciProt" inputmode="decimal" placeholder="170" /></div>
-          <div class="intcell"><span class="k">Carbs (g)</span>
-            <input class="txtin" id="ciCarb" inputmode="decimal" placeholder="—" /></div>
-          <div class="intcell"><span class="k">Fat (g)</span>
-            <input class="txtin" id="ciFat" inputmode="decimal" placeholder="—" /></div>
-        </div>
+      <div class="field" style="margin-bottom:0"><label>Bodyweight <span class="hint" style="float:right;font-weight:700;color:var(--gold)">kg</span></label>
+        <input class="txtin" id="ciWeight" inputmode="decimal" placeholder="e.g. 84.2" />
+        <div class="hint mt">That’s the check-in. Your food lives on the home screen and your photos on Progress — neither needs doing twice.</div>
       </div>
     </div>
+
+    <details class="hcard" id="ciMore">
+      <summary class="hsum"><span class="t">Add more detail</span><span class="chev">›</span></summary>
+      <div class="hbody">
+        <div class="hint" style="margin:-2px 0 12px">All optional. Leave anything untouched and the coach treats it as not logged rather than inventing a number.</div>
+        <div class="field"><label>Sleep <span class="slideval"><span id="ciSleepV">7</span>/10</span></label>
+          <input type="range" min="1" max="10" value="7" id="ciSleep" oninput="ciSleepV.textContent=this.value;ciTouch.sleep=true" /></div>
+        <div class="field"><label>Energy <span class="slideval"><span id="ciEnergyV">7</span>/10</span></label>
+          <input type="range" min="1" max="10" value="7" id="ciEnergy" oninput="ciEnergyV.textContent=this.value;ciTouch.energy=true" /></div>
+        <div class="field"><label>Training today?</label>
+          <div class="seg" id="ciPlanSeg"><button class="on" data-v="Yes" onclick="segPick(this)">Yes</button>
+            <button data-v="Maybe" onclick="segPick(this)">Maybe</button><button data-v="Rest" onclick="segPick(this)">Rest</button></div></div>
+        <div class="field" style="margin-bottom:0"><label>Pain / injuries flaring?</label>
+          <input class="txtin" id="ciPain" placeholder="e.g. left knee, none" /></div>
+      </div>
+    </details>
     <button class="btn green" id="ciSubmit" onclick="submitCheckin()">Analyse My Day</button>
     <div id="ciResult"></div>
   </section>
@@ -1103,7 +1087,16 @@ a{color:var(--orange);}
 
   <section class="screen" id="s-progress">
     <div class="head"><div><div class="greet">The long game</div><h1 class="display">Progress</h1></div></div>
-    <div class="card" data-sk="weight"><div class="card-title"><span>Bodyweight</span></div><div id="wtWrap"></div></div>
+    <div class="card" data-sk="weight" data-open="1"><div class="card-title"><span>Bodyweight</span></div>
+      <div id="wtWrap"></div>
+      <div class="mgrid mt">
+        <div class="field"><label>Date</label><input class="txtin" id="wgDate" type="date" /></div>
+        <div class="field"><label>Weight <span class="hint">kg</span></label><input class="txtin" id="wgKg" inputmode="decimal" placeholder="e.g. 84.2" /></div>
+      </div>
+      <button class="btn green" onclick="saveWeight()">Log this weight</button>
+      <div class="hint mt">Missed a morning? Set the date back and log it here — this and the check-in write to the same record.</div>
+      <div id="wgLog"></div>
+    </div>
     <div class="card" data-sk="programme"><div class="card-title"><span>Your programme</span><span class="itin-edit">the block you're in</span></div><div id="progBlock"></div></div>
     <div class="card" data-sk="lifts"><div class="card-title"><span>Your lifts</span><span class="itin-edit">tap one for its chart</span></div><div id="strengthPBs"></div></div>
     <div class="card" data-sk="photos">
@@ -1697,7 +1690,10 @@ const DEFAULTS = {
   session:null,
   wx:{key:"", on:false, plan:"free", synced:null, count:0, quota:null, quotaLeft:null,
       autoGif:false, reqMonth:null, reqUsed:0, fedHost:0},
-  timeBudget:{mins:45, row:true, rowMins:10},
+  /* v129 — 65 minutes is his standard session. It used to be 45, which was
+     never what he actually trains for. Per-session changes still live on the
+     Train screen; this is only the figure the app assumes. */
+  timeBudget:{mins:65, row:true, rowMins:10},
   /* v65.2 — rest was 90s between sets from the exercise record and a HARDCODED
      150s between exercises that nothing could change. Both are settings now. */
   rest:{ sets:90, ex:150 },
@@ -2059,7 +2055,20 @@ function mergeDefaults(parsed){ let d={...structuredClone(DEFAULTS),...parsed};
      every step is stamped and every step checks it is not overwriting a value
      Amir set himself, so running it twice changes nothing. */
   try{ d=migrate115(d); }catch(e){ console.warn("migrate115",e); }
+  try{ d=migrate129(d); }catch(e){ console.warn("migrate129",e); }
   return d; }
+/* v129 — the standard session is 65 minutes, not 45. Only the old shipped
+   default is moved: a length he picked himself is his, and the stamp means a
+   second run never touches it again even if he later sets it back to 45. */
+function migrate129(d){
+  d.migrations=d.migrations||{};
+  if(!d.migrations.time129){
+    d.timeBudget=d.timeBudget||{};
+    if(!d.timeBudget.mins || +d.timeBudget.mins===45) d.timeBudget.mins=65;
+    d.migrations.time129=true;
+  }
+  return d;
+}
 function load(){ try{
   let s=localStorage.getItem(STORE_KEY) || localStorage.getItem(BACKUP_KEY);
   return s? mergeDefaults(JSON.parse(s)) : structuredClone(DEFAULTS);
@@ -2148,9 +2157,9 @@ function go(s){
     try{ const ex=document.getElementById('explainSwitch'); if(ex) ex.classList.toggle('on', !!(DB.prefs&&DB.prefs.explainAll)); }catch(e){}
     try{ const mv=document.getElementById('masteryVal'); if(mv) mv.textContent=masterySets()+" sets"; }catch(e){}
   }
-  if(s==='checkin') syncCheckinLoc();
+  if(s==='checkin'){ syncCheckinLoc(); try{ prefillCheckin(); }catch(e){} }
   if(s==='coach') renderChat();
-  if(s==='progress'){ drawChart(); renderRowingLog(); }
+  if(s==='progress'){ drawChart(); renderRowingLog(); try{ renderWeightLog(); }catch(e){} }
   if(s==='progress'){ try{ renderHistory(); }catch(e){} }
   if(s==='workout'){ ensureWorkout(); renderReadiness(); maybeAutoPlan(); }
   if(s==='today'){ renderNutrition(); renderWeek(); renderReadiness(); renderFirstRun(); renderTomorrow(); }
@@ -2204,6 +2213,13 @@ function syncCheckinLoc(){
     let txt="<b>"+LOCS[ciLocPick].label+"</b> \u2014 "+LOCS[ciLocPick].equipment;
     if(ciLocPick!==locKey()) txt+="<br><span style='color:var(--gold)'>Saving will move your training to "+LOCS[ciLocPick].label+".</span>";
     h.innerHTML=txt;
+    /* v129 — the kit list is five lines of small print on a screen whose whole
+       point is now that it is short. It stays, folded to two lines with a
+       "more", the same way every other long hint in the app behaves. The fold
+       state is cleared first because the text changes when he taps a city. */
+    { delete h.dataset.fold; h.classList.remove('folded');
+      const nxt=h.nextElementSibling; if(nxt && nxt.classList.contains('foldmore')) nxt.remove();
+      try{ foldProse(h.parentNode); }catch(e){} }
   }
 }
 function segPick(btn,group){
@@ -6437,14 +6453,24 @@ async function coachSetReply(ex,set){
 }
 
 let planPick="Yes";
+/* v129 — the check-in is two questions now: what you weigh and where you are.
+   Sleep, energy, today's intention and pain still exist, folded away under
+   "Add more detail", and food left the screen entirely — it is logged on the
+   home screen and reaches the same day record through syncDayFood().
+
+   Because the extra fields are now hidden by default, a slider he never
+   touched must NOT be read as "7/10". That would put a number he never gave
+   into the record every single morning and the coach would plan off it. So
+   each one is only saved once he moves it. */
+let ciTouch={sleep:false,energy:false};
 document.addEventListener('click',e=>{ if(e.target.closest('#ciPlanSeg')) planPick=e.target.dataset.v||planPick; });
 async function submitCheckin(){
   const weight=parseFloat(val('ciWeight'));
   if(ciLocPick && ciLocPick!==locKey()) setLocation(ciLocPick);
-  { const m=parseInt(val('ciTime')); if(!isNaN(m)) setTimeBudget(m,null); }
-  const num=id=>{ const n=parseFloat(val(id)); return isNaN(n)? null : n; };
-  const ci={date:today(),weight:isNaN(weight)?null:weight,sleep:+val('ciSleep'),energy:+val('ciEnergy'),plan:planPick,pain:val('ciPain').trim(),loc:locKey(),
-            kcal:num('ciKcal'), protein:num('ciProt'), carbs:num('ciCarb'), fat:num('ciFat')};
+  const slide=(id,touched)=>{ const n=parseFloat(val(id)); return (touched && !isNaN(n))? n : null; };
+  const ci={date:today(),weight:isNaN(weight)?null:weight,
+            sleep:slide('ciSleep',ciTouch.sleep), energy:slide('ciEnergy',ciTouch.energy),
+            plan:planPick, pain:val('ciPain').trim(), loc:locKey()};
   /* Weight moves, and the coach scales photo estimates and recovery maths off
      it \u2014 so the latest check-in updates the profile rather than leaving a
      figure from months ago in place. */
@@ -6455,7 +6481,6 @@ async function submitCheckin(){
   const prior=DB.checkins.find(c=>c.date===ci.date);
   if(prior){ Object.keys(ci).forEach(k=>{ if(ci[k]!=null && ci[k]!=="") prior[k]=ci[k]; }); delete prior.foodOnly; }
   else DB.checkins.push(ci);
-  const merged=DB.checkins.find(c=>c.date===ci.date)||ci;
   if(ci.weight){ DB.weights.push(ci.weight); if(DB.weights.length>400) DB.weights=DB.weights.slice(-400); }
   if(ci.plan==="Rest"){ DB.dayOverride={date:today(),split:"Rest"}; }
   DB.workout=null; DB.aiPlan=null; save();
@@ -6463,7 +6488,7 @@ async function submitCheckin(){
   const analysis=await analyseCheckin(ci);
   btn.disabled=false; btn.innerHTML="Analyse My Day";
   document.getElementById('ciResult').innerHTML="<div class='card mt'><div class='card-title'><span>Coach’s read · "+LOC().label+"</span></div><div class='coachnote'><div class='who'>◆ Coach</div>"+analysis+"</div><button class='btn green mt' onclick=\"go('workout')\">Open today's workout</button></div>";
-  renderMetrics(); updateStatus(); renderItin(); renderWeek(); renderReadiness(); toast("Check-in saved · "+LOC().label);
+  renderMetrics(); try{ drawChart(); renderWeightLog(); }catch(e){} updateStatus(); renderItin(); renderWeek(); renderReadiness(); toast("Check-in saved · "+LOC().label);
   maybeAutoPlan();
 }
 async function analyseCheckin(ci){
@@ -8632,6 +8657,7 @@ function coachLogMeasurement(a){
   DB.measures=DB.measures.filter(x=>!(x.d===rec.d && (x.src==="manual"||x.src==="ai")));
   DB.measures.push(rec); save();
   try{ renderMeasures(); }catch(e){}
+  try{ renderWeightLog(); }catch(e){}
   return Object.keys(rec).filter(k=>!["t","d","src"].includes(k)).length;
 }
 function coachLogRow(a){
@@ -10399,7 +10425,7 @@ function splitPill(split){ return splitInfo(split).key; }
 function drawChart(){
   const wrap=document.getElementById('wtWrap'); if(!wrap) return;
   const ser=weightSeries().slice(-40);
-  if(ser.length<2){ wrap.innerHTML="<div class='muted' style='font-size:14px'>Log your bodyweight in the daily check-in \u2014 two entries and the trend appears here.</div>"; return; }
+  if(ser.length<2){ wrap.innerHTML="<div class='muted' style='font-size:14px'>Add your bodyweight below, or on the morning check-in \u2014 two entries and the trend appears here.</div>"; return; }
   /* v128 — the readout wants a real date, not the axis's short one. */
   const pts=ser.map(x=>({x:shortDate(x.date), y:x.w, full:x.date? ukDate(x.date):""}));
   const d=ser[ser.length-1].w-ser[0].w;
@@ -10407,6 +10433,97 @@ function drawChart(){
     "<div class='chartfoot'><span>"+ser.length+" check-ins</span><span>now "+fmtNum(ser[ser.length-1].w)+"kg</span>"+
     "<span>"+(d>0?"+":"")+fmtNum(d)+"kg over the block</span></div>";
 }
+/* ===== v129 · LOGGING A WEIGHT WITHOUT DOING A CHECK-IN ===============
+   The scale used to be reachable one way only: that morning's check-in. Miss
+   it and the day was simply gone from the chart — there was nowhere to put
+   the number afterwards, and no way to correct one typed wrong.
+
+   So the weight is editable here too, with a date, and it writes into exactly
+   the same place the check-in writes: the day's record in DB.checkins, which
+   is what weightSeries() reads. One number, one home, two doors. */
+function weightEntries(){
+  return (DB.checkins||[]).filter(c=>c && c.date && c.weight!=null && c.weight!=="")
+    .map(c=>({date:c.date, w:+c.weight}))
+    .filter(x=>!isNaN(x.w))
+    .sort((a,b)=>String(b.date).localeCompare(String(a.date)));
+}
+/* The profile weight is "what he weighs now", so it follows the newest entry
+   on record — never a back-dated one, which would age the figure backwards. */
+function syncProfileWeight(){
+  const newest=weightEntries()[0];
+  if(newest) DB.profile.weightKg=newest.w;
+}
+function logWeightOn(dstr,kg){
+  DB.checkins=DB.checkins||[];
+  const prior=DB.checkins.find(c=>c.date===dstr);
+  if(prior){ prior.weight=kg; delete prior.foodOnly; }
+  else DB.checkins.push({date:dstr, weight:kg, sleep:null, energy:null, plan:null, pain:"", loc:locKey()});
+  syncProfileWeight();
+  /* DB.weights is the legacy flat series, still the fallback when no check-in
+     carries a weight. It has no dates, so only a new newest entry may append —
+     a back-dated one would land at the wrong end of it. */
+  const newest=weightEntries()[0];
+  if(newest && newest.date===dstr){
+    DB.weights=DB.weights||[]; DB.weights.push(kg);
+    if(DB.weights.length>400) DB.weights=DB.weights.slice(-400);
+  }
+  save();
+}
+function saveWeight(){
+  const kg=parseFloat(val('wgKg'));
+  if(isNaN(kg)){ toast("Type a weight first"); return; }
+  if(kg<30||kg>250){ toast("That doesn’t look like kilos — check it"); return; }
+  const d=val('wgDate')||today();
+  if(d>today()){ toast("That date hasn’t happened yet"); return; }
+  logWeightOn(d, Math.round(kg*10)/10);
+  const el=document.getElementById('wgKg'); if(el) el.value="";
+  drawChart(); renderWeightLog();
+  try{ renderMetrics(); updateStatus(); }catch(e){}
+  toast(fmtNum(kg)+"kg logged · "+ukDate(d));
+}
+function delWeight(dstr){
+  const row=(DB.checkins||[]).find(c=>c.date===dstr); if(!row) return;
+  if(!confirm("Remove the weight logged on "+ukDate(dstr)+"?")) return;
+  row.weight=null;
+  syncProfileWeight(); save();
+  drawChart(); renderWeightLog();
+  try{ renderMetrics(); updateStatus(); }catch(e){}
+  toast("Removed");
+}
+function renderWeightLog(){
+  const box=document.getElementById('wgLog'); if(!box) return;
+  const dEl=document.getElementById('wgDate'); if(dEl && !dEl.value) dEl.value=today();
+  const kEl=document.getElementById('wgKg');
+  if(kEl && DB.profile && DB.profile.weightKg) kEl.placeholder="e.g. "+fmtNum(DB.profile.weightKg);
+  const list=weightEntries().slice(0,6);
+  if(!list.length){ box.innerHTML=""; return; }
+  box.innerHTML="<table class='mtable'><tr><th>Date</th><th>Weight</th><th></th></tr>"+
+    list.map(x=>"<tr><td class='dt'>"+ukDate(x.date)+(x.date===today()?" <span class='est'>TODAY</span>":"")+"</td>"+
+      "<td>"+fmtNum(x.w)+" kg</td>"+
+      "<td><button class='del' onclick=\"delWeight('"+x.date+"')\">✕</button></td></tr>").join("")+
+    "</table>";
+}
+/* The check-in remembers what is already on today's record, so reopening it
+   shows what he logged rather than a blank form — and a slider that came
+   back from the record counts as touched, so re-saving cannot blank it. */
+function prefillCheckin(){
+  const c=(DB.checkins||[]).find(x=>x.date===today());
+  const w=document.getElementById('ciWeight');
+  if(w && !w.value){
+    if(c && c.weight!=null && c.weight!=="") w.value=c.weight;
+    else if(DB.profile && DB.profile.weightKg) w.placeholder="e.g. "+fmtNum(DB.profile.weightKg);
+  }
+  if(!c) return;
+  const sl=ciNum(c.sleep), en=ciNum(c.energy);
+  if(sl!=null){ const el=document.getElementById('ciSleep'); if(el){ el.value=sl; const v=document.getElementById('ciSleepV'); if(v) v.textContent=sl; ciTouch.sleep=true; } }
+  if(en!=null){ const el=document.getElementById('ciEnergy'); if(el){ el.value=en; const v=document.getElementById('ciEnergyV'); if(v) v.textContent=en; ciTouch.energy=true; } }
+  if(c.plan){ planPick=c.plan;
+    document.querySelectorAll('#ciPlanSeg button').forEach(b=>b.classList.toggle('on', b.dataset.v===c.plan)); }
+  if(c.pain){ const el=document.getElementById('ciPain'); if(el && !el.value) el.value=c.pain; }
+  /* Anything he filled in is worth seeing without hunting for it. */
+  if(sl!=null||en!=null||c.pain){ const d=document.getElementById('ciMore'); if(d) d.open=true; }
+}
+
 /* ===== v72 · "prev" WAS OUTRANKING TODAY ==============================
    Old seeded history carries the literal date "prev", and "prev" sorts AFTER
    every real ISO date alphabetically ("p" > "2"). Anything that grabbed "the
@@ -11217,7 +11334,7 @@ function scheduleInApp(){
    v18 ADDITIONS — draggable rest timer · weekly training memory · AI planner
    · Firestore sync
    ========================================================================== */
-const APP_VERSION="v128 · 15/09/2026";
+const APP_VERSION="v129 · 15/09/2026";
 
 /* ===== 1. REST TIMER — drag it anywhere so it never blocks the chat box ===== */
 let _rtDrag=null;
@@ -12647,7 +12764,7 @@ async function wxSync(onProgress,maxRequests){
 /* ---------- TIME BUDGET ----------
    How long a session actually takes: rowing warm-up + mobility + the lifting
    itself (work + rest + changing station) + cool-down. */
-const TIME_DEF={mins:45,row:true,rowMins:10};
+const TIME_DEF={mins:65,row:true,rowMins:10};
 function timeBudget(){
   const t=Object.assign({},TIME_DEF,DB.timeBudget||{});
   if(!hasRower()) t.row=false;
@@ -12656,7 +12773,7 @@ function timeBudget(){
 }
 function setTimeBudget(mins,row){
   DB.timeBudget=Object.assign({},timeBudget(),{});
-  if(mins!=null) DB.timeBudget.mins=Math.max(10,Math.min(150,+mins||45));
+  if(mins!=null) DB.timeBudget.mins=Math.max(10,Math.min(150,+mins||TIME_DEF.mins));
   if(row!=null)  DB.timeBudget.row=!!row;
   DB.workout=null; DB.aiPlan=null; save();
   try{ ensureWorkout(); }catch(e){}
@@ -14702,6 +14819,10 @@ function buildSections(screen){
     const extra=(title&&title.children.length>1)? title.children[1].outerHTML : "";
     const d=document.createElement('details');
     d.className='psec'; d.dataset.sk=k; d.dataset.wrapped="1";
+    /* A plain card can ask to start expanded — <details> says so with `open`,
+       and a div needs data-open. Bodyweight uses it: the chart and the box you
+       type today's number into are the first thing Progress is for. */
+    if(card.dataset.open==="1") d.open=true;
     const sum=document.createElement('summary');
     sum.innerHTML="<span class='pst'>"+escapeHtml(label)+"</span>"+
                   (extra? "<span class='pse'>"+extra+"</span>":"")+
@@ -14816,7 +14937,9 @@ function dedupeHeadings(root){
       const head=((sum.querySelector('.t,.pst')||sum).textContent||"").trim().toLowerCase();
       const inner=(((t.querySelector('span')||{}).textContent)||"").trim().toLowerCase();
       if(!head||!inner||head!==inner) return;
-      const extra=(t.children.length>1)? t.children[1] : null;
+      /* buildSections() has already copied it in as .pse — moving the
+         original in as well printed the same hint twice in one summary. */
+      const extra=(t.children.length>1 && !sum.querySelector('.pse'))? t.children[1] : null;
       if(extra){
         extra.classList.add('sumhint');
         const chev=sum.querySelector('.chev');
@@ -18352,12 +18475,11 @@ function boot(){
     if(el) el.placeholder="e.g. "+wristSide()+" wrist, right knee, none";
     const inj=document.getElementById('setInjuries');
     if(inj && !inj.value) inj.value=DB.profile.injuries||injuryText(); }
-  { const t=timeBudget(); const el=document.getElementById('ciTime'); if(el) el.value=t.mins;
-    const h=document.getElementById('ciTimeHint');
-    if(h) h.textContent = hasRower()&&t.row ? "Includes your "+(t.rowMins||10)+" min row warm-up." : "No rowing warm-up here \u2014 all of it is training."; }
+  try{ prefillCheckin(); }catch(e){}
   document.querySelectorAll('#provSeg button').forEach(b=>b.classList.toggle('on',b.dataset.v===DB.ai.provider));
   renderMetrics(); renderItin(); renderStrengthPBs(); renderRowing(); renderRowingLog(); renderPhotos(); renderIntegrations(); updateStreak(); renderNutrition();
   try{ renderMeasures(); }catch(e){}
+  try{ renderWeightLog(); }catch(e){}
   try{ renderGifStatus(); }catch(e){}
   try{ renderRestPrefs(); }catch(e){}
   try{ renderTrainDayPick(); }catch(e){}
