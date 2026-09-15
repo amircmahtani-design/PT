@@ -988,15 +988,31 @@ a{color:var(--orange);}
       <div><div class="greet" id="greetLine">Good Morning</div><h1 class="display" id="greetName">Amir</h1><div class="date" id="todayDate"></div></div>
       <div class="avatar">A</div>
     </div>
-    <button class="btn green mb" onclick="go('checkin')" style="font-size:16px;padding:16px">Start check-in</button>
+    <!-- v135 — a fixed order, in the order the day actually goes: check in,
+         look at the week, log what you ate, see the run you are on. The
+         rearrange arrows are gone, so this markup is the order. -->
     <div id="firstRun"></div>
+    <button class="btn green mb" onclick="go('checkin')" style="font-size:16px;padding:16px">Start check-in</button>
     <div id="readyToday"></div>
+
+    <details class="hcard" data-hk="week" data-sk="week" open>
+      <summary class="hsum"><span class="t">Weekly plan</span><span class="chev">›</span></summary>
+      <div class="hbody">
+      <div class="card-title"><span>Weekly plan</span><span class="itin-edit">pick from the dropdowns</span></div>
+      <button class="btn blue mb" id="weekPlanBtn" onclick="aiPlanWeek()">Ask the coach to plan my week</button>
+      <div id="weekPlanOut"></div>
+      <div id="itinList"></div>
+      </div>
+    </details>
+
     <details class="hcard" data-hk="intake" data-sk="intake">
       <summary class="hsum"><span class="t">Today’s food</span><span class="chev">›</span></summary>
       <div class="hbody">
-        <div class="hint mb">Your nutritionist sends the food and the daily figure varies, so there is nothing to hit here — just record what it was. Come back and update it as often as you like.</div>
-        <div id="intakeNow"></div>
-        <div class="intgrid mt">
+        <!-- v135 — a box to log into, nothing more. What it adds up to, and
+             clearing it, are on the Food tab; two readouts of one number is
+             how you stop knowing which is authoritative. -->
+        <div class="hint mb">Your nutritionist sends the food and the daily figure varies, so there is nothing to hit here — just record what it was. The totals are on the Food tab.</div>
+        <div class="intgrid">
           <div class="intcell"><span class="k">Calories</span>
             <input class="txtin" id="nKcal" inputmode="decimal" placeholder="1500" /></div>
           <div class="intcell"><span class="k">Protein (g)</span>
@@ -1012,16 +1028,7 @@ a{color:var(--orange);}
         <div id="intakeMsg"></div>
       </div>
     </details>
-    <div id="nutriLine" data-sk="foodline" data-nowrap="1" style="display:none"></div>
-    <details class="hcard" data-hk="week" data-sk="week" open>
-      <summary class="hsum"><span class="t">Weekly plan</span><span class="chev">›</span></summary>
-      <div class="hbody">
-      <div class="card-title"><span>Weekly plan</span><span class="itin-edit">pick from the dropdowns</span></div>
-      <button class="btn blue mb" id="weekPlanBtn" onclick="aiPlanWeek()">Ask the coach to plan my week</button>
-      <div id="weekPlanOut"></div>
-      <div id="itinList"></div>
-      </div>
-    </details>
+
     <details class="hcard" data-hk="streak" data-sk="streak">
       <summary class="hsum"><span class="t">Streak</span><span class="chev">›</span></summary>
       <div class="hbody">
@@ -1029,10 +1036,6 @@ a{color:var(--orange);}
         <div><div class="lab">Training Day Run</div><div style="font-size:13px;font-weight:600;color:var(--muted);margin-top:3px">Rest days don't break it — three days off does </div></div></div>
       </div>
     </details>
-
-    <div style="text-align:center;margin:14px 0 4px">
-
-    </div>
   </section>
 
   <section class="screen" id="s-checkin">
@@ -1264,7 +1267,9 @@ a{color:var(--orange);}
 
     <details class="psec" id="todaySec" data-sk="todaylog" open>
       <summary><span class="pst">Today</span><span class="chev">›</span></summary>
-      <div class="psecbody"><div class="card"><div id="mealLog"></div></div></div>
+      <div class="psecbody"><div class="card"><div id="mealLog"></div>
+        <button class="swapbtn mt" onclick="clearIntakeToday()">Clear today</button>
+      </div></div>
     </details>
 
     <details class="psec" id="foodHistSec" data-sk="fooddays">
@@ -2078,6 +2083,18 @@ function migrate129(d){
     d.timeBudget=d.timeBudget||{};
     if(!d.timeBudget.mins || +d.timeBudget.mins===45) d.timeBudget.mins=65;
     d.migrations.time129=true;
+  }
+  /* v135 — THIS is why rearranging Home never stuck. A saved order was applied
+     over the markup on every render, so the cards snapped back to whatever was
+     stored the last time the arrows existed — and that store had collected
+     duplicates, which is why the list showed the same card a dozen times.
+
+     The arrows went in v133 and Home has a deliberate order now, so a stored
+     order is something he can no longer see, change, or fix. Cleared once, and
+     stamped, so the markup is the single answer. */
+  if(!d.migrations.order135){
+    if(d.prefs){ delete d.prefs.secOrder; delete d.prefs.secArrange; }
+    d.migrations.order135=true;
   }
   return d;
 }
@@ -11498,7 +11515,7 @@ function scheduleInApp(){
    v18 ADDITIONS — draggable rest timer · weekly training memory · AI planner
    · Firestore sync
    ========================================================================== */
-const APP_VERSION="v134 · 15/09/2026";
+const APP_VERSION="v135 · 15/09/2026";
 
 /* ===== 1. REST TIMER — drag it anywhere so it never blocks the chat box ===== */
 let _rtDrag=null;

@@ -1,7 +1,44 @@
-AMIR PT — v134 · 15/09/2026
+AMIR PT — v135 · 15/09/2026
 ===========================
 
-Upload index.html AND sw.js — and the two new files in demos/.
+Upload index.html AND sw.js.
+
+
+WHY REARRANGING HOME NEVER STUCK
+================================
+It was saving your order. It was just being overruled.
+
+  A stored order was applied over the markup on every single render, so the
+  cards snapped back to whatever was in storage from the last time you
+  touched the arrows. And that store had collected duplicates — which is
+  why the rearrange list showed "Food today" and "Today's workout" a dozen
+  times each. You were moving cards around inside a list that already
+  disagreed with itself.
+
+  The arrows went in v133, so a stored order is now something you can
+  neither see nor fix. It is cleared once, and stamped so it stays cleared.
+  The markup is the order, full stop.
+
+
+HOME, IN THE ORDER THE DAY GOES
+===============================
+    START CHECK-IN      the first thing, every morning
+    COACH'S READ        what today looks like, and the rest-day button
+    WEEKLY PLAN         the calendar
+    TODAY'S FOOD        a box to log into
+    STREAK              the run you're on, at the bottom
+
+  The coach's read sits with the check-in because it IS the check-in's
+  answer. Say the word and it moves or goes.
+
+TODAY'S FOOD IS A LOGGING BOX NOW
+  The "Food today · 1451 kcal · 102.6g protein…" banner is gone from Home,
+  and so is the totals readout inside the card. Both are on the Food tab,
+  and two readouts of one number is how you stop knowing which one is
+  authoritative. What is left is the four boxes and the two save buttons.
+
+  "Clear today" moved to the Food tab, under Today, next to the totals it
+  clears — rather than being deleted with the readout it was attached to.
 
 
 CHILD'S POSE HAS YOUR PHOTOGRAPH
