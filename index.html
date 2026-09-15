@@ -2855,6 +2855,47 @@ function setDemoPick(name,p){
 
    Every tile carries the ▶ demo link regardless, so he can always check the
    movement is the one he thinks it is. */
+/* ===== v123 · HIS OWN DEMO PHOTOGRAPHS =================================
+   The free exercise pack had nothing honest for seventeen of the warm-up and
+   cool-down movements, illustrated Farmer Carry with something called a Spell
+   Caster, and had no idea what a Teaser was. He went and had the missing 75
+   shot properly: start and end frame each, one model, one room, the same kit.
+
+   They live in demos/ next to index.html, so they load with the app, cache
+   with the app and work in a basement gym with no signal. This lookup sits
+   ABOVE every remote source and below only a demo he has deliberately picked
+   himself \u2014 a photograph of the actual movement beats a fuzzy match to a
+   stranger's exercise database every time. */
+const LOCAL_DEMOS=new Set([
+  "90-90-hip-switches", "ab-wheel", "ankle-rocks-on-a-wall", "band-chest-fly",
+  "band-clamshell", "band-lat-pulldown", "band-reverse-fly", "band-row",
+  "band-shoulder-dislocate", "band-woodchop", "band-wrist-extension", "bear-crawl",
+  "bird-dog", "box-breathing", "broad-jump", "burpee", "cable-fly", "chest-supported-row",
+  "cobra-stretch", "criss-cross", "curtsy-lunge", "db-reverse-fly", "db-suitcase-carry",
+  "dead-hang", "doorway-pec-opener", "doorway-pec-stretch", "double-leg-stretch",
+  "farmer-carry", "high-knees", "hip-abduction", "hollow-rock", "jumping-jacks",
+  "landmine-press", "lat-stretch-on-a-doorframe", "lateral-lunge", "leg-pull-front",
+  "leg-swings-front-to-back", "leg-swings-side-to-side", "light-band-curls-and-pushdowns",
+  "mermaid-stretch", "nordic-negative", "open-book-rotations", "plank-up-down",
+  "prone-swimmer", "prone-y-t-w-raise", "prone-y-t-w-raises", "reverse-snow-angel",
+  "reverse-snow-angel-hold", "roll-over", "roll-up", "rolling-like-a-ball", "saw",
+  "scapular-push-ups", "shadow-boxing", "shoulder-bridge", "side-kick-series",
+  "side-plank-rotation", "single-leg-circles", "single-leg-stretch", "skater-jump",
+  "spine-stretch-forward", "spine-twist", "sprawl", "squat-thrust", "step-up",
+  "supine-spinal-twist", "swan", "swimming", "teaser", "the-hundred", "towel-row",
+  "wall-angel", "wall-sit", "wall-sit-march", "wall-slides"
+]);
+/* The same slug the files were named with: lowercase, & becomes "and", and
+   every run of anything else becomes a single hyphen. */
+function demoSlug(name){
+  return String(name||"").toLowerCase().replace(/&/g," and ").replace(/\//g," ")
+    .replace(/[^a-z0-9]+/g,"-").replace(/^-+|-+$/g,"");
+}
+function localDemo(name){
+  const k=demoSlug(name);
+  if(!k || !LOCAL_DEMOS.has(k)) return null;
+  return {kind:"frames", frames:["demos/"+k+"-1.jpg","demos/"+k+"-2.jpg"], label:"your demo", mine:true, local:true};
+}
 function demoFor(name){
   if(!name) return {kind:"link"};
   const pk=demoPick(name);
@@ -2871,6 +2912,10 @@ function demoFor(name){
     const rec=(typeof WXIDX!=="undefined") && WXIDX[pk.k];
     if(rec && rec.gif) return {kind:"gif", src:GIFURL[name]||rec.gif, label:pk.k, mine:true};
   }
+
+  /* 1b ── a photograph of this exact movement, shot for this app. */
+  const own=localDemo(name);
+  if(own) return own;
 
   /* 2 ── a genuine animated clip. A saved free-pack FRAME is not one: it's
           half a pair, and showing it alone is what made demos look frozen. */
@@ -4373,6 +4418,9 @@ function moveDemo(name){
       const d=demoFor(ramp[1].trim());
       return (d.kind==="gif"||d.kind==="frames")? d : null;
     }
+    /* A photograph of this movement beats anything matched by name. */
+    const own=localDemo(name) || (libMove(name)? localDemo(libMove(name).t) : null);
+    if(own) return own;
     const lib=libMove(name);
     if(lib){
       /* The downloaded catalogue, but ONLY on an exact name. Its fuzzy matcher
@@ -10874,7 +10922,7 @@ function scheduleInApp(){
    v18 ADDITIONS — draggable rest timer · weekly training memory · AI planner
    · Firestore sync
    ========================================================================== */
-const APP_VERSION="v122 · 15/09/2026";
+const APP_VERSION="v123 · 15/09/2026";
 
 /* ===== 1. REST TIMER — drag it anywhere so it never blocks the chat box ===== */
 let _rtDrag=null;

@@ -1,3 +1,52 @@
+AMIR PT — v123 · 15/09/2026
+===========================
+
+Upload index.html, sw.js AND the new demos/ folder.
+
+
+YOUR 75 DEMOS ARE IN
+====================
+150 photographs, a start and an end frame each, one model, one room. They sit
+in demos/ next to index.html and they are wired ABOVE every remote source —
+below only a demo you have picked by hand. A photograph of the actual movement
+beats a fuzzy match against a stranger's exercise database every time.
+
+    WARM-UP + COOL-DOWN     38 of 38 now have a picture   (17 of them yours)
+    LIBRARY EXERCISES       0 of 1049 left with no demo   (60 of them yours)
+    WRONG OR APPROXIMATE    93 before, 33 now — and all 33 are the ones I
+                            told you not to bother with
+
+Gone for good: Farmer Carry illustrated with something called a Spell Caster,
+Burpee with an "Adductor", Bird Dog and Box Breathing both with an air bike,
+Teaser with "Cocoons", and the fourteen warm-up and cool-down drills that had
+nothing at all and sat there as a cartoon.
+
+THE ONES THAT HAD NOTHING
+  Wall slides, doorway pec opener, scapular push-ups, open-book rotations,
+  dead hang, prone Y-T-W raises, both leg swings, 90/90 hip switches, ankle
+  rocks, band curls and pushdowns, bird dog, doorway pec stretch, the doorframe
+  lat stretch, cobra, supine spinal twist — and box breathing, which I had
+  written off as unphotographable. All seventeen have one now.
+
+THEY WORK WITH NO SIGNAL
+  The service worker pre-caches all 150 on install, one file at a time rather
+  than in one go — addAll is atomic, so a single missing file would have
+  thrown away the whole offline app. A basement gym with no bars still shows
+  every picture.
+
+ADDING MORE LATER
+  The filename is built from the movement's own name: lowercase, & becomes
+  "and", everything else becomes a hyphen. Drop <name>-1.jpg and <name>-2.jpg
+  into demos/, add the slug to LOCAL_DEMOS in index.html and DEMOS in sw.js,
+  and it appears. DEMOS-NEEDED.txt now lists only the 33 near-enough ones.
+
+ONE HONEST NOTE
+  The background shifts slightly between the two frames of some pairs, so a
+  few flip like two photographs rather than one movement. It reads fine at
+  thumbnail size and it is a great deal better than an emoji — but if any
+  particular one bothers you, that pair is the one to reshoot.
+
+
 AMIR PT — v122 · 15/09/2026
 ===========================
 
