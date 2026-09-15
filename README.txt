@@ -1,3 +1,60 @@
+AMIR PT — v127 · 15/09/2026
+===========================
+
+Upload index.html AND sw.js.
+
+
+YOUR MEALS ARE SAVED — BUT THEY WERE NOT BEING RESTORED
+=======================================================
+You asked me to check. Most of the answer is good and one part of it was
+not, so here is all of it.
+
+WHAT WAS ALREADY FINE
+  Every meal you log is written to localStorage, mirrored to IndexedDB, and
+  queued to the cloud automatically — you never have to press anything. If
+  localStorage is ever full you get a visible warning rather than silence,
+  and the IndexedDB copy still takes the write. If localStorage is wiped
+  (which iOS does to sites it thinks you have abandoned) the app restores
+  itself from IndexedDB on the next open. The meals are in the cloud backup
+  and in the JSON export too.
+
+WHAT WAS NOT
+  The restore ignored them. mergeCloud — the function that runs when you
+  restore, or when a second device pulls — handled lifts, rows, check-ins,
+  completed sessions, measurements and mobility, and did not mention meals
+  anywhere. So the backup held every meal and the restore brought back none
+  of them. A new phone would have come back with everything except your food
+  history. Tested: a backup holding two meals restored as zero.
+
+  Worse on two devices. The second one would pull (getting no meals), then
+  push a payload that did not contain the first device's meals either.
+
+  Fixed: meals merge by the timestamp they were logged at, the same way
+  measurements and mobility rows already did. Nothing duplicates on repeated
+  merges, and a meal you have corrected on this device always wins over the
+  cloud's older copy.
+
+AND A SECOND, QUIETER HOLE IN THE SAME PLACE
+  A check-in for a date that already existed on this device was thrown away
+  whole. That is harmless for sleep and energy, which you enter once in the
+  morning — but the day's CALORIES AND MACROS are written into that same
+  check-in record later in the day. So a device holding this morning's
+  check-in would discard the evening's food logged on the other one.
+
+  Same-date check-ins are now merged field by field, and a value this device
+  already has always wins. Only genuine blanks get filled.
+
+THE RESTORE RECEIPT SAYS SO NOW
+  "Restored — 42 sessions, 9 lifts, 30 check-ins, 128 meals" rather than
+  leaving you to guess whether the food came back.
+
+Verified end to end: a meal written to storage and surviving a reload; the
+same backup merged five times producing no duplicates; a locally corrected
+meal not clobbered; check-in fields filled without overwriting; an
+export/import round trip; and a full new-device restore bringing the meals
+home.
+
+
 AMIR PT — v126 · 15/09/2026
 ===========================
 

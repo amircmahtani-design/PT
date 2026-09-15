@@ -11210,7 +11210,7 @@ function scheduleInApp(){
    v18 ADDITIONS — draggable rest timer · weekly training memory · AI planner
    · Firestore sync
    ========================================================================== */
-const APP_VERSION="v126 · 15/09/2026";
+const APP_VERSION="v127 · 15/09/2026";
 
 /* ===== 1. REST TIMER — drag it anywhere so it never blocks the chat box ===== */
 let _rtDrag=null;
@@ -11756,6 +11756,7 @@ async function firstRunRestore(){
   if(DB.ai&&DB.ai.key) keys.push("OpenAI");
   if(DB.wx&&DB.wx.key) keys.push("WorkoutX");
   if(msg) msg.innerHTML="\u2705 Restored \u2014 "+L.sessions+" sessions, "+L.lifts+" lifts, "+L.checkins+" check-ins"+
+    (L.meals? ", "+L.meals+" meal"+(L.meals===1?"":"s") : "")+
     (keys.length? " and your "+keys.join(" and ")+" key"+(keys.length>1?"s":"")+" \u2014 nothing left to type."
                 : ".<br>Your API keys weren't in the backup. On your other device turn on <b>Also sync my API keys</b>, tap Sync now, then restore again here.");
   toast("Restored \u2014 "+L.sessions+" sessions back \u2705");
@@ -14362,7 +14363,8 @@ function localHistorySize(){
   let sessions=0;
   Object.values(DB.strength||{}).forEach(a=>sessions+=(a||[]).length);
   return {sessions, lifts:Object.keys(DB.strength||{}).length,
-          checkins:(DB.checkins||[]).length, rows:(DB.rowing||[]).length};
+          checkins:(DB.checkins||[]).length, rows:(DB.rowing||[]).length,
+          meals:(DB.meals||[]).length};
 }
 function localHasHistory(){ const h=localHistorySize(); return (h.sessions+h.checkins+h.rows)>0; }
 let _cloudPulled=false;
@@ -14384,7 +14386,7 @@ async function cloudPush(quiet){
 }
 /* Merge, never overwrite: every logged set on either side survives. */
 function mergeCloud(r,rev){
-  const stat={sessions:0,rows:0,checkins:0,completed:0};
+  const stat={sessions:0,rows:0,checkins:0,completed:0,meals:0};
   Object.entries(r.strength||{}).forEach(([ex,arr])=>{
     DB.strength[ex]=DB.strength[ex]||[];
     (arr||[]).forEach(rs=>{
@@ -14401,6 +14403,23 @@ function mergeCloud(r,rev){
   (r.mobility||[]).forEach(x=>{ if(x&&!mobSeen.has(mobk(x))){ DB.mobility.push(x); mobSeen.add(mobk(x)); } });
   DB.mobility.sort((a,b)=>(a.at||0)-(b.at||0));
   if(DB.mobility.length>3000) DB.mobility=DB.mobility.slice(-3000);
+  /* ===== v127 - MEALS WERE BACKED UP AND NEVER RESTORED ==================
+     Every meal he logs is written to localStorage, mirrored to IndexedDB and
+     pushed to the cloud - and then mergeCloud, which is what a restore runs,
+     did not mention DB.meals anywhere. So the backup held them and the
+     restore ignored them: a new phone, or a wipe, came back with every lift,
+     row, check-in and measurement intact and not one meal. Worse on two
+     devices, where the second one's push would write a payload without the
+     first one's meals in it.
+
+     Append-only and keyed by the timestamp the meal was logged at, the same
+     way measurements and mobility rows are merged. */
+  DB.meals=DB.meals||[];
+  const mealk=x=>[x.t,x.d,x.name].join("|");
+  const mealSeen=new Set(DB.meals.map(mealk));
+  (r.meals||[]).forEach(x=>{ if(x&&!mealSeen.has(mealk(x))){ DB.meals.push(x); mealSeen.add(mealk(x)); stat.meals=(stat.meals||0)+1; } });
+  DB.meals.sort((a,b)=>(a.t||0)-(b.t||0));
+  if(DB.meals.length>6000) DB.meals=DB.meals.slice(-6000);
   const rk=x=>[x.date,x.dist,x.time].join("|");
   const seen=new Set((DB.rowing||[]).map(rk));
   (r.rowing||[]).forEach(x=>{ if(!seen.has(rk(x))){ DB.rowing.push(x); seen.add(rk(x)); stat.rows++; } });
@@ -14414,8 +14433,25 @@ function mergeCloud(r,rev){
     if(!mine){ DB.completed[d]=rec; stat.completed=(stat.completed||0)+1; return; }
     if((rec.sets||0)>(mine.sets||0) || (!mine.durMs && rec.durMs)) DB.completed[d]=Object.assign({},mine,rec);
   });
-  const cd=new Set((DB.checkins||[]).map(c=>c.date));
-  (r.checkins||[]).forEach(c=>{ if(!cd.has(c.date)){ DB.checkins.push(c); cd.add(c.date); stat.checkins++; } });
+  /* v127 - a remote check-in for a date that already existed locally was
+     dropped whole. That is fine for sleep and energy, which he enters once,
+     and wrong for FOOD: the day's calories and macros are written to the
+     check-in record later in the day, so a device holding the morning's
+     check-in would throw away the evening's meals logged on the other one.
+     Same-date rows are now filled in field by field, and a value this device
+     already has always wins - only genuine blanks get filled. */
+  const byDate={}; (DB.checkins||[]).forEach(c=>{ if(c&&c.date) byDate[c.date]=c; });
+  (r.checkins||[]).forEach(c=>{
+    if(!c||!c.date) return;
+    const mineC=byDate[c.date];
+    if(!mineC){ DB.checkins.push(c); byDate[c.date]=c; stat.checkins++; return; }
+    let filled=0;
+    Object.keys(c).forEach(k=>{
+      const v=mineC[k];
+      if(v===undefined || v===null || v===""){ if(c[k]!==undefined && c[k]!==null && c[k]!==""){ mineC[k]=c[k]; filled++; } }
+    });
+    if(filled) stat.checkinFields=(stat.checkinFields||0)+filled;
+  });
   DB.checkins.sort((a,b)=>String(a.date).localeCompare(String(b.date)));
   /* v61 — measurements are small and belong on every device. Merged by their
      timestamp, and a manual reading always beats an estimate for the same day:
