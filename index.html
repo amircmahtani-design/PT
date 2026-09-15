@@ -1351,6 +1351,9 @@ a{color:var(--orange);}
         <span class="n" id="masteryVal" style="min-width:70px">4 sets</span>
         <button class="st" onclick="setMasterySets(1)">+</button></div>
       <div class="hint mt">Complete this many sets at one weight, feeling about right or easier, and the coach adds load next session. Anything less and it holds.</div>
+      <div class="set-row" style="margin-top:14px"><span class="k" style="color:var(--txt);font-weight:600">One heavy lift a session</span>
+        <div class="switch" id="strengthSlotSwitch" onclick="toggleStrengthSlot(this)"></div></div>
+      <div class="hint" style="margin-top:-4px">Off, every exercise uses its own rep range — 8–12 for most of what you do — and nothing changes it but you. On, the first big compound of the day drops to 4–6 reps with three minutes' rest, and everything after it stays in the 8–12 that builds size. A lift that keeps getting heavier is the clearest sign you are adding muscle while the fat comes off; the argument against is that it is not the rep range you train in.</div>
       <div class="set-row" style="margin-top:14px"><span class="k" style="color:var(--txt);font-weight:600">Suggest a weight for new exercises</span>
         <div class="switch" id="startEstSwitch" onclick="toggleStartEst(this)"></div></div>
       <div class="hint" style="margin-top:-4px">On, it offers a deliberately light feel-out weight for a movement you have never logged. Off, it just says it is new and leaves the judgement to you.</div>
@@ -2183,6 +2186,7 @@ function go(s){
     try{ renderVoicePicker(); }catch(e){}
     try{ renderKit(); }catch(e){}
     try{ renderRestPrefs(); }catch(e){}
+    try{ const ss=document.getElementById('strengthSlotSwitch'); if(ss) ss.classList.toggle('on', !!(DB.prefs&&DB.prefs.strengthSlot)); }catch(e){}
     try{ const se=document.getElementById('startEstSwitch'); if(se) se.classList.toggle('on', !(DB.prefs&&DB.prefs.noStartEstimates)); }catch(e){}
     try{ const ex=document.getElementById('explainSwitch'); if(ex) ex.classList.toggle('on', !!(DB.prefs&&DB.prefs.explainAll)); }catch(e){}
     try{ const mv=document.getElementById('masteryVal'); if(mv) mv.textContent=masterySets()+" sets"; }catch(e){}
@@ -4288,6 +4292,16 @@ function saveKit(){
   toast("Kit saved \u00b7 "+lbl);
   try{ if(DB.workout) renderWorkoutSheet(DB.workout); }catch(e){}
 }
+function toggleStrengthSlot(el){
+  DB.prefs=DB.prefs||{};
+  DB.prefs.strengthSlot=!DB.prefs.strengthSlot;
+  el.classList.toggle('on',!!DB.prefs.strengthSlot);
+  /* Re-run it over the session on the board so the change shows now, not
+     after the next rebuild. Turning it OFF clears the stamp and puts the reps
+     and the rest back where they came from. */
+  try{ if(DB.workout){ applyStrengthSlot(DB.workout); stampWorkout(); save(); renderWorkoutSheet(DB.workout); } else save(); }catch(e){ save(); }
+  toast(DB.prefs.strengthSlot? "One heavy lift a session" : "Every lift in its own rep range");
+}
 function toggleStartEst(el){
   DB.prefs=DB.prefs||{};
   DB.prefs.noStartEstimates=!DB.prefs.noStartEstimates;
@@ -5247,6 +5261,7 @@ function setDefaultRest(kind,delta){
   try{ renderRestPrefs(); }catch(e){}
   try{ renderKit(); }catch(e){}
   try{ renderVoiceCard(); }catch(e){}
+  try{ const ss=document.getElementById('strengthSlotSwitch'); if(ss) ss.classList.toggle('on', !!(DB.prefs&&DB.prefs.strengthSlot)); }catch(e){}
   try{ const se=document.getElementById('startEstSwitch'); if(se) se.classList.toggle('on', !(DB.prefs&&DB.prefs.noStartEstimates)); }catch(e){}
   try{ renderPhaseCard(); }catch(e){}
   try{ renderIntake(); }catch(e){}
@@ -7717,7 +7732,9 @@ Object.keys(PHYSIQUE_PRIORITY).map(g=>"  "+g+": "+PHYSIQUE_PRIORITY[g]).join("\n
 "  2. Can he add load to it over weeks? If not it is a finisher, not a driver.\n"+
 "  3. Is it stable enough that the limiting factor is the muscle, not his balance?\n"+
 "  4. Does it respect the wrist? Neutral grip and landmine/dumbbell variants over straight-wrist barbell pressing.\n\n"+
-"THE STRENGTH SLOT IS ALREADY IN EVERY SESSION. The app marks the first genuinely loaded compound of the day as the heavy one: "+STRENGTH_REPS+" reps, three minutes' rest, and everything after it in the 8-12 that builds size. That is the STRENGTH third of his plan and it is not decoration \u2014 do not quietly put that lift back to 8-12, and do not add a second heavy movement on top of it unless he asks. If you give an exercise its own rep target the app steps aside and the slot moves to the next lift, so only do that deliberately.\n\n"+
+(strengthSlotOn()
+ ? "THE STRENGTH SLOT IS ON. The app marks the first genuinely loaded compound of the day as the heavy one: "+STRENGTH_REPS+" reps, three minutes' rest, and everything after it in the 8-12 that builds size. He asked for that, so do not quietly put that lift back to 8-12 and do not add a second heavy movement on top of it. If you give an exercise its own rep target the app steps aside and the slot moves to the next lift, so only do that deliberately.\n\n"
+ : "HIS REP RANGE IS 8-12 AND IT IS HIS. He told me so directly. Do not drop a lift to 4-6, or to any other range, to make it \"the heavy one\" \u2014 there is a setting for that and he has it switched off. Program a different range only when he asks for it, or when the movement itself demands it (a carry, a hold), and say why.\n\n")+
 "REP RANGES \u2014 by what he's trying to cause, not by habit:\n"+
 "  3-6   heavy compounds, strength and tendon/connective work. Long rests.\n"+
 "  6-12  the bulk of hypertrophy work.\n"+
@@ -11526,7 +11543,7 @@ function scheduleInApp(){
    v18 ADDITIONS — draggable rest timer · weekly training memory · AI planner
    · Firestore sync
    ========================================================================== */
-const APP_VERSION="v136 · 15/09/2026";
+const APP_VERSION="v137 · 15/09/2026";
 
 /* ===== 1. REST TIMER — drag it anywhere so it never blocks the chat box ===== */
 let _rtDrag=null;
@@ -15737,6 +15754,22 @@ const GROUP_DEFAULTS={ superset:{restBetweenSec:15, restAfterSec:90, transitionS
 const STRENGTH_REPS="4\u20136";
 const STRENGTH_REST=180;
 const STRENGTH_PATTERNS=["squat","hinge","hpush","vpush","hpull","vpull"];
+/* ===== v137 \u00b7 IT WAS CHANGING HIS REPS WITHOUT BEING ASKED ==============
+   "Deadlift I did 12, why did it randomly drop it to 4-6, my default is
+   always 8-12."
+
+   Not random \u2014 this. It took the first loaded compound of the session and
+   rewrote its reps and rest. The reasoning was sound and it was still the
+   wrong call: his rep range is his, and nothing should rewrite it on his
+   behalf. Worse, correcting it made it look arbitrary rather than fixing it,
+   because a lift with its own rep target is skipped and the slot simply moved
+   to the next lift \u2014 put Deadlift back to 8-12 and Barbell Row went heavy
+   instead.
+
+   So it is off unless he turns it on, in Settings under Progression. The
+   CLEARING half still runs either way, so turning it off puts the reps back
+   rather than leaving a stamp behind. */
+function strengthSlotOn(){ return !!(DB.prefs && DB.prefs.strengthSlot); }
 function applyStrengthSlot(w){
   w=w||DB.workout;
   if(!w||!Array.isArray(w.main)||!w.main.length) return w;
@@ -15752,6 +15785,7 @@ function applyStrengthSlot(w){
       try{ e.scheme=schemeFor(e.name, exSets(e), e); }catch(err){}
     }
   });
+  if(!strengthSlotOn()) return w;
   if(w.travel || w.kind==="cardio" || w.kind==="mobility" || !w.sets) return w;
   const i=w.main.findIndex(e=> e && !e.reps && !e.timed && !e.grp &&
     rampable(e.name) && STRENGTH_PATTERNS.indexOf(patternOf(e.name))>=0);
@@ -18695,6 +18729,15 @@ function boot(){
   try{ renderTrainDayPick(); }catch(e){}
   if(typeof scheduleInApp==="function") scheduleInApp();
   const split=pickSplit();
+  /* v137 — a session saved while the strength slot was still automatic is
+     carrying its stamp. applyStrengthSlot's clearing half runs before the
+     on/off gate, so this puts the reps, the rest and the scheme back exactly
+     the way switching it off does — and only touches a number it wrote itself. */
+  try{
+    if(DB.workout && Array.isArray(DB.workout.main) && DB.workout.main.some(e=>e&&e.strengthSlot) && !strengthSlotOn()){
+      applyStrengthSlot(DB.workout); save();
+    }
+  }catch(e){}
   if(todayCleared()){ renderWorkoutSheet(null); try{ renderHeroCard(); }catch(e){} }
   else if(DB.workout){ renderWorkoutSheet(DB.workout); try{ renderHeroCard(); }catch(e){} }
   /* v133 — the hero card left Home, and this was the one place that wrote to

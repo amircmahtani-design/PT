@@ -1,7 +1,40 @@
-AMIR PT — v136 · 15/09/2026
+AMIR PT — v137 · 15/09/2026
 ===========================
 
 Upload index.html AND sw.js.
+
+
+NOTHING CHANGES YOUR REP RANGE BUT YOU
+======================================
+"Deadlift I did 12, why did it randomly drop it to 4-6, my default is
+always 8-12."
+
+It wasn't random. It was the strength slot, added in v119: the app took the
+first properly loaded compound of each session and rewrote it to 4–6 reps
+with three minutes' rest, on the reasoning that one heavy lift a session is
+what makes the loads move.
+
+The reasoning was fine. Doing it to your session without asking was not.
+
+  And correcting it made it look MORE arbitrary rather than fixing it. A
+  lift with its own rep target is skipped, so putting Deadlift back to 8–12
+  just moved the slot onto the next lift — you'd fix one and another would
+  go heavy. That is exactly what "randomly" feels like from the outside.
+
+  It is OFF, and it is a switch: Settings → Progression → "One heavy lift
+  a session". Off, every exercise uses its own rep range and nothing
+  changes it but you. On, it works as it did.
+
+  The session already on your phone gets its reps, its rest and its scheme
+  put back on the next load — through the same code path the switch uses,
+  so nothing is guessed. A number you set yourself is never touched: it
+  only undoes the one it wrote.
+
+  THE COACH IS TOLD TOO. It used to be briefed "the strength slot is in
+  every session, do not quietly put that lift back to 8-12". With the
+  switch off it now reads the opposite: your range is 8–12, it is yours,
+  and it is not to be changed to make something "the heavy one". Otherwise
+  the AI would have undone the setting on the next session it planned.
 
 
 "LAST" MEANT "LAST TIME, NOT COUNTING TODAY"
