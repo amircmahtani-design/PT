@@ -1,3 +1,80 @@
+AMIR PT — v119 · 15/09/2026
+===========================
+
+Upload index.html AND sw.js.
+
+
+THREE THINGS AT ONCE — AND THE BUILDING HAPPENS NOW
+====================================================
+You corrected the brief: you're building muscle WHILE the weight comes off,
+not after it, and the plan is three things — MOBILITY, STRENGTH, BUILDING.
+
+The app had that wrong in a way that mattered. Stage 1 was written as "hold
+every gram of muscle and strip the fat", with building described as the
+upside if it happened. That's programming for maintenance. It's changed
+everywhere it appeared: the goal, the coach's brief, the plan card.
+
+    was:  maintenance is the floor, building is the upside
+    now:  building is the brief; the deficit decides how fast, not whether
+
+The volume rule changed with it. It used to say sit between the minimum and
+the target. It now says hit the target — growing while dieting is the hardest
+version of this and it doesn't happen on maintenance volume.
+
+And the honest part stays honest: at a 44% deficit, expect it slow and expect
+flat weeks on the bar. The coach is told to say that plainly rather than let a
+flat week read as failure.
+
+
+STRENGTH IS NOW ACTUALLY PROGRAMMED
+===================================
+This was the real gap. Strength was a word in the coach's brief and nothing
+else — every exercise came out at 8-12 reps, whether it was the first barbell
+lift of the day or the last cable finisher. That's a hypertrophy session with
+nothing heavy anywhere in it.
+
+The first genuinely loaded compound of every session is now the STRENGTH SLOT:
+
+    Bench Press      4 sets · 4-6 · rest 3 min      <- the heavy one
+    Overhead Press   4 sets · 8-12 · rest 90s
+    Farmer Carry     3 sets · 30-60s hold
+
+Marked on the card so you know which one it is. One heavy movement a session,
+on a lift you repeat, is what makes the loads move — and a lift getting
+heavier is the clearest evidence there is that you're adding muscle while the
+fat comes off.
+
+Skipped on travel days, bodyweight work and timed holds. If you or the coach
+give a lift its own rep target, the app steps aside and the slot moves to the
+next lift — a deliberate number is a decision and this doesn't overrule
+decisions.
+
+
+MOBILITY IS MEASURED NOW, NOT ASSUMED
+=====================================
+Three pillars means three things to judge, and only two of them could be.
+Sets are logged, so size is countable. Loads are logged, so strength is
+trackable. Held ranges were recorded nowhere — so "did the mobility actually
+happen this week" had no answer, which is exactly the one that needs asking.
+
+Every cool-down movement you hold to the end is now logged, with its seconds.
+It syncs across devices like everything else.
+
+THE THREE THINGS YOU'RE TRAINING FOR — new block on Progress → The plan, and
+in the coach's brief, each with the one number that says whether it's
+happening:
+
+    MOBILITY   days with held ranges, against days you trained
+    STRENGTH   how many repeated lifts are up over the last three sessions
+    BUILDING   groups at the volume target for your shape
+
+Green, amber or red. The coach is told to fix the one that's behind in the
+next session rather than mention it.
+
+One catch worth knowing: mobility only counts when you actually run the
+cool-down timer. If you stretch without it, the app can't see it.
+
+
 AMIR PT — v118 · 15/09/2026
 ===========================
 

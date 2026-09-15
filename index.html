@@ -1568,7 +1568,7 @@ EXCLUDE_116.exPrefs=()=>{ const o={}; EXCLUDE_116.forEach(x=>
 
 const DEFAULTS = {
   profile:{name:"Amir", location:"dubai", height:187, weightKg:83.7,
-    goal:"Two stages, one date. STAGE 1: a flat stomach — hold the deficit and strip the fat while keeping every gram of muscle. STAGE 2: build the shape — as close to Mario Casas, the Spanish actor, as possible: lean and defined rather than big, visible abs, shoulder-to-waist taper, obviously trained. NOT a bodybuilder and not bulky. As close to that as I can get by March 2027. Just as important: genuinely more flexible and mobile — strength AND range of motion, not weights alone. Judge progress by the mirror, photos, waist and the loads on the bar — not by bodyweight.", phase:"Lean Recomp / mini-cut", coachTone:"",
+    goal:"Three things at once: MOBILITY, STRENGTH and BUILDING — and I am building muscle WHILE I lose the weight, not after. Two stages, one date. STAGE 1: a flat stomach — the fat comes off while I add what I can on the bar. STAGE 2: build the shape — as close to Mario Casas, the Spanish actor, as possible: lean and defined rather than big, visible abs, shoulder-to-waist taper, obviously trained. NOT a bodybuilder and not bulky. As close to that as I can get by March 2027. Mobility is a real goal, not a warm-up: measurably more supple, held ranges every session. Judge progress by the mirror, photos, waist, the loads on the bar and the ranges I can hold — not by bodyweight.", phase:"Lean Recomp / mini-cut", coachTone:"",
     equip:{dubai:"",madrid:"",greece:""},
     equipment:"Adjustable dumbbells, barbell + plates, bench, pull-up bar, Concept2 rower, resistance bands",
     injuries:"TFCC tear (left wrist) — avoid loaded wrist extension and heavy pressing on a straight wrist. Neutral grip wherever possible. Klinefelter syndrome — recovery is the limiting factor, not effort. Patient strength curve, consistent progressive overload, no heroics.",
@@ -1585,6 +1585,9 @@ const DEFAULTS = {
   strength:{},
   weights:[],
   photos:[], rowing:[], measures:[], meals:[],
+  /* v119 — every cool-down movement he actually holds, so the mobility half
+     of the plan is measured rather than assumed. */
+  mobility:[],
   chat:[], streak:0, lastSessionDate:null, workout:null,
   integrations:{"Apple Watch":true,"Concept2 (manual)":true,"Photos":true,"Camera":false,"Notifications":true},
   lib:{}, dayTypes:{}, media:{}, mediaPicked:{}, exMap:{}, progression:{}, deadMedia:{}, demoPick:{},
@@ -1927,6 +1930,13 @@ function mergeDefaults(parsed){ let d={...structuredClone(DEFAULTS),...parsed};
   if(!d.profile.goalV117){
     d.profile.goalV117=true;
     if(/a recomp, not a bulk/i.test(d.profile.goal||"")) d.profile.goal=DEFAULTS.profile.goal;
+  }
+  /* v119 — he corrected the brief: he is building WHILE losing, and the plan
+     is three things (mobility, strength, building) rather than a physique with
+     a date. Upgrade the v117 wording; leave anything he typed himself. */
+  if(!d.profile.goalV119){
+    d.profile.goalV119=true;
+    if(/Two stages, one date/i.test(d.profile.goal||"")) d.profile.goal=DEFAULTS.profile.goal;
   }
   d.nutrition=d.nutrition||{};
   if(d.nutrition.calorieTarget==null) d.nutrition.calorieTarget=1500;
@@ -4439,7 +4449,7 @@ function rerollWorkout(){
   const logged=(DB.workout&&DB.workout.main||[]).reduce((a,e)=>a+todaySets(e.name).length,0);
   if(logged && !confirm("You've already logged "+logged+" set"+(logged===1?"":"s")+" today.\n\nSwapping in new exercises keeps everything you've logged in your history, but today's sheet will show different movements. Carry on?")) return;
   _reroll++;
-  DB.workout=buildWorkout(); save();
+  DB.workout=buildWorkout(); resyncGroups(DB.workout); save();
   renderWorkoutSheet(DB.workout);
   const t=document.getElementById('heroTitle'); if(t)t.textContent=DB.workout.title;
   const su=document.getElementById('heroSub'); if(su)su.textContent=DB.workout.note;
@@ -5213,6 +5223,29 @@ function markCoolRunning(i){
     b.textContent = on ? "■ Stop" : b.dataset.lab;
   });
 }
+/* One record per movement actually held, with the seconds it was held for.
+   Small, appended, and merged across devices like everything else. */
+function logMobility(name,sec){
+  if(!name||!sec) return;
+  DB.mobility=DB.mobility||[];
+  DB.mobility.push({d:today(), t:String(name), sec:Math.round(sec), at:Date.now()});
+  /* A year of cool-downs is a few thousand rows; keep it bounded. */
+  if(DB.mobility.length>3000) DB.mobility=DB.mobility.slice(-3000);
+  save();
+}
+function mobilityDays(days){
+  const cut=new Date(Date.now()-((days||7)-1)*864e5).toISOString().slice(0,10);
+  const held=new Set((DB.mobility||[]).filter(x=>x&&x.d>=cut).map(x=>x.d));
+  /* A Pilates or mobility day that was completed counts on its own. */
+  Object.entries(DB.completed||{}).forEach(([d,rec])=>{
+    if(d>=cut && /pilates|mobility|stretch|yoga/i.test(String(rec&&rec.title||""))) held.add(d);
+  });
+  return held;
+}
+function mobilitySecs(days){
+  const cut=new Date(Date.now()-((days||7)-1)*864e5).toISOString().slice(0,10);
+  return (DB.mobility||[]).filter(x=>x&&x.d>=cut).reduce((a,x)=>a+(x.sec||0),0);
+}
 function coolTimer(i){
   if(_coolQ && _coolQ.i===i && restActive){ stopRest(); return; }   /* tap again = stop */
   _coolQ={i:i, side:1, all:false}; coolStep();
@@ -5248,6 +5281,11 @@ function coolStep(){
     }
     /* Both sides done: NOW it counts as complete. */
     coolSidePrompt(_coolQ.i, "✓ Done — both sides");
+    /* v119 — mobility is one of the three things he is training for, and it
+       was the only one the app could not see. Sets are logged, loads are
+       logged, held ranges went unrecorded, so "did the mobility actually
+       happen this week" had no answer. It has one now. */
+    try{ logMobility(mv.t, c.perSide? c.sec*2 : c.sec); }catch(e){}
     const finishedAt=_coolQ.i;
     setTimeout(()=>coolSidePrompt(finishedAt,""),3000);
     if(_coolQ.all){ _coolQ.i++; _coolQ.side=1; if(_coolQ.i<list.length){ setTimeout(coolStep,1800); return; } toast("Cool-down done 🧘"); }
@@ -5718,6 +5756,7 @@ function exBlockHTML(e,i){
   /* The notes that change what you do THIS set stay on the face of the card.
      Everything else is behind a header. */
   const notes=
+    (e.strengthSlot? "<div class='cue' style='color:var(--gold)'><b>\ud83c\udfcb Strength slot:</b> the heavy one today \u2014 "+STRENGTH_REPS+" reps, three minutes' rest, stop a rep or two short of failure. Everything after this is built for size.</div>":"")+
     (e.technique? "<div class='cue' style='color:var(--orange)'><b>\ud83d\udd25 "+escapeHtml(e.technique)+"</b></div>":"")+
     grpNoteHTML(e)+
     (e.superset? "<div class='cue' style='color:var(--gold)'><b>\u26a1 Superset:</b> straight into "+escapeHtml(e.superset)+", no rest</div>":"")+
@@ -6311,6 +6350,90 @@ function fatLossPlan(){
           expected, actual, rate, rateSrc, weeksNeeded,
           doneBy: weeksNeeded!=null? isoShift(today(),weeksNeeded*7) : null};
 }
+/* ===== v119 · THREE THINGS AT ONCE, NOT ONE ============================
+   The plan was written down as a physique target with a date on it, which is
+   true but is not what he is actually training for. In his words: MOBILITY,
+   STRENGTH and BUILDING — and the building happens WHILE the fat comes off,
+   not after it. That is a recomposition, and it is a different brief from the
+   one the app had: "hold what you have and strip the fat" was programming for
+   maintenance and calling anything more a bonus.
+
+   Three pillars means three things to judge, and until now only two of them
+   could be. Sets are logged, so size can be counted. Loads are logged, so
+   strength can be tracked. Held ranges were not recorded at all, so mobility —
+   the one he has to be reminded about least and gets asked about most — was
+   the one nobody could answer for. logMobility() fixes that, and this reads
+   all three back. */
+const PILLARS={
+  mobility:{label:"Mobility", how:"held ranges, logged when you run the cool-down"},
+  strength:{label:"Strength", how:"the loads on your main lifts over recent sessions"},
+  size:    {label:"Building", how:"hard sets per muscle group against the target for your shape"}
+};
+/* Are the loads going anywhere? Judged across the lifts he actually repeats,
+   comparing the most recent top set with the one two sessions before it. */
+function strengthTrend(){
+  let up=0,flat=0,down=0; const moved=[];
+  Object.keys(DB.strength||{}).forEach(name=>{
+    const h=realStrengthSessions(name);
+    if(h.length<3) return;
+    const top=x=>Math.max(...((x.sets||[]).map(s=>+s.w||0)),0);
+    const now=top(h[h.length-1]), then=top(h[h.length-3]);
+    if(!now || !then) return;
+    if(now>then){ up++; moved.push(name+" "+then+"→"+now+"kg"); }
+    else if(now<then) down++;
+    else flat++;
+  });
+  const n=up+flat+down;
+  return {up, flat, down, n, moved:moved.slice(0,4),
+    state: !n? "nothing repeated often enough to judge yet"
+         : up>=Math.max(1,Math.round(n*0.3))? "climbing"
+         : down>up? "slipping"
+         : "holding"};
+}
+function pillarStatus(){
+  /* MOBILITY — days with held ranges against days he actually trained. */
+  const cut=new Date(Date.now()-6*864e5).toISOString().slice(0,10);
+  const trained=new Set(Object.keys(DB.completed||{}).filter(d=>d>=cut));
+  const mob=mobilityDays(7);
+  const mobMins=Math.round(mobilitySecs(7)/60);
+  const want=Math.max(3,trained.size);          /* every training day, at least three */
+  const mobility={n:mob.size, of:want, mins:mobMins,
+    state: mob.size>=want? "on track" : mob.size? "short" : "not happening",
+    /* Neutral wording on purpose: this line is read both on the card and in
+       the coach's brief, and "your shape" in one is "he" in the other. */
+    note: mob.size>=want
+      ? mob.size+" day"+(mob.size===1?"":"s")+" of held ranges this week, "+mobMins+" min in total"
+      : mob.size
+        ? "only "+mob.size+" day"+(mob.size===1?"":"s")+" of held ranges against "+want+" training days"
+        : "no cool-down run this week — mobility stays invisible unless the cool-down timer runs"};
+  /* STRENGTH — are the loads moving? */
+  const st=strengthTrend();
+  const strength=Object.assign({},st,{note: st.n
+    ? st.up+" of "+st.n+" repeated lifts up over the last three sessions, "+st.down+" down"+(st.moved.length? " ("+st.moved.join(", ")+")":"")
+    : "not enough repeated sessions on any lift to call it yet"});
+  /* BUILDING — hard sets against the target for his shape. */
+  const vs=volumeStatus(7);
+  const groups=Object.keys(vs);
+  const atTarget=groups.filter(g=>vs[g].sets>=vs[g].goal-2);
+  const below=groups.filter(g=>vs[g].sets<vs[g].mev);
+  const size={at:atTarget.length, of:groups.length, below,
+    state: below.length? "below minimum somewhere" : atTarget.length>=groups.length-1? "on track" : "under target",
+    note: atTarget.length+" of "+groups.length+" groups at the volume target for this physique"+
+      (below.length? ", and "+below.join(", ")+" below the minimum that maintains anything" : "")};
+  return {mobility, strength, size};
+}
+/* The pillars, for the coach, in the order he says them. */
+function pillarText(){
+  try{
+    const p=pillarStatus();
+    return "=== THE THREE THINGS HE IS TRAINING FOR, AND WHERE EACH ONE STANDS ===\n"+
+      "In his own words the plan is MOBILITY, STRENGTH and BUILDING, and the building happens WHILE the fat comes off. Not a cut with maintenance training bolted on — a recomposition. Every session should serve all three; a session that serves one of them is a session you programmed badly.\n"+
+      "  MOBILITY — "+p.mobility.state.toUpperCase()+": "+p.mobility.note+".\n"+
+      "  STRENGTH — "+p.strength.state.toUpperCase()+": "+p.strength.note+".\n"+
+      "  BUILDING — "+p.size.state.toUpperCase()+": "+p.size.note+".\n"+
+      "Name the one that is behind and fix it in the next session rather than mentioning it. If they are all on track, say so once and push on.\n\n";
+  }catch(e){ return ""; }
+}
 /* The clock. Everything the coach and the card need to say something true
    about the date without either of them doing arithmetic in prose. */
 function planClock(){
@@ -6353,7 +6476,7 @@ function planClock(){
   } else if(f.weeksNeeded<=weeksToSwitch){
     pace="on";
     why="Stage 1 needs about "+f.weeksNeeded+" more weeks and the switch is "+weeksToSwitch+" weeks away. It fits, with very little spare. Hold the course and protect the muscle — that is what makes stage 2 worth anything.";
-    mine="About "+f.weeksNeeded+" weeks of stage 1 left against "+weeksToSwitch+" before the switch. It fits, with little spare — hold the course and protect the muscle.";
+    mine="About "+f.weeksNeeded+" weeks of stage 1 left against "+weeksToSwitch+" before the switch. It fits, with little spare — keep eating the protein and keep adding on the bar where you can.";
   } else {
     pace="behind";
     why="Stage 1 needs about "+f.weeksNeeded+" weeks at the rate he is going and there are only "+weeksToSwitch+" before the switch. Say this out loud rather than hoping: either stage 2 gets shorter, or he arrives in "+monthYear(dl)+" lean and in better shape but not bigger. Both are honest answers. Cutting harder is NOT — it costs the muscle that the whole look is made of.";
@@ -6404,7 +6527,7 @@ function renderPhaseCard(){
   b.innerHTML=
     "<div class='notebox mb'>"+
       (ph===1
-        ? "<b>Stage 1 of 2 \u2014 "+stageName(1)+".</b> Hold the deficit until the stomach is flat. Training exists to keep every gram of muscle you have and add what it can on top. The diet does the fat loss; the workout never becomes cardio to chase calories."
+        ? "<b>Stage 1 of 2 \u2014 "+stageName(1)+".</b> The fat comes off while you build \u2014 a recomp, not a hold. The diet does the fat loss; training is there to add muscle, keep the loads climbing and hold your ranges. It never becomes cardio to chase calories."
         : "<b>Stage 2 of 2 \u2014 "+stageName(2)+".</b> Calories are up and the same framework goes to work adding muscle. Volume climbs on the groups that build your shape; the waist is the thing to watch.")+
     "</div>"+
     /* v117 \u2014 the date, and the honest state of it. */
@@ -6419,6 +6542,17 @@ function renderPhaseCard(){
         (c.fat.rate? ", and you are losing about "+c.fat.rate+"kg a week \u2014 stage 1 lands around <b>"+ukDate(c.fat.doneBy)+"</b>" : "")+".</div>"
       : "<div class='hint mb'>No body-fat figure logged, so none of this can be paced properly. Add an estimate in Progress \u2192 Measurements \u2014 a rough one is enough.</div>")+
     "<div class='hint mb'>"+c.mine+"</div>"+
+    /* v119 \u2014 the three things he is actually training for, each with the
+       one number that says whether it is happening. */
+    (function(){ try{
+      const ps=pillarStatus();
+      const dot=st=>(st==="on track"||st==="climbing")? "var(--green)" : (st==="not happening"||st==="slipping"||st==="below minimum somewhere")? "var(--red)" : "var(--gold)";
+      return "<div class='notebox mb'><b>The three things you're training for</b>"+
+        ["mobility","strength","size"].map(k=>
+          "<div class='hint' style='margin-top:7px'><b style='color:"+dot(ps[k].state)+"'>"+PILLARS[k].label+"</b> \u00b7 "+
+          escapeHtml(ps[k].note)+"</div>").join("")+
+        "</div>";
+    }catch(e){ return ""; } })()+
     (en? "<div class='hint mb'>"+(en.fromLog? "Averaging <b>"+en.kcal+" kcal</b> over your last "+en.days+" logged days" : "Around <b>"+en.kcal+" kcal</b> a day")+
           " against roughly "+en.maint+" maintenance at 187cm / "+((DB.profile&&DB.profile.weightKg)||"?")+"kg \u2014 about a "+en.pct+"% deficit.</div>" : "")+
     (a? "<div class='hint mb'>Logged, last "+a.days+" day"+(a.days===1?"":"s")+": "+
@@ -6779,7 +6913,7 @@ function fatFuelContext(){
     shortfall: Math.max(0,gap),
     verdict: gap<=0
       ? "his fat can cover the whole deficit \u2014 building while leaning out is genuinely on the table"
-      : "the deficit runs about "+gap+" kcal/day beyond what his fat can supply, so the rest is coming from elsewhere \u2014 expect to HOLD muscle rather than add it, and treat any gain as a bonus"
+      : "the deficit runs about "+gap+" kcal/day beyond what his fat can supply, so the rest comes from elsewhere \u2014 building is still the aim and still possible, but expect it SLOW and expect flat weeks on the bar. Say that plainly rather than letting him read a flat week as failure"
   };
 }
 function energyContext(){
@@ -6904,13 +7038,14 @@ TARGET_LOOK.reads.map(x=>"  \u2022 "+x).join("\n")+"\n"+
 "He is in stage "+trainingPhase()+". Program for that one, and say which stage a decision belongs to when it matters.\n\n"+
 (trainingPhase()===1 ? (
 "PHASE 1 RULES:\n"+
-"  \u2022 HIS POSITION, IN HIS WORDS: he is happy to MAINTAIN muscle while the fat comes off, and hopes to build off his fat stores on top. That is the right expectation \u2014 maintenance is the floor, building is the upside. Program so the floor is guaranteed and the upside is possible.\n"+
+"  \u2022 HIS POSITION, IN HIS WORDS: he is BUILDING MUSCLE WHILE HE LOSES THE FAT. Not holding, not waiting for stage 2 \u2014 building, now, off his fat stores. That is a recomposition and it is the brief. Program to ADD, and let the deficit decide how fast rather than whether. Maintenance is the worst acceptable outcome of a week, never the target of one.\n"+
+"  \u2022 WHAT THAT MEANS CONCRETELY: hit the TARGET volume figures, not the floor. Try to add load or reps every session on the anchors, and expect it to work some weeks and not others. A week where nothing moved is information about recovery and food, not a reason to lower the aim.\n"+
 (function(){ const f=fatFuelContext(); if(!f) return "";
   if(f.unknown) return "  \u2022 FAT AS FUEL: he is right in principle \u2014 stored fat can fund growth, which is why recomp works at all. Whether it can fund HIS deficit depends on how much fat he is carrying, and that is not logged yet. Ask him to log a body-fat estimate (Progress \u2192 Measurements) and you can give him a real answer instead of encouragement.\n";
   return "  \u2022 FAT AS FUEL, WITH THE ACTUAL NUMBERS: at "+f.bfPct+"% body fat ("+f.src+") he carries about "+f.fatKg+"kg of fat, which can realistically give up around "+f.supply+" kcal a day. His deficit is about "+f.deficit+". "+f.verdict+".\n"+
     (f.covered? "" : "    Tell him this plainly if it comes up. It is not a reason to train less \u2014 the training is what decides whether he keeps what he has \u2014 but he should not be surprised when the loads hold flat instead of climbing, and he should not read that as failure.\n"); })()+
 "  \u2022 PROTECT MUSCLE FIRST. Heavy loads, full range, working sets that mean something. Muscle is lost when the stimulus disappears, not when calories are low.\n"+
-"  \u2022 KEEP ENOUGH VOLUME TO GROW where he can. Sit between the minimum and the target figure. Do NOT scrape down to the minimum \u2014 that is how people finish a cut smaller and softer.\n"+
+"  \u2022 VOLUME AT THE TARGET, not between the floor and it. He is trying to grow while dieting, which is the hardest version of this; it does not happen on maintenance volume. Scraping down to the minimum is how people finish a cut smaller and softer, and it is the opposite of what he asked for.\n"+
 "  \u2022 NEVER TRADE LOAD FOR SWEAT. Higher reps with lighter weight to 'burn more' is the single worst thing you could do to him right now.\n"+
 "  \u2022 CUT JUNK BEFORE WORK. If recovery is short, remove filler exercises \u2014 not working sets on the movements that hold his shape.\n"+
 "  \u2022 THE STOMACH IS THE MILESTONE, not a bodyweight. Waist measurement and photos decide when stage 1 is done, and you should tell him when you think he is close \u2014 he should not have to ask, and he certainly should not sit in a deficit a month longer than he needs to.\n"+
@@ -6923,6 +7058,7 @@ TARGET_LOOK.reads.map(x=>"  \u2022 "+x).join("\n")+"\n"+
 "  \u2022 Watch the waist. If it starts thickening, that is the signal the surplus is too large \u2014 flag it once and let his nutritionist handle it. Stage 1 was paid for; do not let it be spent.\n"+
 "  \u2022 BIAS EVERYTHING TO THE SHAPE. Shoulders and upper back first, upper chest second, everything else held at proportionate. With a fixed date, volume spent on legs and biceps is volume not spent on the ratio he is actually chasing.\n"
 ))+"\n"+
+pillarText()+
 planClockText()+
 (en? ("=== WHAT HE IS ACTUALLY RUNNING ON ===\n"+
 (en.fromLog
@@ -6947,13 +7083,18 @@ Object.keys(PHYSIQUE_PRIORITY).map(g=>"  "+g+": "+PHYSIQUE_PRIORITY[g]).join("\n
 "  2. Can he add load to it over weeks? If not it is a finisher, not a driver.\n"+
 "  3. Is it stable enough that the limiting factor is the muscle, not his balance?\n"+
 "  4. Does it respect the wrist? Neutral grip and landmine/dumbbell variants over straight-wrist barbell pressing.\n\n"+
+"THE STRENGTH SLOT IS ALREADY IN EVERY SESSION. The app marks the first genuinely loaded compound of the day as the heavy one: "+STRENGTH_REPS+" reps, three minutes' rest, and everything after it in the 8-12 that builds size. That is the STRENGTH third of his plan and it is not decoration \u2014 do not quietly put that lift back to 8-12, and do not add a second heavy movement on top of it unless he asks. If you give an exercise its own rep target the app steps aside and the slot moves to the next lift, so only do that deliberately.\n\n"+
 "REP RANGES \u2014 by what he's trying to cause, not by habit:\n"+
 "  3-6   heavy compounds, strength and tendon/connective work. Long rests.\n"+
 "  6-12  the bulk of hypertrophy work.\n"+
 "  12-20 isolation, joint-friendly work, and anything the wrist dislikes loaded heavy.\n"+
 "  20+   metabolite work and finishers only.\n\n"+
 "EFFORT: most working sets 1-3 reps in reserve. Taking every set to failure buys very little extra growth and costs a great deal of recovery \u2014 reserve true failure for the last set of an isolation exercise.\n\n"+
-"HIS TWO GOALS ARE ONE PROGRAMME, NOT TWO: he wants the physique AND genuine range of motion. Loaded stretch work is where those meet \u2014 deep ROM on every rep, full lengthening under load, and mobility that earns its place in the session rather than being a cooldown afterthought. If a session is short on mobility, that is a programming failure, not a missing extra.\n\n"+
+"HIS THREE GOALS ARE ONE PROGRAMME, NOT THREE: MOBILITY, STRENGTH and BUILDING, trained together, every week, while the fat comes off. They are not a sequence and they do not take turns.\n"+
+"  \u2022 They agree far more than they conflict. Loaded stretch work is where all three meet \u2014 deep ROM on every rep, full lengthening under load. That is the growth stimulus AND the range AND a position he gets stronger in.\n"+
+"  \u2022 Where they genuinely conflict, the order is: keep the movement quality, keep the load, cut the volume. Never the other way round.\n"+
+"  \u2022 Strength is its own goal, not a by-product. Something heavy and low-rep every week, on a movement he repeats, or he is not training strength no matter how good the sessions feel.\n"+
+"  \u2022 If a session is short on mobility, that is a programming failure, not a missing extra.\n\n"+
 "FATIGUE AND DELOADS \u2014 read the numbers, not the calendar:\n"+
 (f.reasons.length? ("  CURRENT SIGNALS: "+f.reasons.join("; ")+"\n"+
   (f.deloadCase? "  Two or more signals are showing. Make the case for a deload week \u2014 same movements, roughly half the sets, 60-70% of the loads \u2014 and use [[DELOAD_WORKOUT: -30%]] if he agrees. Do not wait for him to raise it.\n" : "  One signal only. Watch it, mention it if it persists, do not overreact.\n"))
@@ -10615,7 +10756,7 @@ function scheduleInApp(){
    v18 ADDITIONS — draggable rest timer · weekly training memory · AI planner
    · Firestore sync
    ========================================================================== */
-const APP_VERSION="v118 · 15/09/2026";
+const APP_VERSION="v119 · 15/09/2026";
 
 /* ===== 1. REST TIMER — drag it anywhere so it never blocks the chat box ===== */
 let _rtDrag=null;
@@ -13743,6 +13884,13 @@ function mergeCloud(r,rev){
     });
     DB.strength[ex].sort((a,b)=>String(a.date).localeCompare(String(b.date)));
   });
+  /* v119 — mobility rows are append-only and keyed by when they happened. */
+  DB.mobility=DB.mobility||[];
+  const mobk=x=>[x.d,x.t,x.at].join("|");
+  const mobSeen=new Set(DB.mobility.map(mobk));
+  (r.mobility||[]).forEach(x=>{ if(x&&!mobSeen.has(mobk(x))){ DB.mobility.push(x); mobSeen.add(mobk(x)); } });
+  DB.mobility.sort((a,b)=>(a.at||0)-(b.at||0));
+  if(DB.mobility.length>3000) DB.mobility=DB.mobility.slice(-3000);
   const rk=x=>[x.date,x.dist,x.time].join("|");
   const seen=new Set((DB.rowing||[]).map(rk));
   (r.rowing||[]).forEach(x=>{ if(!seen.has(rk(x))){ DB.rowing.push(x); seen.add(rk(x)); stat.rows++; } });
@@ -14516,6 +14664,54 @@ const GROUP_DEFAULTS={ superset:{restBetweenSec:15, restAfterSec:90, transitionS
 /* Rebuild the group records from what the exercises actually say. Called
    after every structural change so an orphan or a one-member "superset"
    cannot survive into the renderer. */
+/* ===== v119 · STRENGTH IS PROGRAMMED, NOT HOPED FOR =====================
+   He says the plan is mobility, STRENGTH and building. The app had two of
+   those three: mobility is written into every session, volume is chased
+   against a target — and strength was a word in the coach's brief and nothing
+   else. Every exercise came out at 8-12 reps whether it was the first barbell
+   lift of the day or the last cable finisher, which is a hypertrophy session
+   with nothing heavy anywhere in it.
+
+   The first genuinely loaded compound of a session is now the STRENGTH SLOT:
+   4-6 reps, three minutes' rest, the weight actually heavy. Everything after
+   it stays in the 8-12 that builds size. One heavy movement a session, on a
+   lift he repeats, is what makes the loads move — and a lift that is getting
+   heavier is the clearest evidence there is that muscle is being added while
+   the fat comes off.
+
+   Skipped on travel days, bodyweight work, timed holds and anything he or the
+   coach has already given its own rep target: a deliberate number is a
+   decision and this does not overrule decisions. */
+const STRENGTH_REPS="4\u20136";
+const STRENGTH_REST=180;
+const STRENGTH_PATTERNS=["squat","hinge","hpush","vpush","hpull","vpull"];
+function applyStrengthSlot(w){
+  w=w||DB.workout;
+  if(!w||!Array.isArray(w.main)||!w.main.length) return w;
+  /* Clear what we stamped last time so the slot can move when the session
+     does — but never touch a number he has since changed himself. */
+  w.main.forEach(e=>{
+    if(!e||!e.strengthSlot) return;
+    delete e.strengthSlot;
+    if(e.reps===STRENGTH_REPS){
+      delete e.reps;
+      if(e.restSec===STRENGTH_REST) delete e.restSec;
+      e.rest = w.travel? "45\u201360s" : "90s";
+      try{ e.scheme=schemeFor(e.name, exSets(e), e); }catch(err){}
+    }
+  });
+  if(w.travel || w.kind==="cardio" || w.kind==="mobility" || !w.sets) return w;
+  const i=w.main.findIndex(e=> e && !e.reps && !e.timed && !e.grp &&
+    rampable(e.name) && STRENGTH_PATTERNS.indexOf(patternOf(e.name))>=0);
+  if(i<0) return w;
+  const e=w.main[i];
+  e.strengthSlot=true;
+  e.reps=STRENGTH_REPS;
+  e.restSec=STRENGTH_REST;
+  e.rest="3 min";
+  try{ e.scheme=exSets(e)+" sets \u00b7 "+STRENGTH_REPS; }catch(err){ e.scheme="4 sets \u00b7 "+STRENGTH_REPS; }
+  return w;
+}
 function resyncGroups(w){
   w=w||DB.workout; if(!w||!Array.isArray(w.main)) return;
   w.groups=w.groups||{};
@@ -14544,6 +14740,8 @@ function resyncGroups(w){
   compactGroups(w);
   /* A circuit that no longer exists must not leave a runner pointing at it. */
   if(w.circuitRun && !w.groups[w.circuitRun.gid]) delete w.circuitRun;
+  /* One heavy movement a session — see applyStrengthSlot. */
+  try{ applyStrengthSlot(w); }catch(e){}
 }
 function autoGroupLabel(members,kind){
   const ms=[...new Set(members.map(e=>((e.muscles||[])[0]||"")).filter(Boolean))];
