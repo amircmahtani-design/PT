@@ -1,3 +1,75 @@
+AMIR PT — v160 · 16/09/2026
+===========================
+
+"I'm happy to remove the cardio on Monday and do upper if you think it's
+better for Mario Casas body."
+
+YES, AND HERE IS WHY
+--------------------
+Monday is Upper Body now.
+
+    Mon  Upper Body      Tue  Legs & Core    Wed  Mobility
+    Thu  Pull Day        Fri  Push Day       Sat/Sun  Rest
+
+Chest, back and shoulders go from once a week to twice. Two sessions per
+muscle group per week beats one for building shape — it is the single largest
+programming lever available to him, and it lands on exactly the areas his own
+brief names first: shoulder width, upper chest, lats, arms. The cardio was
+never doing the fat loss; the deficit is. He keeps the Concept2 block on the
+Monday sheet and the walk on the front of Wednesday's flow.
+
+AND THEN THE DAY DID NOT WORK
+------------------------------
+Setting the schedule was thirty seconds. Checking what Monday actually built
+found an Upper Body day that read:
+
+    Bench Press · Overhead Press · DEADLIFT · FRONT SQUAT · Farmer Carry
+
+Two bugs behind it, and the second one had been hiding the first.
+
+1. THE SAME MAPPING, THREE TIMES, TWO OF THEM INCOMPLETE. buildWorkout knew
+   "Upper Body" means the upper pool. pickAnchors — which picks the two lifts
+   the entire five-week block is built on — did not, and neither did
+   pickAccessories. Both ran legs / pull / push and then straight to "full".
+   So the day anchored on the FULL-BODY pool and opened with a squat and a
+   deadlift. Core, Arms and HIIT days fell through the same hole. The upper
+   pools were correct the whole time; nothing was reading them. One
+   splitGroup() now, used by all three — the same shape of bug as the two
+   float clamps in v156, and the reason it survived is that fixing whichever
+   copy you happen to be reading looks like it worked.
+
+2. A SPLIT NOT IN THE WEEK HAD NO ANCHORS AT ALL. ensureBlock backfills
+   anchors for every split in the SCHEDULE, so one picked from the dropdown
+   for a single day had none — and an empty anchor list drops the builder
+   through to the full-body pool. Picked on demand now and held for the rest
+   of the block like any other.
+
+3. THREE ROWS IN ONE SESSION. pickAccessories sorted the pool once and took
+   the top few; the score knew what the ANCHORS were but not what the earlier
+   accessories had been. A day anchored Bench Press + Barbell Row came back
+   with a DB Row and a Renegade Row behind it. Picked one at a time now, with
+   every pattern already used in the session pushed down for the next choice.
+
+VERIFIED
+--------
+Every split maps to its own pool and anchors sensibly: Push → Incline Bench +
+Overhead Press · Pull → Lat Pulldown + Seated Cable Row · Legs → Deadlift +
+Back Squat · Upper → Overhead Press + Lat Pulldown · Core → Hollow Hold +
+Hanging Knee Raise · Arms → Barbell Curl + Close-grip Bench. No session
+anywhere now contains three movements of one pattern. Weekly frequency on the
+new week: chest 1→2, back 1→2, legs unchanged at 1. 390px and 1440px, no
+overflow, no console errors.
+
+HONEST CAVEAT
+-------------
+The two accessory slots on Monday are chosen by a scorer that weights what he
+has NOT trained lately, so on an empty history they still skew towards pulling
+rather than the shoulder and arm work the day is for. Against his real
+history that self-corrects — but if Monday keeps coming up short on shoulders
+once he has trained it a few times, tell me and I will weight the upper day
+towards his stated priorities directly rather than leaving it to the staleness
+score.
+
 AMIR PT — v159 · 16/09/2026
 ===========================
 

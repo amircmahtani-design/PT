@@ -1710,7 +1710,7 @@ const DEFAULTS = {
      Wednesday mobility, Thursday pull, Friday push, sat sun rest". The old
      default was six lifting days with one rest and no cardio or mobility in
      it anywhere, which is not a week he has ever actually trained. */
-  schedule:{0:"Rest",1:"Cardio",2:"Legs & Core",3:"Mobility",4:"Pull Day",5:"Push Day",6:"Rest"},
+  schedule:{0:"Rest",1:"Upper Body",2:"Legs & Core",3:"Mobility",4:"Pull Day",5:"Push Day",6:"Rest"},
   dayOverride:{date:null,split:null},
   /* v117 — the two stages, the look he is aiming at and the date he wants it
      by. DB.plan used to be created on the fly the first time the phase was
@@ -2041,13 +2041,13 @@ function mergeDefaults(parsed){ let d={...structuredClone(DEFAULTS),...parsed};
      The three day types it references are seeded alongside it, or Monday
      would point at a Cardio day that does not exist. */
   if(!d.prefs) d.prefs={};
-  if(!d.prefs.weekV159){
-    d.prefs.weekV159=true;
+  if(!d.prefs.weekV160){
+    d.prefs.weekV160=true;
     d.dayTypes=d.dayTypes||{};
     if(!d.dayTypes["Cardio"])   d.dayTypes["Cardio"]={kind:"cardio",main:[],note:""};
     if(!d.dayTypes["Mobility"]) d.dayTypes["Mobility"]={kind:"mobility",main:[],note:""};
     if(!d.dayTypes["Pilates"])  d.dayTypes["Pilates"]={kind:"pilates",main:[],note:""};
-    d.schedule={0:"Rest",1:"Cardio",2:"Legs & Core",3:"Mobility",4:"Pull Day",5:"Push Day",6:"Rest"};
+    d.schedule={0:"Rest",1:"Upper Body",2:"Legs & Core",3:"Mobility",4:"Pull Day",5:"Push Day",6:"Rest"};
   }
   /* v61 — photos gain a real timestamp and a pose label. Older ones only ever
      had a YYYY-MM-DD, so they're back-filled from that date at midday (so a
@@ -3642,8 +3642,31 @@ function blockWeek(){
 function blockIsDeload(){ return blockWeek()>=blockWeeks(); }
 function blockExpired(){ return blockWeek()>blockWeeks(); }
 /* Anchors are chosen once per block per day type and then left alone. */
+/* ===== v160 · ONE SPLIT-TO-POOL MAPPING ==================================
+   buildWorkout knew that "Upper Body" means the upper pool. pickAnchors, which
+   chooses the two lifts the whole block is built on, did not - and neither did
+   pickAccessories. Both ran legs / pull / push and then straight to "full". No
+   upper branch, so an Upper Body day anchored on the FULL-BODY pool and opened
+   with a Barbell Back Squat and a Deadlift, with full-body accessories behind
+   it. Core, Arms and HIIT days fell through the same hole. The upper pools
+   were right all along - nothing was reading them.
+   THREE copies of one mapping, two of them incomplete: the same shape of bug
+   as the two float clamps in v156, and the reason it survived so long is that
+   fixing the one you happen to read looks like it worked. One function now. */
+function splitGroup(split){
+  const s=String(split||"");
+  if(/legs|lower body|quad|hamstring|glute/i.test(s)) return "legs";
+  if(/pull|\bback\b/i.test(s))                        return "pull";
+  if(/push|chest|\bpress\b/i.test(s))                 return "push";
+  if(/upper/i.test(s))                                 return "upper";
+  if(/\barms?\b|bicep|tricep/i.test(s))               return "arms";
+  if(/core|\babs\b/i.test(s))                         return "core";
+  if(/hiit|interval|conditioning|circuit|metcon/i.test(s)) return "hiit";
+  if(/pilates|barre/i.test(s))                         return "pilates";
+  return "full";
+}
 function pickAnchors(split,key){
-  const grp=/legs/i.test(split)?"legs" : /pull/i.test(split)?"pull" : /push/i.test(split)?"push" : "full";
+  const grp=splitGroup(split);
   const P=(VPOOLS[key]||VPOOLS.dubai)[grp] || (VPOOLS[key]||VPOOLS.dubai).full;
   const anchors=applyRules((P&&P.anchor)? P.anchor.slice() : []).filter(n=>canDoHere(n,key));
   /* Two anchors covering DIFFERENT patterns \u2014 two horizontal presses is one
@@ -3719,6 +3742,17 @@ function ensureBlock(){
 }
 function anchorsFor(split){
   const b=ensureBlock();
+  /* ===== v160 · A SPLIT THAT IS NOT IN THE WEEK HAD NO ANCHORS ===========
+     ensureBlock backfills anchors for every split in the SCHEDULE, so one he
+     picks from the dropdown for a single day — or one just added to the week
+     — had none. An empty anchor list drops the builder through to the
+     full-body pool, and an Upper Body day came out as Bench Press, Overhead
+     Press, DEADLIFT, FRONT SQUAT and a Farmer Carry. The upper pools were
+     right the whole time; nothing was ever reading them.
+     Picked on demand now and held for the rest of the block like any other. */
+  if(split && split!=="Rest" && (!b.anchors[split] || !b.anchors[split].length)){
+    try{ b.anchors[split]=pickAnchors(split,locKey()); save(); }catch(e){}
+  }
   return (b.anchors[split]||[]).filter(n=>canDoHere(n,locKey()) && !exBanned(n));
 }
 /* What did yesterday actually contain? Never hammer the same pattern twice
@@ -3738,7 +3772,7 @@ function trainedYesterday(name){
 /* Accessories rotate: a different slice each week of the block, biased toward
    whatever the week is actually short of. */
 function pickAccessories(split,key,need,anchors){
-  const grp=/legs/i.test(split)?"legs" : /pull/i.test(split)?"pull" : /push/i.test(split)?"push" : "full";
+  const grp=splitGroup(split);
   const P=(VPOOLS[key]||VPOOLS.dubai)[grp] || (VPOOLS[key]||VPOOLS.dubai).full;
   let pool=applyRules([...(P&&P.acc||[]), ...(P&&P.anchor||[])])
              .filter(n=>canDoHere(n,key) && anchors.indexOf(n)<0);
@@ -3767,11 +3801,38 @@ function pickAccessories(split,key,need,anchors){
   /* Rotate the starting point by block week so it isn't the same accessories
      for five weeks running. */
   const wk=blockWeek();
-  pool=pool.map((n,i)=>({n,i})).sort((a,b)=>{
+  const sorted=pool.map((n,i)=>({n,i})).sort((a,b)=>{
     const d=score(b.n)-score(a.n); if(d) return d;
     return ((a.i+wk*3)%pool.length)-((b.i+wk*3)%pool.length);
   }).map(x=>x.n);
-  return pool.slice(0, Math.max(0,need));
+  /* ===== v160 · THREE ROWS IN ONE SESSION ==============================
+     This took the top `need` straight off one sorted list, and nothing in the
+     score knew what the EARLIER accessories had been — only what the anchors
+     were. On an Upper Body day anchored with a Bench Press and a Barbell Row
+     it returned a DB Row and a Renegade Row behind them: three horizontal
+     pulls in one session, with no shoulders and no arms, on the day whose
+     entire job is shoulder width and arms.
+
+     Picked one at a time now, with every pattern already used in this session
+     — anchors included — pushed down the list for the next choice. Same pool,
+     same scoring, same rotation as the tie-break; it just stops choosing the
+     same thing three times. */
+  const out=[], used={};
+  (anchors||[]).forEach(a=>{ const p=patternOf(a); if(p) used[p]=(used[p]||0)+1; });
+  const want=Math.max(0,need);
+  while(out.length<want){
+    let best=null, bestSc=-Infinity;
+    for(const n of sorted){
+      if(out.indexOf(n)>=0) continue;
+      const p=patternOf(n);
+      const sc=score(n) - 4*(used[p]||0);
+      if(sc>bestSc){ bestSc=sc; best=n; }
+    }
+    if(!best) break;
+    out.push(best);
+    const bp=patternOf(best); if(bp) used[bp]=(used[bp]||0)+1;
+  }
+  return out;
 }
 function pickPrehab(){
   const gaps=patternGaps(7);
@@ -3822,11 +3883,7 @@ function buildWorkout(){
   const pool=POOLS[key]||POOLS.dubai;
   let main;
   /* v53: rotated instead of a fixed slice, so consecutive leg days differ. */
-  let grp="full";
-  if(/legs/i.test(split)) grp="legs";
-  else if(/pull/i.test(split)) grp="pull";
-  else if(/push/i.test(split)) grp="push";
-  else if(/upper/i.test(split)) grp="upper";
+  let grp=splitGroup(split);
   /* v82 — anchors first, then rotating accessories, then one prehab slot.
      The anchors are fixed for the whole block so they can actually be loaded;
      everything after them moves, so the small muscles and the patterns that
@@ -8772,7 +8829,7 @@ coachingDoctrine()+
 "The emoji in these directives is only a fallback for when there is no photograph of that movement. Do not spend effort choosing them.\n\n"+
 "WEEKLY SCHEDULE & DAY TYPES:\n"+
 "HIS WEEK STARTS ON MONDAY \u2014 always list and think Mon-first, never Sunday-first.\n"+
-"THE WEEK HE HAS SETTLED ON, in his own words: Monday cardio, Tuesday legs and core, Wednesday mobility, Thursday pull, Friday push, Saturday and Sunday rest. SATURDAY AND SUNDAY ARE ALWAYS REST \u2014 do not schedule anything on them, and do not suggest he trains through the weekend. Three lifting days, one cardio, one mobility, two off. If you think a change would serve his goal better, say so once, briefly, and leave the decision to him; never just move a day.\n[[SET_WEEKDAY: Monday | Cardio Day]] · [[SET_WEEKLY_SCHEDULE: Mon Cardio Day; Tue Pull Day; Wed Full Body; Thu Push Day; Fri Legs & Core; Sat Upper Body; Sun Rest]] · [[CREATE_DAY_TYPE: Mobility Day]] · [[CREATE_DAY_TYPE: Cardio Day | kind:cardio | note:Zone 2 engine work]] · [[REMOVE_SCHEDULE_DAY_TYPE: Rest]]\n"+
+"THE WEEK HE HAS SETTLED ON: Monday UPPER BODY, Tuesday legs and core, Wednesday mobility, Thursday pull, Friday push, Saturday and Sunday rest. Monday was a cardio day until he asked whether upper would serve the physique better; it does, because it takes chest, back and shoulders from once a week to twice, and twice beats once for building shape. The engine has not been abandoned \u2014 the Concept2 block sits on the Monday sheet and the Wednesday flow opens with a walk. If he ever says the conditioning is slipping, the answer is a longer row on the end of Monday, not a fourth rest day. SATURDAY AND SUNDAY ARE ALWAYS REST \u2014 do not schedule anything on them, and do not suggest he trains through the weekend. Three lifting days, one cardio, one mobility, two off. If you think a change would serve his goal better, say so once, briefly, and leave the decision to him; never just move a day.\n[[SET_WEEKDAY: Monday | Cardio Day]] · [[SET_WEEKLY_SCHEDULE: Mon Cardio Day; Tue Pull Day; Wed Full Body; Thu Push Day; Fri Legs & Core; Sat Upper Body; Sun Rest]] · [[CREATE_DAY_TYPE: Mobility Day]] · [[CREATE_DAY_TYPE: Cardio Day | kind:cardio | note:Zone 2 engine work]] · [[REMOVE_SCHEDULE_DAY_TYPE: Rest]]\n"+
 "(CREATE_DAY_TYPE options after the name, pipe-separated: kind:cardio|mobility|strength, main:Ex1,Ex2, sets:4, note:...)\n\n"+
 "EXERCISE LIBRARY (add anything not built-in):\n"+
 "[[ADD_LIBRARY_EXERCISE: Seated Cable Row | muscles:back,arms | cue:Drive elbows to hips | category:Pull | equipment:cable | sets:3 | reps:10 | wrist:neutral grip | media:https://...gif]]  (only name is required)\n\n"+
@@ -12571,7 +12628,7 @@ function scheduleInApp(){
    v18 ADDITIONS — draggable rest timer · weekly training memory · AI planner
    · Firestore sync
    ========================================================================== */
-const APP_VERSION="v159 · 16/09/2026";
+const APP_VERSION="v160 · 16/09/2026";
 
 /* ===== 1. REST TIMER — drag it anywhere so it never blocks the chat box ===== */
 let _rtDrag=null;
