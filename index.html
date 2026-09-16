@@ -5076,17 +5076,21 @@ function mvHTML(item0,coolIdx){
        directly underneath it. Where the movement counts reps, its own dose
        stays and the timer stands down to a pacing clock. */
     const reps = item.repDose===true || (item.repDose===undefined && isRepDose(item.d)) || isRepDose(libDoseFor(item.t));
+    const kind=doseKind(item);
     if(flowSheet()){
-      /* v152 — the movement's OWN dose survives ("10 min" for the walk, "×6"
-         for a roll-up). The 45 seconds coolDur invents where the library is
-         silent does not: that is a made-up number printed as a prescription,
-         and it is the thing that made a stretch look like a set. */
-      const own = reps? item.d : (c.source==="default"? "" : (item.d||""));
-      dose = own || "";
+      /* v153 — a count and a clock are the movement itself, so they stay. A
+         static hold is the thing he means by "just do the mobility": picture,
+         name, cue, and no number telling him when to stop. */
+      dose = (kind==="count"||kind==="clock")? doseText(item) : "";
       return mvCardHTML(item,name,thumb,dose,coolIdx);
     }
-    dose = reps? item.d : (fmtSecShort(c.sec)+(c.perSide? " each side":" total"));
-    const lab= reps? ("⏱ pace "+fmtTime(c.sec)) : ("⏱ "+fmtTime(c.sec)+(c.perSide?" × 2 sides":""));
+    /* On a lifting day's cool-down the clock earns its place, but a counted
+       movement is still counted, not paced. */
+    dose = doseText(item);
+    if(kind==="count"){
+      return mvCardHTML(item,name,thumb,dose,coolIdx);
+    }
+    const lab= "⏱ "+fmtTime(c.sec)+(c.perSide?" × 2 sides":"");
     timerBtn="<button class='mvtime' data-ci='"+coolIdx+"' data-lab='"+attrEsc(lab)+"' onclick='coolTimer("+coolIdx+")'>"+lab+"</button>";
     /* v120 - five adjusters under every single stretch meant thirty-five
        controls on one screen, when the whole-cooldown row at the top already
@@ -12154,7 +12158,7 @@ function scheduleInApp(){
    v18 ADDITIONS — draggable rest timer · weekly training memory · AI planner
    · Firestore sync
    ========================================================================== */
-const APP_VERSION="v152 · 16/09/2026";
+const APP_VERSION="v153 · 16/09/2026";
 
 /* ===== 1. REST TIMER — drag it anywhere so it never blocks the chat box ===== */
 let _rtDrag=null;
@@ -16384,6 +16388,60 @@ function coolDefault(){
 }
 /* Breathing, an easy walk, a hold measured in minutes — these are not "45
    seconds a side" movements and applying the default to them would be wrong. */
+/* ===== v153 · TIMED, COUNTED, OR JUST DO IT ==============================
+   "See if it needs to be timed or reps or simply just showing me."
+
+   Three kinds of movement, and the app now says which each one is instead of
+   treating them all as a 45-second hold:
+
+     count  a real number of repetitions or breaths. Roll-Up x6, arm circles
+            15 each way, The Hundred's 10 breaths. The number IS the
+            instruction, so it is shown and there is nothing to time.
+
+     clock  the movement is a duration. A 10-minute walk, box breathing, a
+            dead hang, three minutes on the rower. Without the number there
+            is no movement, so it is always shown and always offers a timer.
+
+     hold   a static stretch. It has a sensible duration and a clock helps
+            when it is bolted onto the end of a lifting session — but on a
+            mobility day it is exactly what he means by "just do the
+            mobility", so the flow shows the picture and the cue and leaves
+            him alone.
+
+     open   nothing known about it. Never invent one.
+
+   AND THE LIBRARY'S OWN NUMBER SURVIVES NOW. coolDur used to keep a duration
+   only for the handful of things coolIsFixed matched (breath|walk|jog|row|
+   bike) and replaced every other movement's with one personal default. So
+   the couch stretch, written as 60s because it needs 60s, and the cobra,
+   written as 30s, both came out as "45s each side" — the author's judgement
+   thrown away and a single number painted over the top. His default applies
+   where the library has no opinion, and nowhere else. */
+function doseKind(item){
+  const t=String((item&&item.t)||"");
+  const d=String((item&&item.d)||"") || String(libDoseFor(t)||"");
+  if(item && item.repDose===true) return "count";
+  if(isRepDose(d)) return "count";
+  if(/\b(breath|breathing|walk|jog|run|row|erg|bike|cycle|skip|hang|savasana|meditat|plank|wall sit)\b/i.test(t)) return "clock";
+  if(d) return "hold";
+  return "open";
+}
+/* Where a dose is worth printing at all, this is the text. */
+function doseText(item){
+  const k=doseKind(item);
+  if(k==="open") return "";
+  if(k==="count") return String(item.d || libDoseFor(item.t) || "");
+  const c=coolDur(item);
+  /* v153 — when the duration came from the library, print the library's own
+     words. Re-deriving turned "20–30s" into "25s total" and "2–3 min" into
+     "2m 30s total", which is a false precision nobody asked for. His own
+     override, or the fallback default, is synthesised as before. */
+  if(c.source==="library"){
+    const own=String((item&&item.d)||"") || String(libDoseFor(item&&item.t)||"");
+    if(own) return own;
+  }
+  return fmtSecShort(c.sec)+(c.perSide? " each side" : " total");
+}
 function coolIsFixed(item){
   const t=String((item&&item.t)||"").toLowerCase();
   return /breath|walk|jog|row|bike|savasana|meditat/.test(t);
@@ -16393,9 +16451,13 @@ function coolDur(item){
   const it=item||{};
   if(typeof it.sec==="number" && it.sec>0)
     return {sec:it.sec, perSide:!!it.perSide, source:it.secSource||"override"};
+  /* v153 — this used to accept the library's duration ONLY for the few names
+     coolIsFixed matches, and overwrite every stretch's with one default. The
+     movement's own number wins now, whatever kind of movement it is. */
   const parsed=parseDurRaw(it.d);
-  if(coolIsFixed(it) && parsed.found)
-    return {sec:parsed.sec, perSide:parsed.sides>1, source:"library"};
+  if(parsed.found) return {sec:parsed.sec, perSide:parsed.sides>1, source:"library"};
+  const lib=parseDurRaw(libDoseFor(it.t));
+  if(lib.found) return {sec:lib.sec, perSide:lib.sides>1, source:"library"};
   const d=coolDefault();
   /* Per-side-ness is a property of the movement (a hip flexor stretch has two
      sides, box breathing does not), so it comes from the library. The
@@ -16444,7 +16506,11 @@ function isRepDose(d){
   const t=String(d||"");
   if(!t) return false;
   if(/\bs\b|sec|min|\bhold\b/i.test(t)) return false;
-  return /[\u00d7x]\s*\d|\breps?\b|breath|pumps|each direction/i.test(t);
+  /* v153 — "15 each way" (arm circles) has no × and no "reps", so it fell
+     through and was rendered as a 45-second hold. A bare number followed by
+     "each" is a count. The guard above already rules out "20s each side",
+     because there the digits are followed by the s. */
+  return /[\u00d7x]\s*\d|\breps?\b|breath|pumps|each direction|\b\d+\s+each\b/i.test(t);
 }
 function libDoseFor(name){
   try{
@@ -16469,7 +16535,12 @@ function applyCoolDefaults(list){
       return it;
     }
     it.repDose=false;
-    it.d=coolDoseText(it);
+    /* v153 — was coolDoseText, which re-derived the text from the seconds and
+       so stored "1 min each side" over the library's "60s each side". Same
+       duration, different words to the flow view. doseText keeps the author's
+       wording where the duration came from the library, and synthesises only
+       for his own override or the fallback default. */
+    it.d=doseText(it);
     return it;
   });
 }

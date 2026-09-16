@@ -1,3 +1,76 @@
+AMIR PT — v153 · 16/09/2026
+===========================
+
+"Not only the language. Audit it to make it perfect without losing any of its
+functionality. If it's mobility or Pilates or anything, see if it needs to be
+timed or reps or simply just showing me."
+
+EVERY MOVEMENT NOW DECLARES WHAT KIND OF THING IT IS
+-----------------------------------------------------
+v152 turned the seconds off on a flow day. That was the right direction and
+too blunt: it treated "×6" and "45s" and "10 min" as one problem. They are
+three different things, and the app now says which:
+
+  count  a real number of repetitions or breaths — Roll-Up ×6, arm circles
+         15 each way, The Hundred's 10 breaths. The number IS the
+         instruction. Shown everywhere; nothing to time.
+
+  clock  the movement is a duration — a 10-minute walk, box breathing, a dead
+         hang, three minutes on the rower. Without the number there is no
+         movement. Always shown, always offers a timer.
+
+  hold   a static stretch. A clock earns its place bolted onto the end of a
+         lifting session. On a mobility day it is precisely what he means by
+         "just do the mobility", so the flow shows the picture and the cue
+         and leaves him alone.
+
+  open   nothing known. Never invent one.
+
+THE LIBRARY'S OWN NUMBERS WERE BEING THROWN AWAY
+-------------------------------------------------
+The bigger find. coolDur kept a movement's duration only for the handful of
+names coolIsFixed matched (breath|walk|jog|row|bike) and replaced every other
+one with a single personal default. So the couch stretch, written as 60s
+because it needs 60s, and the cobra, written as 30s, both came out as "45s
+each side". Twelve carefully chosen durations flattened into one number.
+
+The movement's own duration wins now, whatever kind it is. His default applies
+where the library has no opinion, and nowhere else. The cool-down after a push
+day reads 45s for the pec stretch and 30s for the cross-body, as written.
+
+And the library's own WORDS survive: "20–30s" is no longer re-derived into
+"25s total", "2–3 min" is not "2m 30s total". applyCoolDefaults was quietly
+rewriting them into storage; it keeps them now.
+
+Two classification bugs found by listing all 44 movements and their verdicts
+side by side, which is the only reason they were visible:
+  · "Arm circles · 15 each way" has no × and no "reps", so isRepDose missed it
+    and it rendered as a 45-second hold. A bare number before "each" is a
+    count. ("20s each side" is unaffected — there the digits are followed by
+    the s.)
+  · the Pilates "pace 0:45" clock is gone from counted movements entirely,
+    rather than being suppressed only on a flow day.
+
+FUNCTIONAL AUDIT — NOT JUST LANGUAGE
+-------------------------------------
+Seventeen journeys exercised for real, not read: build a push day; log a set;
+set sets, reps and load; add, move, replace and remove an exercise; undo;
+complete and un-complete; clear and restore the day; all three locations; and
+a mobility flow completed. Sixteen passed. The seventeenth was my own test
+calling set_location with the wrong argument name — the action is correct.
+
+Location handling checked properly because he actually travels: Madrid builds
+dumbbells and bands only, Greece builds four bodyweight movements at two sets
+in travel mode, Dubai keeps the rower. Nothing in any of the three needs kit
+that is not there, and a mobility day away from home has no rower.
+
+VERIFIED
+--------
+390px and 1440px, no horizontal overflow, no console errors. All 44 warm-up,
+mobility and Pilates movements listed with their classification and the exact
+text each now shows. Flows with timers off and on; the push-day cool-down
+keeps its clocks and now shows the right ones.
+
 AMIR PT — v152 · 16/09/2026
 ===========================
 
