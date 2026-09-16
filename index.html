@@ -12067,7 +12067,7 @@ function scheduleInApp(){
    v18 ADDITIONS — draggable rest timer · weekly training memory · AI planner
    · Firestore sync
    ========================================================================== */
-const APP_VERSION="v150 · 16/09/2026";
+const APP_VERSION="v151 · 16/09/2026";
 
 /* ===== 1. REST TIMER — drag it anywhere so it never blocks the chat box ===== */
 let _rtDrag=null;
@@ -12541,8 +12541,52 @@ function setRestOverride(v){
   toast(v==="rest"?"Rest day it is \uD83D\uDE34" : v==="push"?"Full send \u2014 volume back up \uD83D\uDCAA" : v==="train"?"Session's built \u2014 go easy on the first set":"Back to the coach's call");
   if(v && v!=="rest") go('workout');
 }
+/* ===== v151 · THE READINESS CARD ON A DAY WITH NOTHING TO REGULATE ========
+   "I am doing mobility so the coach point here makes little sense."
+
+   It didn't. The card had cut a set he hasn't got, told him to leave two in
+   the tank on movements that have no reps, and offered "I can push more" on a
+   day whose entire purpose is not pushing. The reasoning underneath was sound
+   — his numbers HAVE gone backwards on the row and the RDL — but every
+   sentence it wrapped that in assumed a barbell.
+
+   Autoregulation answers "how hard should today be". A mobility day has
+   already answered it. So on a flow day the card stops giving a volume
+   instruction and does the one useful thing instead: it says why this is
+   landing at a good time, and offers the two choices that actually exist —
+   go and do the flow, or take the day off entirely.
+
+   "Done" still outranks it: what he has already logged beats any advice about
+   whether to do it. */
+function todayIsFlow(){
+  try{
+    if(DB.workout && flowDay(DB.workout)) return true;
+    if(typeof pickSplit==="function" && FLOWNAME.test(String(pickSplit()||""))) return true;
+  }catch(e){}
+  return false;
+}
+function flowReadinessHTML(c){
+  const tired = c.verdict==="rest" || c.verdict==="deload";
+  const body = tired
+    ? "Good day for it. Nothing here to push or cut — no sets, no load, no PB to chase. Move through the flow, breathe, and let the hard work you've already done actually land."
+    : "Today's the easy one by design. No sets, no load — move through the flow, breathe, and turn up fresh tomorrow.";
+  const why = tired
+    ? (c.reasons.length? c.reasons.slice(0,3).join(" · ") : "you've been at it hard")
+    : (c.green.length? c.green.slice(0,3).join(" · ") : "recovery looks fine");
+  return "<div class='card mt'><div class='card-title'><span>🧘 Mobility day</span>"+
+    "<span class='pill purple'>"+c.streak+"d streak</span></div>"+
+    "<div class='coachnote'><div class='who'>◆ Coach</div>"+body+
+      "<div class='sm' style='margin-top:8px'>"+(tired?"Well timed: ":"Reading: ")+why+"</div></div>"+
+    "<div class='readyrow'>"+
+      "<button class='btn green' style='flex:1;margin:0' onclick=\"go('workout')\">Open today's flow</button>"+
+      "<button class='btn ghost' style='flex:1;margin:0' onclick=\"setRestOverride('rest')\">😴 Rest completely</button>"+
+    "</div></div>";
+}
 function readinessHTML(){
   const c=readinessCall();
+  /* v151 — a flow day has nothing to autoregulate. Say so, rather than
+     offering to cut a set he has not got. */
+  if(c.verdict!=="done" && todayIsFlow()) return flowReadinessHTML(c);
   const cfg={
     rest :{icon:"\uD83D\uDE34",head:"Rest today",   pill:"gray"},
     deload:{icon:"\uD83E\uDEAB",head:"Train, but lighter", pill:"orange"},

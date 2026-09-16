@@ -1,3 +1,39 @@
+AMIR PT — v151 · 16/09/2026
+===========================
+
+"I am doing mobility so the coach point here makes little sense."
+
+It didn't. The readiness card on Home had cut a set he hasn't got, told him to
+leave two in the tank on movements that have no reps, and offered "I can push
+more" on a day whose entire point is not pushing.
+
+The reasoning underneath was right — his numbers HAVE gone backwards on the
+Barbell Row and the RDL, and that is worth saying. Every sentence it wrapped
+that in assumed a barbell.
+
+Autoregulation answers one question: how hard should today be. A mobility day
+has already answered it. So on a flow day the card stops issuing a volume
+instruction and does the useful thing instead — it says why a recovery day is
+landing at a good moment, and offers the two choices that actually exist:
+
+    🧘 Mobility day
+    Good day for it. Nothing here to push or cut — no sets, no load, no PB to
+    chase. Move through the flow, breathe, and let the hard work you've
+    already done actually land.
+    Well timed: numbers went backwards on Barbell Row and Romanian Deadlift …
+
+    [ Open today's flow ]   [ 😴 Rest completely ]
+
+"Today's session is done" still outranks it: what he has already logged beats
+any advice about whether to do it. A lifting day is untouched — same verdict,
+same "I can push more", checked side by side.
+
+This is the third screen in three days that talked as if every day is a
+lifting day: the rowing block, then the cardio block, now the readiness card.
+The through-line is that flow days were added to the sheet and never taught to
+the rest of the app. todayIsFlow() is now shared, and it is the thing to reach
+for anywhere the app is about to mention sets, reps, load or a PB.
+
 AMIR PT — v150 · 16/09/2026
 ===========================
 
