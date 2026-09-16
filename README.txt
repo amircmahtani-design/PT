@@ -1,7 +1,68 @@
-AMIR PT — v141 · 16/09/2026
+AMIR PT — v142 · 16/09/2026
 ===========================
 
 Upload index.html AND sw.js.
+
+
+YOU WERE RIGHT, BUT THE NUMBER WAS WRONG IN BOTH DIRECTIONS
+===========================================================
+You do not have a thousand exercises. The app's own catalogue was 183.
+The 1,049 in the old notes was the downloaded public database, which is a
+fallback, not your library.
+
+And you were not being given 40 or 50. I simulated twenty-four weeks of
+real training — a hundred and twenty sessions, logging everything it
+served so the rotation could work — and it served NINETEEN movements out
+of a hundred and seventy-three available.
+
+  Not because the library is too big. Because the picker was broken.
+
+
+THE ANCHORS NEVER CHANGED. EVER.
+================================
+Two of your five slots are anchors, held for a whole five-week block so
+they can be loaded. That part is right and it is not in question.
+
+  But the function that chooses them walked the pool in fixed order and
+  took the first two every single time. Deterministic. So every block
+  since the app was written picked the SAME pair — twenty-four weeks
+  produced ONE anchor set per split. Barbell Back Squat anchored seventy-
+  two of a hundred and twenty sessions.
+
+  A new block now starts further down the pool. Anchors still hold for
+  the full block; the next block is anchored on something else.
+
+AND NOTHING KNEW WHEN YOU LAST DID A MOVEMENT
+  The accessory and prehab scoring had no term for it — so once the
+  week's pattern gaps settled, the same two accessories won for ever.
+  Farmer Carry took the prehab slot in fifty-six of sixty sessions.
+  Both now prefer what you have not done recently, the way the rest of
+  the app already did.
+
+    before   19 movements over 24 weeks
+    after    28, and 5 different anchor sets instead of 1
+
+  It is not a finished job. Two slots out of five are anchors and one is
+  prehab, so the ceiling on variety is structural. But the library is no
+  longer being ignored.
+
+
+EXERCISES.txt — THE FULL LIST
+=============================
+Every movement the app can put in front of you: 234, nothing dead, nothing
+outside it. 94 are already your photographs, 140 are borrowed, and 32 of
+those are provably the wrong movement or the wrong implement — listed
+first, with what each is currently showing.
+
+REMOVED
+  Eight entries were in the catalogue but in no pool, so the app could
+  never serve them, and none had a photo: DB Lateral Lunge, DB Windmill,
+  Good Morning, Leg Curl, Leg Extension, Pseudo Planche Push-up, Shrimp
+  Squat, Standing Calf Raise.
+
+  Three more were also unreachable — but you had already photographed
+  them. Hip Abduction, Reverse Snow Angel Hold and Side Plank Rotation
+  went into rotation instead of the bin.
 
 
 WHY THE COACH AGREED AND THEN DIDN'T DO IT

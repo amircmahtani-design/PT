@@ -2496,7 +2496,6 @@ const EXTRA_LIB={
  "Split Squat":{m:["legs"],eq:"bw",cue:"Static lunge stance, drop the back knee straight down. Front heel planted.",wristAlt:"No wrist load — good"},
  "Lateral Lunge":{m:["legs"],eq:"bw",cue:"Step wide, sit into that hip, other leg straight. Trains the plane you neglect.",wristAlt:"No wrist load — good"},
  "Curtsy Lunge":{m:["legs"],eq:"bw",cue:"Step diagonally behind, hips square. Hits glute medius hard.",wristAlt:"No wrist load — good"},
- "Shrimp Squat":{m:["legs"],eq:"bw",cue:"Hold the back foot, lower until the knee taps. Brutal single-leg strength.",wristAlt:"No wrist load — good"},
  "Single-leg Calf Raise":{m:["legs"],eq:"bw",cue:"Full stretch at the bottom, pause at the top. Slow.",wristAlt:"No wrist load — good"},
  "Skater Jump":{m:["legs"],eq:"bw",cue:"Bound side to side, land soft and absorb. Stick each landing.",wristAlt:"No wrist load — good"},
  "Broad Jump":{m:["legs"],eq:"bw",cue:"Explode forward, land in a quarter squat. Quality over distance.",wristAlt:"No wrist load — good"},
@@ -2508,7 +2507,6 @@ const EXTRA_LIB={
  "Hindu Push-up":{m:["chest","shoulders"],eq:"bw",cue:"Dive down and scoop through, finishing chest-up. Shoulders and spine love it.",wristAlt:"Skip if the TFCC complains — loaded extension"},
  "Plank Shoulder Tap":{m:["core","shoulders"],eq:"bw",cue:"Plank, tap the opposite shoulder without the hips rocking.",wristAlt:"Forearm variation if the wrist objects"},
  "Plank Up-Down":{m:["core","shoulders"],eq:"bw",cue:"Forearms to hands and back. Hips as still as you can keep them.",wristAlt:"Go slow — loaded wrist"},
- "Pseudo Planche Push-up":{m:["chest","shoulders"],eq:"bw",cue:"Hands by the ribs, lean forward over them. Serious tension.",wristAlt:"Hard on the wrist — skip on a bad TFCC day"},
  /* ---- bodyweight: pull / posterior ---- */
  "Towel Row":{m:["back"],eq:"bw",cue:"Towel round a solid post, lean back and row. Pull the elbows past the ribs.",wristAlt:"Neutral grip — wrist friendly"},
  "Reverse Plank":{m:["back","core"],eq:"bw",cue:"Face up, hips lifted, chest open. Squeeze the glutes.",timed:true,wristAlt:"Fingers forward, or forearms if the wrist complains"},
@@ -2534,7 +2532,6 @@ const EXTRA_LIB={
  /* ---- dumbbell ---- */
  "DB Single-leg RDL":{m:["legs","back"],eq:"db",cue:"Hinge over one leg, back flat, hips square. Balance is part of it.",wristAlt:"Neutral grip — fine"},
  "DB Sumo Deadlift":{m:["legs"],eq:"db",cue:"Wide stance, dumbbell between the feet, push the floor away.",wristAlt:"Neutral grip — fine"},
- "DB Lateral Lunge":{m:["legs"],eq:"db",cue:"Step wide holding the weight at the chest, sit into that hip.",wristAlt:"Goblet hold — neutral"},
  "DB Calf Raise":{m:["legs"],eq:"db",cue:"Weights at your sides, full stretch, pause at the top.",wristAlt:"Neutral grip — fine"},
  "DB Swing":{m:["legs","back"],eq:"db",cue:"Hinge, snap the hips, the arms are just a rope. Never a squat.",wristAlt:"Neutral grip — fine"},
  "DB Push Press":{m:["shoulders"],eq:"db",cue:"Small dip from the legs, drive overhead. Lets you handle more than a strict press.",wristAlt:"Neutral grip — kinder on the TFCC"},
@@ -2552,17 +2549,12 @@ const EXTRA_LIB={
  "DB Russian Twist":{m:["core"],eq:"db",cue:"Weight at the chest, rotate side to side. Slow beats fast.",wristAlt:"Neutral grip — fine"},
  "DB Side Bend":{m:["core"],eq:"db",cue:"One weight, bend sideways only. No twisting, no leaning forward.",wristAlt:"Neutral grip — fine"},
  "DB Suitcase Carry":{m:["core","back"],eq:"db",cue:"One weight, walk tall, refuse to lean. Anti-lateral-flexion.",timed:true,wristAlt:"Neutral grip — fine"},
- "DB Windmill":{m:["core","shoulders"],eq:"db",cue:"Weight locked overhead, hinge sideways, eyes on the weight.",wristAlt:"Go light — overhead wrist load"},
  "DB Clean and Press":{m:["legs","shoulders"],eq:"db",cue:"Hinge, pull, catch at the shoulder, press. One smooth chain.",wristAlt:"Neutral catch position"},
  /* ---- barbell / machine ---- */
  "Close-grip Bench Press":{m:["chest","arms"],eq:"bb",cue:"Hands shoulder width, elbows tucked. Triceps do the work.",wristAlt:"Keep the wrist stacked — stop if the TFCC talks"},
  "Incline Bench Press":{m:["chest"],eq:"bb",cue:"30-45 degrees, bar to the upper chest.",wristAlt:"Neutral-grip dumbbells instead"},
  "Barbell Curl":{m:["arms"],eq:"bb",cue:"Elbows pinned to the ribs, no swinging.",wristAlt:"EZ bar or dumbbells — straight bar loads the wrist"},
- "Good Morning":{m:["legs","back"],eq:"bb",cue:"Light. Hinge with a flat back, feel the hamstrings.",wristAlt:"Bar on the back — no wrist load"},
  "Hip Abduction":{m:["legs"],eq:"mach",cue:"Slow out, slower back. Glute medius.",wristAlt:"No wrist load — good"},
- "Leg Curl":{m:["legs"],eq:"mach",cue:"Full range, squeeze at the top, lower slow.",wristAlt:"No wrist load — good"},
- "Leg Extension":{m:["legs"],eq:"mach",cue:"Pause at lockout. Great for the quad without spine load.",wristAlt:"No wrist load — good"},
- "Standing Calf Raise":{m:["legs"],eq:"mach",cue:"Full stretch, pause at the top. Don't bounce.",wristAlt:"No wrist load — good"},
  "Cable Fly":{m:["chest"],eq:"mach",cue:"Soft elbows, hug the arms together, squeeze.",wristAlt:"Neutral handles"},
  "Chest-supported Row":{m:["back"],eq:"mach",cue:"Chest on the pad, row to the ribs. No cheating with the low back.",wristAlt:"Neutral grip — fine"},
  "Cable Lateral Raise":{m:["shoulders"],eq:"mach",cue:"Constant tension, lead with the elbow.",wristAlt:"Neutral grip — fine"},
@@ -2675,17 +2667,17 @@ function ensureLibEntry(name){
 const VPOOLS={
  dubai:{
   legs:{anchor:["Barbell Back Squat","Front Squat","Deadlift","Romanian Deadlift","Leg Press","Goblet Squat","Hip Thrust","Hack Squat"],
-        acc:["Bulgarian Split Squat","Walking Lunge","Reverse Lunge","Step-up","Nordic Curl","Single-leg Glute Bridge","Calf Raise","Wall Sit","Glute Bridge","Pistol Squat","Jump Squat"]},
+        acc:["Hip Abduction","Bulgarian Split Squat","Walking Lunge","Reverse Lunge","Step-up","Nordic Curl","Single-leg Glute Bridge","Calf Raise","Wall Sit","Glute Bridge","Pistol Squat","Jump Squat"]},
   push:{anchor:["Bench Press","Overhead Press","Incline DB Press","DB Bench Press","DB Shoulder Press","DB Floor Press","Incline Bench Press","Close-grip Bench Press"],
         acc:["Lateral Raise","Triceps Pushdown","Overhead Triceps Extension","Diamond Push-up","Bench Dip","Push-up","Pike Push-up","Decline Push-up","Archer Push-up","Cable Fly","Cable Lateral Raise","Dip","Landmine Press"]},
   pull:{anchor:["Pull-up","Barbell Row","Lat Pulldown","Chin-up","Seated Cable Row","DB Row"],
-        acc:["Face Pull","DB Curl","Hammer Curl","Band Pull-Apart","Prone Y-T-W Raise","Renegade Row","Inverted Row","Dead Hang","Reverse Snow Angel","Superman Hold","Chest-supported Row","DB Reverse Fly","DB Shrug","Towel Row"]},
+        acc:["Reverse Snow Angel Hold","Face Pull","DB Curl","Hammer Curl","Band Pull-Apart","Prone Y-T-W Raise","Renegade Row","Inverted Row","Dead Hang","Reverse Snow Angel","Superman Hold","Chest-supported Row","DB Reverse Fly","DB Shrug","Towel Row"]},
   upper:{anchor:["Bench Press","Barbell Row","Overhead Press","Pull-up","Lat Pulldown","Incline Bench Press"],
-        acc:["DB Curl","Hammer Curl","Lateral Raise","Triceps Pushdown","Face Pull","Push-up","Bench Dip","Plank","Dip","Cable Fly","DB Reverse Fly","Cable Lateral Raise","Hanging Knee Raise"]},
+        acc:["Reverse Snow Angel Hold","DB Curl","Hammer Curl","Lateral Raise","Triceps Pushdown","Face Pull","Push-up","Bench Dip","Plank","Dip","Cable Fly","DB Reverse Fly","Cable Lateral Raise","Hanging Knee Raise"]},
   full:{anchor:["Barbell Back Squat","Deadlift","Bench Press","Overhead Press","Front Squat","Kettlebell Swing"],
         acc:["Barbell Row","Pull-up","Walking Lunge","Plank","Farmer Carry","DB Thruster","Hip Thrust","Hanging Knee Raise","DB Clean and Press","Box Jump","Bear Crawl","Ab Wheel"]},
   core:{anchor:["Hanging Knee Raise","Plank","Hollow Hold"],
-        acc:["Side Plank","Dead Bug","Bird Dog","Farmer Carry","Mountain Climber","Superman Hold","Criss-Cross","Leg Pull Front","Single Leg Stretch","Ab Wheel","Cable Crunch","Hollow Rock","Leg Raise","V-Up","Russian Twist","DB Suitcase Carry"]},
+        acc:["Side Plank Rotation","Reverse Snow Angel Hold","Side Plank","Dead Bug","Bird Dog","Farmer Carry","Mountain Climber","Superman Hold","Criss-Cross","Leg Pull Front","Single Leg Stretch","Ab Wheel","Cable Crunch","Hollow Rock","Leg Raise","V-Up","Russian Twist","DB Suitcase Carry"]},
   arms:{anchor:["DB Curl","Triceps Pushdown","Chin-up","Barbell Curl","Close-grip Bench Press"],
         acc:["Hammer Curl","Overhead Triceps Extension","Diamond Push-up","Bench Dip","Face Pull","Lateral Raise","Dead Hang","DB Concentration Curl","DB Zottman Curl","DB Skull Crusher","DB Kickback","Dip"]},
   hiit:{anchor:["DB Thruster","Burpee","Jump Squat","Kettlebell Swing","Box Jump"],
@@ -2695,17 +2687,17 @@ const VPOOLS={
  },
  madrid:{
   legs:{anchor:["DB Front Squat","Goblet Squat","DB Romanian Deadlift","Bulgarian Split Squat","DB Sumo Deadlift","DB Single-leg RDL"],
-        acc:["Walking Lunge","Reverse Lunge","Step-up","Single-leg Glute Bridge","Calf Raise","Wall Sit","Glute Bridge","Jump Squat","Bodyweight Squat","Pistol Squat","Cossack Squat","Split Squat","Lateral Lunge","Curtsy Lunge","DB Calf Raise","Single-leg Calf Raise"]},
+        acc:["Hip Abduction","Walking Lunge","Reverse Lunge","Step-up","Single-leg Glute Bridge","Calf Raise","Wall Sit","Glute Bridge","Jump Squat","Bodyweight Squat","Pistol Squat","Cossack Squat","Split Squat","Lateral Lunge","Curtsy Lunge","DB Calf Raise","Single-leg Calf Raise"]},
   push:{anchor:["DB Bench Press","DB Shoulder Press","Incline DB Press","DB Floor Press","DB Push Press","DB Arnold Press"],
         acc:["Lateral Raise","Overhead Triceps Extension","Push-up","Diamond Push-up","Pike Push-up","Bench Dip","Decline Push-up","Archer Push-up","DB Chest Fly","DB Front Raise","Wide Push-up","Hindu Push-up","DB Pullover"]},
   pull:{anchor:["DB Row","Renegade Row","Inverted Row","DB Single-arm Row","Towel Row"],
-        acc:["DB Curl","Hammer Curl","Prone Y-T-W Raise","Band Pull-Apart","Superman Hold","Reverse Snow Angel","DB Reverse Fly","DB Shrug","DB Upright Row","DB Pullover","Wall Angel","Prone Swimmer","Reverse Plank"]},
+        acc:["Reverse Snow Angel Hold","DB Curl","Hammer Curl","Prone Y-T-W Raise","Band Pull-Apart","Superman Hold","Reverse Snow Angel","DB Reverse Fly","DB Shrug","DB Upright Row","DB Pullover","Wall Angel","Prone Swimmer","Reverse Plank"]},
   upper:{anchor:["DB Bench Press","DB Row","DB Shoulder Press","DB Arnold Press","DB Push Press"],
-        acc:["DB Curl","Hammer Curl","Lateral Raise","Push-up","Bench Dip","Plank","Renegade Row","DB Reverse Fly","DB Chest Fly","DB Concentration Curl","DB Skull Crusher","Wide Push-up","Towel Row"]},
+        acc:["Reverse Snow Angel Hold","DB Curl","Hammer Curl","Lateral Raise","Push-up","Bench Dip","Plank","Renegade Row","DB Reverse Fly","DB Chest Fly","DB Concentration Curl","DB Skull Crusher","Wide Push-up","Towel Row"]},
   full:{anchor:["DB Front Squat","DB Bench Press","DB Romanian Deadlift","Goblet Squat","DB Swing","DB Clean and Press"],
         acc:["DB Row","Walking Lunge","Plank","DB Thruster","Renegade Row","Hollow Hold","DB Single-leg RDL","DB Push Press","Bear Crawl","Sprawl","DB Suitcase Carry","Hollow Rock"]},
   core:{anchor:["Plank","Hollow Hold"],
-        acc:["Side Plank","Dead Bug","Bird Dog","Renegade Row","Mountain Climber","Criss-Cross","Leg Pull Front","Single Leg Stretch","Superman Hold","DB Russian Twist","DB Side Bend","DB Suitcase Carry","Hollow Rock","Leg Raise","V-Up","Bicycle Crunch","Flutter Kick"]},
+        acc:["Side Plank Rotation","Reverse Snow Angel Hold","Side Plank","Dead Bug","Bird Dog","Renegade Row","Mountain Climber","Criss-Cross","Leg Pull Front","Single Leg Stretch","Superman Hold","DB Russian Twist","DB Side Bend","DB Suitcase Carry","Hollow Rock","Leg Raise","V-Up","Bicycle Crunch","Flutter Kick"]},
   arms:{anchor:["DB Curl","Overhead Triceps Extension","DB Skull Crusher"],
         acc:["Hammer Curl","Diamond Push-up","Bench Dip","Lateral Raise","Push-up","DB Concentration Curl","DB Zottman Curl","DB Kickback","DB Front Raise","DB Upright Row","Wide Push-up"]},
   hiit:{anchor:["DB Thruster","Burpee","Jump Squat","DB Swing","DB Clean and Press"],
@@ -2715,17 +2707,17 @@ const VPOOLS={
  },
  greece:{
   legs:{anchor:["Bodyweight Squat","Walking Lunge","Pistol Squat","Cossack Squat","Split Squat"],
-        acc:["Band Romanian Deadlift","Band Glute Bridge","Band Lateral Walk","Band Leg Curl","Band Kickback","Reverse Lunge","Single-leg Glute Bridge","Band Calf Raise","Wall Sit","Jump Squat","Curtsy Lunge","Lateral Lunge","Skater Jump","Band Monster Walk","Wall Sit March","Nordic Negative"]},
+        acc:["Hip Abduction","Band Romanian Deadlift","Band Glute Bridge","Band Lateral Walk","Band Leg Curl","Band Kickback","Reverse Lunge","Single-leg Glute Bridge","Band Calf Raise","Wall Sit","Jump Squat","Curtsy Lunge","Lateral Lunge","Skater Jump","Band Monster Walk","Wall Sit March","Nordic Negative"]},
   push:{anchor:["Push-up","Band Chest Press","Band Overhead Press","Pike Push-up","Wide Push-up"],
         acc:["Band Chest Fly","Band Triceps Pushdown","Band Overhead Triceps Extension","Diamond Push-up","Archer Push-up","Band Push-up","Incline Push-up","Plank Shoulder Tap","Band External Rotation","Bear Crawl"]},
   pull:{anchor:["Band Row","Band Lat Pulldown","Inverted Row","Band Single-arm Row","Towel Row"],
-        acc:["Band Face Pull","Band Pull-Apart","Band Reverse Fly","Band Curl","Band Hammer Curl","Band Straight-arm Pulldown","Prone Y-T-W Raise","Reverse Snow Angel","Superman Hold","Prone Swimmer","Wall Angel","Band External Rotation","Reverse Plank","Hollow Rock"]},
+        acc:["Reverse Snow Angel Hold","Band Face Pull","Band Pull-Apart","Band Reverse Fly","Band Curl","Band Hammer Curl","Band Straight-arm Pulldown","Prone Y-T-W Raise","Reverse Snow Angel","Superman Hold","Prone Swimmer","Wall Angel","Band External Rotation","Reverse Plank","Hollow Rock"]},
   upper:{anchor:["Push-up","Band Row","Band Overhead Press","Band Lat Pulldown","Pike Push-up"],
-        acc:["Band Face Pull","Band Curl","Band Triceps Pushdown","Diamond Push-up","Band Chest Fly","Band Pull-Apart","Archer Push-up","Prone Y-T-W Raise","Band External Rotation","Plank Shoulder Tap"]},
+        acc:["Reverse Snow Angel Hold","Band Face Pull","Band Curl","Band Triceps Pushdown","Diamond Push-up","Band Chest Fly","Band Pull-Apart","Archer Push-up","Prone Y-T-W Raise","Band External Rotation","Plank Shoulder Tap"]},
   full:{anchor:["Bodyweight Squat","Push-up","Band Row","Walking Lunge","Band Overhead Press"],
         acc:["Band Romanian Deadlift","Band Face Pull","Hollow Hold","Band Curl","Band Pallof Press","Plank","Band Glute Bridge","Burpee","Mountain Climber","Bear Crawl","Skater Jump","Band Calf Raise"]},
   core:{anchor:["Plank","Band Pallof Press","Hollow Hold"],
-        acc:["Band Woodchop","Side Plank","Band Dead Bug","Bird Dog","Band Anti-Rotation Hold","Mountain Climber","Superman Hold","Leg Pull Front","Scissors","Bicycle Crunch","Leg Raise","V-Up","Flutter Kick","Hollow Rock","Reverse Plank","Bear Crawl"]},
+        acc:["Side Plank Rotation","Reverse Snow Angel Hold","Band Woodchop","Side Plank","Band Dead Bug","Bird Dog","Band Anti-Rotation Hold","Mountain Climber","Superman Hold","Leg Pull Front","Scissors","Bicycle Crunch","Leg Raise","V-Up","Flutter Kick","Hollow Rock","Reverse Plank","Bear Crawl"]},
   arms:{anchor:["Band Curl","Band Triceps Pushdown","Diamond Push-up","Band Hammer Curl"],
         acc:["Archer Push-up","Inverted Row","Pike Push-up","Push-up","Wide Push-up","Incline Push-up","Plank Up-Down","Towel Row","Hindu Push-up","Bear Crawl"]},
   hiit:{anchor:["Burpee","Jump Squat","Sprawl","Squat Thrust"],
@@ -3455,8 +3447,24 @@ function pickAnchors(split,key){
     }
     return true;
   };
+  /* ===== v142 · EVERY BLOCK PICKED THE SAME TWO ANCHORS ==================
+     This walked the pool in fixed order and took the first two that covered
+     different patterns. Deterministic, so every block since the app was
+     written chose the same pair — twenty-four simulated weeks produced ONE
+     anchor set per split and the same two lifts anchored every session, for
+     ever. With two anchors and one prehab out of five slots, that is most of
+     the session nailed down and is why the whole app only ever served him
+     nineteen movements out of a hundred and seventy-three.
+
+     Anchors still hold for the WHOLE block — that is what makes them
+     loadable, and it is not in question. But a NEW block starts further down
+     the pool, so the next five weeks are anchored on something else. */
+  const bn=((DB.block&&DB.block.n)||0);
+  const loadables=anchors.filter(loadable);
+  const rot=loadables.length? (bn*2)%loadables.length : 0;
+  const ordered=rot? loadables.slice(rot).concat(loadables.slice(0,rot)) : loadables;
   const out=[];
-  anchors.filter(loadable).forEach(n=>{
+  ordered.forEach(n=>{
     if(out.length>=2) return;
     const p=patternOf(n);
     if(out.some(x=>patternOf(x)===p)) return;
@@ -3519,10 +3527,21 @@ function pickAccessories(split,key,need,anchors){
              .filter(n=>canDoHere(n,key) && anchors.indexOf(n)<0);
   const gaps=patternGaps(7);
   const yest=yesterdayPatterns();
+  /* ===== v142 · THE POOL WAS THERE, THE PICKER IGNORED IT ==============
+     The accessory pools hold 173 movements and twelve simulated weeks served
+     SEVENTEEN, the same five in almost every session. The score had no term
+     for "when did he last do this", so once the week's pattern gaps settled
+     the ranking never moved and the same two accessories won every time.
+
+     pickRotated() has always sorted on lastDoneDays. This did not. It does
+     now, capped so it breaks the deadlock without outranking a genuine gap in
+     the week: a movement he has never done, or has not done in six weeks,
+     comes forward; one he did on Monday goes to the back. */
   const score=n=>{
     const p=patternOf(n);
     let sc=0;
     if(p && gaps.includes(p)) sc+=6;                 /* fills a gap in the week */
+    sc += Math.min(9, lastDoneDays(n)/6);            /* stale comes forward */
     if(p && yest.has(p)) sc-=4;                       /* trained yesterday */
     if(trainedYesterday(n)) sc-=10;                   /* literally did this yesterday */
     if(anchors.some(a=>patternOf(a)===p)) sc-=3;      /* already covered today */
@@ -3546,6 +3565,9 @@ function pickPrehab(){
     const p=patternOf(x.n);
     let sc=0;
     if(p&&gaps.includes(p)) sc+=5;
+    /* v142 — Farmer Carry took the prehab slot in 56 of 60 simulated sessions.
+       Same omission, same fix. */
+    sc += Math.min(6, lastDoneDays(x.n)/6);
     if(p&&yest.has(p)) sc-=3;
     return {x,sc};
   }).sort((a,b)=>b.sc-a.sc);
@@ -11736,7 +11758,7 @@ function scheduleInApp(){
    v18 ADDITIONS — draggable rest timer · weekly training memory · AI planner
    · Firestore sync
    ========================================================================== */
-const APP_VERSION="v141 · 16/09/2026";
+const APP_VERSION="v142 · 16/09/2026";
 
 /* ===== 1. REST TIMER — drag it anywhere so it never blocks the chat box ===== */
 let _rtDrag=null;

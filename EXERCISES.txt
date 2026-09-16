@@ -1,0 +1,287 @@
+EVERY EXERCISE IN THE APP — AND WHICH NEED A PHOTO
+==================================================
+
+v142 · 16/09/2026
+
+This is the complete list. Every movement below is one the app can
+actually put in front of you — nothing here is dead weight, and there is
+nothing outside it. 234 in total.
+
+    94 already your photographs
+    140 still borrowed from the free pack
+
+A borrowed one is matched BY NAME out of a public database, which is why
+some are the wrong movement or the wrong implement. Where I can tell it
+is wrong I have said so. Two frames each, start and end — one photo
+containing both is fine.
+
+
+LIFTS AND CONDITIONING — 176 movements
+======================================
+
+  KNOWN WRONG — SHOOT THESE FIRST (25)
+
+    Band Anti-Rotation Hold          demos/band-anti-rotation-hold-1.jpg / -2.jpg
+        showing “Pallof Press With Rotation” — no band in it
+
+    Band Chest Press                 demos/band-chest-press-1.jpg / -2.jpg
+        showing “Cable Chest Press” — shows a cable, not a band
+
+    Band Curl                        demos/band-curl-1.jpg / -2.jpg
+        showing “Seated Band Hamstring Curl” — that is a HAMSTRING curl
+
+    Band Dead Bug                    demos/band-dead-bug-1.jpg / -2.jpg
+        showing “Dead Bug” — no band in it
+
+    Band Face Pull                   demos/band-face-pull-1.jpg / -2.jpg
+        showing “Face Pull” — no band in it
+
+    Band Glute Bridge                demos/band-glute-bridge-1.jpg / -2.jpg
+        showing “Barbell Glute Bridge” — shows a barbell, not a band
+
+    Band Hammer Curl                 demos/band-hammer-curl-1.jpg / -2.jpg
+        showing “Alternate Hammer Curl” — no band in it
+
+    Band Kickback                    demos/band-kickback-1.jpg / -2.jpg
+        showing “Glute Kickback” — no band in it
+
+    Band Lateral Walk                demos/band-lateral-walk-1.jpg / -2.jpg
+        showing “Monster Walk” — no band in it
+
+    Band Leg Curl                    demos/band-leg-curl-1.jpg / -2.jpg
+        showing “Seated Leg Curl” — no band in it
+
+    Band Monster Walk                demos/band-monster-walk-1.jpg / -2.jpg
+        showing “Monster Walk” — no band in it
+
+    Band Overhead Triceps Extension  demos/band-overhead-triceps-extension-1.jpg / -2.jpg
+        showing “Sled Overhead Triceps Extension” — shows a sled, not a band
+
+    Band Pallof Press                demos/band-pallof-press-1.jpg / -2.jpg
+        showing “Pallof Press” — no band in it
+
+    Band Push-up                     demos/band-push-up-1.jpg / -2.jpg
+        showing “Pushups” — no band in it
+
+    Band Romanian Deadlift           demos/band-romanian-deadlift-1.jpg / -2.jpg
+        showing “Romanian Deadlift” — no band in it
+
+    Band Single-arm Row              demos/band-single-arm-row-1.jpg / -2.jpg
+        showing “One-Arm Dumbbell Row” — shows a dumbbell, not a band
+
+    Band Straight-arm Pulldown       demos/band-straight-arm-pulldown-1.jpg / -2.jpg
+        showing “Straight-Arm Pulldown” — no band in it
+
+    Band Triceps Pushdown            demos/band-triceps-pushdown-1.jpg / -2.jpg
+        showing “Triceps Pushdown” — no band in it
+
+    DB Chest Fly                     demos/db-chest-fly-1.jpg / -2.jpg
+        showing “Decline Dumbbell Flyes” — flagged as the closest match only
+
+    DB Swing                         demos/db-swing-1.jpg / -2.jpg
+        showing “Vertical Swing” — flagged as the closest match only
+
+    DB Thruster                      demos/db-thruster-1.jpg / -2.jpg
+        showing “Kettlebell Thruster” — flagged as the closest match only
+
+    Plank Shoulder Tap               demos/plank-shoulder-tap-1.jpg / -2.jpg
+        showing “Plank” — flagged as the closest match only
+
+    Scissors                         demos/scissors-1.jpg / -2.jpg
+        showing “Scissor Kick” — a scissor kick, not the Pilates one
+
+    Single Leg Kick                  demos/single-leg-kick-1.jpg / -2.jpg
+        showing “Single Leg Butt Kick” — a plyometric butt-kick drill
+
+    Superman Hold                    demos/superman-hold-1.jpg / -2.jpg
+        showing “Superman” — flagged as the closest match only
+
+  BORROWED, LOOKS RIGHT (94)
+
+    Archer Push-up                     demos/archer-push-up-1.jpg / -2.jpg
+    Band Calf Raise                    demos/band-calf-raise-1.jpg / -2.jpg
+    Band External Rotation             demos/band-external-rotation-1.jpg / -2.jpg
+    Band Overhead Press                demos/band-overhead-press-1.jpg / -2.jpg
+    Band Pull-Apart                    demos/band-pull-apart-1.jpg / -2.jpg
+    Barbell Back Squat                 demos/barbell-back-squat-1.jpg / -2.jpg
+    Barbell Curl                       demos/barbell-curl-1.jpg / -2.jpg
+    Barbell Row                        demos/barbell-row-1.jpg / -2.jpg
+    Bench Dip                          demos/bench-dip-1.jpg / -2.jpg
+    Bench Press                        demos/bench-press-1.jpg / -2.jpg
+    Bicycle Crunch                     demos/bicycle-crunch-1.jpg / -2.jpg
+    Bodyweight Squat                   demos/bodyweight-squat-1.jpg / -2.jpg
+    Box Jump                           demos/box-jump-1.jpg / -2.jpg
+    Bulgarian Split Squat              demos/bulgarian-split-squat-1.jpg / -2.jpg
+    Cable Crunch                       demos/cable-crunch-1.jpg / -2.jpg
+    Cable Lateral Raise                demos/cable-lateral-raise-1.jpg / -2.jpg
+    Calf Raise                         demos/calf-raise-1.jpg / -2.jpg
+    Chin-up                            demos/chin-up-1.jpg / -2.jpg
+    Close-grip Bench Press             demos/close-grip-bench-press-1.jpg / -2.jpg
+    Cossack Squat                      demos/cossack-squat-1.jpg / -2.jpg
+    DB Arnold Press                    demos/db-arnold-press-1.jpg / -2.jpg
+    DB Bench Press                     demos/db-bench-press-1.jpg / -2.jpg
+    DB Calf Raise                      demos/db-calf-raise-1.jpg / -2.jpg
+    DB Clean and Press                 demos/db-clean-and-press-1.jpg / -2.jpg
+    DB Concentration Curl              demos/db-concentration-curl-1.jpg / -2.jpg
+    DB Curl                            demos/db-curl-1.jpg / -2.jpg
+    DB Floor Press                     demos/db-floor-press-1.jpg / -2.jpg
+    DB Front Raise                     demos/db-front-raise-1.jpg / -2.jpg
+    DB Front Squat                     demos/db-front-squat-1.jpg / -2.jpg
+    DB Kickback                        demos/db-kickback-1.jpg / -2.jpg
+    DB Pullover                        demos/db-pullover-1.jpg / -2.jpg
+    DB Push Press                      demos/db-push-press-1.jpg / -2.jpg
+    DB Romanian Deadlift               demos/db-romanian-deadlift-1.jpg / -2.jpg
+    DB Row                             demos/db-row-1.jpg / -2.jpg
+    DB Russian Twist                   demos/db-russian-twist-1.jpg / -2.jpg
+    DB Shoulder Press                  demos/db-shoulder-press-1.jpg / -2.jpg
+    DB Shrug                           demos/db-shrug-1.jpg / -2.jpg
+    DB Side Bend                       demos/db-side-bend-1.jpg / -2.jpg
+    DB Single-arm Row                  demos/db-single-arm-row-1.jpg / -2.jpg
+    DB Single-leg RDL                  demos/db-single-leg-rdl-1.jpg / -2.jpg
+    DB Skull Crusher                   demos/db-skull-crusher-1.jpg / -2.jpg
+    DB Sumo Deadlift                   demos/db-sumo-deadlift-1.jpg / -2.jpg
+    DB Upright Row                     demos/db-upright-row-1.jpg / -2.jpg
+    DB Zottman Curl                    demos/db-zottman-curl-1.jpg / -2.jpg
+    Dead Bug                           demos/dead-bug-1.jpg / -2.jpg
+    Deadlift                           demos/deadlift-1.jpg / -2.jpg
+    Decline Push-up                    demos/decline-push-up-1.jpg / -2.jpg
+    Diamond Push-up                    demos/diamond-push-up-1.jpg / -2.jpg
+    Dip                                demos/dip-1.jpg / -2.jpg
+    Face Pull                          demos/face-pull-1.jpg / -2.jpg
+    Flutter Kick                       demos/flutter-kick-1.jpg / -2.jpg
+    Front Squat                        demos/front-squat-1.jpg / -2.jpg
+    Glute Bridge                       demos/glute-bridge-1.jpg / -2.jpg
+    Goblet Squat                       demos/goblet-squat-1.jpg / -2.jpg
+    Hack Squat                         demos/hack-squat-1.jpg / -2.jpg
+    Hammer Curl                        demos/hammer-curl-1.jpg / -2.jpg
+    Hanging Knee Raise                 demos/hanging-knee-raise-1.jpg / -2.jpg
+    Hindu Push-up                      demos/hindu-push-up-1.jpg / -2.jpg
+    Hip Thrust                         demos/hip-thrust-1.jpg / -2.jpg
+    Hollow Hold                        demos/hollow-hold-1.jpg / -2.jpg
+    Incline Bench Press                demos/incline-bench-press-1.jpg / -2.jpg
+    Incline DB Press                   demos/incline-db-press-1.jpg / -2.jpg
+    Incline Push-up                    demos/incline-push-up-1.jpg / -2.jpg
+    Inverted Row                       demos/inverted-row-1.jpg / -2.jpg
+    Jump Squat                         demos/jump-squat-1.jpg / -2.jpg
+    Kettlebell Swing                   demos/kettlebell-swing-1.jpg / -2.jpg
+    Lat Pulldown                       demos/lat-pulldown-1.jpg / -2.jpg
+    Lateral Raise                      demos/lateral-raise-1.jpg / -2.jpg
+    Leg Press                          demos/leg-press-1.jpg / -2.jpg
+    Leg Raise                          demos/leg-raise-1.jpg / -2.jpg
+    Mountain Climber                   demos/mountain-climber-1.jpg / -2.jpg
+    Nordic Curl                        demos/nordic-curl-1.jpg / -2.jpg
+    Overhead Press                     demos/overhead-press-1.jpg / -2.jpg
+    Overhead Triceps Extension         demos/overhead-triceps-extension-1.jpg / -2.jpg
+    Pike Push-up                       demos/pike-push-up-1.jpg / -2.jpg
+    Pistol Squat                       demos/pistol-squat-1.jpg / -2.jpg
+    Plank                              demos/plank-1.jpg / -2.jpg
+    Pull-up                            demos/pull-up-1.jpg / -2.jpg
+    Push-up                            demos/push-up-1.jpg / -2.jpg
+    Renegade Row                       demos/renegade-row-1.jpg / -2.jpg
+    Reverse Lunge                      demos/reverse-lunge-1.jpg / -2.jpg
+    Reverse Plank                      demos/reverse-plank-1.jpg / -2.jpg
+    Romanian Deadlift                  demos/romanian-deadlift-1.jpg / -2.jpg
+    Russian Twist                      demos/russian-twist-1.jpg / -2.jpg
+    Seated Cable Row                   demos/seated-cable-row-1.jpg / -2.jpg
+    Side Plank                         demos/side-plank-1.jpg / -2.jpg
+    Single-leg Calf Raise              demos/single-leg-calf-raise-1.jpg / -2.jpg
+    Single-leg Glute Bridge            demos/single-leg-glute-bridge-1.jpg / -2.jpg
+    Split Squat                        demos/split-squat-1.jpg / -2.jpg
+    Triceps Pushdown                   demos/triceps-pushdown-1.jpg / -2.jpg
+    Tuck Jump                          demos/tuck-jump-1.jpg / -2.jpg
+    V-Up                               demos/v-up-1.jpg / -2.jpg
+    Walking Lunge                      demos/walking-lunge-1.jpg / -2.jpg
+    Wide Push-up                       demos/wide-push-up-1.jpg / -2.jpg
+
+  ALREADY YOURS (57)
+    Ab Wheel, Band Chest Fly, Band Lat Pulldown, Band Reverse Fly,
+    Band Row, Band Woodchop, Bear Crawl, Bird Dog, Broad Jump, Burpee,
+    Cable Fly, Chest-supported Row, Criss-Cross, Curtsy Lunge, DB
+    Reverse Fly, DB Suitcase Carry, Dead Hang, Double Leg Stretch,
+    Farmer Carry, High Knees, Hip Abduction, Hollow Rock, Jumping
+    Jacks, Landmine Press, Lateral Lunge, Leg Pull Front, Mermaid
+    Stretch, Nordic Negative, Plank Up-Down, Prone Swimmer, Prone
+    Y-T-W Raise, Reverse Snow Angel, Reverse Snow Angel Hold, Roll
+    Over, Roll-Up, Rolling Like a Ball, Saw, Shadow Boxing, Shoulder
+    Bridge, Side Kick Series, Side Plank Rotation, Single Leg Circles,
+    Single Leg Stretch, Skater Jump, Spine Stretch Forward, Spine
+    Twist, Sprawl, Squat Thrust, Step-up, Swan, Swimming, Teaser, The
+    Hundred, Towel Row, Wall Angel, Wall Sit, Wall Sit March
+
+
+MOBILITY, WARM-UP AND COOL-DOWN — 38 movements
+==============================================
+
+  KNOWN WRONG — SHOOT THESE FIRST (5)
+
+    Band shoulder dislocates         demos/band-shoulder-dislocates-1.jpg / -2.jpg
+        showing “Chest And Front Of Shoulder Stretch” — a chest-and-shoulder stretch
+
+    Cat-cow                          demos/cat-cow-1.jpg / -2.jpg
+        showing “Cat Stretch” — only the cat half
+
+    Couch stretch (hip flexor)       demos/couch-stretch-hip-flexor-1.jpg / -2.jpg
+        showing “Kneeling Hip Flexor” — a kneeling hip flexor
+
+    Standing hamstring stretch       demos/standing-hamstring-stretch-1.jpg / -2.jpg
+        showing “Runner's Stretch” — a runner's lunge
+
+    Wrist flexor & extensor stretch  demos/wrist-flexor-and-extensor-stretch-1.jpg / -2.jpg
+        showing “Kneeling Forearm Stretch” — a kneeling forearm stretch
+
+  BORROWED, LOOKS RIGHT (14)
+
+    Concept2 row — easy                demos/concept2-row-easy-1.jpg / -2.jpg
+    Brisk walk or skipping             demos/brisk-walk-or-skipping-1.jpg / -2.jpg
+    Arm circles                        demos/arm-circles-1.jpg / -2.jpg
+    Band pull-aparts                   demos/band-pull-aparts-1.jpg / -2.jpg
+    Scapular pull-ups                  demos/scapular-pull-ups-1.jpg / -2.jpg
+    World's greatest stretch           demos/world-s-greatest-stretch-1.jpg / -2.jpg
+    Glute bridge                       demos/glute-bridge-1.jpg / -2.jpg
+    Bodyweight squat to depth          demos/bodyweight-squat-to-depth-1.jpg / -2.jpg
+    Wrist circles & gentle flexor stretch demos/wrist-circles-and-gentle-flexor-stretch-1.jpg / -2.jpg
+    Dead bug                           demos/dead-bug-1.jpg / -2.jpg
+    Cross-body shoulder stretch        demos/cross-body-shoulder-stretch-1.jpg / -2.jpg
+    Overhead triceps stretch           demos/overhead-triceps-stretch-1.jpg / -2.jpg
+    Figure-4 glute stretch             demos/figure-4-glute-stretch-1.jpg / -2.jpg
+    Calf stretch on a wall             demos/calf-stretch-on-a-wall-1.jpg / -2.jpg
+
+  ALREADY YOURS (19)
+    Wall slides, Doorway pec opener, Scapular push-ups, Open-book
+    rotations, Dead hang, Prone Y-T-W raises, Leg swings — front to
+    back, Leg swings — side to side, 90/90 hip switches, Ankle rocks
+    on a wall, Light band curls & pushdowns, Bird dog, Doorway pec
+    stretch, Lat stretch on a doorframe, Child's pose with side reach,
+    Cobra stretch, Supine spinal twist, Child's pose, Box breathing
+
+
+PILATES — 20 movements
+======================
+
+  KNOWN WRONG — SHOOT THESE FIRST (2)
+
+    Scissors                         demos/scissors-1.jpg / -2.jpg
+        showing “Scissor Kick” — a scissor kick, not the Pilates one
+
+    Single Leg Kick                  demos/single-leg-kick-1.jpg / -2.jpg
+        showing “Single Leg Butt Kick” — a plyometric butt-kick drill
+
+  ALREADY YOURS (18)
+    The Hundred, Roll-Up, Single Leg Circles, Rolling Like a Ball,
+    Single Leg Stretch, Double Leg Stretch, Spine Stretch Forward,
+    Swan, Shoulder Bridge, Side Kick Series, Criss-Cross, Saw, Spine
+    Twist, Swimming, Mermaid Stretch, Roll Over, Teaser, Leg Pull
+    Front
+
+
+WHAT I REMOVED
+==============
+
+Eight entries were in the catalogue but in no pool — the app could never
+serve them and none had a photo: DB Lateral Lunge, DB Windmill, Good
+Morning, Leg Curl, Leg Extension, Pseudo Planche Push-up, Shrimp Squat,
+Standing Calf Raise. Gone.
+
+Three more were unreachable but you had ALREADY photographed them — Hip
+Abduction, Reverse Snow Angel Hold, Side Plank Rotation. Those went into
+rotation instead of the bin, so the work you did gets used.
