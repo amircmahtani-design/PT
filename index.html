@@ -2335,7 +2335,6 @@ const EXDB = {
   "Lat Pulldown":{m:["back","arms"],eq:"mach",cue:"Proud chest, drive elbows to hips.",wristAlt:"Neutral-grip Pulldown"},
   "Seated Cable Row":{m:["back","arms"],eq:"mach",cue:"Chest up, drive elbows past the ribs.",wristAlt:"Neutral handle"},
   "Triceps Pushdown":{m:["arms"],eq:"mach",cue:"Elbows locked to sides, full extension.",wristAlt:"Rope pushdown, neutral"},
-  "Leg Press":{m:["legs"],eq:"mach",cue:"Feet mid-platform, control down, never lock out hard.",wristAlt:"No wrist load — good"},
 
   "Face Pull":{m:["shoulders","back"],eq:"band",cue:"Pull to eyebrows, thumbs back — great for shoulder health.",wristAlt:"Rope, neutral"},
   "Band Pull-Apart":{m:["shoulders","back"],eq:"band",cue:"Straight arms, squeeze the shoulder blades together.",wristAlt:"Neutral — wrist-friendly"},
@@ -2554,7 +2553,7 @@ const EXTRA_LIB={
  "Close-grip Bench Press":{m:["chest","arms"],eq:"bb",cue:"Hands shoulder width, elbows tucked. Triceps do the work.",wristAlt:"Keep the wrist stacked — stop if the TFCC talks"},
  "Incline Bench Press":{m:["chest"],eq:"bb",cue:"30-45 degrees, bar to the upper chest.",wristAlt:"Neutral-grip dumbbells instead"},
  "Barbell Curl":{m:["arms"],eq:"bb",cue:"Elbows pinned to the ribs, no swinging.",wristAlt:"EZ bar or dumbbells — straight bar loads the wrist"},
- "Hip Abduction":{m:["legs"],eq:"mach",cue:"Slow out, slower back. Glute medius.",wristAlt:"No wrist load — good"},
+ "Hip Abduction":{m:["legs"],eq:"band",cue:"Slow out, slower back. Glute medius.",wristAlt:"No wrist load — good"},
  "Cable Fly":{m:["chest"],eq:"mach",cue:"Soft elbows, hug the arms together, squeeze.",wristAlt:"Neutral handles"},
  "Chest-supported Row":{m:["back"],eq:"mach",cue:"Chest on the pad, row to the ribs. No cheating with the low back.",wristAlt:"Neutral grip — fine"},
  "Cable Lateral Raise":{m:["shoulders"],eq:"mach",cue:"Constant tension, lead with the elbow.",wristAlt:"Neutral grip — fine"},
@@ -2564,7 +2563,6 @@ const EXTRA_LIB={
  "Box Jump":{m:["legs"],eq:"other",cue:"Land soft in a quarter squat. Step down, never jump down.",wristAlt:"No wrist load — good"},
  "Dip":{m:["chest","arms"],eq:"bar",cue:"Lean forward for chest, upright for triceps. Control the bottom.",wristAlt:"Hard on the wrist — bench dips or skip"},
  "Landmine Press":{m:["shoulders","chest"],eq:"bb",cue:"Angled press, neutral grip. The shoulder-friendly overhead option.",wristAlt:"Neutral grip — kindest press for the TFCC"},
- "Hack Squat":{m:["legs"],eq:"mach",cue:"Back flat to the pad, feet mid-platform. Quads, without loading the spine.",wristAlt:"No wrist load — good"},
  "DB Single-arm Row":{m:["back"],eq:"db",cue:"One hand braced, row to the hip. Let the shoulder blade travel.",wristAlt:"Neutral grip — wrist friendly"}
 };
 /* v53 — real Pilates mat repertoire. "Pilates" was building dead bugs and bird
@@ -2666,13 +2664,13 @@ function ensureLibEntry(name){
    ========================================================================== */
 const VPOOLS={
  dubai:{
-  legs:{anchor:["Barbell Back Squat","Front Squat","Deadlift","Romanian Deadlift","Leg Press","Goblet Squat","Hip Thrust","Hack Squat"],
+  legs:{anchor:["Barbell Back Squat","Front Squat","Deadlift","Romanian Deadlift","Goblet Squat","Hip Thrust"],
         acc:["Hip Abduction","Bulgarian Split Squat","Walking Lunge","Reverse Lunge","Step-up","Nordic Curl","Single-leg Glute Bridge","Calf Raise","Wall Sit","Glute Bridge","Pistol Squat","Jump Squat"]},
   push:{anchor:["Bench Press","Overhead Press","Incline DB Press","DB Bench Press","DB Shoulder Press","DB Floor Press","Incline Bench Press","Close-grip Bench Press"],
         acc:["Lateral Raise","Triceps Pushdown","Overhead Triceps Extension","Diamond Push-up","Bench Dip","Push-up","Pike Push-up","Decline Push-up","Archer Push-up","Cable Fly","Cable Lateral Raise","Dip","Landmine Press"]},
-  pull:{anchor:["Pull-up","Barbell Row","Lat Pulldown","Chin-up","Seated Cable Row","DB Row"],
+  pull:{anchor:["Pull-up","Lat Pulldown","Chin-up","Seated Cable Row","DB Row"],
         acc:["Reverse Snow Angel Hold","Face Pull","DB Curl","Hammer Curl","Band Pull-Apart","Prone Y-T-W Raise","Renegade Row","Inverted Row","Dead Hang","Reverse Snow Angel","Superman Hold","Chest-supported Row","DB Reverse Fly","DB Shrug","Towel Row"]},
-  upper:{anchor:["Bench Press","Barbell Row","Overhead Press","Pull-up","Lat Pulldown","Incline Bench Press"],
+  upper:{anchor:["Bench Press","Overhead Press","Pull-up","Lat Pulldown","Incline Bench Press"],
         acc:["Reverse Snow Angel Hold","DB Curl","Hammer Curl","Lateral Raise","Triceps Pushdown","Face Pull","Push-up","Bench Dip","Plank","Dip","Cable Fly","DB Reverse Fly","Cable Lateral Raise","Hanging Knee Raise"]},
   full:{anchor:["Barbell Back Squat","Deadlift","Bench Press","Overhead Press","Front Squat","Kettlebell Swing"],
         acc:["Barbell Row","Pull-up","Walking Lunge","Plank","Farmer Carry","DB Thruster","Hip Thrust","Hanging Knee Raise","DB Clean and Press","Box Jump","Bear Crawl","Ab Wheel"]},
@@ -3972,9 +3970,31 @@ function layoffInfo(){
     label:gap+" days off — starting at 90%. Ramp back over a session or two, don't test it cold."};
 }
 /* The raw recommendation, then the layoff adjustment on top. */
+/* ===== v143 \u00b7 A CEILING ON THE LIFT THAT HURT HIM ======================
+   45kg unsupported bent-over barbell rows gave him lower-back pain. The app
+   had no memory of that: progression is blind, so it would have walked him
+   straight back up to 45 and past it.
+
+   A cap is not a ban. The movement stays in the session as an accessory \u2014 it
+   is a good row \u2014 but the load stops below where it hurt, and the card says
+   why rather than silently refusing to add weight. Get stronger on the
+   supported variants instead; that is what they are for. */
+const LOAD_CAPS={
+  "barbell row":{kg:35, why:"45kg bent-over rows gave you lower back pain. Chest-supported, cable and TRX rows carry the heavy work \u2014 this one stays honest."}
+};
+function loadCapFor(name){
+  const c=LOAD_CAPS[String(name||"").trim().toLowerCase()];
+  return c||null;
+}
 function recommendLoad(ex){
   const r=recommendLoadRaw(ex);
   if(!r) return r;
+  /* The ceiling applies before anything else touches the number. */
+  const cap=loadCapFor(ex);
+  if(cap && r.w!=null && r.w>cap.kg){
+    return {w:cap.kg, up:false, capped:true,
+            text:cap.kg+"kg \u2014 holding here. "+cap.why};
+  }
   const L=layoffInfo();
   if(!L.tier || r.w==null) return r;
   const prevTop=lastTopWeight(ex);
@@ -6196,11 +6216,26 @@ function repRangeStored(name){
   if(one) return {lo:+one[1], hi:+one[1], text:one[1], from:p.repsFrom||"user"};
   return null;
 }
+/* ===== v143 \u00b7 6-15 REPS, WEIGHTED BY WHAT THE MOVEMENT IS FOR =========
+   Everything came out at 8-12 whatever it was. The useful band for building
+   muscle is wider than that, and where a movement sits inside it is not a
+   matter of taste: a barbell squat loaded for 6-10 and a lateral raise taken
+   to 12-15 both build, but swapping them round wastes the squat and wrecks
+   the raise. Compounds heavier and lower, isolation lighter and higher, all
+   of it inside 6-15 and all of it at 1-3 reps in reserve. */
 function repRangeDefault(name,ex){
   const e=EX(name)||{}; const travel=DB.workout?!!DB.workout.travel:!!LOC().short;
   const tmd=(typeof isTimed==="function")? isTimed(name, ex? ex.timed : e.timed) : !!e.timed;
   if(tmd) return null;
-  return travel? {lo:12,hi:20,text:"12\u201320"} : {lo:8,hi:12,text:"8\u201312"};
+  /* Bands and bodyweight have no load to add, so reps ARE the progression. */
+  const loadless=(typeof isLoadless==="function") && isLoadless(name);
+  if(travel || loadless) return {lo:12,hi:20,text:"12\u201320"};
+  const pat=(typeof patternOf==="function")? patternOf(name) : "";
+  const heavy=["squat","hinge","hpush","vpush","hpull","vpull"].indexOf(pat)>=0;
+  const compound = heavy || e.mech==="compound" || (typeof isCompound==="function" && isCompound(name));
+  if(compound) return {lo:6,hi:10,text:"6\u201310"};
+  if((e.m||[]).indexOf("core")>=0) return {lo:10,hi:15,text:"10\u201315"};
+  return {lo:10,hi:15,text:"10\u201315"};
 }
 function repRangeFor(name,ex){ return repRangeStored(name) || repRangeDefault(name,ex); }
 function schemeFor(name,n,ex){
@@ -6914,14 +6949,24 @@ async function analyseCheckin(ci){
 
    So the ceilings come down deliberately: enough to build and hold the shape,
    not so much that he grows into a frame he never asked for. */
+/* v143 — the shape he is after is a V: wide shoulders, a full upper chest,
+   lats, arms that finish the line, and legs that match rather than dominate.
+   So the ceilings are not equal. Shoulders and back get the most room, arms
+   enough to matter, legs enough to stay balanced and strong without adding
+   the mass that makes a physique look blocky rather than athletic. */
 const VOL_LANDMARKS={
-  chest:     {mev:6,  mav:12, mrv:16},
-  back:      {mev:8,  mav:14, mrv:18},
-  shoulders: {mev:8,  mav:16, mrv:20},
-  arms:      {mev:4,  mav:10, mrv:14},
+  chest:     {mev:8,  mav:14, mrv:18},
+  back:      {mev:10, mav:18, mrv:22},
+  shoulders: {mev:10, mav:18, mrv:22},
+  arms:      {mev:6,  mav:12, mrv:16},
   legs:      {mev:6,  mav:12, mrv:16},
   core:      {mev:6,  mav:12, mrv:16}
 };
+/* The ORDER those priorities come in, for the volume maths. The reasoning
+   behind each one is in PHYSIQUE_PRIORITY further down, which already says
+   exactly this: side delts first, lats for the taper, upper chest, arms
+   visible rather than big, legs strong but deliberately not a mass goal. */
+const GROUP_PRIORITY=["shoulders","back","chest","arms","legs","core"];
 /* ===== v69 · THE ACTUAL TARGET =========================================
    He showed me the physique he's after: lean, athletic, visible abs, clear
    shoulder-to-waist taper. Explicitly NOT a bodybuilder and not bulky.
@@ -7917,12 +7962,26 @@ Object.keys(PHYSIQUE_PRIORITY).map(g=>"  "+g+": "+PHYSIQUE_PRIORITY[g]).join("\n
 "  4. Does it respect the wrist? Neutral grip and landmine/dumbbell variants over straight-wrist barbell pressing.\n\n"+
 (strengthSlotOn()
  ? "THE STRENGTH SLOT IS ON. The app marks the first genuinely loaded compound of the day as the heavy one: "+STRENGTH_REPS+" reps, three minutes' rest, and everything after it in the 8-12 that builds size. He asked for that, so do not quietly put that lift back to 8-12 and do not add a second heavy movement on top of it. If you give an exercise its own rep target the app steps aside and the slot moves to the next lift, so only do that deliberately.\n\n"
- : "REP RANGES ARE HIS, PER EXERCISE. The default is 8-12. Where the sheet shows something else it is because he trains that lift that way \u2014 either he typed it or the app learned it from his own logged sets \u2014 and it is stored against the exercise, not the session. Program what the sheet says. Do not drop a lift to 4-6 to make it \"the heavy one\" (there is a setting for that and it is switched off), and do not pull a range back to 8-12 because it looks unusual. A different range only when he asks, or when the movement itself demands it (a carry, a hold), and say why.\n\n")+
-"REP RANGES \u2014 by what he's trying to cause, not by habit:\n"+
-"  3-6   heavy compounds, strength and tendon/connective work. Long rests.\n"+
-"  6-12  the bulk of hypertrophy work.\n"+
-"  12-20 isolation, joint-friendly work, and anything the wrist dislikes loaded heavy.\n"+
-"  20+   metabolite work and finishers only.\n\n"+
+ : "REP RANGES ARE HIS, PER EXERCISE. The default is 6-10 for compounds and 10-15 for isolation. Where the sheet shows something else it is because he trains that lift that way \u2014 either he typed it or the app learned it from his own logged sets \u2014 and it is stored against the exercise, not the session. Program what the sheet says. Do not drop a lift to 4-6 to make it \"the heavy one\" (there is a setting for that and it is switched off), and do not pull a range back to a default because it looks unusual. A different range only when he asks, or when the movement itself demands it (a carry, a hold), and say why.\n\n")+
+"REP RANGES \u2014 6-15 IS THE BAND, and where a movement sits inside it is not taste:\n"+
+"  6-10  compounds. Squat, hinge, press, row, pull-up. Loadable, and the place strength actually moves.\n"+
+"  10-15 isolation and anything the wrist dislikes loaded heavy. Lateral raises, curls, pushdowns, cable work.\n"+
+"  12-20 bands and bodyweight, where there is no load to add so reps ARE the progression.\n"+
+"  Outside 6-15 only for a reason you can say in a line \u2014 a carry, a hold, a finisher.\n"+
+"The app already stores a rep range per exercise and the sheet shows it. Program what the sheet says.\n\n"+
+"WHAT IS ACTUALLY IN HIS GARAGE \u2014 and what is NOT:\n"+
+"  He has: a Brute Force 360 PTX rack with dual adjustable CABLE stacks, a multi-grip pull-up bar and a landmine post; an Olympic barbell and plates; an adjustable bench; a TRX; a Concept2 rower; bands; and fixed hex dumbbells to 10kg AND NO HEAVIER.\n"+
+"  He has NO leg press, NO leg curl and NO leg extension. They are not in the app and you do not program them. Hamstrings get Romanian deadlifts, hip thrusts, Nordic curls and single-leg work; quads get squats, split squats and lunges.\n"+
+"  The 10kg dumbbell ceiling is the thing that catches people out. A dumbbell movement cannot be a driver for him \u2014 he tops out the rack in a session. Anything meant to be loaded over weeks is barbell, cable or a pull-up bar. Dumbbells are for isolation, where light is correct anyway.\n\n"+
+"TWO INJURIES, AND THEY ARE NOT NEGOTIABLE:\n"+
+"  LEFT WRIST (TFCC). No loaded wrist extension that hurts. Neutral grip, landmine and dumbbell variants over straight-wrist barbell pressing. If he says the wrist is talking, change the session that turn.\n"+
+"  LOWER BACK. 45kg unsupported bent-over barbell rows gave him back pain. The app now caps that movement at 35kg and says so on the card. Do not program heavy unsupported bent-over rowing to get around it \u2014 chest-supported rows, cable rows, TRX rows and single-arm supported work carry the heavy back volume, and they are better for the lats anyway.\n\n"+
+"THE BLOCK, AND WHY NOTHING CHANGES FOR NO REASON:\n"+
+"  He trains in 4-6 week blocks. The anchors hold for the whole block so they can actually be loaded and measured; accessories rotate; the block ends and the next one anchors on something else. A movement swapped out after two sessions has told you nothing \u2014 you cannot measure progress on a lift he did twice.\n"+
+"  So: vary DELIBERATELY. Because a pattern is under-trained, because something hurts, because a lift has genuinely stalled across a block. Never for variety's sake, and never the same session twice running either.\n\n"+
+"HE IS IN A DEFICIT. WHAT THAT CHANGES:\n"+
+"  The job is to KEEP the muscle he has and add what the deficit allows, which is some, slowly. It is not to chase strength PBs. Holding a weight across a block while eating at 1500 kcal is a win and you should say so rather than pushing him into a jump he cannot recover from.\n"+
+"  Rowing and conditioning stay in for the engine and the heart, not to burn calories, and never at a volume that eats into recovery for the lifting. If cardio is costing him lifting quality, cut the cardio.\n\n"+
 "EFFORT: most working sets 1-3 reps in reserve. Taking every set to failure buys very little extra growth and costs a great deal of recovery \u2014 reserve true failure for the last set of an isolation exercise.\n\n"+
 "HIS THREE GOALS ARE ONE PROGRAMME, NOT THREE: MOBILITY, STRENGTH and BUILDING, trained together, every week, while the fat comes off. They are not a sequence and they do not take turns.\n"+
 "  \u2022 They agree far more than they conflict. Loaded stretch work is where all three meet \u2014 deep ROM on every rep, full lengthening under load. That is the growth stimulus AND the range AND a position he gets stronger in.\n"+
@@ -8243,7 +8302,7 @@ const ALIAS=[
   [/\brdl\b|\bromanian\b/,"Romanian Deadlift"],
   [/\bdeadlift\b/,"Deadlift"],
   [/\bhip thrust\b/,"Hip Thrust"],
-  [/\bleg press\b/,"Leg Press"],
+  [/\bleg press\b/],
   [/\bnordic\b/,"Nordic Curl"],
   [/\bglute bridge\b/,"Glute Bridge"],
   [/\bbridge\b/,"Glute Bridge",1],
@@ -11758,7 +11817,7 @@ function scheduleInApp(){
    v18 ADDITIONS — draggable rest timer · weekly training memory · AI planner
    · Firestore sync
    ========================================================================== */
-const APP_VERSION="v142 · 16/09/2026";
+const APP_VERSION="v143 · 16/09/2026";
 
 /* ===== 1. REST TIMER — drag it anywhere so it never blocks the chat box ===== */
 let _rtDrag=null;

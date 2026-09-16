@@ -1,22 +1,22 @@
 EVERY EXERCISE IN THE APP — AND WHICH NEED A PHOTO
 ==================================================
 
-v142 · 16/09/2026
+v143 · 16/09/2026
 
-This is the complete list. Every movement below is one the app can
-actually put in front of you — nothing here is dead weight, and there is
-nothing outside it. 234 in total.
+The complete list. Everything here is something the app can actually put
+in front of you; there is nothing outside it and nothing dead inside it.
 
+    232 movements
     94 already your photographs
-    140 still borrowed from the free pack
+    138 still borrowed from the free pack
 
-A borrowed one is matched BY NAME out of a public database, which is why
-some are the wrong movement or the wrong implement. Where I can tell it
-is wrong I have said so. Two frames each, start and end — one photo
-containing both is fine.
+Borrowed ones are matched BY NAME out of a public database, which is why
+some are the wrong movement or wrong implement. Where I can tell, I have
+said so. Two frames each, start and end — one photo containing both is
+fine.
 
 
-LIFTS AND CONDITIONING — 176 movements
+LIFTS AND CONDITIONING — 174 movements
 ======================================
 
   KNOWN WRONG — SHOOT THESE FIRST (25)
@@ -96,7 +96,7 @@ LIFTS AND CONDITIONING — 176 movements
     Superman Hold                    demos/superman-hold-1.jpg / -2.jpg
         showing “Superman” — flagged as the closest match only
 
-  BORROWED, LOOKS RIGHT (94)
+  BORROWED, LOOKS RIGHT (92)
 
     Archer Push-up                     demos/archer-push-up-1.jpg / -2.jpg
     Band Calf Raise                    demos/band-calf-raise-1.jpg / -2.jpg
@@ -152,7 +152,6 @@ LIFTS AND CONDITIONING — 176 movements
     Front Squat                        demos/front-squat-1.jpg / -2.jpg
     Glute Bridge                       demos/glute-bridge-1.jpg / -2.jpg
     Goblet Squat                       demos/goblet-squat-1.jpg / -2.jpg
-    Hack Squat                         demos/hack-squat-1.jpg / -2.jpg
     Hammer Curl                        demos/hammer-curl-1.jpg / -2.jpg
     Hanging Knee Raise                 demos/hanging-knee-raise-1.jpg / -2.jpg
     Hindu Push-up                      demos/hindu-push-up-1.jpg / -2.jpg
@@ -166,7 +165,6 @@ LIFTS AND CONDITIONING — 176 movements
     Kettlebell Swing                   demos/kettlebell-swing-1.jpg / -2.jpg
     Lat Pulldown                       demos/lat-pulldown-1.jpg / -2.jpg
     Lateral Raise                      demos/lateral-raise-1.jpg / -2.jpg
-    Leg Press                          demos/leg-press-1.jpg / -2.jpg
     Leg Raise                          demos/leg-raise-1.jpg / -2.jpg
     Mountain Climber                   demos/mountain-climber-1.jpg / -2.jpg
     Nordic Curl                        demos/nordic-curl-1.jpg / -2.jpg
@@ -274,14 +272,16 @@ PILATES — 20 movements
     Front
 
 
-WHAT I REMOVED
-==============
+NOT IN THE APP, DELIBERATELY
+============================
 
-Eight entries were in the catalogue but in no pool — the app could never
-serve them and none had a photo: DB Lateral Lunge, DB Windmill, Good
-Morning, Leg Curl, Leg Extension, Pseudo Planche Push-up, Shrimp Squat,
-Standing Calf Raise. Gone.
+Leg Press and Hack Squat were anchors in your legs pool. You have no leg
+press and no hack squat, so the app was building blocks around machines
+in someone else's gym. Removed, along with Leg Curl and Leg Extension.
+Hamstrings are Romanian deadlifts, hip thrusts, Nordic curls and single-
+leg work; quads are squats, split squats and lunges.
 
-Three more were unreachable but you had ALREADY photographed them — Hip
-Abduction, Reverse Snow Angel Hold, Side Plank Rotation. Those went into
-rotation instead of the bin, so the work you did gets used.
+Barbell Row is no longer an anchor and is capped at 35kg, because 45kg
+bent-over rows gave you back pain. It stays in as an accessory. The
+heavy back volume goes to chest-supported rows, cable rows, TRX rows and
+single-arm supported work — better for the lats anyway.

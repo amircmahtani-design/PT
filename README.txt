@@ -1,7 +1,70 @@
-AMIR PT — v142 · 16/09/2026
+AMIR PT — v143 · 16/09/2026
 ===========================
 
 Upload index.html AND sw.js.
+
+
+THE COACH, AGAINST YOUR BRIEF
+=============================
+Most of the evidence-based frame was already in: 1-3 reps in reserve,
+deloads triggered by your numbers rather than the calendar, lengthened-
+position exercise selection, and a physique priority list that already
+said side delts first, lats for the taper, upper chest for the line, arms
+visible not big, legs strong but deliberately not a mass goal.
+
+What was missing was mostly TRUE THINGS ABOUT YOUR GARAGE AND YOUR BACK.
+
+IT WAS PROGRAMMING MACHINES YOU DO NOT OWN
+  Leg Press and Hack Squat were ANCHORS in your legs pool — the lifts a
+  whole five-week block gets built around. You have neither. Removed, with
+  Leg Curl and Leg Extension. Hamstrings are Romanian deadlifts, hip
+  thrusts, Nordic curls and single-leg work now; quads are squats, split
+  squats and lunges.
+
+AND IT WOULD HAVE WALKED YOU BACK TO THE WEIGHT THAT HURT
+  45kg unsupported bent-over rows gave you back pain. Progression is
+  blind: it had no memory of that and would have climbed straight back to
+  45 and past it. Barbell Row is no longer an anchor, and it is capped at
+  35kg with the reason printed on the card rather than the weight quietly
+  refusing to go up. It stays in the session — it is a good row. The heavy
+  back volume moves to chest-supported, cable, TRX and single-arm
+  supported work, which is better for the lats anyway.
+
+REPS ARE 6-15 NOW, WEIGHTED BY WHAT THE MOVEMENT IS FOR
+  Everything used to come out at 8-12 whatever it was.
+
+      6-10    compounds — squat, hinge, press, row, pull-up
+      10-15   isolation and anything the wrist dislikes loaded heavy
+      12-20   bands and bodyweight, where reps ARE the progression
+
+  A squat loaded for 6-10 and a lateral raise taken to 12-15 both build.
+  Swap them round and you waste the squat and wreck the raise.
+
+VOLUME CEILINGS MOVED TO MATCH THE SHAPE
+  Shoulders and back get the most room, chest moderate, arms enough to
+  matter, legs enough to be strong and proportionate without adding the
+  mass that reads blocky. That is the V, not a bodybuilding split.
+
+THE 10KG DUMBBELL CEILING IS NOW STATED AS A CONSTRAINT
+  A dumbbell movement cannot be a driver for you — you top out the rack in
+  one session. Anything meant to be loaded over weeks is barbell, cable or
+  the pull-up bar. Dumbbells are for isolation, where light is correct.
+
+AND WHY NOTHING CHANGES FOR NO REASON
+  4-6 week blocks, anchors held for the whole block so they can be
+  measured, accessories rotating underneath, variation only when a pattern
+  is under-trained or something hurts or a lift has genuinely stalled. A
+  movement swapped after two sessions has told you nothing.
+
+  In a deficit the job is to keep what you have and add what it allows,
+  slowly. Holding a weight across a block at 1500 kcal is a win and the
+  coach is told to say so rather than push a jump you cannot recover from.
+  Rowing stays for the engine, never at a volume that costs lifting
+  quality — if it does, the cardio gets cut, not the lifting.
+
+  No impersonation: the brief names principles and your own logged
+  numbers, not anyone's private routine, and Mario Casas stays what he
+  always was — the visual target, nothing more.
 
 
 YOU WERE RIGHT, BUT THE NUMBER WAS WRONG IN BOTH DIRECTIONS
