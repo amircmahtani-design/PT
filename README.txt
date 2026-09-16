@@ -1,3 +1,62 @@
+AMIR PT — v159 · 16/09/2026
+===========================
+
+"Saturday and Sunday are always rest days, so the best work week I've made is
+Monday cardio, Tuesday legs and core, Wednesday mobility, Thursday pull,
+Friday push, sat sun rest."
+
+HIS WEEK IS NOW THE APP'S WEEK
+-------------------------------
+    Mon  Cardio
+    Tue  Legs & Core
+    Wed  Mobility
+    Thu  Pull Day
+    Fri  Push Day
+    Sat  Rest
+    Sun  Rest
+
+The default it replaces was six lifting days, one rest day, and no cardio or
+mobility in it anywhere — a week he has never actually trained. Written into
+DEFAULTS for a fresh install and into a stamped one-time migration for the
+phone he already has, so it lands without waiting for him to set seven
+dropdowns, and never overrules a change he makes afterwards.
+
+Cardio, Mobility and Pilates ship as day types now rather than being conjured
+the first time the coach happens to name one — otherwise Monday would point at
+a Cardio day that does not exist.
+
+THE WEEK CHECK WAS CALLING HIS WEEK BROKEN
+-------------------------------------------
+CARDIO_TARGET.min was 2, so Home greeted him with "This week is missing
+something · only 1 cardio day scheduled" against the week he had just settled
+on. One structured Concept2 session, a mobility day with a walk on the front of
+it, three lifting days and two full rest days is not a gap in a plan — it is a
+plan. The minimum is 1 now; two is still the better number for the engine and
+it is said once, quietly, as a note rather than a fault. A check that cries
+wolf gets ignored, including on the day it is right.
+
+The coach's brief carries the week verbatim, with SATURDAY AND SUNDAY ARE
+ALWAYS REST stated plainly, and an instruction to raise any disagreement once
+and leave the decision with him rather than moving a day on its own.
+
+VERIFIED
+--------
+An old six-day schedule saved to storage, then reloaded: migrates to his week,
+the three day types appear, and every day builds the right thing — Monday a
+cardio session with the Concept2 block, Tuesday/Thursday/Friday five movements
+at three sets, Wednesday the fifteen-move head-to-toe flow, Saturday and Sunday
+rest. Week check now silent. 16 journeys, mobility coverage still 12/12,
+390px and 1440px, no overflow, no console errors.
+
+ONE THING WORTH HIS ATTENTION, NOT CHANGED
+-------------------------------------------
+Push on Friday and Pull on Thursday means chest, back and legs are each
+trained once a week. The evidence base his own brief asked me to follow puts
+about two sessions per muscle group per week ahead of one for building shape.
+His week, his call — but if a fourth lifting day ever appeals, making Monday an
+Upper Body session with the rowing attached to the end of it would take chest
+and back to twice without touching the two rest days.
+
 AMIR PT — v158 · 16/09/2026
 ===========================
 
