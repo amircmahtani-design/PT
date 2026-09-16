@@ -677,6 +677,11 @@ background:var(--card);border:1px solid var(--line);border-radius:18px;padding:1
    without scrolling past a wall of controls. */
 /* v131 \u2014 Last and Today, aligned on one pair of edges. Two rows, no box:
    the card already has enough boxes in it. */
+/* v139 — markdown the coach actually sends. */
+.msg .mdh{display:block;margin:10px 0 2px;font-size:13.5px;letter-spacing:.2px;color:var(--gold);}
+.msg .mdh:first-child{margin-top:0;}
+.msg .mdli{display:block;padding-left:16px;text-indent:-16px;margin:3px 0;}
+.msg code{font-family:ui-monospace,Menlo,monospace;font-size:12.5px;background:#0003;padding:1px 5px;border-radius:5px;}
 .coachline{margin-top:12px;display:grid;grid-template-columns:auto 1fr;gap:5px 14px;align-items:baseline;}
 .coachline .cl{display:contents;}
 .coachline .k{font-size:10.5px;font-weight:800;letter-spacing:.5px;text-transform:uppercase;color:var(--label);}
@@ -2141,7 +2146,35 @@ function ukDate(iso){
   return m? (m[3]+"/"+m[2]+"/"+m[1]) : d;
 }
 function ukFile(iso){ return ukDate(iso).replace(/\//g,"-"); }
-function fmt(s){ return String(s).replace(/\*\*(.+?)\*\*/g,'<b>$1</b>').replace(/\n/g,'<br>'); }
+/* ===== v139 · THE CHAT COULD ONLY SHOW BOLD =============================
+   fmt() handled **bold** and newlines and nothing else, so a reply written as
+   markdown arrived as "...extension.### Mobility Workout1. Cat-Cow Stretch"
+   — hashes on screen, and every item run into the one before it because the
+   only thing separating them was a newline the model had not sent.
+
+   Headings, bullets and numbered items render now, and a numbered item is put
+   on its own line even when the line break is missing. */
+function fmt(s){
+  let t=String(s==null? "" : s);
+  t=t.replace(/([a-z\)])(\d{1,2}\.\s+\S)/g,"$1\n$2");      /* Workout1. Cat-cow */
+  t=t.replace(/([.!?:])\s*(\d{1,2}\.\s+\S)/g,"$1\n$2");     /* flexion.2. 90/90  */
+  t=t.replace(/([.!?:])\s*(#{1,6}\s)/g,"$1\n$2");
+  const out=[];
+  t.split(/\n/).forEach(raw=>{
+    const l=raw.replace(/\s+$/,"");
+    const h=l.match(/^\s*#{1,6}\s+(.*)$/);
+    if(h){ out.push("<b class='mdh'>"+h[1].trim()+"</b>"); return; }
+    const b=l.match(/^\s*[-*•]\s+(.*)$/);
+    if(b){ out.push("<span class='mdli'>· "+b[1]+"</span>"); return; }
+    const n=l.match(/^\s*(\d{1,2})\.\s+(.*)$/);
+    if(n){ out.push("<span class='mdli'><b>"+n[1]+".</b> "+n[2]+"</span>"); return; }
+    out.push(l);
+  });
+  t=out.join("\n")
+     .replace(/\*\*(.+?)\*\*/g,'<b>$1</b>')
+     .replace(/`([^`\n]+)`/g,'<code>$1</code>');
+  return t.replace(/\n{3,}/g,"\n\n").replace(/\n/g,'<br>');
+}
 function val(id){ const e=document.getElementById(id); return e?e.value:''; }
 
 /* ===== v48 — EVERY TAB REMEMBERS WHERE YOU WERE =====
@@ -8109,12 +8142,14 @@ function v115Brief(){
 "[[ACTION: {\"do\":\"set_cooldown_duration\",\"scope\":\"one\",\"move\":\"Couch stretch\",\"sec\":30,\"perSide\":true}]]  · scope: one | all | default\n"+
 "[[ACTION: {\"do\":\"set_time_budget\",\"mins\":30}]] · [[ACTION: {\"do\":\"lighten_session\",\"percent\":15}]]\n"+
 "[[ACTION: {\"do\":\"adapt_for_pain\",\"area\":\"wrist\"}]] · [[ACTION: {\"do\":\"end_session\"}]]\n"+
+"[[ACTION: {\"do\":\"set_day_type\",\"split\":\"Mobility\"}]]  · changes what TODAY is and rebuilds the sheet. Any of his session types, or Rest.\n"+
+"[[ACTION: {\"do\":\"set_section\",\"section\":\"cooldown\",\"items\":[\"Cat-cow\",\"90/90 hip switches\",\"Couch stretch (hip flexor)\"]}]]  · section: warmup | cooldown. On a Mobility day the FLOW is the cooldown.\n"+
 "[[ACTION: {\"do\":\"clear_day\",\"mode\":\"delete\",\"rest\":true}]] · [[ACTION: {\"do\":\"restore_day\"}]]\n"+
 "[[ACTION: {\"do\":\"set_location\",\"location\":\"madrid\"}]] · [[ACTION: {\"do\":\"set_equipment\",\"equipment\":\"dumbbells to 20kg only\"}]]\n"+
 "[[ACTION: {\"do\":\"set_exercise_preference\",\"name\":\"Burpee\",\"pref\":\"never\"}]]  · pref: favourite | prefer | avoid | never | painful | no_kit | clear\n"+
 "[[ACTION: {\"do\":\"undo\"}]]\n"+
 "EVERY envelope is validated against today's session, the catalogue, the kit in the room and his injury, then applied, saved, and VERIFIED against what is on disk. If it fails you are told and he is told, and nothing changed.\n"+
-"THEREFORE: never write a sentence claiming you changed something unless you emitted the envelope for it in the same reply, or you were told it was already done. A promise is not a change. The app will strip a claim it cannot back with a verified receipt, so the only thing an unbacked claim costs you is his trust.\n"+
+"THEREFORE: never write a sentence claiming you changed something unless you emitted the envelope for it in the same reply, or you were told it was already done. A promise is not a change. The app will strip a claim it cannot back with a verified receipt, so the only thing an unbacked claim costs you is his trust.\n"+"A SESSION HE ASKS FOR IS BUILT, NOT DESCRIBED. \"Make me a mobility workout\", \"give me a core session\", \"I want to do legs today\" — those are changes to Train, not answers in chat. Emit set_day_type for what today becomes, then set_section for the movements (on a Mobility day the flow IS the cooldown; add_exercise puts lifts in the main list). A numbered plan typed into the chat with nothing on the sheet is the worst thing you can do here: he goes to Train and it is not there. Say what you built in a line or two and let the receipts show it — do not paste the list as well.\n"+
 "DEFAULT SCOPE IS TODAY. Only reach for scope \"always\", a preference, or a permanent logging correction when he actually says again, always, from now on, permanent or never.\n"+
 "\n=== THE PROGRAMME HE IS ON ===\n"+
 (function(){ try{ const b=blockSummary();
@@ -8278,7 +8313,23 @@ function resolveExName(raw,avoid,create){
 /* Known-only: used when parsing free text, so "cut sets to 2" can never mint an
    exercise called "Sets To 2". */
 function resolveKnownEx(raw){ const n=resolveExName(raw,null,false); return (n&&EX(n))?n:null; }
+/* ===== v139 · sets===0 IS NOT "NO SESSION" =============================
+   Every action validates through requireWorkout(), which calls this. It read
+   "no straight sets" as "nothing here" and replaced the session with a generic
+   three-set Custom Session — so a Mobility day was destroyed by the next thing
+   the coach touched. Build a mobility flow, then set a rest timer on it, and
+   the flow was gone.
+
+   A mobility or recovery day has no straight sets BY DESIGN. Only a session
+   that is actually missing is missing. */
 function coachEnsureWorkout(){
+  {
+    const w=DB.workout;
+    if(w && Array.isArray(w.main)){
+      if(w.main.length || w.sets>0) return;                         /* lifting day */
+      if(Array.isArray(w.cooldown) && w.cooldown.length) return;    /* a flow day  */
+    }
+  }
   if(!DB.workout || !Array.isArray(DB.workout.main) || DB.workout.sets===0){
     const base=buildWorkout();
     if(base.sets===0){ const travel=!!LOC().short;
@@ -8552,7 +8603,7 @@ function coachSetSection(sec,listRaw){
   const items=String(listRaw).split(/\s*;\s*/).map(s=>s.trim()).filter(Boolean).map(chunk=>{
     const parts=chunk.split('|').map(x=>x.trim()); const o={t:parts[0]}; if(parts[1]) o.icon=parts[1]; return o; }).filter(o=>o.t);
   if(!items.length) return null;
-  const full=padSection(key, items.map(enrichMove));
+  const full=padSection(key, items.map(enrichMove).filter(o=>o&&String(o.t||"").trim()));
   if(key==='warmup'){ DB.workout.warmup=full; DB.workout.warmupLocked=true; }
   else { DB.workout.cooldown=applyCoolDefaults(full); DB.workout.cooldownLocked=true; }
   finalizeCoachEdit(); return {sec:key, names:full.map(i=>i.t)}; }
@@ -11652,7 +11703,7 @@ function scheduleInApp(){
    v18 ADDITIONS — draggable rest timer · weekly training memory · AI planner
    · Firestore sync
    ========================================================================== */
-const APP_VERSION="v138 · 15/09/2026";
+const APP_VERSION="v139 · 16/09/2026";
 
 /* ===== 1. REST TIMER — drag it anywhere so it never blocks the chat box ===== */
 let _rtDrag=null;
@@ -15561,8 +15612,10 @@ function runAction(type,args,opts){
   if(!verified){
     rollback();
     if(!opts.quiet) refreshAllViews();
+    /* v139 \u2014 "NOTHING CHANGED" with no idea WHICH change is unactionable for
+       him and undebuggable for me. Name it. */
     return {ok:false, error:(spec.verifyFail? spec.verifyFail(a) :
-      "I made that change but it didn't survive the save, so I've rolled it back rather than tell you it worked.")};
+      "I tried to change "+label+", but it didn't survive the save \u2014 so I've put it back rather than tell you it worked.")};
   }
   /* 8 · receipt, built from the verified result. */
   const rec=spec.receipt? spec.receipt(a,res) : {lines:[label]};
@@ -16074,6 +16127,13 @@ defAction("add_exercise",{
     applyLogTypeToEx(e);
     if(a.at!=null && a.at>=0 && a.at<=DB.workout.main.length) DB.workout.main.splice(a.at,0,e);
     else DB.workout.main.push(e);
+    /* v139 — the sheet renders a zero-set day as a flow and never shows main,
+       so a lift added to a mobility or rest day went in and stayed invisible.
+       Adding one makes it a day with lifting in it. */
+    if(!DB.workout.sets && DB.workout.main.length){
+      DB.workout.sets=3;
+      DB.workout.reps=DB.workout.reps||"8\u201312 reps";
+    }
     resyncSections(); resyncGroups(DB.workout);
     return {name:a.name, at:wkIndex(a.name)};
   },
@@ -16468,16 +16528,58 @@ defAction("set_group_rest",{
 });
 
 /* ---------- warm-up and cool-down ---------------------------------------- */
+/* ===== v139 \u00b7 "MAKE ME A MOBILITY WORKOUT" HAD NOWHERE TO GO ==========
+   He asked the coach for a mobility session. It wrote him a seven-movement
+   plan in the chat, said "I'll add it to your training today", and could not:
+   the whole verified action layer had no way to change what today's session
+   IS. Every action edits a session that already exists \u2014 add, remove, swap,
+   reps, rest \u2014 and the only route to the day type was a legacy bracket
+   directive for setting a WEEKDAY in the schedule, which is a different
+   thing and was not in the list the model is given.
+
+   So it could only talk. This is the action that makes the sheet follow. */
+defAction("set_day_type",{
+  label:a=>"today \u2192 "+(a.split||"?"),
+  resolve:a=>{
+    const raw=a.split||a.type||a.name||a.day;
+    const sp=(typeof resolveSplit==="function")? resolveSplit(raw) : null;
+    if(!sp) return {error:"I need a session type \u2014 Mobility, Push Day, Legs & Core, Rest, or one of your own."};
+    a.split=sp; return null;
+  },
+  validate:a=>a.split? null : "I need a session type for today.",
+  apply:a=>{
+    /* Through setDaySplit, not around it. Hand-rolling the same three writes
+       produced a "Custom Session" of three sets instead of a mobility flow:
+       it stamped a `kind` onto the day type that the builder then read
+       differently. The app already has one correct way to change today. */
+    const logged=(DB.workout&&Array.isArray(DB.workout.main))
+      ? DB.workout.main.reduce((n,e)=>n+todaySets(e.name).length,0) : 0;
+    try{ if(typeof restoreDay==="function" && todayCleared()) restoreDay(); }catch(e){}
+    setDaySplit(new Date().getDay(), a.split);
+    return {split:a.split, keptLogged:logged};
+  },
+  verify:a=>{
+    const st=savedState(); if(!st) return false;
+    const ov=st.dayOverride;
+    return !!(ov && ov.date===today() && ov.split===a.split);
+  },
+  receipt:(a,r)=>({lines:["Today \u2192 "+a.split+(r.keptLogged? " \u00b7 the "+r.keptLogged+" set"+(r.keptLogged===1?"":"s")+" you logged stay in your history":"")],
+                   anchor:{section:"header"}})
+});
+
 defAction("set_section",{
   label:a=>a.section,
   validate:a=>{
     const g=requireWorkout(a); if(g) return g;
     a.section=/warm/i.test(a.section)?"warmup":"cooldown";
+    /* v139 \u2014 a blank entry in the list came out as an empty movement, which
+       is where "Child's Pose,, Cobra stretch" came from. */
+    if(Array.isArray(a.items)) a.items=a.items.filter(x=>String((x&&x.t)||x||"").trim());
     if(!Array.isArray(a.items)||!a.items.length) return "I need at least one movement for that section.";
     return null;
   },
   apply:a=>{
-    const items=padSection(a.section, a.items.map(x=>enrichMove(typeof x==="string"?{t:x}:x)));
+    const items=padSection(a.section, a.items.map(x=>enrichMove(typeof x==="string"?{t:x}:x)).filter(o=>o&&String(o.t||"").trim()));
     if(a.section==="warmup"){ DB.workout.warmup=items; DB.workout.warmupLocked=true; }
     else { DB.workout.cooldown=applyCoolDefaults(items); DB.workout.cooldownLocked=true; }
     return {section:a.section, names:items.map(i=>i.t)};

@@ -1,7 +1,69 @@
-AMIR PT — v138 · 15/09/2026
+AMIR PT — v139 · 16/09/2026
 ===========================
 
 Upload index.html AND sw.js.
+
+
+A SESSION YOU ASK FOR IS BUILT, NOT DESCRIBED
+=============================================
+You asked for a mobility workout. It wrote you a seven-movement plan in the
+chat, said "I'll add it to your training today", and couldn't.
+
+  Not because it lied — because the whole verified action layer had no way
+  to change what today's session IS. Every action edits a session that
+  already exists: add, remove, swap, reps, rest. The only route to the day
+  type was a legacy directive for setting a WEEKDAY in the schedule, which
+  is a different thing and was not in the list the coach is given. So it
+  could only talk.
+
+  There is now an action for it. Ask for a mobility session, a core
+  session, legs today — and Train changes. The coach is told in as many
+  words that a session you ask for is a change to Train, not an answer in
+  chat, and that a numbered plan in the chat with nothing on the sheet is
+  the worst thing it can do.
+
+  It can set the warm-up and cool-down through the verified pipeline now
+  too — on a mobility day the flow IS the cool-down.
+
+
+AND THE REAL BUG UNDERNEATH IT
+==============================
+Every action validates through one shared check, and that check read
+"no straight sets" as "there is no session here".
+
+  A mobility or recovery day has no straight sets BY DESIGN. So the moment
+  the coach touched anything on one — a rest timer, a duration, anything —
+  the check quietly replaced your mobility flow with a generic three-set
+  "Custom Session". Build a mobility day, adjust one thing, and it was
+  gone.
+
+  That is almost certainly the "NOTHING CHANGED" you saw: a change made
+  against a session that had been swapped underneath it, failing its own
+  verify, and correctly rolling itself back.
+
+  Only a session that is actually missing is missing now. And a lift added
+  to a flow day makes it a day with lifting in it, rather than going in
+  and staying invisible because the sheet only draws the flow.
+
+WHEN SOMETHING DOES FAIL, IT SAYS WHAT
+  "NOTHING CHANGED · I made that change but it didn't survive the save" —
+  which change? It names it now.
+
+THE DOUBLE COMMA
+  "Cool-down updated → Child's Pose,, Cobra stretch" was a blank entry in
+  the list, which went in as a movement with no name. Blanks are dropped on
+  both paths.
+
+
+THE CHAT COULD ONLY SHOW BOLD
+=============================
+That reply arrived as "...extension.### Mobility Workout1. Cat-Cow Stretch"
+— hashes on screen and every item run into the one before it.
+
+  The formatter handled **bold** and line breaks and nothing else. Headings,
+  bullets and numbered items render now, and a numbered item gets its own
+  line even when the line break is missing, which is what had actually gone
+  wrong.
 
 
 THE REP RANGE FOLLOWS WHAT YOU ACTUALLY DO
