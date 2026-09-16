@@ -122,6 +122,13 @@ h2.display{font-size:25px;font-weight:800;letter-spacing:-.4px;margin:6px 0;colo
 .itin-split{flex:1;font-weight:700;font-size:15px;min-width:0;}
 .itin-row.today .itin-split{color:#fff;}
 .itin-edit{font-size:11px;color:var(--dim);font-weight:700;text-transform:none;letter-spacing:0;}
+.updbar{position:fixed;left:12px;right:12px;bottom:calc(78px + var(--safe-bot));z-index:48;display:none;
+  align-items:center;gap:8px;justify-content:center;padding:12px 14px;border-radius:14px;
+  background:linear-gradient(100deg,#ff8a2b,#ff5a1a);color:#1a0d02;font-weight:800;font-size:14px;
+  box-shadow:0 8px 28px #00000080;max-width:496px;margin:0 auto;cursor:pointer;}
+.updbar.show{display:flex;}
+.updbar em{font-style:normal;font-weight:700;opacity:.72;}
+.updbar span{font-weight:800;opacity:.85;}
 .tabbar{position:fixed;left:0;right:0;bottom:0;z-index:40;background:#12100dee;backdrop-filter:saturate(150%) blur(20px);-webkit-backdrop-filter:saturate(150%) blur(20px);border-top:1px solid var(--line);display:flex;justify-content:space-around;padding:9px 2px calc(9px + var(--safe-bot));max-width:520px;margin:0 auto;}
 .tab{display:flex;flex-direction:column;align-items:center;gap:3px;padding:4px 3px;color:var(--dim);font-size:9.5px;font-weight:700;flex:1;transition:.2s;min-width:0;}
 .tab svg{width:22px;height:22px;stroke:currentColor;fill:none;stroke-width:2;}
@@ -925,6 +932,12 @@ a{color:var(--orange);}
   background:#15110d;border:1px solid var(--line);border-radius:10px;padding:5px 9px;}
 .coolctl .tbtn{padding:6px 10px;font-size:11.5px;}
 .coolall-ctl{display:flex;align-items:center;gap:7px;flex-wrap:wrap;margin:0 0 12px;}
+.coolall-set{margin:0 0 10px;}
+.coolall-set>summary{list-style:none;cursor:pointer;font-size:12px;font-weight:700;color:var(--muted);
+  padding:6px 0;opacity:.75;}
+.coolall-set>summary::-webkit-details-marker{display:none;}
+.coolall-set>summary::after{content:' \25be';}
+.coolall-set[open]>summary::after{content:' \25b4';}
 .flowtog{display:flex;justify-content:flex-end;margin:0 0 10px;}
 .flowtog .swapbtn{font-size:12px;opacity:.68;}
 .coolall-ctl .k{font-size:11px;font-weight:700;letter-spacing:.6px;text-transform:uppercase;color:var(--label);}
@@ -1568,6 +1581,7 @@ a{color:var(--orange);}
   <button class="sfb" id="sessFloatB" onclick="sessToggle()">❙❙</button>
 </div>
 
+<div id="updBar" class="updbar" onclick="applyUpdate()"><b>Update ready</b><span id="updV"></span><em>tap to load it</em></div>
 <nav class="tabbar" id="tabbar">
   <button class="tab active" data-s="today" onclick="goTab('today')"><svg viewBox="0 0 24 24"><path d="M3 11.5 12 4l9 7.5"/><path d="M5 10v10h14V10"/></svg>Home</button>
   <button class="tab" data-s="workout" onclick="goTab('workout')"><svg viewBox="0 0 24 24"><path d="M6 7v10M18 7v10M3 9v6M21 9v6M6 12h12"/></svg>Train</button>
@@ -5003,8 +5017,27 @@ function iconFor(t){ const s=String(t||"").toLowerCase(); for(const [re,e] of IC
    duration bar for anyone who wants to be paced. Off by default on a flow
    day; the cool-down at the end of a LIFTING day is untouched, where a
    45-second hold is a real instruction and the clock helps. */
+/* ===== v157 · TIME AS A MONITOR ==========================================
+   "Couch stretch is a time thing not a reps thing. Honestly on mobility what
+   I need above everything is time as a monitor not reps."
+
+   v152 read "it's more just do the mobility" as "show nothing" and switched
+   the clocks off. That was half right and half wrong, and this is the half I
+   got wrong. What he objected to was a PRESCRIPTION — 45 seconds invented by
+   the app, printed next to sets and reps and a rest timer, telling him what
+   to do. What he actually wants on a held stretch is the opposite thing: a
+   clock he can watch while he holds it.
+
+   So on a flow day time is ON by default, and it is a monitor:
+     · a held movement shows its duration and a timer he can start
+     · a counted movement (Roll-Up x6, The Hundred) keeps its count, no clock
+     · nothing shows sets, reps, rest or a working weight
+   The toggle stays, so he can still have the bare list if he wants it. */
 function flowTimersOn(){
-  try{ return !!(DB.prefs && DB.prefs.flowTimers); }catch(e){ return false; }
+  try{
+    if(DB.prefs && DB.prefs.flowTimers!=null) return !!DB.prefs.flowTimers;
+  }catch(e){}
+  return true;
 }
 /* True only inside a flow SESSION. The cool-down after a lifting session
    keeps its clocks. */
@@ -5013,14 +5046,14 @@ function flowSheet(){
 }
 function toggleFlowTimers(){
   DB.prefs=DB.prefs||{};
-  DB.prefs.flowTimers=!DB.prefs.flowTimers;
+  DB.prefs.flowTimers=!flowTimersOn();
   save();
   try{ renderWorkoutSheet(DB.workout); }catch(e){}
-  toast(DB.prefs.flowTimers? "Timers on \u2014 every move is paced" : "Timers off \u2014 just move through it");
+  toast(DB.prefs.flowTimers? "Timers on \u2014 a clock on every hold" : "Timers off \u2014 just the movements");
 }
 function flowTimerToggleHTML(){
   return "<div class='flowtog'><button class='swapbtn' onclick='toggleFlowTimers()'>"+
-    (flowTimersOn()? "\u23f1 Timers on \u00b7 tap to turn off" : "\u23f1 Add timers")+
+    (flowTimersOn()? "\u23f1 Timers on \u00b7 tap for the bare list" : "\u23f1 Put the timers back")+
     "</button></div>";
 }
 /* v152 — "· timed" was a promise the flow no longer makes unless he asks. */
@@ -6169,6 +6202,52 @@ function resyncTimers(){
   if(wakeLock===null && (restActive||holdIdx>=0)) requestWake();
 }
 document.addEventListener('visibilitychange',function(){ if(!document.hidden) resyncTimers(); });
+
+/* ===== v157 · THE APP HAD NO WAY TO TELL HIM A FIX EXISTED ===============
+   Three times in a row he has sent me a screenshot of a bug I had already
+   fixed and shipped, because an installed PWA keeps its page alive for days.
+   Switching back to it is not a load, so nothing re-fetches; only a full
+   swipe-closed-and-reopen picks up a new build. That is not something he
+   should have to know, and "force-close the app" is not a delivery mechanism.
+
+   sw.js carries the version and is 7KB, against index.html's 1.2MB, so it is
+   the thing to ask. Checked on return to the app, at most every couple of
+   minutes, and never mid-set: a bar appears above the tab bar and he taps it
+   when he is ready. Nothing reloads underneath him. */
+function appVerNum(){ const m=String(APP_VERSION).match(/v(\d+)/); return m? +m[1] : 0; }
+let _updSeen=0, _updLast=0;
+async function checkForUpdate(){
+  try{
+    if(Date.now()-_updLast < 120000) return;
+    _updLast=Date.now();
+    const r=await fetch('sw.js?ts='+Date.now(),{cache:'no-store'});
+    if(!r.ok) return;
+    const t=await r.text();
+    const m=t.match(/amirpt-v(\d+)/);
+    if(!m) return;
+    const live=+m[1];
+    if(live>appVerNum()){
+      _updSeen=live;
+      const b=document.getElementById('updBar');
+      const v=document.getElementById('updV');
+      if(v) v.textContent="v"+live;
+      if(b) b.classList.add('show');
+    }
+  }catch(e){}
+}
+function applyUpdate(){
+  try{ save(); }catch(e){}
+  try{ if(DB.cloud&&DB.cloud.on) cloudFlush("update"); }catch(e){}
+  try{
+    if(navigator.serviceWorker && navigator.serviceWorker.getRegistrations)
+      navigator.serviceWorker.getRegistrations().then(rs=>rs.forEach(x=>x.update()));
+  }catch(e){}
+  setTimeout(()=>{ location.reload(true); },150);
+}
+document.addEventListener('visibilitychange',()=>{ if(!document.hidden) checkForUpdate(); });
+window.addEventListener('focus',()=>checkForUpdate());
+setTimeout(checkForUpdate,4000);
+
 window.addEventListener('focus',resyncTimers);
 function afterLog(i){
   const ex=DB.workout.main[i]; const done=todaySets(ex.name).length; const target=exSets(ex);
@@ -12312,7 +12391,7 @@ function scheduleInApp(){
    v18 ADDITIONS — draggable rest timer · weekly training memory · AI planner
    · Firestore sync
    ========================================================================== */
-const APP_VERSION="v156 · 16/09/2026";
+const APP_VERSION="v157 · 16/09/2026";
 
 /* ===== 1. REST TIMER — drag it anywhere so it never blocks the chat box ===== */
 let _rtDrag=null;
@@ -16573,7 +16652,11 @@ function doseKind(item){
   if(isRepDose(d)) return "count";
   if(/\b(breath|breathing|walk|jog|run|row|erg|bike|cycle|skip|hang|savasana|meditat|plank|wall sit)\b/i.test(t)) return "clock";
   if(d) return "hold";
-  return "open";
+  /* v157 — a movement the coach invented has no library dose, and returning
+     "open" left it the one card in the flow with no clock on it. On a flow it
+     is a hold like any other: it gets the default duration, as something to
+     watch rather than something he is being told to hit. */
+  return "hold";
 }
 /* Where a dose is worth printing at all, this is the text. */
 function doseText(item){
@@ -19454,13 +19537,17 @@ function setCoolSide(i,per){
 }
 function coolAllHTML(){
   const d=coolDefault();
-  return "<div class='coolall-ctl'>"+
+  /* v157 — these four buttons set the DEFAULT hold length, which is a setting,
+     and they sat across the top of every mobility session above the movements.
+     He wants a clock to watch, not a control panel to configure. Folded away;
+     one quiet line, and everything still there when he wants it. */
+  return "<details class='coolall-set'><summary>Set all durations</summary><div class='coolall-ctl'>"+
     "<span class='k'>All of them</span>"+
     "<button class='swapbtn' onclick='coolAllSet(30)'>30s</button>"+
     "<button class='swapbtn' onclick='coolAllSet(45)'>45s</button>"+
     "<button class='swapbtn' onclick='coolAllSet(60)'>60s</button>"+
     "<button class='swapbtn' onclick='coolMakeDefault()'>Make "+fmtSecShort(d.sec)+(d.perSide?" each side":" total")+" my default</button>"+
-  "</div>";
+  "</div></details>";
 }
 function coolAllSet(sec){
   const res=runAction("set_cooldown_duration",{scope:"all", sec});

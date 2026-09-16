@@ -1,3 +1,52 @@
+AMIR PT — v157 · 16/09/2026
+===========================
+
+"Couch stretch is a time thing not a reps thing. Honestly on mobility what I
+need above everything is time as a monitor not reps."
+
+TIME IS BACK, AS A MONITOR
+---------------------------
+v152 read "it's more just do the mobility" as "show nothing" and turned the
+clocks off. Half right, and this is the half I got wrong. What he objected to
+was a PRESCRIPTION — 45 seconds invented by the app, printed beside sets and
+reps and a rest countdown, telling him what to do. What he wants on a held
+stretch is the opposite thing: a clock he can watch while he holds it.
+
+On a flow day, timers are on by default now:
+  · a held movement shows its duration and a clock he can start
+  · a counted one (Roll-Up x6, The Hundred) keeps its count and has no clock
+  · nothing shows sets, reps, rest or a weight
+A movement the coach invented, which has no library duration, now gets the
+default one rather than being the single card in the flow with no clock on it.
+The toggle stays, so the bare list is one tap away.
+
+The duration buttons — 30s / 45s / 60s / "make it my default" — are folded
+behind one quiet line. They set a default; they are a setting, and they were
+sitting across the top of every mobility session above the movements.
+
+THE APP HAD NO WAY TO TELL HIM A FIX EXISTED
+----------------------------------------------
+The more important half. Three times running he has sent a screenshot of a bug
+already fixed and shipped, because an installed PWA keeps its page alive for
+days: switching back to it is not a load, so nothing re-fetches, and only a
+full swipe-closed-and-reopen picks up a new build. He should not have to know
+that, and "force-close the app" is not a delivery mechanism — it is me asking
+him to do my job.
+
+sw.js carries the version and is 7KB against index.html's 1.2MB, so that is
+what gets asked. Checked when he returns to the app and at most every two
+minutes: a bar appears above the tab bar saying which version is waiting, and
+he taps it when he is ready. Nothing ever reloads underneath him mid-set.
+
+VERIFIED
+--------
+His nine-movement flow, built the way the coach builds it: no "3 sets", no rep
+range, no rest wording, no Log button anywhere; seven clocks on the seven
+holds; Cat-Cow keeps x8 and 90/90 keeps x10 with no clock; Couch Stretch reads
+60s each side, Child's Pose 60s, the rest 45s each side. Update banner hidden
+at the same version and shown, correctly named, at a newer one. 16 journeys,
+390px and 1440px, no overflow, no console errors.
+
 AMIR PT — v156 · 16/09/2026
 ===========================
 
