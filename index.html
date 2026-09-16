@@ -4652,12 +4652,19 @@ function buildCooldown(names,ctx){
   return applyCoolDefaults(targeted.slice(0,5).concat(finish));
 }
 /* A long full-body flow for rest / mobility days. */
+/* ===== v145 \u00b7 A MOBILITY DAY IS A PSEUDO REST DAY ======================
+   "A moving day without excessive movement." It was opening with a 20-30
+   minute walk and then running ten movements \u2014 half an hour of walking plus
+   nine stretches is a session, not a rest day with movement in it.
+
+   One piece per area rather than two, the finisher, and the walk short and
+   explicitly optional. Seven things, none of them hard. */
 function buildMobilityFlow(){
   const out=[], seen=new Set();
   const push=it=>{ if(!it) return; const k=mobKey(it.t); if(!k||seen.has(k)) return; out.push(pickItem(it)); seen.add(k); };
-  push({t:"Easy walk", d:"20\u201330 min", cue:"Outside if you can. Blood flow, daylight, no effort."});
+  push({t:"Easy walk", d:"10 min", cue:"Optional, and only if you fancy it \u2014 daylight and blood flow, no effort. This is a rest day with movement in it, not a session."});
   ["legs","back","chest","shoulders","core"].forEach(g=>{
-    MOB.filter(i=>i.m&&i.m.indexOf(g)>=0&&!seen.has(i.t)).slice(0,2).forEach(push);
+    MOB.filter(i=>i.m&&i.m.indexOf(g)>=0&&!seen.has(i.t)).slice(0,1).forEach(push);
   });
   MOB.filter(i=>i.tag==="finish").forEach(push);
   return applyCoolDefaults(out);
@@ -4924,7 +4931,10 @@ function hasRower(){
   return true;
 }
 function rowWarmupMins(){ const t=timeBudget(); return t.row? (t.rowMins||10) : 0; }
-function showRowWarmup(w){ return !w.travel && hasRower(); }
+/* v145 — "mobility day I don't row". The rowing block is a warm-up for
+   lifting, and a mobility day is not a lifting day. It could still appear if
+   a lift got added to one, which is exactly the day he does not want it. */
+function showRowWarmup(w){ return !w.travel && hasRower() && !flowDay(w); }
 /* v48 — rowing is its own block now, not part of the warm-up. It sits directly
    above the first lift, with its own stopwatch so the mm:ss fills itself in. */
 function rowBlockHTML(travel){
@@ -5243,7 +5253,7 @@ function _renderSheetInner(w){
     return;
   }
   if(w.sets===0){
-    host.innerHTML="<div class='sheet'>"+wkHeaderHTML(w)+"</div><div id='wkMenu' data-open='0'></div><div class='sheet-sec'><div class='recovery'>"+w.note+"</div></div>"+(cardio?cardioBlockHTML(cardio):"")+sheetSec("mob",(w.flowTitle|| (w.kind==='mobility'?'Mobility flow · timed':'Mobility · timed')),moveCount(w.cooldown),coolBodyHTML(w.cooldown),true)+"</div>";
+    host.innerHTML="<div class='sheet'>"+wkHeaderHTML(w)+"</div><div id='wkMenu' data-open='0'></div><div class='sheet-sec'><div class='recovery'>"+w.note+"</div></div>"+sheetSec("mob",(w.flowTitle|| (w.kind==='mobility'?'Mobility flow · timed':'Mobility · timed')),moveCount(w.cooldown),coolBodyHTML(w.cooldown),true)+"</div>";
     try{ bindSheetSecs(); }catch(e){}
     try{ renderTrainDayPick(); }catch(e){}
     return;
@@ -7980,6 +7990,7 @@ Object.keys(PHYSIQUE_PRIORITY).map(g=>"  "+g+": "+PHYSIQUE_PRIORITY[g]).join("\n
 "  He has: a Brute Force 360 PTX rack with dual adjustable CABLE stacks, a multi-grip pull-up bar and a landmine post; an Olympic barbell and plates; an adjustable bench; a TRX; a Concept2 rower; bands; and fixed hex dumbbells to 10kg AND NO HEAVIER.\n"+
 "  He has NO leg press, NO leg curl and NO leg extension. They are not in the app and you do not program them. Hamstrings get Romanian deadlifts, hip thrusts, Nordic curls and single-leg work; quads get squats, split squats and lunges.\n"+
 "  The 10kg dumbbell ceiling is the thing that catches people out. A dumbbell movement cannot be a driver for him \u2014 he tops out the rack in a session. Anything meant to be loaded over weeks is barbell, cable or a pull-up bar. Dumbbells are for isolation, where light is correct anyway.\n\n"+
+"WHAT A MOBILITY DAY IS \u2014 he was explicit: \"a moving day without excessive movement, for a pseudo rest day\". It is NOT a session. No rowing, no conditioning, no cardio block, no warm-up and no cool-down (the movements ARE the session). Seven or eight gentle pieces, a short optional walk, and out. If you are tempted to add a lift or a finisher to one, you have misread the day \u2014 put it on a training day instead.\n\n"+
 "HIS INJURY, AND IT IS NOT NEGOTIABLE:\n"+
 "  LEFT WRIST (TFCC). No loaded wrist extension that hurts. Neutral grip, landmine and dumbbell variants over straight-wrist barbell pressing. If he says the wrist is talking, change the session that turn.\n"+
 "  That is the only injury on record. Do not invent others, do not program around aches he has not reported, and do not tell him a lift is risky for him unless he has told you it is.\n\n"+
@@ -11824,7 +11835,7 @@ function scheduleInApp(){
    v18 ADDITIONS — draggable rest timer · weekly training memory · AI planner
    · Firestore sync
    ========================================================================== */
-const APP_VERSION="v144 · 16/09/2026";
+const APP_VERSION="v145 · 16/09/2026";
 
 /* ===== 1. REST TIMER — drag it anywhere so it never blocks the chat box ===== */
 let _rtDrag=null;

@@ -1,7 +1,43 @@
-AMIR PT — v144 · 16/09/2026
+AMIR PT — v145 · 16/09/2026
 ===========================
 
 Upload index.html AND sw.js.
+
+
+A MOBILITY DAY IS A REST DAY WITH MOVEMENT IN IT
+================================================
+"A moving day without excessive movement for a pseudo rest day."
+
+It was not that. It opened with a 20-30 minute walk and then ran ten
+movements. Half an hour of walking plus nine stretches is a session.
+
+    before   Easy walk 20-30 min, then 9 stretches
+    now      Easy walk 10 min, optional, then 6
+
+  One piece per area instead of two, the breathing finisher, and the walk
+  short and explicitly marked optional on the card. Seven things, none of
+  them hard.
+
+NO ROWING ON IT, EVER
+  showRowWarmup() only checked whether you own a rower. The Concept2 block
+  is a warm-up for lifting, so it could turn up the moment a lift got added
+  to a mobility day — which is precisely the day you do not want it. It is
+  now blocked on any flow day, and so is the cardio block underneath the
+  header.
+
+THE WARM-UP AND COOL-DOWN
+  Those went in v140, and a mobility day built on this version has neither
+  — I checked it again, including with a lift added to it. If you are still
+  seeing them, you are on an older upload. The likely culprit is the v139
+  bug: before that, ANY coach action on a mobility day quietly replaced it
+  with a generic three-set "Custom Session", which renders a warm-up and a
+  cool-down while the day still reads Mobility. Upload this one and it
+  cannot happen.
+
+AND THE COACH IS TOLD WHAT THE DAY IS FOR
+  In your words. No rowing, no conditioning, no warm-up, no cool-down, and
+  if it is tempted to add a lift or a finisher to one it has misread the
+  day and should put it on a training day instead.
 
 
 THE BACK THING IS OFF
