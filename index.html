@@ -8136,7 +8136,21 @@ coachingDoctrine()+
 (p.rules? "\nHIS OWN STANDING RULES (he wrote these — follow them):\n"+p.rules+"\n":"")+
 (p.injuries? "\nINJURIES AND LIMITATIONS:\n"+p.injuries+"\n":"")+
 (p.coachTone? "\nHOW HE WANTS YOU TO TALK TO HIM — match this voice exactly, it overrides the generic personality line above:\n"+p.coachTone+"\n":"")+
-"\nLOCATION RULES — THREE PLACES, THREE KIT LISTS:\n- DUBAI: full gym + time. Barbell, dumbbells, bench, pull-up bar, machines, Concept2 rower, bands. Full sessions.\n- MADRID: DUMBBELLS ONLY (plus bodyweight). No barbell, no machines, no rower, no pull-up bar. Never program a barbell or cable movement there.\n- GREECE: NOTHING AT ALL. Bodyweight only, holiday, short (~15 min), maintenance. No rower, no bands, no bar. Never guilt him about food or drink.\nHE IS IN "+LOC().label.toUpperCase()+" TODAY — equipment: "+currentEquipment()+". Only ever program from AVAILABLE EXERCISES below; anything else is useless to him.\n- GIFs: library moves already show demos automatically. If Amir asks to 'add gifs', the app enables them — just confirm briefly, no need to attach URLs unless adding a brand-new exercise.\n\n"+editBlock+state;
+"\nLOCATION RULES — THREE PLACES, THREE KIT LISTS:\n- DUBAI: full gym + time. Barbell, dumbbells, bench, pull-up bar, machines, Concept2 rower, bands. Full sessions.\n- MADRID: DUMBBELLS ONLY (plus bodyweight). No barbell, no machines, no rower, no pull-up bar. Never program a barbell or cable movement there.\n- GREECE: NOTHING AT ALL. Bodyweight only, holiday, short (~15 min), maintenance. No rower, no bands, no bar. Never guilt him about food or drink.\nHE IS IN "+LOC().label.toUpperCase()+" TODAY — equipment: "+currentEquipment()+". Only ever program from AVAILABLE EXERCISES below; anything else is useless to him.\n- GIFs: library moves already show demos automatically. If Amir asks to 'add gifs', the app enables them — just confirm briefly, no need to attach URLs unless adding a brand-new exercise.\n\n"+editBlock+state+coachClosing();
+}
+/* ===== v141 · THE LAST THING IT READS =====================================
+   The operating rules sit in the middle of a 54,000-character brief, with
+   twenty thousand characters of history and logs after them. That is a lot of
+   prose between "here is how you change the app" and the moment it answers.
+
+   This goes last, because it is what he keeps not getting: talk like a person,
+   and then actually change something. */
+function coachClosing(){
+  return "\n\n=== THE LAST THING, AND THE MOST IMPORTANT ===\n"+
+  "Talk to him like his coach, not like a form. Plain sentences. No headings and no numbered lists unless he actually asks for a list — say it the way you would say it stood next to him.\n"+
+  "He will tell you things sideways: \"my shoulder's a bit off\", \"I've only got half an hour\", \"I hate these\", \"can we do something easier today\", \"I did 20 on the deadlift\", \"give me a mobility day\". Every one of those is an instruction. Work out what he means, say it back in one line, and DO it with the envelopes — they are listed above and they are the only thing that reaches Train.\n"+
+  "If two readings are possible, make the safer change and name the one you made, so he can correct a word instead of repeating himself. Asking him to rephrase is a last resort.\n"+
+  "Never end a turn having agreed with him and changed nothing. That is the failure he notices every single time.\n";
 }
 
 /* v115 — what the model most needs to know is that changing things is no
@@ -8168,7 +8182,7 @@ function v115Brief(){
 "[[ACTION: {\"do\":\"set_exercise_preference\",\"name\":\"Burpee\",\"pref\":\"never\"}]]  · pref: favourite | prefer | avoid | never | painful | no_kit | clear\n"+
 "[[ACTION: {\"do\":\"undo\"}]]\n"+
 "EVERY envelope is validated against today's session, the catalogue, the kit in the room and his injury, then applied, saved, and VERIFIED against what is on disk. If it fails you are told and he is told, and nothing changed.\n"+
-"THEREFORE: never write a sentence claiming you changed something unless you emitted the envelope for it in the same reply, or you were told it was already done. A promise is not a change. The app will strip a claim it cannot back with a verified receipt, so the only thing an unbacked claim costs you is his trust.\n"+"A SESSION HE ASKS FOR IS BUILT, NOT DESCRIBED. \"Make me a mobility workout\", \"give me a core session\", \"I want to do legs today\" — those are changes to Train, not answers in chat. Emit set_day_type for what today becomes, then set_section for the movements (on a Mobility day the flow IS the cooldown; add_exercise puts lifts in the main list). A numbered plan typed into the chat with nothing on the sheet is the worst thing you can do here: he goes to Train and it is not there. Say what you built in a line or two and let the receipts show it — do not paste the list as well.\n"+
+"THEREFORE: never write a sentence claiming you changed something unless you emitted the envelope for it in the same reply, or you were told it was already done. A promise is not a change. The app will strip a claim it cannot back with a verified receipt, so the only thing an unbacked claim costs you is his trust.\n"+"ENVELOPES FIRST, WORDS AFTER. Put every envelope at the TOP of your reply, before you say anything. A reply can be cut off at the end; what is cut is then the part that would have changed the app, and he gets a half-written plan and an unchanged Train screen. The envelopes are the work. The sentence explaining them is the commentary.\n"+"A SESSION HE ASKS FOR IS BUILT, NOT DESCRIBED. \"Make me a mobility workout\", \"give me a core session\", \"I want to do legs today\" — those are changes to Train, not answers in chat. Emit set_day_type for what today becomes, then set_section for the movements (on a Mobility day the flow IS the cooldown; add_exercise puts lifts in the main list). A numbered plan typed into the chat with nothing on the sheet is the worst thing you can do here: he goes to Train and it is not there. Say what you built in a line or two and let the receipts show it — do not paste the list as well.\n"+
 "DEFAULT SCOPE IS TODAY. Only reach for scope \"always\", a preference, or a permanent logging correction when he actually says again, always, from now on, permanent or never.\n"+
 "\n=== THE PROGRAMME HE IS ON ===\n"+
 (function(){ try{ const b=blockSummary();
@@ -11722,7 +11736,7 @@ function scheduleInApp(){
    v18 ADDITIONS — draggable rest timer · weekly training memory · AI planner
    · Firestore sync
    ========================================================================== */
-const APP_VERSION="v140 · 16/09/2026";
+const APP_VERSION="v141 · 16/09/2026";
 
 /* ===== 1. REST TIMER — drag it anywhere so it never blocks the chat box ===== */
 let _rtDrag=null;
@@ -18833,7 +18847,10 @@ async function sendChat(){
           "(SYSTEM: I tried to act on this and it FAILED — "+failures.join("; ")+
           ". Nothing changed. Tell him plainly what stopped it and what you need from him. Do not pretend it worked.)"});
       }
-      reply=await callAI(msgs,600); if(reply) aiUsed=true;
+      /* v141 \u2014 600 tokens. A seven-movement plan plus the envelopes that
+         build it does not fit in 600 tokens, and the envelopes are what got
+         cut: the reply arrived mid-sentence and nothing reached Train. */
+      reply=await callAI(msgs,1400); if(reply) aiUsed=true;
     }
     if(!reply){
       /* Offline or unkeyed: the honest failure outranks anything generic. */

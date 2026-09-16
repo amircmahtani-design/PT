@@ -1,7 +1,65 @@
-AMIR PT — v140 · 16/09/2026
+AMIR PT — v141 · 16/09/2026
 ===========================
 
 Upload index.html AND sw.js.
+
+
+WHY THE COACH AGREED AND THEN DIDN'T DO IT
+==========================================
+"I want to speak to my AI coach normally and he needs to understand what
+I want and adjust."
+
+Three things were in the way, and the first one is the real culprit.
+
+THE REPLY WAS BEING CUT OFF
+  Replies were capped at 600 tokens. Your mobility plan alone was longer
+  than that — look at your own screenshot, it stops mid-sentence at "7.
+  Standing Calf Stretch (30". The instructions that would have built the
+  session sat AFTER all that prose, so they were the part that got cut.
+  It wasn't ignoring you. It ran out of room before it got to the doing.
+
+  1400 tokens now, and it is told to put the instructions FIRST, before it
+  says anything. If a reply is ever cut short again, what survives is the
+  part that changes the app.
+
+THE OPERATING RULES WERE BURIED
+  Its brief is 55,000 characters. "Here is how you change things" sat in
+  the middle of it, with twenty thousand characters of history and logs
+  after it. The last thing it now reads is the thing it keeps failing to
+  do: talk like a person, work out what he means, and change something.
+
+TALK NORMALLY
+  It is told plainly: plain sentences, no headings, no numbered lists
+  unless you ask for one. You say things sideways — "my shoulder's a bit
+  off", "only got half an hour", "I hate these", "I did 20 on the
+  deadlift", "give me a mobility day" — and every one of those is an
+  instruction to work out and act on. If two readings are possible it
+  makes the safer change and names it, so you correct a word instead of
+  repeating yourself. And it never ends a turn having agreed and changed
+  nothing.
+
+
+VISUALS-NEEDED.txt — NOW WITH THE BANDS
+=======================================
+92 movements audited across bands, mobility and Pilates. 45 are already
+your photographs. 47 are borrowed from the free pack, and 25 of those are
+the wrong movement or the wrong implement.
+
+  BANDS ARE THE WORST OF IT: 26 borrowed, 18 wrong. They are matched by
+  name, so a band exercise gets whatever the pack has under a similar
+  name — which is usually the cable, barbell or dumbbell version:
+
+      Band Chest Press      showing a cable chest press
+      Band Glute Bridge     showing a barbell glute bridge
+      Band Romanian DL      showing a barbell Romanian deadlift
+      Band Curl             showing a HAMSTRING curl
+      Band Push-up          showing a push-up with no band
+      Band Triceps Pushdown showing a cable pushdown
+
+  Mobility: 19 borrowed, 5 wrong. Pilates: 2 borrowed, both wrong.
+
+  The file lists every one with its exact two filenames and what it is
+  currently showing, so you can judge each yourself. Wrong ones first.
 
 
 A MOBILITY DAY IS ALL MOBILITY
