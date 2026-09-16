@@ -5432,7 +5432,12 @@ function _renderSheetInner(w){
   "<div class='sheet-sec'><h3>◆ Main workout · log each set</h3>"+exHTML+
     "<div class='addrow'><button class='btn sec' onclick='toggleAddBox()'>➕ Add an exercise</button></div>"+
     "<div id='addBox'></div></div>"+
-  (cardio?cardioBlockHTML(cardio,true):"")+
+  /* v149 — this was never gated. showRowWarmup already knew to stay away from
+     a flow day; the CARDIO block did not, so a mobility day carrying
+     DB.cardio (Concept2 Row, by default) printed a rowing block under the
+     movements. That is the rowing he kept seeing after v147: not the warm-up
+     row, which was fixed, but this one. */
+  (cardio && !flowDay(w) ? cardioBlockHTML(cardio,true) : "")+
   (flowDay(w)
     ? sheetSec("mob", (w.flowTitle || "Mobility flow · timed"), moveCount(w.cooldown), coolBodyHTML(w.cooldown), true)
     : sheetSec("cool","Cool-down · timed",moveCount(w.cooldown),coolBodyHTML(w.cooldown),false))+
@@ -8614,9 +8619,46 @@ function resolveKnownEx(raw){ const n=resolveExName(raw,null,false); return (n&&
 
    A mobility or recovery day has no straight sets BY DESIGN. Only a session
    that is actually missing is missing. */
+/* ===== v149 · PUTTING BACK A MOBILITY DAY THAT WAS ALREADY BROKEN ========
+   v147 stopped add_exercise turning a flow day into a lifting day. It did
+   nothing for the day already sitting on his phone, and that is the one he
+   was looking at: every mutation stamps touched=true, which is precisely the
+   flag that tells the automatic planner to leave a session alone. So the
+   broken Tuesday stayed broken through two updates, and he was right to say
+   the rowing was still there.
+
+   buildWorkout gives a mobility or Pilates day main:[] and sets:0, always.
+   So main with anything in it, or sets above zero, on a day the BUILDER
+   stamped kind:"mobility" is not a preference — it is the old bug's
+   fingerprint, and safe to undo.
+
+   The movements are not thrown away: anything in main that the flow hasn't
+   already got joins the flow, timed, de-duplicated on the same key
+   buildMobilityFlow uses. Logged sets live in DB.log, not here, so his
+   history is untouched either way. */
+function repairFlowDay(w){
+  if(!w || w.kind!=="mobility" || !Array.isArray(w.cooldown)) return false;
+  const broken = (Array.isArray(w.main) && w.main.length) || w.sets>0 ||
+                 !!w.cardio || (Array.isArray(w.warmup) && w.warmup.length);
+  if(!broken) return false;
+  const flow=w.cooldown.slice();
+  const seen=new Set(flow.map(m=>mobKey(m&&m.t)).filter(Boolean));
+  (w.main||[]).forEach(e=>{
+    const n=e&&e.name; if(!n) return;
+    const k=mobKey(n); if(!k||seen.has(k)) return;
+    flow.push(enrichMove({t:n})); seen.add(k);
+  });
+  w.cooldown=applyCoolDefaults(flow);
+  w.cooldownLocked=true;
+  w.main=[]; w.sets=0; w.reps="—";
+  w.warmup=[]; w.warmupLocked=false;
+  delete w.cardio;
+  return true;
+}
 function coachEnsureWorkout(){
   {
     const w=DB.workout;
+    try{ if(repairFlowDay(w)) save(); }catch(e){}
     if(w && Array.isArray(w.main)){
       if(w.main.length || w.sets>0) return;                         /* lifting day */
       if(Array.isArray(w.cooldown) && w.cooldown.length) return;    /* a flow day  */
@@ -11995,7 +12037,7 @@ function scheduleInApp(){
    v18 ADDITIONS — draggable rest timer · weekly training memory · AI planner
    · Firestore sync
    ========================================================================== */
-const APP_VERSION="v148 · 16/09/2026";
+const APP_VERSION="v149 · 16/09/2026";
 
 /* ===== 1. REST TIMER — drag it anywhere so it never blocks the chat box ===== */
 let _rtDrag=null;
@@ -19384,6 +19426,9 @@ function boot(){
       applyStrengthSlot(DB.workout); save();
     }
   }catch(e){}
+  /* v149 — repair a mobility day an older build converted into a lifting day
+     BEFORE the first render, so he never sees the broken version at all. */
+  try{ if(DB.workout && repairFlowDay(DB.workout)){ save(); } }catch(e){}
   if(todayCleared()){ renderWorkoutSheet(null); try{ renderHeroCard(); }catch(e){} }
   else if(DB.workout){ renderWorkoutSheet(DB.workout); try{ renderHeroCard(); }catch(e){} }
   /* v133 — the hero card left Home, and this was the one place that wrote to

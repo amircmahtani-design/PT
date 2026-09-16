@@ -1,3 +1,56 @@
+AMIR PT — v149 · 16/09/2026
+===========================
+
+"I still see rowing in my mobility workout."
+
+He was right, and v147 was not the whole fix. Two things, and neither is the
+one I fixed.
+
+THE ROWING WAS THE CARDIO BLOCK, NOT THE WARM-UP ROW
+-----------------------------------------------------
+showRowWarmup already knew to stay away from a flow day — that was v145, and
+it works. The CARDIO block three lines below it was never gated at all:
+
+    (cardio ? cardioBlockHTML(cardio,true) : "")
+
+A session picks up cardio from DB.cardio when it is built, and DB.cardio
+defaults to Concept2 Row. So a mobility day carrying that stamp printed a
+rowing block under the movements no matter what kind of day it was. Gated on
+flowDay now, like everything else in that render. A Cardio day still shows its
+rower, because on a Cardio day that is the session.
+
+THE BROKEN DAY WAS ALREADY SAVED
+---------------------------------
+v147 stopped add_exercise from turning a flow day into a lifting day. It did
+nothing about the day already sitting on his phone — and that was the one he
+was looking at. Worse, every mutation stamps touched=true, which is exactly
+the flag that tells the automatic planner to leave a session alone. So the
+broken day was pinned in place and survived two updates while I reported both
+of them as fixed.
+
+repairFlowDay puts it back, at boot before the first render and again before
+any action. buildWorkout gives a mobility or Pilates day main:[] and sets:0,
+always — so main with anything in it, or sets above zero, on a day the builder
+stamped kind:"mobility" is not a preference he set, it is the old bug's
+fingerprint, and safe to undo.
+
+Nothing is thrown away: anything in main that the flow hasn't already got
+joins the flow, timed, de-duplicated on the same key buildMobilityFlow uses,
+so his three stretches came back as flow movements rather than vanishing.
+Logged sets live in DB.log, not on the session, so history is untouched.
+
+Verified by rebuilding the exact broken state — Mobility day, sets=3, three
+stretches in main, Concept2 Row stamped on it, touched=true — saving it,
+reloading, and reading the sheet: nine timed moves, no rowing, no rep boxes,
+no warm-up. A Push day is untouched by the repair. A Cardio day keeps its
+rower.
+
+THE LESSON, WRITTEN DOWN
+------------------------
+A fix to the code that creates bad state is half a fix. The other half is the
+state already on his phone, and "touched" means it will never heal on its own.
+Ask, every time: is there a saved copy of this bug, and what repairs it?
+
 AMIR PT — v148 · 16/09/2026
 ===========================
 
