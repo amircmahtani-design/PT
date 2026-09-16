@@ -1,3 +1,54 @@
+AMIR PT — v158 · 16/09/2026
+===========================
+
+"I need my mobility workout in future to be much more complete. It focused a
+lot on legs but I need full body mobility of all parts. That doesn't need to
+change, it needs to just be fantastic."
+
+WHY IT WAS LEG-HEAVY
+--------------------
+buildMobilityFlow took one movement each from legs, back, chest, shoulders and
+core — five buckets — out of MOB, which is a fourteen-entry COOL-DOWN pool
+written to follow a lifting session, not to be one. So the neck, the ankles,
+the adductors and the wrists never appeared at all, and "legs" quietly meant a
+single hip flexor stretch standing in for the entire lower body. Seven cards,
+four of them below the waist.
+
+HEAD TO TOE, EVERY TIME
+------------------------
+FLOW_LIB is its own library — the cool-down after a lifting day is untouched —
+and the session now walks the body in anatomical order with a slot for every
+area that is always filled:
+
+  neck · shoulders · chest · upper back · lats · lower back · hips · glutes
+  hamstrings · groin · calves and ankles · wrists
+
+Fifteen cards, roughly seventeen minutes of actual movement plus the optional
+walk. Where an area has more than one entry they rotate by how many flow
+sessions he has finished, so two mobility days running are not the same
+session while the COVERAGE never moves — which is the whole point of what he
+asked for. Measured over six consecutive sessions: 12 of 12 areas present in
+every one, and eleven of the fifteen movements change between session one and
+session two.
+
+The kit filter runs first, so Madrid and Greece get all twelve areas too
+rather than a hole where the pull-up bar would have been. A sore wrist on the
+morning check-in takes the gentler of the two wrist entries.
+
+FOURTEEN OF FIFTEEN ARE HIS OWN PHOTOGRAPHS
+--------------------------------------------
+Only the neck is missing, because he has never shot it. Those two cards carry
+the Watch-demo link — honest, and named at the top of EXERCISES.txt with what
+to shoot. "Easy walk" now finds his brisk-walk photograph.
+
+VERIFIED
+--------
+Six consecutive sessions: 12/12 areas each. Three locations: 15 moves and
+12/12 areas each. 84 movement-instances resolved, two without a photo and both
+of them the neck. Still no sets, no rep range, no rest wording and no Log
+button anywhere on a flow. 16 journeys, 390px and 1440px, no overflow, no
+console errors.
+
 AMIR PT — v157 · 16/09/2026
 ===========================
 

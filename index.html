@@ -3120,6 +3120,8 @@ const DEMO_ALIAS={
   "figure four stretch":"figure-4-glute-stretch",
   "supine figure 4":"figure-4-glute-stretch",
   "cat camel":"cat-cow",
+  "easy walk":"brisk-walk-or-skipping",
+  "brisk walk":"brisk-walk-or-skipping",
   "open book":"open-book-rotations",
   "open book stretch":"open-book-rotations",
   /* v154 — the coach keeps writing this, and the open-book IS the thoracic
@@ -3986,7 +3988,8 @@ function buildCustomDay(name,ctx){
   if(kind==="mobility"||kind==="recovery"||kind==="yoga"){
     const flow = (dt.main&&dt.main.length)? dt.main.map(enrichMove) : buildMobilityFlow();
     return {title:name, tag:"Recovery · Mobility", phase:DB.profile.phase, kind:"mobility",
-      note: dt.note || "Easy mobility & recovery. Move slow, breathe, no straining. This is how the physique gets built.",
+      flowTitle:"Mobility flow · head to toe",
+      note: dt.note || "Full-body mobility, neck to ankles — every area gets a slot. Move slow, breathe, no straining. One pass: do the movement, then move on.",
       reps:"—", sets:0, warmup:[], main:[], cooldown:flow, recovery:"Sleep, water, protein. Rest is training too."};
   }
   // custom strength template — now pool-aware, so a Core Day is core work
@@ -4847,14 +4850,153 @@ function buildCooldown(names,ctx){
 
    One piece per area rather than two, the finisher, and the walk short and
    explicitly optional. Seven things, none of them hard. */
+/* ===== v158 · A COMPLETE FULL-BODY MOBILITY SESSION ======================
+   "I need my mobility workout to be much more complete. It focused a lot on
+   legs but I need full body mobility of all parts."
+
+   It did. buildMobilityFlow took one movement each from legs, back, chest,
+   shoulders and core out of a 14-entry library that is really a cool-down
+   pool — so the neck, the ankles, the adductors and the wrists never appeared
+   at all, and "legs" quietly meant one hip flexor stretch standing in for the
+   whole lower body.
+
+   This is its own library, head to toe, so the cool-down after a lifting day
+   is untouched. Every area of the body gets a slot and the slots are always
+   filled, in anatomical order. Where an area has more than one entry they
+   rotate by how many flow sessions he has done, so two mobility days in a row
+   are not identical while the COVERAGE never changes — that is the whole
+   point of the complaint.
+
+   Every movement here resolves to one of his own photographs except the neck,
+   which he has not shot; that card carries the Watch-demo link and the neck is
+   on the list in EXERCISES.txt. */
+const FLOW_AREAS=[
+  ["neck",      "Neck"],
+  ["shoulders", "Shoulders"],
+  ["chest",     "Chest"],
+  ["tspine",    "Upper back"],
+  ["lats",      "Lats"],
+  ["lowback",   "Lower back"],
+  ["hips",      "Hips"],
+  ["glutes",    "Glutes"],
+  ["hams",      "Hamstrings"],
+  ["adductors", "Groin"],
+  ["calves",    "Calves & ankles"],
+  ["wrists",    "Wrists"]
+];
+const FLOW_LIB=[
+  /* neck */
+  {a:"neck", t:"Neck circles", d:"×5 each way",
+   cue:"Slow and small. Chin to chest, ear to shoulder, all the way round — stop anywhere it pinches."},
+  {a:"neck", t:"Neck side bends", d:"30s each side",
+   cue:"Ear towards the shoulder, opposite hand reaching down the floor. No pulling on your head."},
+
+  /* shoulders */
+  {a:"shoulders", t:"Arm circles", d:"15 each way",
+   cue:"Start small and grow them. Loosens the whole shoulder capsule."},
+  {a:"shoulders", t:"Band shoulder dislocates", d:"×10",
+   cue:"Wide grip, arms straight, slowly over the head and back. Go wider if it pinches."},
+  {a:"shoulders", t:"Cross-body shoulder stretch", d:"30s each side",
+   cue:"Pull the arm across your chest, keep that shoulder pressed down."},
+  {a:"shoulders", t:"Wall slides", d:"×10",
+   cue:"Back, head and forearms flat on the wall. Slide the arms up without letting the ribs flare."},
+
+  /* chest */
+  {a:"chest", t:"Doorway pec stretch", d:"45s each side",
+   cue:"Forearm on the frame, elbow at shoulder height, turn your body away until you feel the chest open."},
+  {a:"chest", t:"Doorway pec opener", d:"30s each side",
+   cue:"Forearm on the frame at shoulder height, step gently through. Breathe into the front of the chest."},
+
+  /* thoracic spine */
+  {a:"tspine", t:"Cat-cow", d:"×8",
+   cue:"Move the spine one segment at a time, breathe out as you round."},
+  {a:"tspine", t:"Open-book rotations", d:"×8 each side",
+   cue:"Side lying, knees stacked and pinned. Follow your top hand with your eyes as it opens."},
+  {a:"tspine", t:"Spine twist", d:"×6 each side",
+   cue:"Sit tall, arms wide, rotate from the ribs. Hips stay square to the front."},
+
+  /* lats */
+  {a:"lats", t:"Lat stretch on a doorframe", d:"45s each side",
+   cue:"Hold the frame, sit the hips back and away. Breathe into the ribs on the stretched side."},
+  {a:"lats", t:"Dead hang", d:"20–30s", eq:"bar",
+   cue:"Let the shoulders and spine decompress. Breathe."},
+
+  /* lower back */
+  {a:"lowback", t:"Supine spinal twist", d:"45s each side",
+   cue:"Knees over to one side, both shoulders stay on the floor."},
+  {a:"lowback", t:"Cobra stretch", d:"30s",
+   cue:"Gentle spinal extension. Hips stay down, no cranking."},
+
+  /* hips */
+  {a:"hips", t:"Couch stretch (hip flexor)", d:"60s each side",
+   cue:"Back foot up on a couch or wall, squeeze that glute and tuck the ribs down."},
+  {a:"hips", t:"90/90 hip switches", d:"×10",
+   cue:"Sit tall, rotate knee to knee slowly. Don't use your hands if you can help it."},
+  {a:"hips", t:"World's greatest stretch", d:"×5 each side",
+   cue:"Deep lunge, elbow inside the front foot, then rotate and reach up and open."},
+
+  /* glutes */
+  {a:"glutes", t:"Figure-4 glute stretch", d:"45s each side",
+   cue:"Ankle across the opposite knee, draw the leg in towards your chest."},
+  {a:"glutes", t:"Glute bridge", d:"×15",
+   cue:"Squeeze hard at the top. Wakes the glutes up rather than stretching them."},
+
+  /* hamstrings */
+  {a:"hams", t:"Standing hamstring stretch", d:"45s each side",
+   cue:"Hinge from the hip with a flat back — rounding over doesn't stretch the hamstring."},
+  {a:"hams", t:"Spine stretch forward", d:"×5",
+   cue:"Sit tall, legs long, curl forward one vertebra at a time and breathe out."},
+
+  /* adductors */
+  {a:"adductors", t:"Cossack squat", d:"×6 each side",
+   cue:"Sit into one hip, the other leg dead straight with the toe up. As deep as is comfortable."},
+
+  /* calves and ankles */
+  {a:"calves", t:"Calf stretch on a wall", d:"45s each side",
+   cue:"Back leg dead straight, heel pressed down."},
+  {a:"calves", t:"Ankle rocks on a wall", d:"×10 each side",
+   cue:"Knee drives over the toe, heel stays glued down. This is what buys you squat depth."},
+
+  /* wrists — the TFCC side decides how far this goes */
+  {a:"wrists", t:"Wrist circles & gentle flexor stretch", d:"×10 each way", wrist:true,
+   cue:"Slow circles both directions, then a gentle flexor stretch. Stop well before any TFCC pain."},
+  {a:"wrists", t:"Wrist flexor & extensor stretch", d:"30s each side", wrist:true,
+   cue:"Very gentle both directions. Back off immediately if the TFCC side complains."}
+];
+/* How many flow sessions he has finished — the rotation index. */
+function flowsDone(){
+  try{ return Object.values(DB.completed||{}).filter(c=>c&&c.flow).length; }catch(e){ return 0; }
+}
 function buildMobilityFlow(){
   const out=[], seen=new Set();
-  const push=it=>{ if(!it) return; const k=mobKey(it.t); if(!k||seen.has(k)) return; out.push(pickItem(it)); seen.add(k); };
+  const push=it=>{ if(!it) return false; const k=mobKey(it.t); if(!k||seen.has(k)) return false;
+                   out.push(pickItem(it)); seen.add(k); return true; };
   push({t:"Easy walk", d:"10 min", cue:"Optional, and only if you fancy it \u2014 daylight and blood flow, no effort. This is a rest day with movement in it, not a session."});
-  ["legs","back","chest","shoulders","core"].forEach(g=>{
-    MOB.filter(i=>i.m&&i.m.indexOf(g)>=0&&!seen.has(i.t)).slice(0,1).forEach(push);
+  /* v158 — head to toe, and every area gets its slot. What is available here
+     is filtered first (the pull-up bar for a dead hang, a band for
+     dislocates), so a travel day still gets a complete session rather than a
+     gap where the kit is missing. */
+  const n=flowsDone();
+  const ci=(typeof latestCheckin==="function")? latestCheckin() : null;
+  const wristSore=!!(ci && ci.date===today() && /wrist|tfcc/i.test(ci.pain||""));
+  const usable=it=>{
+    if(it.eq && typeof gearOk==="function" && !gearOk(it)) return false;
+    return true;
+  };
+  FLOW_AREAS.forEach(([area],ai)=>{
+    const opts=FLOW_LIB.filter(i=>i.a===area && usable(i));
+    if(!opts.length) return;
+    /* Rotate the starting point per area so consecutive sessions differ,
+       then fall through the rest if the first choice is already in. */
+    const start=(n+ai)%opts.length;
+    for(let k=0;k<opts.length;k++){
+      const it=opts[(start+k)%opts.length];
+      if(it.wrist && wristSore && k<opts.length-1) continue;   /* the gentler one */
+      if(push(it)) break;
+    }
   });
-  MOB.filter(i=>i.tag==="finish").forEach(push);
+  push({t:"Child's pose", d:"60s", cue:"Sit back onto the heels, arms long, breathe into your back."});
+  push({t:"Box breathing", d:"2\u20133 min", cue:"In for 4, hold 4, out for 4, hold 4. This is what actually switches you into recovery."});
   return applyCoolDefaults(out);
 }
 /* If the coach (or an old saved workout) gives us a bare name, attach the dose and cue we know. */
@@ -12391,7 +12533,7 @@ function scheduleInApp(){
    v18 ADDITIONS — draggable rest timer · weekly training memory · AI planner
    · Firestore sync
    ========================================================================== */
-const APP_VERSION="v157 · 16/09/2026";
+const APP_VERSION="v158 · 16/09/2026";
 
 /* ===== 1. REST TIMER — drag it anywhere so it never blocks the chat box ===== */
 let _rtDrag=null;
