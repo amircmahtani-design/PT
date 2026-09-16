@@ -1,3 +1,68 @@
+AMIR PT — v161 · 16/09/2026
+===========================
+
+"Then do it."
+
+Weighting the upper day to his priorities directly, instead of leaving it to
+the staleness score. That took two changes, and finding the second one
+explained a class of oddness the pickers were never responsible for.
+
+1 · THE PRIORITY GROUPS GET A SLOT, NOT A LOTTERY TICKET
+---------------------------------------------------------
+GROUP_PRIORITY has read ["shoulders","back","chest","arms","legs","core"]
+since v69 and the accessory picker had never once looked at it. Slots went to
+whatever he had trained least recently, so an Upper Body day anchored Bench
+Press + Barbell Row filled its remaining slots with more pulling — no side
+delts, no arms, on the day whose entire purpose is the shoulder-to-waist
+taper.
+
+On an upper-body day (upper, push, pull, arms) the priority groups the anchors
+have NOT already covered are filled first, in his order, one movement each.
+What is left still goes to the staleness score, so rotation and recovery keep
+working — they just work after the physique, not instead of it. Legs and full
+body are untouched: there the priority list would pull the session away from
+the pattern it exists to train.
+
+The fill has to belong on the day, too. A shoulder slot on a PULL day was
+happily taking an Overhead Press: right muscle, wrong day. Push patterns are
+refused on a pull day and vice versa.
+
+2 · SAME MUSCLE IS NOT THE SAME MOVEMENT
+-----------------------------------------
+The one that mattered. After everything else was correct — pickAccessories
+was returning Face Pull, DB Curl, and planForTime was passing both through —
+the finished Pull Day still came out with an OVERHEAD PRESS in it.
+
+A step near the end of the build prefers "the loaded version of a movement
+where the kit exists", and it matched on the primary muscle alone. Face Pull
+is tagged "shoulders". So is Overhead Press, and a barbell outranks a cable —
+so the face pull was quietly "upgraded" into a vertical press, on a pulling
+day, after the picker had chosen correctly.
+
+v86 caught this exact mechanism turning a Pull-up into a DB Row and fixed it
+only for anchors. The real rule is that a substitute has to be the same
+MOVEMENT, better loaded — so the PATTERN has to match as well as the muscle.
+One line, and it is why fixing the pickers never showed up on the sheet.
+
+WHAT MONDAY LOOKS LIKE NOW
+---------------------------
+    Bench Press      chest
+    Barbell Row      back
+    Overhead Press   shoulders
+    Bench Dip        arms
+    Farmer Carry     core
+
+Shoulders and arms present in 8 blocks out of 8. Push, Pull and Arms days all
+cover their priorities too, and a Pull day now takes its delts from a pulling
+movement. Legs & Core came out as three squat-pattern lifts before this and is
+now a squat, a hinge and two lunges.
+
+VERIFIED
+--------
+Every split maps to its own pool and anchors sensibly. No session anywhere
+contains three movements of one pattern. Mobility still 12/12 areas. 390px and
+1440px, no overflow, no console errors.
+
 AMIR PT — v160 · 16/09/2026
 ===========================
 

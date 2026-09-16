@@ -3820,6 +3820,40 @@ function pickAccessories(split,key,need,anchors){
   const out=[], used={};
   (anchors||[]).forEach(a=>{ const p=patternOf(a); if(p) used[p]=(used[p]||0)+1; });
   const want=Math.max(0,need);
+  /* ===== v161 · THE PRIORITY GROUPS GET A SLOT, NOT A LOTTERY TICKET =====
+     GROUP_PRIORITY has said "shoulders, back, chest, arms" since v69 and the
+     accessory picker had never read it. Slots went to whatever he had trained
+     least recently, so an Upper Body day anchored Bench Press + Barbell Row
+     filled its two remaining slots with more pulling and he got no side delts
+     and no arms — on the day whose entire purpose is the shoulder-to-waist
+     taper.
+
+     On an upper-body day the priority groups the anchors have NOT already
+     covered are filled first, in his order, one movement each. Whatever is
+     left over still goes to the staleness score, so rotation and recovery
+     still do their job — they just do it after the physique does.
+
+     Not applied to legs or full-body: there the priority list would pull the
+     session away from the pattern it exists to train. */
+  if(["upper","push","pull","arms"].indexOf(grp)>=0){
+    const primary=n=>{ try{ return (((EX(n)||guessEx(n))||{}).m||[])[0]||null; }catch(e){ return null; } };
+    const covered=new Set((anchors||[]).map(primary).filter(Boolean));
+    for(const g of GROUP_PRIORITY){
+      if(out.length>=want) break;
+      if(g==="legs"||g==="core") continue;      /* not what an upper day is for */
+      if(covered.has(g)) continue;
+      /* v161 — and it has to belong on this day. Filling the shoulder slot on
+         a PULL day with an Overhead Press is a vertical press on a pulling
+         session: right muscle, wrong day. A pull day wants its delts from a
+         face pull or a reverse fly. */
+      const wrongWay = grp==="pull"? /push/ : grp==="push"? /pull/ : null;
+      const cand=sorted.find(n=>out.indexOf(n)<0 && primary(n)===g &&
+        !(wrongWay && wrongWay.test(patternOf(n)||"")));
+      if(!cand) continue;
+      out.push(cand); covered.add(g);
+      const cp=patternOf(cand); if(cp) used[cp]=(used[cp]||0)+1;
+    }
+  }
   while(out.length<want){
     let best=null, bestSc=-Infinity;
     for(const n of sorted){
@@ -3970,7 +4004,20 @@ function buildWorkout(){
       const want=((EX(n)||guessEx(n)).m||["core"])[0];
       const better=allExNames()
         .filter(x=>canDoHere(x,key)&&!claimed.has(x))
-        .filter(x=>{const o=EX(x)||{};return (o.m||[])[0]===want && !!o.timed===!!(EX(n)||{}).timed;})
+        /* ===== v161 · SAME MUSCLE IS NOT THE SAME MOVEMENT ================
+           This matched on the primary muscle alone, so a Face Pull — tagged
+           "shoulders" — was "upgraded" to an Overhead Press, because a barbell
+           outranks a cable. A rear-delt horizontal pull became a vertical
+           press, on a PULL day, after pickAccessories had correctly chosen the
+           face pull. It is why a pull session kept ending up with a press in
+           it and why fixing the pickers alone never showed up on the sheet.
+
+           v86 caught the same thing turning a Pull-up into a DB Row and fixed
+           it only for anchors. The real rule is that a substitute has to be
+           the same MOVEMENT, better loaded — so the pattern has to match too. */
+        .filter(x=>{const o=EX(x)||{};
+          return (o.m||[])[0]===want && !!o.timed===!!(EX(n)||{}).timed
+                 && patternOf(x)===patternOf(n);})
         .filter(x=>gearRank(x,key)<gearRank(n,key))
         .sort((a,b)=>(gearRank(a,key)-gearRank(b,key))||(((EX(a)||{}).pop||500)-((EX(b)||{}).pop||500)))[0];
       if(!better) return n;
@@ -12628,7 +12675,7 @@ function scheduleInApp(){
    v18 ADDITIONS — draggable rest timer · weekly training memory · AI planner
    · Firestore sync
    ========================================================================== */
-const APP_VERSION="v160 · 16/09/2026";
+const APP_VERSION="v161 · 16/09/2026";
 
 /* ===== 1. REST TIMER — drag it anywhere so it never blocks the chat box ===== */
 let _rtDrag=null;
