@@ -3970,24 +3970,21 @@ function layoffInfo(){
     label:gap+" days off — starting at 90%. Ramp back over a session or two, don't test it cold."};
 }
 /* The raw recommendation, then the layoff adjustment on top. */
-/* ===== v143 \u00b7 A CEILING ON THE LIFT THAT HURT HIM ======================
-   45kg unsupported bent-over barbell rows gave him lower-back pain. The app
-   had no memory of that: progression is blind, so it would have walked him
-   straight back up to 45 and past it.
+/* ===== v146 · NO CAPS, AND WHY THE TABLE IS STILL HERE ================
+   A brief once said 45kg bent-over rows had given him lower-back pain, and I
+   capped Barbell Row at 35kg on the strength of that one sentence without
+   checking it with him. Asked directly, he said it was never true — or if
+   something did happen once it was because he was not ready for the weight
+   then, and he rows 45kg now without trouble. There is no injury here and
+   there never was one to program around. The cap is gone and Barbell Row
+   anchors Pull and Upper again.
 
-   A cap is not a ban. The movement stays in the session as an accessory \u2014 it
-   is a good row \u2014 but the load stops below where it hurt, and the card says
-   why rather than silently refusing to add weight. Get stronger on the
-   supported variants instead; that is what they are for. */
-/* v144 \u2014 EMPTY, deliberately. The one entry in here capped Barbell Row at
-   35kg on the strength of a line in his brief about 45kg rows having hurt his
-   back. He says his back does not hurt. A ceiling built on a sentence nobody
-   can stand behind is worse than no ceiling: it silently blocks progression on
-   a lift he is fine with and tells him an injury he has not got.
-
-   The mechanism is kept because it is the right shape for a real one. Adding
-   a cap is one line, and the card says WHY rather than the weight quietly
-   refusing to move. */
+   Two things worth keeping from it. A ceiling built on a sentence nobody can
+   stand behind is worse than no ceiling: it blocks progression on a lift he
+   is fine with AND tells him about an injury he has not got. And the shape is
+   right for a real one — a cap that prints its reason on the card, rather
+   than the weight quietly refusing to move. One line to add if it is ever
+   genuinely needed. */
 const LOAD_CAPS={};
 function loadCapFor(name){
   const c=LOAD_CAPS[String(name||"").trim().toLowerCase()];
