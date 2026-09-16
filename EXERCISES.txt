@@ -1,14 +1,58 @@
-EVERY EXERCISE IN THE APP — ALL OF THEM YOURS
+EVERY EXERCISE IN THE APP — AND WHAT IT SHOWS
 =============================================
 
-v146 · 16/09/2026
+v148 · 16/09/2026
 
-Nothing is borrowed any more. Every movement the app can put in front of
-you shows your own photograph. There is nothing left to shoot.
+Audited in full: every name the app can put on a card, resolved through the
+same code the cards use, and every one of your photographs looked at against
+the movement it is filed under.
 
-    232 movements
-    232 your photographs
-    0 borrowed from the free pack
+    219 names the app can program
+    214 show one of your photographs
+      5 show the ▶ Watch demo link
+      0 show the free pack
+      0 show an approximate match
+
+    210 photographs on file
+    209 show the movement they are named for
+      1 does not, and is blocked
+
+
+THE ONE THAT IS WRONG
+=====================
+
+    single-leg-kick
+
+Your photograph is a quadruped donkey kick — on hands and knees, one straight
+leg driven back and up. The Pilates Single Leg Kick is prone on the FOREARMS,
+chest lifted, bent knee pulsing the heel to the glute, which is what the cue
+on that same card tells you to do. Picture and instruction saying two
+different things is the thing you asked me to stop doing, so the photo is
+blocked and the card shows the Watch-demo link until you re-shoot it.
+
+
+THE FOUR NEVER SHOT
+===================
+
+    Band Good Morning        band on the shoulders, hinge forward
+    Band Internal Rotation   elbow tucked, rotate in against the band
+    Band Squat               band across the shoulders, full depth
+    Band Upright Row         elbows lead, stop at chest height
+
+None of these is in any pool, so the app never programs them by itself — they
+only turn up if you or the coach ask for one by name. Shoot these four plus
+the single leg kick and the app is 219 of 219.
+
+
+ONE WORTH A LOOK
+================
+
+    chin-up
+
+Shot from behind at 418×627, and the grip direction is not legible at that
+size. The pull-up is shot from the front and is clearly overhand. If the
+chin-up was shot overhand too then it is a second pull-up and wants re-doing
+underhand — a chin-up is defined by the underhand grip.
 
 
 TWO FORMATS, BOTH WORKING

@@ -3166,8 +3166,23 @@ function demoAliasSlug(name){
   }
   return null;
 }
+/* ===== v148 · ONE OF HIS OWN PHOTOS IS OF THE WRONG MOVEMENT ============
+   All 210 photographs were checked against the movement each is filed under.
+   209 are right. This one is not:
+
+     single-leg-kick — the photograph is a quadruped donkey kick: on hands and
+     knees, one straight leg driven back and up. The Pilates Single Leg Kick is
+     prone on the FOREARMS, chest lifted, with a bent knee pulsing the heel to
+     the glute — which is what the card's own cue tells him to do. Picture and
+     instruction on the same card describing two different movements is exactly
+     the failure that got Childs_Pose blocked in the free pack.
+
+   Blocked rather than re-pointed at a lookalike: he shoots his own, and a
+   wrong photo is worse than none. Until then the card is the Watch-demo link.
+   Delete the line once the replacement lands in demos/. */
+const LOCAL_WRONG=new Set(["single-leg-kick"]);
 function localDemo(name){
-  const ok=k=>!!(k && (LOCAL_DEMOS.has(k)||LOCAL_WEBP.has(k)) && !_deadLocal.has(k));
+  const ok=k=>!!(k && (LOCAL_DEMOS.has(k)||LOCAL_WEBP.has(k)) && !_deadLocal.has(k) && !LOCAL_WRONG.has(k));
   /* One file means one image and no phase toggle \u2014 both positions are in it. */
   const tile=k=> LOCAL_WEBP.has(k)
     ? {kind:"gif", src:"demos/"+k+".webp", label:"your demo", mine:true, local:true}
@@ -11980,7 +11995,7 @@ function scheduleInApp(){
    v18 ADDITIONS — draggable rest timer · weekly training memory · AI planner
    · Firestore sync
    ========================================================================== */
-const APP_VERSION="v147 · 16/09/2026";
+const APP_VERSION="v148 · 16/09/2026";
 
 /* ===== 1. REST TIMER — drag it anywhere so it never blocks the chat box ===== */
 let _rtDrag=null;

@@ -1,3 +1,66 @@
+AMIR PT — v148 · 16/09/2026
+===========================
+
+"Make sure all images are correct for all exercises since I gave them to you."
+
+Audited, two ways.
+
+THE MAPPING
+-----------
+Every name the app can put on a card — 219 of them, the built-in library, the
+band library, the Pilates library, the extras, the warm-up and cool-down
+libraries and every pool for every location — resolved through the same code
+the cards use, and the file each one lands on written down.
+
+  214 land on one of his own photographs
+    5 land on the ▶ Watch demo link
+    0 land on the free pack
+    0 land on an approximate match
+
+Only ONE name in the whole catalogue reaches its photo indirectly rather than
+by its own name: "Child's pose with side reach" shows the plain child's pose,
+which is the position it starts in, with the reach in the cue. Everything else
+matches its file by name, so there is no room for a name to have drifted onto
+someone else's picture.
+
+THE PHOTOGRAPHS
+---------------
+A filename matching a name proves nothing about what is IN the photograph, so
+all 210 were looked at against the movement each is filed under.
+
+209 are right. One is not:
+
+  single-leg-kick — the photograph is a quadruped donkey kick: on hands and
+  knees, one straight leg driven back and up. The Pilates Single Leg Kick is
+  prone on the FOREARMS, chest lifted, bent knee pulsing the heel to the glute
+  — which is what the card's own cue says. Picture and instruction describing
+  two different movements on one card is the exact failure that got the free
+  pack's child's pose blocked in v133.
+
+It is blocked, not re-pointed at a lookalike. The card is the Watch-demo link
+until he shoots the real one; the block is one line and comes out the moment
+demos/single-leg-kick.webp is replaced.
+
+Things checked closely and found CORRECT, recorded so they don't get queried
+again: Band Kickback is a glute kickback and DB Kickback is a triceps kickback,
+and each has the right photo for its own library entry; band-calf-raise does
+show the heel raised in the second frame; ankle-rocks-on-a-wall is at a wall;
+child-s-pose frame 2 has the hips settled on the heels, not the free pack's
+kneeling tuck; curtsy-lunge frame 2 does cross behind.
+
+One I could not settle from the file: chin-up is shot from behind at 418×627
+and the grip direction is not legible. Pull-up is shot from the front and is
+clearly overhand. If the chin-up was shot overhand too, it is a second pull-up
+and wants re-shooting underhand — worth a look next time he is in the gym.
+
+NOT SHOT AT ALL
+---------------
+Band Good Morning, Band Internal Rotation, Band Squat, Band Upright Row. None
+of them is in any pool, so the app never programmes them on its own; they only
+appear if he or the coach asks for one by name, and then the card is the
+Watch-demo link. Five photographs — those four plus single-leg-kick — would
+take the app to 219 of 219.
+
 AMIR PT — v147 · 16/09/2026
 ===========================
 
