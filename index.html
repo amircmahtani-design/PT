@@ -925,6 +925,8 @@ a{color:var(--orange);}
   background:#15110d;border:1px solid var(--line);border-radius:10px;padding:5px 9px;}
 .coolctl .tbtn{padding:6px 10px;font-size:11.5px;}
 .coolall-ctl{display:flex;align-items:center;gap:7px;flex-wrap:wrap;margin:0 0 12px;}
+.flowtog{display:flex;justify-content:flex-end;margin:0 0 10px;}
+.flowtog .swapbtn{font-size:12px;opacity:.68;}
 .coolall-ctl .k{font-size:11px;font-weight:700;letter-spacing:.6px;text-transform:uppercase;color:var(--label);}
 /* v124 — the cool-down's own controls were 30px tall, and this is the
      screen he uses with a timer running and sweat on his hands. */
@@ -4966,16 +4968,79 @@ const ICON_MAP=[
 function iconFor(t){ const s=String(t||"").toLowerCase(); for(const [re,e] of ICON_MAP){ if(re.test(s)) return e; } return "🤸"; }
 /* v48 — the cool-down body: a timer on every stretch, plus one button that
    walks the whole thing for you, swapping sides on its own. */
+/* ===== v152 · "IT'S MORE JUST DO THE MOBILITY" ===========================
+   A mobility flow was being presented as a workout with a prescription: every
+   card carried "45s each side", a countdown button, an "adjust" panel, and a
+   30s/45s/60s bar over the top of the lot. On a Pilates day it was worse —
+   the note says "No sets, no weight" and the card under it said "×6" AND
+   "pace 0:45", two prescriptions for one movement.
+
+   Almost none of those seconds were real. coolDur invents 45s for anything
+   the library has no dose for, and that invented number was then printed as
+   though it were the prescription. The rule now is the honest one:
+
+     SHOW A DOSE ONLY WHERE THE MOVEMENT ACTUALLY HAS ONE.
+
+   The walk keeps "10 min" and the roll-up keeps "×6", because those come from
+   the library and mean something. A couch stretch shows its picture, its name
+   and its cue, and he holds it until it has done its job — which is how
+   anybody actually stretches.
+
+   The timers are not deleted, they are switched off: one quiet toggle at the
+   top of the flow brings back the countdowns, the per-move adjusters and the
+   duration bar for anyone who wants to be paced. Off by default on a flow
+   day; the cool-down at the end of a LIFTING day is untouched, where a
+   45-second hold is a real instruction and the clock helps. */
+function flowTimersOn(){
+  try{ return !!(DB.prefs && DB.prefs.flowTimers); }catch(e){ return false; }
+}
+/* True only inside a flow SESSION. The cool-down after a lifting session
+   keeps its clocks. */
+function flowSheet(){
+  try{ return flowDay(DB.workout) && !flowTimersOn(); }catch(e){ return false; }
+}
+function toggleFlowTimers(){
+  DB.prefs=DB.prefs||{};
+  DB.prefs.flowTimers=!DB.prefs.flowTimers;
+  save();
+  try{ renderWorkoutSheet(DB.workout); }catch(e){}
+  toast(DB.prefs.flowTimers? "Timers on \u2014 every move is paced" : "Timers off \u2014 just move through it");
+}
+function flowTimerToggleHTML(){
+  return "<div class='flowtog'><button class='swapbtn' onclick='toggleFlowTimers()'>"+
+    (flowTimersOn()? "\u23f1 Timers on \u00b7 tap to turn off" : "\u23f1 Add timers")+
+    "</button></div>";
+}
+/* v152 — "· timed" was a promise the flow no longer makes unless he asks. */
+function flowSecTitle(w){
+  const base=(w&&w.flowTitle) || ((w&&w.kind==='mobility')? "Mobility flow" : "Mobility");
+  const clean=String(base).replace(/\s*\u00b7\s*timed\s*$/i,"");
+  return clean + (flowTimersOn()? " \u00b7 timed" : "");
+}
 function coolBodyHTML(list){
   list=list||[];
-  const head = list.length>1
+  const quiet = flowSheet();
+  const head = quiet
+    /* v152 — nothing to run and nothing to set. Just the way back to the
+       clocks if he wants them. */
+    ? flowTimerToggleHTML()
+    : list.length>1
     /* v126 — on a Pilates or mobility day this list IS the session, so calling
        it a cool-down was simply the wrong word on the biggest button. */
     ? "<button class='coolall' onclick='coolRunAll()'>▶ Run the whole "+
         ((DB.workout&&DB.workout.kind==="mobility")? "flow" : "cool-down")+
-        " ("+list.length+" movements)</button>"+coolAllHTML()
+        " ("+list.length+" movements)</button>"+coolAllHTML()+
+        (flowDay(DB.workout)? flowTimerToggleHTML() : "")
     : "";
   return head+list.map((m,i)=>mvHTML(m,i)).join('');
+}
+/* One card body, so the quiet flow and the timed cool-down cannot drift apart. */
+function mvCardHTML(item,name,thumb,dose,coolIdx){
+  return "<div class='mvb' id='mv"+coolIdx+"'>"+thumb+"<div class='txt'>"+
+    "<div class='n'>"+name+(dose?"<span class='d'>"+escapeHtml(dose)+"</span>":"")+"</div>"+
+    (item.cue?"<div class='c'>"+item.cue+"</div>":"")+
+    "<a class='demo' href='"+demoSearchURL(name)+"' target='_blank' rel='noopener'>\u25b6 Watch how</a>"+
+    "</div></div>";
 }
 function mvHTML(item0,coolIdx){
   const item=enrichMove(item0);
@@ -5011,6 +5076,15 @@ function mvHTML(item0,coolIdx){
        directly underneath it. Where the movement counts reps, its own dose
        stays and the timer stands down to a pacing clock. */
     const reps = item.repDose===true || (item.repDose===undefined && isRepDose(item.d)) || isRepDose(libDoseFor(item.t));
+    if(flowSheet()){
+      /* v152 — the movement's OWN dose survives ("10 min" for the walk, "×6"
+         for a roll-up). The 45 seconds coolDur invents where the library is
+         silent does not: that is a made-up number printed as a prescription,
+         and it is the thing that made a stretch look like a set. */
+      const own = reps? item.d : (c.source==="default"? "" : (item.d||""));
+      dose = own || "";
+      return mvCardHTML(item,name,thumb,dose,coolIdx);
+    }
     dose = reps? item.d : (fmtSecShort(c.sec)+(c.perSide? " each side":" total"));
     const lab= reps? ("⏱ pace "+fmtTime(c.sec)) : ("⏱ "+fmtTime(c.sec)+(c.perSide?" × 2 sides":""));
     timerBtn="<button class='mvtime' data-ci='"+coolIdx+"' data-lab='"+attrEsc(lab)+"' onclick='coolTimer("+coolIdx+")'>"+lab+"</button>";
@@ -5443,7 +5517,9 @@ function _renderSheetInner(w){
     return;
   }
   if(w.sets===0){
-    host.innerHTML="<div class='sheet'>"+wkHeaderHTML(w)+"</div><div id='wkMenu' data-open='0'></div><div class='sheet-sec'><div class='recovery'>"+w.note+"</div></div>"+sheetSec("mob",(w.flowTitle|| (w.kind==='mobility'?'Mobility flow · timed':'Mobility · timed')),moveCount(w.cooldown),coolBodyHTML(w.cooldown),true)+"</div>";
+    host.innerHTML="<div class='sheet'>"+wkHeaderHTML(w)+"</div><div id='wkMenu' data-open='0'></div><div class='sheet-sec'><div class='recovery'>"+w.note+"</div></div>"+
+      sheetSec("mob",flowSecTitle(w),moveCount(w.cooldown),coolBodyHTML(w.cooldown),true)+
+      flowDoneHTML(w)+"</div>";
     try{ bindSheetSecs(); }catch(e){}
     try{ renderTrainDayPick(); }catch(e){}
     return;
@@ -5469,7 +5545,7 @@ function _renderSheetInner(w){
      row, which was fixed, but this one. */
   (cardio && !flowDay(w) ? cardioBlockHTML(cardio,true) : "")+
   (flowDay(w)
-    ? sheetSec("mob", (w.flowTitle || "Mobility flow · timed"), moveCount(w.cooldown), coolBodyHTML(w.cooldown), true)
+    ? sheetSec("mob", flowSecTitle(w), moveCount(w.cooldown), coolBodyHTML(w.cooldown), true)
     : sheetSec("cool","Cool-down · timed",moveCount(w.cooldown),coolBodyHTML(w.cooldown),false))+
   sheetSec("rec","Recovery notes","","<div class='recovery'>"+w.recovery+"</div>",false)+
   completeBlockHTML(w)+"</div>";
@@ -8476,7 +8552,7 @@ function v115Brief(){
 "[[ACTION: {\"do\":\"set_exercise_preference\",\"name\":\"Burpee\",\"pref\":\"never\"}]]  · pref: favourite | prefer | avoid | never | painful | no_kit | clear\n"+
 "[[ACTION: {\"do\":\"undo\"}]]\n"+
 "EVERY envelope is validated against today's session, the catalogue, the kit in the room and his injury, then applied, saved, and VERIFIED against what is on disk. If it fails you are told and he is told, and nothing changed.\n"+
-"THEREFORE: never write a sentence claiming you changed something unless you emitted the envelope for it in the same reply, or you were told it was already done. A promise is not a change. The app will strip a claim it cannot back with a verified receipt, so the only thing an unbacked claim costs you is his trust.\n"+"ENVELOPES FIRST, WORDS AFTER. Put every envelope at the TOP of your reply, before you say anything. A reply can be cut off at the end; what is cut is then the part that would have changed the app, and he gets a half-written plan and an unchanged Train screen. The envelopes are the work. The sentence explaining them is the commentary.\n"+"A SESSION HE ASKS FOR IS BUILT, NOT DESCRIBED. \"Make me a mobility workout\", \"give me a core session\", \"I want to do legs today\" — those are changes to Train, not answers in chat. Emit set_day_type for what today becomes, then set_section for the movements (on a Mobility or Pilates day the flow IS the cooldown). On a flow day add_exercise, remove_exercise and replace_exercise all act on the flow, so use them freely to tweak it \u2014 but NEVER set_sets, set_reps, set_load or set_rest there: a mobility day has no sets, no reps and no rest timer, and asking for them is what turns his pseudo-rest day back into a lifting day with the rower on top. A numbered plan typed into the chat with nothing on the sheet is the worst thing you can do here: he goes to Train and it is not there. Say what you built in a line or two and let the receipts show it — do not paste the list as well.\n"+
+"THEREFORE: never write a sentence claiming you changed something unless you emitted the envelope for it in the same reply, or you were told it was already done. A promise is not a change. The app will strip a claim it cannot back with a verified receipt, so the only thing an unbacked claim costs you is his trust.\n"+"ENVELOPES FIRST, WORDS AFTER. Put every envelope at the TOP of your reply, before you say anything. A reply can be cut off at the end; what is cut is then the part that would have changed the app, and he gets a half-written plan and an unchanged Train screen. The envelopes are the work. The sentence explaining them is the commentary.\n"+"A SESSION HE ASKS FOR IS BUILT, NOT DESCRIBED. \"Make me a mobility workout\", \"give me a core session\", \"I want to do legs today\" — those are changes to Train, not answers in chat. Emit set_day_type for what today becomes, then set_section for the movements (on a Mobility or Pilates day the flow IS the cooldown). On a flow day add_exercise, remove_exercise and replace_exercise all act on the flow, so use them freely to tweak it \u2014 but NEVER set_sets, set_reps, set_load or set_rest there: a mobility day has no sets, no reps and no rest timer, and asking for them is what turns his pseudo-rest day back into a lifting day with the rower on top. AND DO NOT PRESCRIBE SECONDS. In his words: \"mobility doesn't really work with reps or duration per se, it's more just do the mobility\". So give a flow movement a NAME and a CUE and nothing else \u2014 no \"45s each side\", no \"hold for 30 seconds\", no round count. The two exceptions are movements that are genuinely a duration or a count in their own right: a walk (\"10 min\"), box breathing, and the classical Pilates doses (\"x6\", \"10 breaths\"). Everything else he holds until it has done its job. A numbered plan typed into the chat with nothing on the sheet is the worst thing you can do here: he goes to Train and it is not there. Say what you built in a line or two and let the receipts show it — do not paste the list as well.\n"+
 "DEFAULT SCOPE IS TODAY. Only reach for scope \"always\", a preference, or a permanent logging correction when he actually says again, always, from now on, permanent or never.\n"+
 "\n=== THE PROGRAMME HE IS ON ===\n"+
 (function(){ try{ const b=blockSummary();
@@ -11892,6 +11968,14 @@ function renderHistory(){
   const byDate={};
   Object.entries(DB.strength).forEach(([ex,arr])=>arr.forEach(s=>{ if(s.date==='prev'||!s.date)return; (byDate[s.date]=byDate[s.date]||{lifts:[],rows:[]}); byDate[s.date].lifts.push({ex,sets:s.sets}); }));
   DB.rowing.forEach(r=>{ if(!r.date)return; (byDate[r.date]=byDate[r.date]||{lifts:[],rows:[]}); byDate[r.date].rows.push(r); });
+  /* v152 — a flow day logs no sets and no metres, so it never reached this
+     screen and his week looked emptier than it was. A completed flow is a
+     session he did; it belongs in the record of what he did. */
+  Object.entries(DB.completed||{}).forEach(([d,c])=>{
+    if(!c || !c.flow) return;
+    (byDate[d]=byDate[d]||{lifts:[],rows:[]});
+    byDate[d].flow=c;
+  });
   const dates=Object.keys(byDate).sort().reverse();
   const wk=Date.now()-7*864e5; const cnt={Push:0,Pull:0,Legs:0,Row:0};
   dates.forEach(d=>{ if(new Date(d).getTime()<wk) return; const g=byDate[d]; const cats=g.lifts.map(l=>catOf(l.ex)); if(cats.includes("Push"))cnt.Push++; if(cats.includes("Pull"))cnt.Pull++; if(cats.includes("Legs"))cnt.Legs++; if(g.rows.length)cnt.Row++; });
@@ -11906,7 +11990,8 @@ function renderHistory(){
   const sessionOf=d=>{
     const g=byDate[d], cats=g.lifts.map(l=>catOf(l.ex));
     const label = cats.includes("Push")&&"Push" || cats.includes("Pull")&&"Pull"
-               || cats.includes("Legs")&&"Legs" || (g.rows.length?"Row / Cardio":"Session");
+               || cats.includes("Legs")&&"Legs" || (g.rows.length?"Row / Cardio":"")
+               || (g.flow? "Mobility" : "Session");
     return {d,g,label};
   };
   const all=dates.slice(0,60).map(sessionOf);
@@ -11916,12 +12001,14 @@ function renderHistory(){
       const reps=l.sets.map(s=>{ const m=effortMeta(effortOf(s)); return (m?"<i class='effdot' style='background:"+m.col+"'></i>":"")+s.w+"\u00d7"+s.r; }).join(" ");
       return "<div class='hline'><span class='en'>"+l.ex+" <span class='muted' style='font-weight:600;font-size:12px'>"+reps+"</span></span><span class='ev'>"+top+"kg <button class='del' onclick=\"delStrength('"+l.ex.replace(/'/g,"\\'")+"','"+d+"')\">\u2715</button></span></div>"; }).join('');
     const rowLines=g.rows.map(r=>"<div class='hline'><span class='en'>\ud83d\udea3 Row "+r.dist+"</span><span class='ev'>"+r.time+"</span></div>").join('');
+    const flowLine=g.flow? "<div class='hline'><span class='en'>\uD83E\uDDD8 "+escapeHtml(g.flow.title||"Mobility")+
+      "</span><span class='ev'>"+(g.flow.moves||0)+" moves</span></div>" : "";
     const dd=new Date(d).toLocaleDateString('en-GB',{weekday:'short',day:'numeric',month:'short'});
     const comp=(DB.completed||{})[d];
     const durChip=(comp&&comp.durMs)? "<span class='splitchip' style='color:var(--muted);border-color:var(--line)'>\u23f1 "+fmtDurWords(comp.durMs)+"</span>" : "";
     return "<div class='card' style='border-left:3px solid "+col+"'><div class='hgroup'><div class='hd'><div class='dt'>"+dd+"</div>"+
       "<span class='splitchip' style='color:"+col+";border-color:"+col+"44;background:"+col+"1a'>"+label+"</span>"+durChip+"</div>"+
-      liftLines+rowLines+"</div></div>";
+      flowLine+liftLines+rowLines+"</div></div>";
   };
 
   if(DB.prefs && DB.prefs.histFlat){
@@ -11929,7 +12016,7 @@ function renderHistory(){
       all.slice(0,21).map(cardFor).join('');
     return;
   }
-  const order=["Push","Pull","Legs","Row / Cardio","Session"];
+  const order=["Push","Pull","Legs","Row / Cardio","Mobility","Session"];
   const groups={};
   all.forEach(x=>{ (groups[x.label]=groups[x.label]||[]).push(x); });
   const sections=order.filter(k=>groups[k]&&groups[k].length).map(k=>{
@@ -12067,7 +12154,7 @@ function scheduleInApp(){
    v18 ADDITIONS — draggable rest timer · weekly training memory · AI planner
    · Firestore sync
    ========================================================================== */
-const APP_VERSION="v151 · 16/09/2026";
+const APP_VERSION="v152 · 16/09/2026";
 
 /* ===== 1. REST TIMER — drag it anywhere so it never blocks the chat box ===== */
 let _rtDrag=null;
@@ -12401,6 +12488,22 @@ function maybeAutoPlan(){
    the numbers actually went backwards last session. Amir always gets the final word. */
 function isoDay(ms){ const d=new Date(ms); return d.getFullYear()+"-"+String(d.getMonth()+1).padStart(2,'0')+"-"+String(d.getDate()).padStart(2,'0'); }
 function trainedDates(){ return new Set(Object.keys(sessionsByDate(null))); }
+/* ===== v152 · SHOWING UP vs TRAINING HARD ===============================
+   trainedDates() reads logged LIFTS, so a mobility or Pilates day — which
+   logs nothing by design — was invisible to it. That is right for the fatigue
+   maths (restWeek, daysSinceRestDay, consecutiveTrainingDays all want to know
+   when he last genuinely loaded something, and a flow day is his pseudo-rest
+   day) and wrong for the streak, which is asking a different question: did he
+   show up. He did. Two or three times a week he does a flow and the run
+   counter read zero.
+
+   Two sets, because they answer two questions. Anything in DB.completed
+   counts as showing up, flow or barbell. */
+function showedUpDates(){
+  const s=trainedDates();
+  try{ Object.keys(DB.completed||{}).forEach(d=>s.add(d)); }catch(e){}
+  return s;
+}
 function consecutiveTrainingDays(){
   const dates=trainedDates(); let t=dnum(today()), n=0;
   if(!dates.has(isoDay(t))) t-=864e5;                 // nothing yet today — count from yesterday
@@ -12566,6 +12669,15 @@ function todayIsFlow(){
   return false;
 }
 function flowReadinessHTML(c){
+  /* v152 — a scheduled Rest day builds "Active Recovery", which is a flow,
+     so it lands here too, and a Pilates day is not a mobility day. Call the
+     day what it actually is instead of labelling everything Mobility. */
+  const w=DB.workout||{};
+  const nm=String(w.title||"")+" "+String(w.flowTitle||"")+" "+
+           String((typeof pickSplit==="function"? pickSplit() : "")||"");
+  const head = /pilates/i.test(nm)? "Pilates day"
+             : /\brest\b|recovery/i.test(nm)? "Recovery day"
+             : "Mobility day";
   const tired = c.verdict==="rest" || c.verdict==="deload";
   const body = tired
     ? "Good day for it. Nothing here to push or cut — no sets, no load, no PB to chase. Move through the flow, breathe, and let the hard work you've already done actually land."
@@ -12573,7 +12685,7 @@ function flowReadinessHTML(c){
   const why = tired
     ? (c.reasons.length? c.reasons.slice(0,3).join(" · ") : "you've been at it hard")
     : (c.green.length? c.green.slice(0,3).join(" · ") : "recovery looks fine");
-  return "<div class='card mt'><div class='card-title'><span>🧘 Mobility day</span>"+
+  return "<div class='card mt'><div class='card-title'><span>🧘 "+head+"</span>"+
     "<span class='pill purple'>"+c.streak+"d streak</span></div>"+
     "<div class='coachnote'><div class='who'>◆ Coach</div>"+body+
       "<div class='sm' style='margin-top:8px'>"+(tired?"Well timed: ":"Reading: ")+why+"</div></div>"+
@@ -12772,7 +12884,7 @@ async function purgePhotos(){
    read as "47". Now it's your current run of training days, and a coach-called
    rest day (or two) doesn't break it. */
 function computeStreak(){
-  const dates=trainedDates(); if(!dates.size) return 0;
+  const dates=showedUpDates(); if(!dates.size) return 0;
   let t=dnum(today()), streak=0, gap=0;
   if(!dates.has(isoDay(t))) t-=864e5;          // today hasn't happened yet — that's fine
   for(let i=0;i<400;i++){
@@ -13246,6 +13358,52 @@ function celebrate(){
 
 /* ===== C. THE BUTTON / THE RECEIPT ===== */
 function fmtVol(v){ return v>=1000? (Math.round(v/100)/10)+"t" : Math.round(v)+"kg"; }
+/* ===== v152 · A MOBILITY DAY THAT COUNTS ================================
+   completeBlockHTML returned "" for kind==="mobility" and for any zero-set
+   day, and the zero-set render path never called it anyway. So a flow could
+   not be finished. Nothing was written to DB.completed, trainedToday() stayed
+   false, the streak did not move, and Progress had no idea he had done
+   anything — on a day he had genuinely trained, just not with a barbell.
+
+   That is the same assumption as the rowing block and the readiness card:
+   the app counted a day as training only if it had sets in it. He does two
+   or three flow days a week. They count. */
+function flowDoneHTML(w){
+  const c=completionOf();
+  const n=moveCount((w&&w.cooldown)||[]);
+  if(c){
+    const when=new Date(c.at).toLocaleTimeString('en-GB',{hour:'2-digit',minute:'2-digit'});
+    return "<div class='sheet-sec donewrap' id='doneCard'><div class='donecard'>"+
+      "<div class='donehd'>\u2705 Flow complete</div>"+
+      "<div class='donestat'>"+escapeHtml(c.title||"Mobility")+" \u00b7 "+n+"</div>"+
+      "<div class='donesub'>finished "+when+"</div>"+
+      "<div class='donerun'>"+(DB.streak||1)+" day run \uD83D\uDD25</div>"+
+      "<button class='btn ghost mt' onclick='undoComplete()'>\u21a9 Not finished after all</button>"+
+      "<div class='syncdot'></div></div></div>";
+  }
+  return "<div class='sheet-sec donewrap' id='doneCard'>"+
+    "<div class='donesub' style='margin-bottom:10px'>Move through it in your own time. Tap this when you're done and it goes on your record.</div>"+
+    "<button class='btn green' onclick='completeFlow()' style='font-size:16px;padding:16px'>Flow complete</button>"+
+    "<div class='syncdot'></div></div>";
+}
+function completeFlow(){
+  const w=DB.workout||{};
+  const list=(w.cooldown)||[];
+  const durMs=endSession();
+  DB.completed=DB.completed||{};
+  DB.completed[today()]={
+    at:new Date().toISOString(), title:w.title||"Mobility", loc:locKey(),
+    flow:true, moves:list.length,
+    exercises:list.length, planned:list.length,
+    sets:0, volume:0, secs:0, skipped:[], avgEff:null, durMs:durMs||0
+  };
+  markSession(); save(); updateStreak();
+  renderWorkoutSheet(DB.workout);
+  try{ renderWeek(); renderReadiness(); renderHistory(); }catch(e){}
+  try{ celebrate(); }catch(e){}
+  try{ if(DB.cloud&&DB.cloud.on){ _cloudDirty=true; cloudFlush("complete"); } }catch(e){}
+  toast("Flow logged \u2705  \u00b7  "+(DB.streak||1)+" day run");
+}
 function completeBlockHTML(w){
   if(!w || w.sets===0 || w.kind==='cardio' || w.kind==='mobility') return "";
   const c=completionOf();

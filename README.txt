@@ -1,3 +1,80 @@
+AMIR PT — v152 · 16/09/2026
+===========================
+
+"Mobility doesn't really work with reps or duration per se, it's more just do
+the mobility. Please audit the app and make sure it works correctly, not that
+I keep having to find issues and then you correct them."
+
+Both. The flow is untimed now, and the audit found four more things of the
+same kind — all of them the consequence of one assumption.
+
+JUST DO THE MOBILITY
+--------------------
+Every card carried "45s each side", a countdown, an "adjust" panel and a
+30s/45s/60s bar over the lot. On a Pilates day it contradicted itself: the
+note says "No sets, no weight" and the card under it said "×6" AND "pace
+0:45", two prescriptions for one movement.
+
+Almost none of those seconds were real. coolDur invents 45s wherever the
+library has no dose, and that invented number was printed as if it were the
+prescription. The rule is the honest one now:
+
+    SHOW A DOSE ONLY WHERE THE MOVEMENT ACTUALLY HAS ONE.
+
+The walk keeps "10 min", box breathing keeps "2m 30s", the roll-up keeps "×6"
+— those come from the library and mean something. A couch stretch shows its
+picture, its name and its cue, and he holds it until it has done its job.
+
+The timers are switched off, not deleted: one quiet "⏱ Add timers" at the top
+of the flow brings back the countdowns, the per-move adjusters and the
+duration bar. The cool-down at the end of a LIFTING day is untouched, where a
+45-second hold is a real instruction.
+
+THE AUDIT — ONE ASSUMPTION, FOUR MORE SYMPTOMS
+-----------------------------------------------
+Every tab was rendered under Mobility, Pilates, Push and Rest and swept for
+language that only makes sense with a barbell. The through-line is that the
+app counted a day as training only if it had SETS in it. He does two or three
+flow days a week.
+
+1. A flow could not be finished. completeBlockHTML returned "" for a mobility
+   day and the zero-set render path never called it anyway. Nothing was
+   written to DB.completed, so the day left no trace at all. There is a "Flow
+   complete" button now, with the same undo as a lifting session.
+
+2. The streak ignored flow days. computeStreak read logged lifts, so doing his
+   mobility left the run counter on zero. Two sets now, because they answer
+   two questions: showedUpDates() (did he show up — flow days count) drives
+   the streak, trainedDates() (did he load something) still drives the fatigue
+   maths, where a flow day correctly reads as rest.
+
+3. The weekly calendar said "last time: never" against Mobility on a day he
+   had just done it. Fixed by the same completion record.
+
+4. Session history had no idea flow days existed. They group under Mobility
+   now, alongside Push and Pull.
+
+Plus: the readiness card called a scheduled Rest day "Mobility day" — it reads
+the day's real name now (Recovery day / Pilates day / Mobility day).
+
+The coach's brief was updated to match: name and cue only, no invented
+seconds, with the walk, box breathing and the classical Pilates doses named as
+the exceptions.
+
+VERIFIED
+--------
+Rendered and read at 390px and 1440px: Home, Train, Progress on a mobility
+day, and Train on a push day. No horizontal overflow at either width, no
+console errors. Mobility and Pilates flows checked with timers off and on; a
+push day's cool-down confirmed to keep its clocks, adjusters and duration bar.
+Completing a flow checked end to end — streak 0→1, calendar "last time:
+today", history shows it, fatigue maths still counts it as rest, undo works.
+
+One bug of my own was caught by that pass rather than by him: an aborted patch
+left `head` referenced but never declared in flowReadinessHTML, which threw on
+every Home render. It is the argument for running the thing rather than
+trusting the diff.
+
 AMIR PT — v151 · 16/09/2026
 ===========================
 
