@@ -5932,11 +5932,7 @@ function sessApplyPos(){
 function sessClamp(){
   const f=document.getElementById('sessFloat');
   if(!f||!f.classList.contains('moved')||!f.classList.contains('show')) return;
-  const w=f.offsetWidth,h=f.offsetHeight;
-  let x=parseFloat(f.style.left)||0, y=parseFloat(f.style.top)||0;
-  x=Math.max(6,Math.min(window.innerWidth-w-6,x));
-  y=Math.max(6,Math.min(window.innerHeight-h-6,y));
-  f.style.left=x+"px"; f.style.top=y+"px";
+  clampFloat(f);
   sessAvoidRest();
 }
 /* v116 — both floats are draggable, so both can end up in the same place, and
@@ -5958,6 +5954,52 @@ function sessAvoidRest(){
   y=Math.max(6,Math.min(window.innerHeight-a.height-6,y));
   f.style.left=Math.max(6,Math.min(window.innerWidth-a.width-6,a.left))+"px";
   f.style.top=y+"px";
+}
+/* ===== v156 · THE FLOATING TIMERS COULD BE DRAGGED UNDER THE NOTCH =======
+   Both floats park themselves correctly to begin with — their CSS tops are
+   calc(8px + var(--safe-top)). The DRAG did not know about any of that. It
+   clamped to a flat 6px from the top of the viewport, which on his phone is
+   roughly 50 pixels above the bottom of the Dynamic Island: the green
+   TRAINING pill ended up behind the status bar, on top of the clock and the
+   battery, and he could not read the session time or reach the pause button.
+
+   The same 6px at the bottom put a float behind the tab bar.
+
+   Clamped to the real insets now, measured rather than assumed — env() is not
+   reliably readable off a custom property, so a hidden probe is measured once.
+   And a position saved by an older build is re-clamped when it is applied, so
+   the pill he has already stranded up there comes back down on its own
+   instead of him having to find and drag it. */
+let _safeTopPx=null;
+function safeTopPx(){
+  if(_safeTopPx!=null) return _safeTopPx;
+  try{
+    const d=document.createElement('div');
+    d.style.cssText="position:fixed;top:0;left:0;width:0;visibility:hidden;pointer-events:none;height:env(safe-area-inset-top,0px);";
+    document.body.appendChild(d);
+    _safeTopPx=d.offsetHeight||0;
+    d.remove();
+  }catch(e){ _safeTopPx=0; }
+  return _safeTopPx;
+}
+function tabBarPx(){
+  try{ const b=document.querySelector('.tabbar'); return b? b.offsetHeight : 0; }catch(e){ return 0; }
+}
+/* Where a dragged float is allowed to sit. */
+function floatBounds(w,h){
+  return {
+    minX: 6,
+    maxX: Math.max(6, window.innerWidth - w - 6),
+    minY: safeTopPx() + 6,
+    maxY: Math.max(safeTopPx() + 6, window.innerHeight - h - tabBarPx() - 6)
+  };
+}
+function clampFloat(el){
+  if(!el) return;
+  const w=el.offsetWidth, h=el.offsetHeight, b=floatBounds(w,h);
+  const x=Math.max(b.minX, Math.min(b.maxX, parseFloat(el.style.left)||0));
+  const y=Math.max(b.minY, Math.min(b.maxY, parseFloat(el.style.top)||0));
+  el.style.left=x+"px"; el.style.top=y+"px";
 }
 let _sfDrag=null;
 /* v65.1 — the pill would not stay where it was put.
@@ -5991,10 +6033,11 @@ function initSessDrag(){
       if(!_sfDrag||ev.pointerId!==_sfDrag.id) return;
       if(Math.abs(ev.clientX-_sfDrag.x0)>4 || Math.abs(ev.clientY-_sfDrag.y0)>4) _sfDrag.moved=true;
       const w=f.offsetWidth, hh=f.offsetHeight;
-      let x=ev.clientX-_sfDrag.dx, y=ev.clientY-_sfDrag.dy;
-      /* Clamp live, not just on release, so it can't be dragged off-screen. */
-      x=Math.max(6,Math.min(window.innerWidth-w-6,x));
-      y=Math.max(6,Math.min(window.innerHeight-hh-6,y));
+      /* Clamp live, not just on release, so it can't be dragged off-screen —
+         and v156: not under the status bar or behind the tab bar either. */
+      const b=floatBounds(w,hh);
+      let x=Math.max(b.minX,Math.min(b.maxX, ev.clientX-_sfDrag.dx));
+      let y=Math.max(b.minY,Math.min(b.maxY, ev.clientY-_sfDrag.dy));
       f.style.left=x+"px"; f.style.top=y+"px";
       ev.preventDefault();
     });
@@ -12269,7 +12312,7 @@ function scheduleInApp(){
    v18 ADDITIONS — draggable rest timer · weekly training memory · AI planner
    · Firestore sync
    ========================================================================== */
-const APP_VERSION="v155 · 16/09/2026";
+const APP_VERSION="v156 · 16/09/2026";
 
 /* ===== 1. REST TIMER — drag it anywhere so it never blocks the chat box ===== */
 let _rtDrag=null;
@@ -12286,11 +12329,7 @@ function restApplyPos(){
 }
 function restClamp(){
   const t=restEl(); if(!t||!t.classList.contains('moved')||!t.classList.contains('show')) return;
-  const w=t.offsetWidth,h=t.offsetHeight;
-  let x=parseFloat(t.style.left)||0, y=parseFloat(t.style.top)||0;
-  x=Math.max(6,Math.min(window.innerWidth-w-6,x));
-  y=Math.max(6,Math.min(window.innerHeight-h-6,y));
-  t.style.left=x+"px"; t.style.top=y+"px";
+  clampFloat(t);
 }
 function restToggleMini(){
   const t=restEl(); if(!t) return;
@@ -12311,10 +12350,9 @@ function initRestDrag(){
     });
     h.addEventListener('pointermove',ev=>{
       if(!_rtDrag || ev.pointerId!==_rtDrag.id) return;
-      const w=t.offsetWidth,hh=t.offsetHeight;
-      let x=ev.clientX-_rtDrag.dx, y=ev.clientY-_rtDrag.dy;
-      x=Math.max(6,Math.min(window.innerWidth-w-6,x));
-      y=Math.max(6,Math.min(window.innerHeight-hh-6,y));
+      const b=floatBounds(t.offsetWidth,t.offsetHeight);
+      const x=Math.max(b.minX,Math.min(b.maxX, ev.clientX-_rtDrag.dx));
+      const y=Math.max(b.minY,Math.min(b.maxY, ev.clientY-_rtDrag.dy));
       t.style.left=x+"px"; t.style.top=y+"px"; _rtDrag.moved=true; ev.preventDefault();
     });
     const end=()=>{

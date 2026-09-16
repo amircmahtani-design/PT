@@ -1,3 +1,38 @@
+AMIR PT — v156 · 16/09/2026
+===========================
+
+"Also look where the floating timer is, that needs to be fixed too, I can't
+see it."
+
+The green TRAINING pill was sitting behind the Dynamic Island, over the clock
+and the battery. He could not read the session time or reach pause.
+
+Both floats park correctly to begin with — their CSS tops are
+calc(8px + var(--safe-top)). The DRAG knew nothing about any of that. It
+clamped to a flat 6px from the top of the viewport, which on his phone is
+about fifty pixels above the bottom of the island, so dragging the pill up
+posted it underneath. The same flat 6px at the bottom allowed a float to be
+parked behind the tab bar.
+
+Both are clamped to the real insets now, measured rather than assumed: env()
+is not reliably readable off a custom property, so a hidden probe is measured
+once and cached. One floatBounds() answers "where may this sit" and one
+clampFloat() enforces it, for the session pill and the rest timer alike —
+previously two copies of the same arithmetic, which is how they came to share
+the same bug.
+
+The part that matters for him today: a position saved by an older build is
+re-clamped when it is applied, not only when it is dragged. So the pill he has
+already stranded up there walks back down on its own at the next load rather
+than him having to find and drag an invisible thing.
+
+VERIFIED with the probe forced to 59px, the way his phone reports it: a pill
+saved at y=2 and a rest timer saved at y=0 both come back at y=65, clear of
+the island; the bottom limit is 713 against an 844 viewport with a 63px tab
+bar, so neither can hide behind it; dragged hard into each corner they stop at
+(6, 65) and (257, 713). Plus the regression — 16 journeys, the in-progress
+mobility repair, 390px and 1440px, no overflow, no console errors.
+
 AMIR PT — v155 · 16/09/2026
 ===========================
 
