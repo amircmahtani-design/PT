@@ -3108,6 +3108,11 @@ const DEMO_ALIAS={
   "cat camel":"cat-cow",
   "open book":"open-book-rotations",
   "open book stretch":"open-book-rotations",
+  /* v154 — the coach keeps writing this, and the open-book IS the thoracic
+     rotation drill. It is not a lookalike, it is the same movement. */
+  "thoracic spine rotation":"open-book-rotations",
+  "thoracic rotation":"open-book-rotations",
+  "t spine rotation":"open-book-rotations",
   "supine twist":"supine-spinal-twist",
   "lying spinal twist":"supine-spinal-twist",
   "90 90 hip switch":"90-90-hip-switches",
@@ -3128,9 +3133,15 @@ const DEMO_ALIAS={
   "quad stretch":"",
   "thread the needle":""
 };
-const DEMO_FILLER=new Set(["pose","exercise","exercises","stretches","each","per","side","sides",
+const DEMO_FILLER=new Set(["exercise","exercises","each","per","side","sides",
+  "standing","seated","lying","supine","prone","kneeling","half",
   "the","a","an","and","with","your","both","variation","version","style","move","movement","hold",
   "holds","position","drill","reps","rep","sets","set","seconds","second","secs","sec","mins","min"]);
+/* v154 — a second, more aggressive tier. "Cat-Cow Stretch" has to lose the
+   word "stretch" to find cat-cow, but "Standing Calf Stretch" must NOT, or
+   {calf} alone matches five files and the match is refused. So the tiers run
+   least-aggressive first and the first unique hit wins. */
+const DEMO_FILLER2=new Set(["stretch","stretches","pose"]);
 function demoSing(w){ return /[^s]s$/.test(w)? w.slice(0,-1) : w; }
 let _demoTokIdx=null;
 function demoTokIdx(){
@@ -3153,7 +3164,8 @@ function demoAliasSlug(name){
      goes first so "Hollow Hold" finds hollow-hold rather than going to the
      loose pass and having to choose between hollow-hold and hollow-rock. */
   const lean=all.filter(w=>!DEMO_FILLER.has(w));
-  for(const toks of [all, lean]){
+  const lean2=lean.filter(w=>!DEMO_FILLER2.has(w));
+  for(const toks of [all, lean, lean2]){
     if(!toks.length) continue;
     const hits=demoTokIdx().filter(c=>toks.every(w=>c.t.has(w)) && (c.t.size - toks.length) <= 3);
     if(hits.length===1) return hits[0].k;
@@ -8556,7 +8568,7 @@ function v115Brief(){
 "[[ACTION: {\"do\":\"set_exercise_preference\",\"name\":\"Burpee\",\"pref\":\"never\"}]]  · pref: favourite | prefer | avoid | never | painful | no_kit | clear\n"+
 "[[ACTION: {\"do\":\"undo\"}]]\n"+
 "EVERY envelope is validated against today's session, the catalogue, the kit in the room and his injury, then applied, saved, and VERIFIED against what is on disk. If it fails you are told and he is told, and nothing changed.\n"+
-"THEREFORE: never write a sentence claiming you changed something unless you emitted the envelope for it in the same reply, or you were told it was already done. A promise is not a change. The app will strip a claim it cannot back with a verified receipt, so the only thing an unbacked claim costs you is his trust.\n"+"ENVELOPES FIRST, WORDS AFTER. Put every envelope at the TOP of your reply, before you say anything. A reply can be cut off at the end; what is cut is then the part that would have changed the app, and he gets a half-written plan and an unchanged Train screen. The envelopes are the work. The sentence explaining them is the commentary.\n"+"A SESSION HE ASKS FOR IS BUILT, NOT DESCRIBED. \"Make me a mobility workout\", \"give me a core session\", \"I want to do legs today\" — those are changes to Train, not answers in chat. Emit set_day_type for what today becomes, then set_section for the movements (on a Mobility or Pilates day the flow IS the cooldown). On a flow day add_exercise, remove_exercise and replace_exercise all act on the flow, so use them freely to tweak it \u2014 but NEVER set_sets, set_reps, set_load or set_rest there: a mobility day has no sets, no reps and no rest timer, and asking for them is what turns his pseudo-rest day back into a lifting day with the rower on top. AND DO NOT PRESCRIBE SECONDS. In his words: \"mobility doesn't really work with reps or duration per se, it's more just do the mobility\". So give a flow movement a NAME and a CUE and nothing else \u2014 no \"45s each side\", no \"hold for 30 seconds\", no round count. The two exceptions are movements that are genuinely a duration or a count in their own right: a walk (\"10 min\"), box breathing, and the classical Pilates doses (\"x6\", \"10 breaths\"). Everything else he holds until it has done its job. A numbered plan typed into the chat with nothing on the sheet is the worst thing you can do here: he goes to Train and it is not there. Say what you built in a line or two and let the receipts show it — do not paste the list as well.\n"+
+"THEREFORE: never write a sentence claiming you changed something unless you emitted the envelope for it in the same reply, or you were told it was already done. A promise is not a change. The app will strip a claim it cannot back with a verified receipt, so the only thing an unbacked claim costs you is his trust.\n"+"ENVELOPES FIRST, WORDS AFTER. Put every envelope at the TOP of your reply, before you say anything. A reply can be cut off at the end; what is cut is then the part that would have changed the app, and he gets a half-written plan and an unchanged Train screen. The envelopes are the work. The sentence explaining them is the commentary.\n"+"A SESSION HE ASKS FOR IS BUILT, NOT DESCRIBED. \"Make me a mobility workout\", \"give me a core session\", \"I want to do legs today\" — those are changes to Train, not answers in chat. Emit set_day_type for what today becomes, then set_section for the movements (on a Mobility or Pilates day the flow IS the cooldown). On a flow day add_exercise, remove_exercise and replace_exercise all act on the flow, so use them freely to tweak it \u2014 but NEVER set_sets, set_reps, set_load or set_rest there: a mobility day has no sets, no reps and no rest timer, and asking for them is what turns his pseudo-rest day back into a lifting day with the rower on top. AND DO NOT PRESCRIBE SECONDS. In his words: \"mobility doesn't really work with reps or duration per se, it's more just do the mobility\". So give a flow movement a NAME and a CUE and nothing else \u2014 no \"45s each side\", no \"hold for 30 seconds\", no round count. The two exceptions are movements that are genuinely a duration or a count in their own right: a walk (\"10 min\"), box breathing, and the classical Pilates doses (\"x6\", \"10 breaths\"). Everything else he holds until it has done its job. [[SET_WORKOUT]] with a list that is all stretches now builds a FLOW automatically \u2014 no sets, no rest timers, no supersets \u2014 so use it freely for \"give me a mobility session\". And if he asks to make a mobility day \"one set\", or one round, or all in one go: it already is. Say so in a line and change nothing; a flow is one pass by definition, and running set_sets on it will simply be refused. A numbered plan typed into the chat with nothing on the sheet is the worst thing you can do here: he goes to Train and it is not there. Say what you built in a line or two and let the receipts show it — do not paste the list as well.\n"+
 "DEFAULT SCOPE IS TODAY. Only reach for scope \"always\", a preference, or a permanent logging correction when he actually says again, always, from now on, permanent or never.\n"+
 "\n=== THE PROGRAMME HE IS ON ===\n"+
 (function(){ try{ const b=blockSummary();
@@ -8935,10 +8947,86 @@ function autoPairLight(key){
   if(made) save();
   return made;
 }
+/* ===== v154 · A LIST OF STRETCHES IS A FLOW, NOT A LIFTING SESSION ========
+   This is the thing I failed to find three times, and his screenshot finally
+   named it: a rest timer counting down "CAT-COW STRETCH · NEXT SET IN 0:22",
+   the accessories auto-paired into a superset, and a warm-up above it.
+
+   Every flow-day guard built in v145, v147, v149, v151 and v152 lives in the
+   ACTIONS — add_exercise, remove_exercise, set_sets. [[SET_WORKOUT]] is the
+   old directive path and goes round all of them: it drops whatever names it
+   is given straight into main as loadable exercises, keeps the day's existing
+   title, and calls autoPairLight on the result. Ask for a mobility workout on
+   a pull day and you get nine stretches with sets, rest timers and supersets
+   on a day still called Pull.
+
+   So the list is read before it is applied. Nine movements that are all in
+   the mobility, warm-up and Pilates catalogues are a flow, and are built as
+   one: into the flow, no sets, no warm-up, no rower, no pairing, and the day
+   type moved to Mobility so everything downstream agrees. A list with lifts
+   in it is untouched and still builds a session. */
+let _mobNameSet=null;
+function mobNameSet(){
+  if(_mobNameSet) return _mobNameSet;
+  const s=new Set();
+  const add=t=>{ const k=mobKey(t); if(k) s.add(k); };
+  try{ MOB.forEach(i=>add(i.t)); }catch(e){}
+  try{ PREP.forEach(i=>add(i.t)); }catch(e){}
+  try{ Object.keys(PILATES_LIB||{}).forEach(add); }catch(e){}
+  _mobNameSet=s; return s;
+}
+function isFlowMove(n){
+  const k=mobKey(n);
+  if(k && mobNameSet().has(k)) return true;
+  return /\b(stretch|pose|mobility|cat[-\s]?cow|twist|fold|opener|circles?|swings?|breathing|breath|rotations?|hip switch(?:es)?|dead hang|savasana)\b/i.test(String(n||""));
+}
+/* Three or more, and at least seven in ten. A mixed session keeps its sets. */
+function looksLikeFlowList(names){
+  if(!Array.isArray(names) || names.length<3) return false;
+  const hits=names.filter(isFlowMove).length;
+  return hits >= Math.ceil(names.length*0.7);
+}
+function buildFlowFromNames(names){
+  const w=DB.workout;
+  w.kind="mobility";
+  if(!FLOWNAME.test(String(w.title||""))) w.title="Mobility";
+  w.tag="Recovery · Mobility";
+  /* v154 — this tried to keep an existing mobility note and replace only a
+     lifting one, by testing it against FLOWNAME. The Pull Day note reads
+     "Solid recovery, standard volume... 5 moves × 3 sets fits in about 53",
+     which contains the word "recovery", so it was kept — and the flow was
+     headed by a paragraph about sets and a 10-minute row. The session has
+     been replaced wholesale; so is the sentence describing it. */
+  w.note="Easy mobility & recovery. Move slow, breathe, no straining. One pass — do the movement, then move on.";
+  w.main=[]; w.sets=0; w.reps="—";
+  w.warmup=[]; w.warmupLocked=false;
+  w.groups={};
+  delete w.cardio;
+  w.cooldown=applyCoolDefaults(names.map(n=>enrichMove({t:n})));
+  w.cooldownLocked=true;
+  /* The day type is what the rest of the app reads, and it outlives whatever
+     this session object becomes. Set it without going through setDaySplit,
+     which nulls the workout and would throw away the list we just built. */
+  try{ DB.dayOverride={date:today(), split:"Mobility"}; }catch(e){}
+  return w.cooldown.map(m=>m.t);
+}
 function coachSetWorkout(listRaw){
   markSessionTouched();
   coachEnsureWorkout();
-  const raw=String(listRaw).split(/[,\n;]+/).map(x=>resolveExName(x)).filter(Boolean);
+  /* v154 — decide what KIND of list this is before resolving any of it.
+     resolveExName searches the lifting catalogue, and on the raw list it
+     turned "Standing Calf Stretch" into "Calf Raise" — a stretch silently
+     swapped for a lift, which is the same failure as showing the wrong
+     photograph. It also title-cased "Child's Pose" into "Child'S Pose".
+     A flow movement keeps the name he was given; enrichMove finds its dose
+     and cue through the ranked mobility matcher, which is the right one. */
+  const rawNames=String(listRaw).split(/[,\n;]+/).map(x=>String(x).trim()).filter(Boolean);
+  if(looksLikeFlowList(rawNames)){
+    const names=buildFlowFromNames(rawNames);
+    finalizeCoachEdit();
+    return {names, swapped:[], dropped:[], paired:0, flow:true};
+  }
+  const raw=rawNames.map(x=>resolveExName(x)).filter(Boolean);
   if(!raw.length) return null;
   /* v107 \u2014 the gate. Equipment, bans and duplicates, same as the builder. */
   const g=enforceKit(raw);
@@ -9880,7 +9968,7 @@ function applyCoachDirectivesInner(reply){
     const r=coachSetWorkout(a);
     if(!r) return "";
     const list=r.names||r;
-    notes.push("📝 New workout → "+list.join(", "));
+    notes.push((r.flow? "🧘 Mobility flow → " : "📝 New workout → ")+list.join(", "));
     /* Say plainly what was changed and why. Silently swapping is how he ended
        up with a cable machine in a room that has none. */
     if(r.swapped&&r.swapped.length)
@@ -12158,7 +12246,7 @@ function scheduleInApp(){
    v18 ADDITIONS — draggable rest timer · weekly training memory · AI planner
    · Firestore sync
    ========================================================================== */
-const APP_VERSION="v153 · 16/09/2026";
+const APP_VERSION="v154 · 16/09/2026";
 
 /* ===== 1. REST TIMER — drag it anywhere so it never blocks the chat box ===== */
 let _rtDrag=null;
@@ -17044,6 +17132,19 @@ defAction("set_sets",{
   apply:a=>{
     const targets=a.all? wkMain() : [wkFind(a.name)];
     targets.forEach(e=>{ if(!e) return; e.sets=a.sets; try{ e.scheme=schemeFor(e.name,a.sets,e); }catch(err){} });
+    /* ===== v154 · "NOTHING CHANGED" ON A SESSION WITH SUPERSETS ==========
+       A grouped exercise takes its set count from its group's `rounds`, and
+       resyncGroups writes that back over every member — and Object.assign
+       keeps the EXISTING rounds ahead of the recomputed one. So changing the
+       sets on anything the coach had paired was undone half a line later,
+       verification failed against the saved state, and the whole action
+       rolled back as "I tried to change sets on everything, but it didn't
+       survive the save". Correct refusal, invisible cause.
+
+       Nothing wrong with resyncGroups: a round IS the number every member
+       does. The sets and the rounds are the same number, so move both. */
+    const gids=new Set(targets.filter(Boolean).map(e=>e.grp).filter(Boolean));
+    if(DB.workout.groups) gids.forEach(g=>{ if(DB.workout.groups[g]) DB.workout.groups[g].rounds=a.sets; });
     if(a.all){ DB.workout.sets=a.sets; DB.setsOverride={date:today(),sets:a.sets}; }
     resyncGroups(DB.workout);
     return {n:targets.length, sets:a.sets};

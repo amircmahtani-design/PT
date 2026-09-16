@@ -1,3 +1,80 @@
+AMIR PT — v154 · 16/09/2026
+===========================
+
+"I said make mobility all one set and this happened."
+
+His screenshot: a rest timer counting down CAT-COW STRETCH · NEXT SET IN 0:22,
+the accessories auto-paired into a superset, a warm-up above it, a red
+NOTHING CHANGED box, and the coach giving up and typing the whole workout
+into chat as prose.
+
+THE THING I FAILED TO FIND THREE TIMES
+---------------------------------------
+Every flow-day guard built in v145, v147, v149, v151 and v152 lives in the
+ACTIONS — add_exercise, remove_exercise, set_sets. [[SET_WORKOUT]] is the old
+directive path and goes round all of them. It drops whatever names it is given
+straight into main as loadable exercises, keeps the day's existing title, and
+runs autoPairLight over the result. Ask for a mobility workout on a pull day
+and you get nine stretches with sets, rest timers and supersets, on a day
+still called Pull — which is exactly why flowDay() kept saying false and every
+fix I shipped kept missing.
+
+The list is read before it is applied now. Three or more movements, seven in
+ten of them from the mobility, warm-up or Pilates catalogues, and it builds a
+FLOW: into the flow list, sets 0, no warm-up, no rower, no pairing, no rest
+timers, and the day type moved to Mobility so everything downstream agrees. A
+list with real lifts in it is untouched and still builds a session.
+
+NOTHING CHANGED — THE OTHER REAL BUG
+-------------------------------------
+"I tried to change sets on everything, but it didn't survive the save."
+
+A correct refusal with an invisible cause. A grouped exercise takes its set
+count from its group's `rounds`, and resyncGroups writes that back over every
+member — with Object.assign keeping the EXISTING rounds ahead of the
+recomputed one. So set_sets wrote 1, resyncGroups put 3 back half a line
+later, verification failed against the saved state and the whole action rolled
+back.
+
+Nothing wrong with resyncGroups: a round IS the number every member does. The
+sets and the rounds are the same number, so both move together now. This was
+never a mobility bug — changing the set count on ANY session the coach had
+paired has been silently impossible.
+
+THREE MORE, FOUND BY LOOKING AT WHAT IT BUILT
+-----------------------------------------------
+· "Standing Calf Stretch" came out as "Calf Raise". The names were run through
+  resolveExName, which searches the LIFTING catalogue, before anything knew
+  this was a flow — a stretch silently swapped for a loaded lift, which is the
+  same failure as showing the wrong photograph. It also title-cased "Child's
+  Pose" into "Child'S Pose". A flow movement keeps the name he was given.
+
+· Two of the nine had no picture although he owns both: "Cat-Cow Stretch"
+  (his file is cat-cow) and "Thoracic Spine Rotation" (open-book-rotations —
+  the open book IS the thoracic rotation drill, not a lookalike). The word
+  matcher has a second, more aggressive tier now that drops "stretch" and
+  "pose", running only after the first tier fails, so "Standing Calf Stretch"
+  still finds calf-stretch-on-a-wall instead of collapsing to {calf} and five
+  candidates. All nine now show his own photograph.
+
+· The flow was headed by the Pull Day's paragraph — "proper session... 5 moves
+  × 3 sets fits in about 53" — because the guard kept any note containing a
+  mobility word and that one says "Solid recovery". The session is replaced
+  wholesale; so is the sentence describing it.
+
+The coach's brief now says that SET_WORKOUT with a stretch list builds a flow
+by itself, and that "make it one set" on a mobility day needs no change at
+all: a flow is one pass by definition.
+
+VERIFIED
+--------
+His exact case rebuilt — Pull Day, then SET_WORKOUT with his nine movements:
+kind mobility, 0 sets, 0 in main, no warm-up, no rower, no groups, no rest
+timer, day type Mobility, nine movements each on one of his own photographs,
+and a Flow complete button. set_sets all→1 on a paired push day now succeeds
+and moves the group rounds with it. 16 journeys, 44 movement classifications,
+390px and 1440px, no overflow, no console errors.
+
 AMIR PT — v153 · 16/09/2026
 ===========================
 
