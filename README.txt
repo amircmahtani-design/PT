@@ -1,3 +1,74 @@
+AMIR PT — v147 · 16/09/2026
+===========================
+
+"The images are wrong or don't have and I still have the rowing concept in
+mobility. If it's wrong then don't put a wrong image that defeats the purpose."
+
+Three things in that sentence, and they turned out to be one cause and two
+separate ones.
+
+A CONFIDENT PHOTO OR NONE
+-------------------------
+The app used to show the closest thing the free pack could find and badge it
+"≈ closest match · tap Change demo". That was the wrong answer to a real
+problem. A photograph of a related movement is still a photograph of the wrong
+movement, and nobody reads the badge — mid-set you glance at the picture, copy
+the shape, and the badge is four words of grey text underneath it. His
+screenshots had a man seated on a mat filed as "Figure-4 Stretch" and a
+quadruped filed as "Couch Stretch". Both badged. Both useless.
+
+So: over the bar, or nothing. "Nothing" is the ▶ Watch demo link, which is
+honest — it says I haven't got a picture of this, and hands him a search.
+
+The loose matcher is still there behind Change demo. Him picking a near thing
+having looked at it is a different act from the app guessing for him.
+
+HIS PHOTOGRAPH, UNDER WHATEVER NAME HE WAS GIVEN
+------------------------------------------------
+The other half of the same screenshot: the coach writes "Figure-4 Stretch",
+and the photograph Amir shot is filed as figure-4-glute-stretch. It writes
+"Couch Stretch"; the file is couch-stretch-hip-flexor. Both missed his own
+picture by one word, fell through to the free pack, and the pack answered with
+a stranger doing something else. "Seated Forward Fold" missed it entirely and
+showed nothing — his Pilates spine stretch forward is exactly that movement.
+
+Names are matched to his files in three steps now: a short table for the ones
+that will never line up by words, then every word he was told must appear in
+the file name with at most three words left over, then the same again in the
+singular so "Wall Angels" finds wall-angel. Every step requires exactly ONE of
+his files to match. "Figure 4 stretch" lands on figure-4-glute-stretch and
+nothing else; "row" matches fourteen files and is therefore refused. Where it
+refuses, the tile is the Watch-demo link — never a near-miss photograph.
+
+Downward dog, pigeon, thread the needle, standing quad stretch and neck rolls
+are named in the table with nothing on the other side, on purpose: he has no
+photograph of them, and an empty answer stops the word matcher talking itself
+into a lookalike.
+
+A MOBILITY DAY IS A FLOW, NOT A LIST OF LIFTS
+----------------------------------------------
+He asked the coach for a mobility session and got eight stretches in the MAIN
+list at "3 sets · 8–12 · rest 90s", with a warm-up, a cool-down and the
+Concept2 block on top — the rowing he had already told me has no place in a
+pseudo-rest day.
+
+None of that was the mobility code. It was add_exercise. A zero-set day renders
+as a flow and never draws main at all, so anything pushed into main would have
+been invisible; v139 covered that by setting sets=3 on the way in. On a lifting
+day that is right. On a flow day it converts the day into a lifting day, and
+everything downstream — warm-up, cool-down, the rower, the rep boxes, the 8–12
+— follows correctly from a premise that is wrong.
+
+So on a flow day add_exercise, remove_exercise and replace_exercise act on the
+FLOW, timed, and the day stays what he asked for. Same action, same sentence to
+the coach, right list. Adding something the flow already covers is refused by
+the same key buildMobilityFlow de-duplicates on, so "Couch Stretch" is told
+that "Couch stretch (hip flexor)" covers it rather than appearing twice.
+
+set_sets, set_reps, set_load, set_rest, set_tempo and set_technique now refuse
+outright on a flow day. A mobility day has no sets, no reps and no rest timer,
+and asking for them was the other way back into a lifting day.
+
 AMIR PT — v146 · 16/09/2026
 ===========================
 

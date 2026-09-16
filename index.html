@@ -738,9 +738,6 @@ background:var(--card);border:1px solid var(--line);border-radius:18px;padding:1
 .repsin{flex:0 0 auto;width:96px;background:#15110d;border:1px solid var(--line);border-radius:10px;
   color:#fff;font-size:15px;font-weight:700;padding:7px 10px;text-align:center;}
 .exb.moved{outline:2px solid var(--orange);outline-offset:3px;transition:outline-color .4s;}
-.approxchip{position:absolute;bottom:8px;left:8px;background:#0a0806e6;color:var(--gold);
-  font-size:10.5px;font-weight:800;padding:3px 9px;border-radius:9px;border:1px solid var(--line);
-  letter-spacing:.3px;pointer-events:none;}
 .fedphase{position:absolute;top:8px;left:8px;background:#0a0806d9;color:var(--gold);
   font-size:11px;font-weight:800;padding:3px 9px;border-radius:9px;border:1px solid var(--line);
   text-transform:uppercase;letter-spacing:.6px;pointer-events:none;}
@@ -3077,6 +3074,98 @@ function ownImgFail(img){
     if(thumb){ thumb.classList.add('emo','own-failed'); thumb.textContent=iconFor(name||""); }
   }catch(e){}
 }
+/* ===== v147 \u00b7 HIS PHOTOGRAPH, UNDER WHATEVER NAME HE WAS GIVEN =========
+   demoSlug is exact, and the coach does not write file names. It says
+   "Figure-4 Stretch"; the photograph Amir shot is filed as
+   figure-4-glute-stretch. It says "Couch Stretch"; the file is
+   couch-stretch-hip-flexor. Both missed his own picture by one word and fell
+   through to the free pack, which answered with a stranger doing something
+   else \u2014 the exact wrong-image problem he reported.
+
+   Two steps, in this order:
+
+     1  a small table, for names that will never line up by words at all.
+        "Seated Forward Fold" is the Pilates spine stretch forward; no amount
+        of token matching gets there.
+
+     2  otherwise: every word he was told must appear in the file name, at
+        most three words may be left over, and exactly ONE of his files may
+        match. "Figure 4 stretch" lands on figure-4-glute-stretch and nothing
+        else. "Row" matches fourteen and is therefore refused.
+
+   The uniqueness rule is the whole safety of it. Where it refuses, the tile
+   is the Watch-demo link \u2014 never a near-miss photograph. */
+const DEMO_ALIAS={
+  /* Genuinely the same movement, filed under a different name. Nothing here
+     is a near-miss: a near-miss belongs in the Watch-demo link, not a table. */
+  "seated forward fold":"spine-stretch-forward",
+  "seated forward bend":"spine-stretch-forward",
+  "forward fold":"spine-stretch-forward",
+  "figure four stretch":"figure-4-glute-stretch",
+  "supine figure 4":"figure-4-glute-stretch",
+  "cat camel":"cat-cow",
+  "open book":"open-book-rotations",
+  "open book stretch":"open-book-rotations",
+  "supine twist":"supine-spinal-twist",
+  "lying spinal twist":"supine-spinal-twist",
+  "90 90 hip switch":"90-90-hip-switches",
+  "hip switches":"90-90-hip-switches",
+  "cobra":"cobra-stretch",
+  "wall slide":"wall-slides",
+  "shoulder dislocates":"band-shoulder-dislocates",
+  "chest opener":"doorway-pec-opener",
+  /* Named here on purpose with nothing on the other side: he has no
+     photograph of these, and an empty answer stops the word matcher from
+     talking itself into a lookalike. */
+  "downward dog":"",
+  "downward facing dog":"",
+  "pigeon pose":"",
+  "pigeon stretch":"",
+  "neck rolls":"",
+  "standing quad stretch":"",
+  "quad stretch":"",
+  "thread the needle":""
+};
+const DEMO_FILLER=new Set(["pose","exercise","exercises","stretches","each","per","side","sides",
+  "the","a","an","and","with","your","both","variation","version","style","move","movement","hold",
+  "holds","position","drill","reps","rep","sets","set","seconds","second","secs","sec","mins","min"]);
+function demoSing(w){ return /[^s]s$/.test(w)? w.slice(0,-1) : w; }
+let _demoTokIdx=null;
+function demoTokIdx(){
+  if(_demoTokIdx) return _demoTokIdx;
+  _demoTokIdx=[];
+  const add=k=>{ const w=String(k).split("-").filter(Boolean);
+    _demoTokIdx.push({k, t:new Set(w), s:new Set(w.map(demoSing))}); };
+  try{ LOCAL_WEBP.forEach(add); }catch(e){}
+  try{ LOCAL_DEMOS.forEach(add); }catch(e){}
+  return _demoTokIdx;
+}
+function demoAliasSlug(name){
+  const raw=String(name||"").toLowerCase().replace(/&/g," and ")
+    .replace(/[\u2018\u2019\u02bc]/g,"").replace(/[^a-z0-9]+/g," ").trim();
+  if(!raw) return null;
+  if(Object.prototype.hasOwnProperty.call(DEMO_ALIAS,raw)) return DEMO_ALIAS[raw]||null;
+  const all=raw.split(" ").filter(w=>w && (w.length>1 || /[0-9]/.test(w)));
+  /* Two passes: the words as written first, then again without the filler
+     that gets typed but never filed ("pose", "each side"). The strict pass
+     goes first so "Hollow Hold" finds hollow-hold rather than going to the
+     loose pass and having to choose between hollow-hold and hollow-rock. */
+  const lean=all.filter(w=>!DEMO_FILLER.has(w));
+  for(const toks of [all, lean]){
+    if(!toks.length) continue;
+    const hits=demoTokIdx().filter(c=>toks.every(w=>c.t.has(w)) && (c.t.size - toks.length) <= 3);
+    if(hits.length===1) return hits[0].k;
+  }
+  /* Last pass, singular against singular, so "Wall Angels" finds wall-angel.
+     Still one hit or nothing: band-pull-apart and band-pull-aparts collapse
+     onto each other here and the pass simply declines. */
+  if(lean.length){
+    const q=lean.map(demoSing);
+    const hits=demoTokIdx().filter(c=>q.every(w=>c.s.has(w)) && (c.s.size - q.length) <= 3);
+    if(hits.length===1) return hits[0].k;
+  }
+  return null;
+}
 function localDemo(name){
   const ok=k=>!!(k && (LOCAL_DEMOS.has(k)||LOCAL_WEBP.has(k)) && !_deadLocal.has(k));
   /* One file means one image and no phase toggle \u2014 both positions are in it. */
@@ -3093,6 +3182,9 @@ function localDemo(name){
   const lib=(typeof libMove==="function")? libMove(name) : null;
   const k2=(lib && lib.demo)? demoSlug(lib.demo) : null;
   if(k2 && k2!==k && ok(k2)) return tile(k2);
+  /* v147 \u2014 and finally under whatever name the coach happened to write. */
+  const k3=demoAliasSlug(name);
+  if(k3 && k3!==k && k3!==k2 && ok(k3)) return tile(k3);
   return null;
 }
 function demoFor(name){
@@ -3155,14 +3247,13 @@ function demoTileHTML(name){
   /* Always present, on every kind of tile. */
   const demoLink="<a class='demoover' href='"+demoSearchURL(name)+
     "' target='_blank' rel='noopener'>\u25b6 demo</a>";
-  const approx=d.approx? "<span class='approxchip'>\u2248 closest match \u00b7 tap Change demo</span>" : "";
   if(d.kind==="gif"){
     /* v146 \u2014 one of his own photographs lands here too now. It wants the same
        dark backing the pairs get, and the local failure handler rather than the
        one that only knows how to retry the free pack's mirrors. */
     return "<div class='imgwrap"+(d.local?" own solo":"")+"' data-ex='"+nEsc+"' data-exname='"+nEsc+"' data-kind='gif'>"+
       "<img src='"+attrEsc(d.src)+"' alt='"+nEsc+"' loading='lazy' onerror='"+(d.local?"ownImgFail(this)":"demoFail(this,\""+js+"\")")+"'>"+
-      approx+demoLink+"</div>";
+      demoLink+"</div>";
   }
   if(d.kind==="frames"){
     const f0=attrEsc(d.frames[0]), f1=attrEsc(d.frames[1]||d.frames[0]);
@@ -3170,7 +3261,7 @@ function demoTileHTML(name){
       "<img src='"+f0+"' data-f0='"+f0+"' data-f1='"+f1+"' data-on='0' "+
         "data-fedid='"+attrEsc(d.id)+"' data-fedname='"+nEsc+"' alt='"+nEsc+
         "' loading='lazy' onerror='"+(d.local?"ownImgFail(this)":"fedImgFail(this)")+"'>"+
-      "<span class='fedphase'>start</span>"+approx+demoLink+"</div>";
+      "<span class='fedphase'>start</span>"+demoLink+"</div>";
   }
   return watchTileHTML(name," data-exname='"+nEsc+"' data-kind='link'");
 }
@@ -8335,7 +8426,7 @@ function v115Brief(){
 "[[ACTION: {\"do\":\"set_exercise_preference\",\"name\":\"Burpee\",\"pref\":\"never\"}]]  · pref: favourite | prefer | avoid | never | painful | no_kit | clear\n"+
 "[[ACTION: {\"do\":\"undo\"}]]\n"+
 "EVERY envelope is validated against today's session, the catalogue, the kit in the room and his injury, then applied, saved, and VERIFIED against what is on disk. If it fails you are told and he is told, and nothing changed.\n"+
-"THEREFORE: never write a sentence claiming you changed something unless you emitted the envelope for it in the same reply, or you were told it was already done. A promise is not a change. The app will strip a claim it cannot back with a verified receipt, so the only thing an unbacked claim costs you is his trust.\n"+"ENVELOPES FIRST, WORDS AFTER. Put every envelope at the TOP of your reply, before you say anything. A reply can be cut off at the end; what is cut is then the part that would have changed the app, and he gets a half-written plan and an unchanged Train screen. The envelopes are the work. The sentence explaining them is the commentary.\n"+"A SESSION HE ASKS FOR IS BUILT, NOT DESCRIBED. \"Make me a mobility workout\", \"give me a core session\", \"I want to do legs today\" — those are changes to Train, not answers in chat. Emit set_day_type for what today becomes, then set_section for the movements (on a Mobility day the flow IS the cooldown; add_exercise puts lifts in the main list). A numbered plan typed into the chat with nothing on the sheet is the worst thing you can do here: he goes to Train and it is not there. Say what you built in a line or two and let the receipts show it — do not paste the list as well.\n"+
+"THEREFORE: never write a sentence claiming you changed something unless you emitted the envelope for it in the same reply, or you were told it was already done. A promise is not a change. The app will strip a claim it cannot back with a verified receipt, so the only thing an unbacked claim costs you is his trust.\n"+"ENVELOPES FIRST, WORDS AFTER. Put every envelope at the TOP of your reply, before you say anything. A reply can be cut off at the end; what is cut is then the part that would have changed the app, and he gets a half-written plan and an unchanged Train screen. The envelopes are the work. The sentence explaining them is the commentary.\n"+"A SESSION HE ASKS FOR IS BUILT, NOT DESCRIBED. \"Make me a mobility workout\", \"give me a core session\", \"I want to do legs today\" — those are changes to Train, not answers in chat. Emit set_day_type for what today becomes, then set_section for the movements (on a Mobility or Pilates day the flow IS the cooldown). On a flow day add_exercise, remove_exercise and replace_exercise all act on the flow, so use them freely to tweak it \u2014 but NEVER set_sets, set_reps, set_load or set_rest there: a mobility day has no sets, no reps and no rest timer, and asking for them is what turns his pseudo-rest day back into a lifting day with the rower on top. A numbered plan typed into the chat with nothing on the sheet is the worst thing you can do here: he goes to Train and it is not there. Say what you built in a line or two and let the receipts show it — do not paste the list as well.\n"+
 "DEFAULT SCOPE IS TODAY. Only reach for scope \"always\", a preference, or a permanent logging correction when he actually says again, always, from now on, permanent or never.\n"+
 "\n=== THE PROGRAMME HE IS ON ===\n"+
 (function(){ try{ const b=blockSummary();
@@ -11889,7 +11980,7 @@ function scheduleInApp(){
    v18 ADDITIONS — draggable rest timer · weekly training memory · AI planner
    · Firestore sync
    ========================================================================== */
-const APP_VERSION="v146 · 16/09/2026";
+const APP_VERSION="v147 · 16/09/2026";
 
 /* ===== 1. REST TIMER — drag it anywhere so it never blocks the chat box ===== */
 let _rtDrag=null;
@@ -14043,14 +14134,26 @@ function fedNear(name){
    must be the "Watch how" link rather than back to this. */
 const FED_WRONG=new Set(["Childs_Pose"]);
 function fedBlocked(r){ return !!(r && FED_WRONG.has(r.i)); }
+/* ===== v147 \u00b7 A CONFIDENT PHOTO OR NONE ==============================
+   "If it's wrong then don't put a wrong image, that defeats the purpose."
+
+   This used to show the closest thing the pack could find and badge it
+   "\u2248 closest match". That was the wrong answer to a real problem. A
+   photograph of a related movement is still a photograph of the WRONG
+   movement, and the badge is read by nobody: mid-set you glance at the
+   picture, copy the shape, and the badge is four words of grey text under it.
+   His screenshots showed a man seated on a mat filed as "Figure-4 Stretch"
+   and a quadruped filed as "Couch Stretch", both badged, both useless.
+
+   So: over the bar, or nothing. "Nothing" is the Watch-demo link, which is
+   honest \u2014 it says "I haven't got a picture of this" and hands him a search.
+
+   fedNear is kept because Change demo still uses the loose search: HIM
+   choosing a near thing, having looked at it, is a different act from the
+   app guessing on his behalf. */
 function fedAuto(name){
   const strict=fedMatch(name);
-  /* Comfortably above the bar = state it plainly. Only just over = show the
-     photo but say it's the closest thing, so a wrong one is obvious at a
-     glance instead of mid-set. */
-  if(strict && !fedBlocked(strict)) return {r:strict, approx:((_fedScore[name]||0) < 0.75)};
-  const near=fedNear(name);
-  if(near && !fedBlocked(near)) return {r:near,approx:true};
+  if(strict && !fedBlocked(strict) && (_fedScore[name]||0) >= 0.75) return {r:strict, approx:false};
   return null;
 }
 /* Pick-aware view of the same thing, for callers that ask "what is this tile
@@ -15728,6 +15831,47 @@ const ACTIONS={};
 function defAction(id,spec){ ACTIONS[id]=Object.assign({id},spec); }
 
 /* Small shared helpers used by many actions. */
+/* ===== v147 \u00b7 A MOBILITY DAY IS A FLOW, NOT A LIST OF LIFTS ===========
+   He asked the coach for a mobility session and got eight stretches in the
+   MAIN list at "3 sets \u00b7 8\u201312 \u00b7 rest 90s", with a warm-up, a cool-down and
+   the Concept2 block back on top \u2014 the rowing he had already told me has no
+   place in a pseudo-rest day.
+
+   None of that was the mobility code. It was add_exercise. A zero-set day
+   renders as a flow and never draws main at all, so anything pushed into
+   main would have been invisible; v139 covered that by setting sets=3 on the
+   way in. On a lifting day that is right. On a flow day it converts the day
+   into a lifting day, and everything downstream \u2014 warm-up, cool-down, the
+   rower, rep boxes, 8\u201312 \u2014 follows correctly from a premise that is wrong.
+
+   So on a flow day the movement joins the FLOW, timed, and the day stays
+   what he asked for. Same action, same sentence to the coach, right list. */
+function flowSession(){
+  const w=DB.workout;
+  return !!(w && Array.isArray(w.main) && !w.main.length && !w.sets && Array.isArray(w.cooldown));
+}
+function flowList(){ return (DB.workout&&Array.isArray(DB.workout.cooldown))? DB.workout.cooldown : []; }
+function flowFind(name){ return flowList().find(m=>nameEq(m.t,name))||null; }
+/* The same movement under a longer name is still the same movement: his flow
+   already carries "Couch stretch (hip flexor)" and the coach writes "Couch
+   Stretch". mobKey is what buildMobilityFlow de-duplicates on, so use it. */
+function flowDup(name){
+  const k=mobKey(name); if(!k) return null;
+  return flowList().find(m=>mobKey(m.t)===k)||null;
+}
+function savedFlowNames(){ const w=savedWorkout(); return (w&&Array.isArray(w.cooldown))? w.cooldown.map(m=>String(m&&m.t||"")) : []; }
+function savedFlowHas(name){ return savedFlowNames().some(n=>nameEq(n,name)); }
+/* "Take the twist out" has to find the twist wherever today keeps it. */
+function needInFlow(raw){
+  const t=logKey(raw);
+  const list=flowList();
+  let m=list.find(x=>nameEq(x.t,raw));
+  if(!m) m=list.find(x=>logKey(x.t)===t);
+  if(!m) m=list.find(x=>logKey(x.t).includes(t)||t.includes(logKey(x.t)));
+  if(m) return {ok:true, move:m, name:m.t};
+  return {ok:false, error:"There's no \u201c"+String(raw).trim()+"\u201d in today's flow. It's: "+
+    (list.map(x=>x.t).join(", ")||"empty")+"."};
+}
 function wkMain(){ return (DB.workout&&Array.isArray(DB.workout.main))? DB.workout.main : []; }
 function wkFind(name){ return wkMain().find(e=>nameEq(e.name,name))||null; }
 function wkIndex(name){ return wkMain().findIndex(e=>nameEq(e.name,name)); }
@@ -16289,16 +16433,32 @@ function needInSession(raw){
 
 /* ---------- adding, removing, replacing ---------------------------------- */
 defAction("add_exercise",{
-  label:a=>"add "+a.name,
+  label:a=>"add "+(a.name||a.raw||""),
   resolve:a=>{
     if(NOT_AN_EXERCISE.test(String(a.name||"")) && !resolveExName(a.name,null,false))
       return {error:"“"+String(a.name).trim()+"” isn't an exercise. Tell me the movement you want and I'll add it."};
-    const n=resolveExName(a.name,null,true);
-    if(!n) return {error:"I don't know an exercise called “"+String(a.name).trim()+"”. Give me the name as it appears in the catalogue and I'll add it."};
-    a.name=n; return null;
+    /* v147 — the name is resolved in validate now, because WHICH catalogue to
+       resolve it against depends on what kind of day today is, and that isn't
+       settled until requireWorkout has run. */
+    a.raw=String(a.name||"").trim();
+    return null;
   },
   validate:a=>{
     const g=requireWorkout(a); if(g) return g;
+    if(flowSession()){
+      /* A flow movement is not a loadable lift and must not be filed as one:
+         it goes in under the name he was given, timed, in the flow. */
+      a.flow=true; a.name=a.raw;
+      if(!a.name) return "I need the name of the movement.";
+      const dup=flowDup(a.name);
+      if(dup) return (nameEq(dup.t,a.name)? a.name : dup.t+" covers that")+" — it's already in today's flow.";
+      if(flowList().length>=14) return "That's a long enough flow already — take something out of it first.";
+      return null;
+    }
+    a.flow=false;
+    const n=resolveExName(a.raw,null,true);
+    if(!n) return "I don't know an exercise called “"+a.raw+"”. Give me the name as it appears in the catalogue and I'll add it.";
+    a.name=n;
     if(wkFind(a.name)) return a.name+" is already in today's session.";
     if(exBanned(a.name)) return "You told me never to program "+a.name+" again. Say “allow "+a.name+" again” if you've changed your mind.";
     if(!canDoHere(a.name,locKey())){
@@ -16309,52 +16469,92 @@ defAction("add_exercise",{
     return null;
   },
   apply:a=>{
+    if(a.flow){
+      const it=applyCoolDefaults([enrichMove({t:a.name, d:a.d||a.dose||a.duration, cue:a.cue})])[0];
+      const list=flowList().slice();
+      if(a.at!=null && a.at>=0 && a.at<=list.length) list.splice(a.at,0,it); else list.push(it);
+      DB.workout.cooldown=list;
+      DB.workout.cooldownLocked=true;   /* so nothing rebuilds it from a lifting list */
+      return {name:a.name, flow:true, at:list.findIndex(m=>nameEq(m.t,a.name))};
+    }
     const e=exObject(a.name);
     applyLogTypeToEx(e);
     if(a.at!=null && a.at>=0 && a.at<=DB.workout.main.length) DB.workout.main.splice(a.at,0,e);
     else DB.workout.main.push(e);
     /* v139 — the sheet renders a zero-set day as a flow and never shows main,
        so a lift added to a mobility or rest day went in and stayed invisible.
-       Adding one makes it a day with lifting in it. */
+       Adding one makes it a day with lifting in it. Only reachable now when
+       the day was NOT a flow, which is the case this was written for. */
     if(!DB.workout.sets && DB.workout.main.length){
       DB.workout.sets=3;
-      DB.workout.reps=DB.workout.reps||"8\u201312 reps";
+      DB.workout.reps=DB.workout.reps||"8–12 reps";
     }
     resyncSections(); resyncGroups(DB.workout);
     return {name:a.name, at:wkIndex(a.name)};
   },
-  verify:a=>savedHas(a.name),
-  receipt:(a,r)=>({
-    lines:[(a.substituted? a.substituted.from+" isn't doable in "+LOC().label+", so "+a.name+" instead" : a.name+" added")+
-           " · "+prescriptionLine(wkFind(a.name))],
-    anchor:{ex:a.name}
-  })
+  verify:(a,r)=>r.flow? savedFlowHas(a.name) : savedHas(a.name),
+  receipt:(a,r)=>{
+    if(r.flow){
+      const m=flowFind(a.name)||{};
+      return {lines:[a.name+" added to today's flow · "+(m.d||"timed")], anchor:{section:"cooldown"}};
+    }
+    return {
+      lines:[(a.substituted? a.substituted.from+" isn't doable in "+LOC().label+", so "+a.name+" instead" : a.name+" added")+
+             " · "+prescriptionLine(wkFind(a.name))],
+      anchor:{ex:a.name}
+    };
+  }
 });
 
 defAction("remove_exercise",{
   label:a=>"remove "+a.name,
-  resolve:a=>{ const f=needInSession(a.name); if(!f.ok) return {error:f.error}; a.name=f.name; return null; },
+  resolve:a=>{
+    /* v147 — on a flow day the sheet IS the flow, so that's where to look. */
+    if(flowSession()){
+      const f=needInFlow(a.name); if(!f.ok) return {error:f.error};
+      a.flow=true; a.name=f.name; return null;
+    }
+    const f=needInSession(a.name); if(!f.ok) return {error:f.error}; a.name=f.name; return null;
+  },
   validate:a=>{
     const g=requireWorkout(a); if(g) return g;
+    if(a.flow){
+      if(flowList().length<=1) return "That's the only movement left in today's flow. If you want today gone entirely, tell me to end it.";
+      return null;
+    }
     if(wkMain().length<=1) return "That's the only thing left on the sheet. If you want today gone entirely, tap the × on the session header or tell me to end it.";
     return null;
   },
   apply:a=>{
+    if(a.flow){
+      DB.workout.cooldown=flowList().filter(m=>!nameEq(m.t,a.name));
+      DB.workout.cooldownLocked=true;
+      return {name:a.name, flow:true, keptSets:0};
+    }
     const logged=todaySets(a.name).length;
     DB.workout.main=DB.workout.main.filter(e=>!nameEq(e.name,a.name));
     resyncSections(); resyncGroups(DB.workout);
     return {name:a.name, keptSets:logged};
   },
-  verify:a=>!savedHas(a.name),
+  verify:(a,r)=>r.flow? !savedFlowHas(a.name) : !savedHas(a.name),
   receipt:(a,r)=>({
     lines:[a.name+" removed"+(r.keptSets? " · the "+r.keptSets+" set"+(r.keptSets===1?"":"s")+" you logged stay in your history":"")],
-    anchor:{section:"main"}
+    anchor:{section:r.flow?"cooldown":"main"}
   })
 });
 
 defAction("replace_exercise",{
   label:a=>"replace "+a.from,
   resolve:a=>{
+    /* v147 — swapping one stretch for another inside the flow. No library
+       entry, no kit check, no substitution: it's a shape and a clock. */
+    if(flowSession()){
+      const f=needInFlow(a.from); if(!f.ok) return {error:f.error};
+      a.flow=true; a.from=f.name;
+      a.to=String(a.to||"").trim();
+      if(!a.to) return {error:"What would you rather do instead of "+a.from+"?"};
+      return null;
+    }
     const f=needInSession(a.from); if(!f.ok) return {error:f.error};
     a.from=f.name;
     if(!a.to){
@@ -16369,6 +16569,11 @@ defAction("replace_exercise",{
   validate:a=>{
     const g=requireWorkout(a); if(g) return g;
     if(nameEq(a.from,a.to)) return "Those are the same movement.";
+    if(a.flow){
+      const dup=flowDup(a.to);
+      if(dup && !nameEq(dup.t,a.from)) return (nameEq(dup.t,a.to)? a.to : dup.t+" covers that")+" — it's already in today's flow.";
+      return null;
+    }
     if(wkFind(a.to)) return a.to+" is already in today's session.";
     if(exBanned(a.to)) return "You told me never to program "+a.to+" again.";
     if(!canDoHere(a.to,locKey())){
@@ -16379,6 +16584,21 @@ defAction("replace_exercise",{
     return null;
   },
   apply:a=>{
+    if(a.flow){
+      const list=flowList().slice();
+      const i=list.findIndex(m=>nameEq(m.t,a.from));
+      if(i<0) return false;
+      const old=list[i];
+      const it=applyCoolDefaults([enrichMove({t:a.to, d:a.d||a.dose||a.duration, cue:a.cue})])[0];
+      /* His own timing on that slot stays his. */
+      if(typeof old.sec==="number" && old.secSource==="override"){
+        it.sec=old.sec; it.perSide=old.perSide; it.secSource="override"; it.d=coolDoseText(it);
+      }
+      list[i]=it;
+      DB.workout.cooldown=list;
+      DB.workout.cooldownLocked=true;
+      return {from:a.from,to:a.to,at:i,flow:true};
+    }
     const i=wkIndex(a.from);
     const old=DB.workout.main[i];
     const e=exObject(a.to);
@@ -16393,10 +16613,11 @@ defAction("replace_exercise",{
     resyncSections(); resyncGroups(DB.workout);
     return {from:a.from,to:a.to,at:i};
   },
-  verify:a=>savedHas(a.to) && !savedHas(a.from),
+  verify:(a,r)=>r.flow? (savedFlowHas(a.to) && !savedFlowHas(a.from)) : (savedHas(a.to) && !savedHas(a.from)),
   receipt:(a,r)=>({
-    lines:[a.from+" removed", a.to+" added · "+prescriptionLine(wkFind(a.to))],
-    anchor:{ex:a.to}
+    lines:[a.from+" removed", a.to+(r.flow? " added to the flow · "+((flowFind(a.to)||{}).d||"timed")
+                                     : " added · "+prescriptionLine(wkFind(a.to)))],
+    anchor:r.flow? {section:"cooldown"} : {ex:a.to}
   })
 });
 
@@ -16450,6 +16671,7 @@ defAction("set_sets",{
   resolve:a=>{ if(a.all) return null; const f=needInSession(a.name); if(!f.ok) return {error:f.error}; a.name=f.name; return null; },
   validate:a=>{
     const g=requireWorkout(a); if(g) return g;
+    if(flowSession()) return "Today is a mobility flow \u2014 no sets, no reps, no rest timer. If you want lifting instead, tell me and I'll change the day first.";
     const v=parseInt(a.sets,10);
     if(!(v>=1&&v<=10)) return "Sets have to be between 1 and 10.";
     a.sets=v;
@@ -16480,6 +16702,7 @@ defAction("set_reps",{
   resolve:a=>{ if(a.all) return null; const f=needInSession(a.name); if(!f.ok) return {error:f.error}; a.name=f.name; return null; },
   validate:a=>{
     const g=requireWorkout(a); if(g) return g;
+    if(flowSession()) return "Today is a mobility flow \u2014 no sets, no reps, no rest timer. If you want lifting instead, tell me and I'll change the day first.";
     const r=String(a.reps||"").trim();
     if(!/\d/.test(r)) return "I need a rep number or a range, like 8 or 6-8.";
     a.reps=r.replace(/\s*(?:to|–|—)\s*/g,"-"); return null;
@@ -16506,6 +16729,7 @@ defAction("set_load",{
   resolve:a=>{ const f=needInSession(a.name); if(!f.ok) return {error:f.error}; a.name=f.name; return null; },
   validate:a=>{
     const g=requireWorkout(a); if(g) return g;
+    if(flowSession()) return "Today is a mobility flow \u2014 no sets, no reps, no rest timer. If you want lifting instead, tell me and I'll change the day first.";
     if(!logNeedsWeight(a.name,wkFind(a.name)))
       return a.name+" isn't logged with a weight — it's "+logMeta(a.name,wkFind(a.name)).label.toLowerCase()+". Change how it's logged first if that's wrong.";
     const kg=parseFloat(String(a.kg).replace(/[^0-9.]/g,""));
@@ -16531,6 +16755,7 @@ defAction("set_rest",{
   resolve:a=>{ if(a.all) return null; const f=needInSession(a.name); if(!f.ok) return {error:f.error}; a.name=f.name; return null; },
   validate:a=>{
     const g=requireWorkout(a); if(g) return g;
+    if(flowSession()) return "Today is a mobility flow \u2014 no sets, no reps, no rest timer. If you want lifting instead, tell me and I'll change the day first.";
     const s=restSeconds(String(a.rest));
     if(!(s>=10&&s<=600)) return "Rest has to be between 10 seconds and 10 minutes.";
     a.sec=s; return null;
@@ -16572,6 +16797,8 @@ defAction("set_log_type",{
   resolve:a=>{ const f=needInSession(a.name); if(!f.ok) return {error:f.error}; a.name=f.name; return null; },
   validate:a=>{
     const g=requireWorkout(a); if(g) return g;
+    if(flowSession()) return "Today is a mobility flow \u2014 no sets, no reps, no rest timer. If you want lifting instead, tell me and I'll change the day first.";
+    if(flowSession()) return "Today is a mobility flow \u2014 no sets, no reps, no rest timer. If you want lifting instead, tell me and I'll change the day first.";
     if(!isLogType(a.logType)) return "I can log something as reps, weight + reps, time, weight + time, distance or weight + distance.";
     if(a.scope!=="always") a.scope="today";
     return null;
