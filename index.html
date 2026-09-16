@@ -1024,7 +1024,6 @@ a{color:var(--orange);}
       <summary class="hsum"><span class="t">Weekly plan</span><span class="chev">›</span></summary>
       <div class="hbody">
       <div class="card-title"><span>Weekly plan</span><span class="itin-edit">pick from the dropdowns</span></div>
-      <button class="btn blue mb" id="weekPlanBtn" onclick="aiPlanWeek()">Ask the coach to plan my week</button>
       <div id="weekPlanOut"></div>
       <div id="itinList"></div>
       </div>
@@ -7966,13 +7965,14 @@ function weekPlanCheck(){
     if(out.rest<REST_TARGET.better) out.notes=(out.notes||[]).concat(
       "one rest day is the floor \u2014 at this deficit two recovers better");
   }
-  if(out.cardio<CARDIO_TARGET.min) out.gaps.push("no cardio anywhere in the week");
-  else if(out.cardio>CARDIO_TARGET.max) out.gaps.push(out.cardio+" cardio days is more than this plan wants at this deficit");
-  else{
-    out.strong.push(out.cardio+" cardio");
-    if(out.cardio<CARDIO_TARGET.better) out.notes=(out.notes||[]).concat(
-      "one cardio day holds the engine \u2014 a second would build it, if a day ever frees up");
-  }
+  /* v162 — "I am doing 2km rowing warm-up with every workout, so remove that
+     advice." He is right and the check was wrong: a dedicated cardio DAY is
+     not the only way conditioning gets done, and the Concept2 block sits on
+     every lifting day he has. Counted, not nagged about. Too MUCH cardio is
+     still worth flagging, because that one does eat recovery at a deficit. */
+  out.cardio += out.weights;                  /* the 2km row on every lifting day */
+  if(out.cardio>CARDIO_TARGET.max+2) out.gaps.push(out.cardio+" cardio sessions is more than this plan wants at this deficit");
+  else out.strong.push(out.cardio+" cardio");
   if(out.weights<3) out.gaps.push(out.weights+" lifting day"+(out.weights===1?"":"s")+" is not enough to build on");
   else out.strong.push(out.weights+" lifting days");
   /* v126 \u2014 mobility happens in every cool-down, so this is not about
@@ -8876,7 +8876,7 @@ coachingDoctrine()+
 "The emoji in these directives is only a fallback for when there is no photograph of that movement. Do not spend effort choosing them.\n\n"+
 "WEEKLY SCHEDULE & DAY TYPES:\n"+
 "HIS WEEK STARTS ON MONDAY \u2014 always list and think Mon-first, never Sunday-first.\n"+
-"THE WEEK HE HAS SETTLED ON: Monday UPPER BODY, Tuesday legs and core, Wednesday mobility, Thursday pull, Friday push, Saturday and Sunday rest. Monday was a cardio day until he asked whether upper would serve the physique better; it does, because it takes chest, back and shoulders from once a week to twice, and twice beats once for building shape. The engine has not been abandoned \u2014 the Concept2 block sits on the Monday sheet and the Wednesday flow opens with a walk. If he ever says the conditioning is slipping, the answer is a longer row on the end of Monday, not a fourth rest day. SATURDAY AND SUNDAY ARE ALWAYS REST \u2014 do not schedule anything on them, and do not suggest he trains through the weekend. Three lifting days, one cardio, one mobility, two off. If you think a change would serve his goal better, say so once, briefly, and leave the decision to him; never just move a day.\n[[SET_WEEKDAY: Monday | Cardio Day]] · [[SET_WEEKLY_SCHEDULE: Mon Cardio Day; Tue Pull Day; Wed Full Body; Thu Push Day; Fri Legs & Core; Sat Upper Body; Sun Rest]] · [[CREATE_DAY_TYPE: Mobility Day]] · [[CREATE_DAY_TYPE: Cardio Day | kind:cardio | note:Zone 2 engine work]] · [[REMOVE_SCHEDULE_DAY_TYPE: Rest]]\n"+
+"THE WEEK HE HAS SETTLED ON: Monday UPPER BODY, Tuesday legs and core, Wednesday mobility, Thursday pull, Friday push, Saturday and Sunday rest. Monday was a cardio day until he asked whether upper would serve the physique better; it does, because it takes chest, back and shoulders from once a week to twice, and twice beats once for building shape. HIS CONDITIONING IS THE 2KM ROW HE DOES AS THE WARM-UP ON EVERY LIFTING DAY, plus the walk on the front of the Wednesday flow. That is four rows a week. NEVER tell him the week is short of cardio and never propose swapping a lifting day for a cardio day: he has told me plainly that this covers it, and the app no longer counts a dedicated cardio DAY as the only way conditioning happens. If he ever says the conditioning is slipping, the answer is a longer row on the end of Monday, not a fourth rest day. SATURDAY AND SUNDAY ARE ALWAYS REST \u2014 do not schedule anything on them, and do not suggest he trains through the weekend. Three lifting days, one cardio, one mobility, two off. If you think a change would serve his goal better, say so once, briefly, and leave the decision to him; never just move a day.\n[[SET_WEEKDAY: Monday | Cardio Day]] · [[SET_WEEKLY_SCHEDULE: Mon Cardio Day; Tue Pull Day; Wed Full Body; Thu Push Day; Fri Legs & Core; Sat Upper Body; Sun Rest]] · [[CREATE_DAY_TYPE: Mobility Day]] · [[CREATE_DAY_TYPE: Cardio Day | kind:cardio | note:Zone 2 engine work]] · [[REMOVE_SCHEDULE_DAY_TYPE: Rest]]\n"+
 "(CREATE_DAY_TYPE options after the name, pipe-separated: kind:cardio|mobility|strength, main:Ex1,Ex2, sets:4, note:...)\n\n"+
 "EXERCISE LIBRARY (add anything not built-in):\n"+
 "[[ADD_LIBRARY_EXERCISE: Seated Cable Row | muscles:back,arms | cue:Drive elbows to hips | category:Pull | equipment:cable | sets:3 | reps:10 | wrist:neutral grip | media:https://...gif]]  (only name is required)\n\n"+
@@ -11598,17 +11598,12 @@ function renderItin(){
      week they add up to is any good. It reads its own schedule now: no rest
      day, no cardio, nothing training the shoulders or back, or a run of days
      with nothing off between them — all shown before the week starts. */
-  let check="";
-  try{
-    const w=weekPlanCheck();
-    check = w.gaps.length
-      ? "<div class='notebox mt' style='border-color:#5c3712'><b style='color:var(--gold)'>This week is missing something</b>"+
-        w.gaps.map(g=>"<div class='hint' style='margin-top:6px'>· "+escapeHtml(g)+"</div>").join("")+
-        "<div class='hint' style='margin-top:8px'>Change a dropdown above, or ask the coach to fix the week.</div></div>"
-      : "<div class='notebox mt'><b style='color:var(--green)'>The week covers all four</b>"+
-        "<div class='hint' style='margin-top:6px'>"+escapeHtml(w.weights+" lifting · "+w.cardio+" cardio · "+w.mobility+" mobility · "+w.rest+" rest")+"</div></div>";
-  }catch(e){}
-  el.innerHTML=html+"<button class='addday' onclick='addDayTypePrompt()'>+ Add a session type (Pilates, Core, HIIT…)</button>"+check;
+  /* v162 — the dashed "This week is missing something" box is gone. The week
+     is settled now and a permanent critique of it under the dropdowns is
+     furniture, not advice. What weekPlanCheck finds still matters, so it goes
+     where he actually reads things: the coach's box on this same screen. One
+     voice, one place. */
+  el.innerHTML=html+"<button class='addday' onclick='addDayTypePrompt()'>+ Add a session type (Pilates, Core, HIIT…)</button>";
 }
 /* "when did I last actually do this?" \u2014 read from what he logged, not the plan. */
 function lastDoneOf(split){
@@ -12675,7 +12670,7 @@ function scheduleInApp(){
    v18 ADDITIONS — draggable rest timer · weekly training memory · AI planner
    · Firestore sync
    ========================================================================== */
-const APP_VERSION="v161 · 16/09/2026";
+const APP_VERSION="v162 · 16/09/2026";
 
 /* ===== 1. REST TIMER — drag it anywhere so it never blocks the chat box ===== */
 let _rtDrag=null;
@@ -13210,6 +13205,18 @@ function flowReadinessHTML(c){
       "<button class='btn ghost' style='flex:1;margin:0' onclick=\"setRestOverride('rest')\">😴 Rest completely</button>"+
     "</div></div>";
 }
+/* v162 — "if the coach sees I'm lacking in something that should appear in the
+   blue box." It does now. weekPlanCheck still runs; its findings come out here
+   in the coach's voice instead of in a dashed panel under the dropdowns, and
+   only when there is genuinely something to say. */
+function weekGapLine(){
+  try{
+    const w=weekPlanCheck();
+    if(!w.gaps.length) return "";
+    return "<div class='sm' style='margin-top:8px;color:var(--gold)'>Worth fixing in the week: "+
+      escapeHtml(w.gaps.slice(0,2).join(" \u00b7 "))+"</div>";
+  }catch(e){ return ""; }
+}
 function readinessHTML(){
   const c=readinessCall();
   /* v151 — a flow day has nothing to autoregulate. Say so, rather than
@@ -13238,8 +13245,11 @@ function readinessHTML(){
   else body="Nothing's flagging. Full session, own every rep.";
   let btns="";
   const B=(fn,cls,txt)=>"<button class='btn "+cls+"' style='flex:1;margin:0' onclick=\"setRestOverride("+fn+")\">"+txt+"</button>";
-  if(c.verdict==="done") btns="<button class='btn green' style='flex:1;margin:0' onclick=\"go('workout')\">Open today's session</button>"+
-      "<button class='btn ghost' style='flex:1;margin:0' onclick='readinessShowCall()'>Not done yet \u2014 show the call</button>";
+  /* v162 — nothing to offer once the day is done. Train is one tap away on the
+     bar at the bottom, and "not finished after all" lives on the session sheet
+     where the session does. Two buttons that restate the navigation are
+     furniture. */
+  if(c.verdict==="done") btns="";
   else if(c.verdict==="rest") btns=B("'train'","green","\uD83D\uDCAA I feel good \u2014 train anyway")+B("null","ghost","Take the rest");
   else if(c.verdict==="deload") btns=B("'push'","green","\uD83D\uDCAA I can push more")+B("'rest'","ghost","\uD83D\uDE34 Actually, rest");
   else if(c.verdict==="push") btns=B("null","sec","\u21a9 Back to coach's call")+B("'rest'","ghost","\uD83D\uDE34 Rest instead");
@@ -13247,8 +13257,9 @@ function readinessHTML(){
   return "<div class='card mt'><div class='card-title'><span>"+cfg.icon+" "+cfg.head+"</span>"+
     "<span class='pill "+cfg.pill+"'>"+c.streak+"d streak</span></div>"+
     "<div class='coachnote'><div class='who'>\u25c6 Coach</div>"+body+
-      "<div class='sm' style='margin-top:8px'>"+(c.verdict==="rest"||c.verdict==="deload"?"Why: ":"Reading: ")+why+"</div></div>"+
-    "<div class='readyrow'>"+btns+"</div></div>";
+      "<div class='sm' style='margin-top:8px'>"+(c.verdict==="rest"||c.verdict==="deload"?"Why: ":"Reading: ")+why+"</div>"+
+      weekGapLine()+"</div>"+
+    (btns? "<div class='readyrow'>"+btns+"</div>" : "")+"</div>";
 }
 /* A fresh install (or a new home-screen app) starts empty. Say so, and offer
    the one thing that fixes it, instead of quietly looking like a new account. */

@@ -1,3 +1,55 @@
+AMIR PT — v162 · 16/09/2026
+===========================
+
+"Since it is kind of locked in now we can remove the open today session and not
+done yet, and also the make the coach make my week. Plus I get that it says
+this week is missing something with cardio but honestly I don't need that since
+I am doing 2km rowing warm up with every workout — remove that advice, and if
+the coach sees I'm lacking in something that should appear in the blue box."
+
+FOUR THINGS OFF THE HOME SCREEN
+--------------------------------
+· "Open today's session" and "Not done yet — show the call". Once the day is
+  done there is nothing to offer: Train is one tap away on the bar at the
+  bottom, and "not finished after all" already lives on the session sheet,
+  where the session is. Two buttons restating the navigation.
+
+· "Ask the coach to plan my week". The week is settled. aiPlanWeek and its
+  output panel are untouched, so the coach can still replan it if he asks in
+  chat — only the button is gone.
+
+· The dashed "This week is missing something" panel, entirely.
+
+THE CARDIO CHECK WAS SIMPLY WRONG
+----------------------------------
+It counted cardio DAYS, as if a dedicated session were the only way
+conditioning happens. He rows 2km as the warm-up on every lifting day — four
+rows a week, on the Concept2, already logged by the block on the sheet. The
+check now counts those, so his week reads four cardio sessions rather than
+none. Too MUCH cardio is still flagged, because that one really does eat
+recovery at a deficit. The coach's brief says the same in plain words: never
+tell him the week is short of cardio, and never propose trading a lifting day
+for one.
+
+AND WHAT THE CHECK DOES FIND NOW GOES IN THE BLUE BOX
+------------------------------------------------------
+weekPlanCheck still runs. Its findings come out in the coach's card, in the
+coach's voice, and only when there is something to say:
+
+    Worth fixing in the week: no full rest day is scheduled · 7 training days
+    back to back with no day off between them
+
+One voice, one place, instead of a permanent critique in a dashed panel below
+the dropdowns.
+
+VERIFIED
+--------
+On his week: no buttons on the done card, no plan-my-week button, no dashed
+panel, no gap line — the card is the coach's sentence and nothing else. Against
+four broken weeks the line appears correctly: no rest days, no mobility day,
+no lifting days, each named in the blue box. Cardio counts 4 on his week. 16
+journeys, 390px and 1440px, no overflow, no console errors.
+
 AMIR PT — v161 · 16/09/2026
 ===========================
 
