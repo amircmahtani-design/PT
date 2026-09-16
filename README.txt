@@ -1,7 +1,48 @@
-AMIR PT — v145 · 16/09/2026
+AMIR PT — v146 · 16/09/2026
 ===========================
 
-Upload index.html AND sw.js.
+Upload index.html AND sw.js — AND the 134 new files in demos/.
+
+
+EVERY MOVEMENT IN THE APP IS NOW YOUR OWN PHOTOGRAPH
+====================================================
+    232 movements · 232 yours · 0 borrowed
+
+Your 134 WebP files matched the app's slugs almost exactly — 134 of the
+135 it still needed. The one it did not carry, Child's pose with side
+reach, was already covered: it resolves to your child's pose photo
+through the pack-name fallback.
+
+  Two of your files were not needed — hack-squat and leg-press. You made
+  them before I removed those movements for being machines you do not
+  own. Not copied in.
+
+  I looked at every one of the seven that were previously WRONG before
+  wiring anything up: band curl is a biceps curl now and not a hamstring
+  curl, band shoulder dislocates shows the band passing overhead, cat-cow
+  has both halves, scissors is the Pilates one, couch stretch has the
+  rear foot up, standing hamstring stretch is not a runner's lunge.
+
+ONE IMAGE INSTEAD OF TWO, AND THE TILE HAD TO CHANGE
+  The originals are pairs the tile cross-fades between. Yours have both
+  positions inside one frame, so there is nothing to fade — they render
+  as a single still.
+
+  They are also not all the same shape: mostly tall 418x627, some square,
+  a few landscape. Dropped into the fixed 264px box the old photos use,
+  every one of them letterboxed and two figures got squeezed into a
+  strip. So a single-image tile sizes itself to the picture instead,
+  capped at 430px so it cannot take over the card.
+
+  Both formats work side by side. 76 movements are still JPG pairs and
+  they are untouched.
+
+  Pre-cached by the service worker with everything else, so they work in
+  the garage with no signal.
+
+THE UPLOAD IS BIGGER THAN USUAL
+  demos/ is 286 files and 8.8MB now. Drag the whole folder rather than
+  picking files one at a time.
 
 
 A MOBILITY DAY IS A REST DAY WITH MOVEMENT IN IT

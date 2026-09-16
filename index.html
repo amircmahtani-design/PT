@@ -173,6 +173,13 @@ textarea.txtin{min-height:88px;resize:vertical;line-height:1.45;}
    a figure rather than a thumbnail of one. */
 .exb .imgwrap.own{height:264px;background:#0d0a07;}
 .exb .imgwrap.own img{background:transparent;}
+/* v146 — the one-file demos are not all the same shape: mostly tall 418x627,
+   a few square, a few landscape. A fixed-height box letterboxes every one of
+   them and shrinks two figures into a strip. The tile hugs the image instead,
+   capped so it cannot take over the card. */
+.exb .imgwrap.own.solo{height:auto;min-height:0;display:flex;align-items:center;justify-content:center;background:#0d0a07;}
+.exb .imgwrap.own.solo img{width:auto;height:auto;max-width:100%;max-height:430px;object-fit:contain;}
+.mvb .imgwrap.own.solo,.rowcard .imgwrap.own.solo{height:auto;}
 .exb .imgwrap.own .fedphase{background:#0a0806e6;}
 .imgwrap.watch{background:#141019;border:1px solid #2a2333;text-decoration:none;cursor:pointer;display:flex;align-items:center;justify-content:center;}
 .imgwrap.watch:active{transform:scale(.99);}
@@ -2980,6 +2987,50 @@ function setDemoPick(name,p){
    ABOVE every remote source and below only a demo he has deliberately picked
    himself \u2014 a photograph of the actual movement beats a fuzzy match to a
    stranger's exercise database every time. */
+/* ===== v146 · ONE IMAGE, BOTH POSITIONS =================================
+   His second batch: 134 WebP files, each one photograph containing the start
+   AND the finish of the movement. The originals are pairs — demos/<slug>-1.jpg
+   and -2.jpg — that the tile cross-fades between; these need no fade because
+   both positions are already in the frame.
+
+   Both kinds coexist. A slug in here is a single WebP; a slug in LOCAL_DEMOS
+   is a pair. Nothing else changes: local still outranks every remote source. */
+const LOCAL_WEBP=new Set([
+  "archer-push-up", "arm-circles", "band-anti-rotation-hold", "band-calf-raise",
+  "band-chest-press", "band-curl", "band-dead-bug", "band-external-rotation",
+  "band-face-pull", "band-glute-bridge", "band-hammer-curl", "band-kickback",
+  "band-lateral-walk", "band-leg-curl", "band-monster-walk", "band-overhead-press",
+  "band-overhead-triceps-extension", "band-pallof-press", "band-pull-apart", "band-pull-aparts",
+  "band-push-up", "band-romanian-deadlift", "band-shoulder-dislocates", "band-single-arm-row",
+  "band-straight-arm-pulldown", "band-triceps-pushdown", "barbell-back-squat", "barbell-curl",
+  "barbell-row", "bench-dip", "bench-press", "bicycle-crunch",
+  "bodyweight-squat", "bodyweight-squat-to-depth", "box-jump", "brisk-walk-or-skipping",
+  "bulgarian-split-squat", "cable-crunch", "cable-lateral-raise", "calf-raise",
+  "calf-stretch-on-a-wall", "cat-cow", "chin-up", "close-grip-bench-press",
+  "concept2-row-easy", "cossack-squat", "couch-stretch-hip-flexor", "cross-body-shoulder-stretch",
+  "db-arnold-press", "db-bench-press", "db-calf-raise", "db-chest-fly",
+  "db-clean-and-press", "db-concentration-curl", "db-curl", "db-floor-press",
+  "db-front-raise", "db-front-squat", "db-kickback", "db-pullover",
+  "db-push-press", "db-romanian-deadlift", "db-row", "db-russian-twist",
+  "db-shoulder-press", "db-shrug", "db-side-bend", "db-single-arm-row",
+  "db-single-leg-rdl", "db-skull-crusher", "db-sumo-deadlift", "db-swing",
+  "db-thruster", "db-upright-row", "db-zottman-curl", "dead-bug",
+  "deadlift", "decline-push-up", "diamond-push-up", "dip",
+  "face-pull", "figure-4-glute-stretch", "flutter-kick", "front-squat",
+  "glute-bridge", "goblet-squat", "hammer-curl", "hanging-knee-raise",
+  "hindu-push-up", "hip-thrust", "hollow-hold", "incline-bench-press",
+  "incline-db-press", "incline-push-up", "inverted-row", "jump-squat",
+  "kettlebell-swing", "lat-pulldown", "lateral-raise", "leg-raise",
+  "mountain-climber", "nordic-curl", "overhead-press", "overhead-triceps-extension",
+  "overhead-triceps-stretch", "pike-push-up", "pistol-squat", "plank",
+  "plank-shoulder-tap", "pull-up", "push-up", "renegade-row",
+  "reverse-lunge", "reverse-plank", "romanian-deadlift", "russian-twist",
+  "scapular-pull-ups", "scissors", "seated-cable-row", "side-plank",
+  "single-leg-calf-raise", "single-leg-glute-bridge", "single-leg-kick", "split-squat",
+  "standing-hamstring-stretch", "superman-hold", "triceps-pushdown", "tuck-jump",
+  "v-up", "walking-lunge", "wide-push-up", "world-s-greatest-stretch",
+  "wrist-circles-and-gentle-flexor-stretch", "wrist-flexor-and-extensor-stretch"
+]);
 /* v134 — child-s-pose is his own photograph of the movement the free pack
    could not supply. Keep this list and DEMOS in sw.js in step. */
 const LOCAL_DEMOS=new Set([
@@ -3017,7 +3068,7 @@ function ownImgFail(img){
   try{
     if(img) img.onerror=null;
     const src=String(img&&img.getAttribute('data-f0')||img&&img.src||"");
-    const m=src.match(/demos\/([a-z0-9-]+)-[12]\.jpg/);
+    const m=src.match(/demos\/([a-z0-9-]+?)(?:-[12])?\.(?:jpg|webp)/);
     if(m) _deadLocal.add(m[1]);
     const name=img&&img.getAttribute('alt');
     const wrap=img&&img.closest? img.closest('.imgwrap') : null;
@@ -3027,8 +3078,11 @@ function ownImgFail(img){
   }catch(e){}
 }
 function localDemo(name){
-  const ok=k=>!!(k && LOCAL_DEMOS.has(k) && !_deadLocal.has(k));
-  const tile=k=>({kind:"frames", frames:["demos/"+k+"-1.jpg","demos/"+k+"-2.jpg"], label:"your demo", mine:true, local:true});
+  const ok=k=>!!(k && (LOCAL_DEMOS.has(k)||LOCAL_WEBP.has(k)) && !_deadLocal.has(k));
+  /* One file means one image and no phase toggle \u2014 both positions are in it. */
+  const tile=k=> LOCAL_WEBP.has(k)
+    ? {kind:"gif", src:"demos/"+k+".webp", label:"your demo", mine:true, local:true}
+    : {kind:"frames", frames:["demos/"+k+"-1.jpg","demos/"+k+"-2.jpg"], label:"your demo", mine:true, local:true};
   const k=demoSlug(name);
   if(ok(k)) return tile(k);
   /* v134 — one photograph covers every movement pointing at the same
@@ -3103,8 +3157,11 @@ function demoTileHTML(name){
     "' target='_blank' rel='noopener'>\u25b6 demo</a>";
   const approx=d.approx? "<span class='approxchip'>\u2248 closest match \u00b7 tap Change demo</span>" : "";
   if(d.kind==="gif"){
-    return "<div class='imgwrap' data-ex='"+nEsc+"' data-exname='"+nEsc+"' data-kind='gif'>"+
-      "<img src='"+attrEsc(d.src)+"' alt='"+nEsc+"' loading='lazy' onerror=\"demoFail(this,'"+js+"')\">"+
+    /* v146 \u2014 one of his own photographs lands here too now. It wants the same
+       dark backing the pairs get, and the local failure handler rather than the
+       one that only knows how to retry the free pack's mirrors. */
+    return "<div class='imgwrap"+(d.local?" own solo":"")+"' data-ex='"+nEsc+"' data-exname='"+nEsc+"' data-kind='gif'>"+
+      "<img src='"+attrEsc(d.src)+"' alt='"+nEsc+"' loading='lazy' onerror='"+(d.local?"ownImgFail(this)":"demoFail(this,\""+js+"\")")+"'>"+
       approx+demoLink+"</div>";
   }
   if(d.kind==="frames"){
@@ -11832,7 +11889,7 @@ function scheduleInApp(){
    v18 ADDITIONS — draggable rest timer · weekly training memory · AI planner
    · Firestore sync
    ========================================================================== */
-const APP_VERSION="v145 · 16/09/2026";
+const APP_VERSION="v146 · 16/09/2026";
 
 /* ===== 1. REST TIMER — drag it anywhere so it never blocks the chat box ===== */
 let _rtDrag=null;

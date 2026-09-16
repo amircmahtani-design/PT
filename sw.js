@@ -2,7 +2,7 @@
    Network-first for the app itself, so a redeploy is ALWAYS picked up
    (the version stamp in Settings stays a reliable check).
    Cache-first for third-party assets, so the app opens with no signal. */
-const CACHE = "amirpt-v145";
+const CACHE = "amirpt-v146";
 const SHELL = ["./", "./index.html", "./manifest.json"];
 /* v123 — his own demo photographs. Pre-cached one at a time rather than with
    addAll, because addAll is atomic: a single 404 would throw away the whole
@@ -27,7 +27,48 @@ const DEMOS = [
   "supine-spinal-twist", "swan", "swimming", "teaser", "the-hundred", "towel-row",
   "wall-angel", "wall-sit", "wall-sit-march", "wall-slides"
 ];
-const DEMO_FILES = DEMOS.reduce((a, s) => a.concat(["demos/" + s + "-1.jpg", "demos/" + s + "-2.jpg"]), []);
+/* v146 — the second batch is one WebP per movement rather than a pair of
+   JPGs, so both positions are in a single frame. Keep this in step with
+   LOCAL_WEBP in index.html. */
+const DEMOS_WEBP = [
+  "archer-push-up", "arm-circles", "band-anti-rotation-hold", "band-calf-raise",
+  "band-chest-press", "band-curl", "band-dead-bug", "band-external-rotation",
+  "band-face-pull", "band-glute-bridge", "band-hammer-curl", "band-kickback",
+  "band-lateral-walk", "band-leg-curl", "band-monster-walk", "band-overhead-press",
+  "band-overhead-triceps-extension", "band-pallof-press", "band-pull-apart", "band-pull-aparts",
+  "band-push-up", "band-romanian-deadlift", "band-shoulder-dislocates", "band-single-arm-row",
+  "band-straight-arm-pulldown", "band-triceps-pushdown", "barbell-back-squat", "barbell-curl",
+  "barbell-row", "bench-dip", "bench-press", "bicycle-crunch",
+  "bodyweight-squat", "bodyweight-squat-to-depth", "box-jump", "brisk-walk-or-skipping",
+  "bulgarian-split-squat", "cable-crunch", "cable-lateral-raise", "calf-raise",
+  "calf-stretch-on-a-wall", "cat-cow", "chin-up", "close-grip-bench-press",
+  "concept2-row-easy", "cossack-squat", "couch-stretch-hip-flexor", "cross-body-shoulder-stretch",
+  "db-arnold-press", "db-bench-press", "db-calf-raise", "db-chest-fly",
+  "db-clean-and-press", "db-concentration-curl", "db-curl", "db-floor-press",
+  "db-front-raise", "db-front-squat", "db-kickback", "db-pullover",
+  "db-push-press", "db-romanian-deadlift", "db-row", "db-russian-twist",
+  "db-shoulder-press", "db-shrug", "db-side-bend", "db-single-arm-row",
+  "db-single-leg-rdl", "db-skull-crusher", "db-sumo-deadlift", "db-swing",
+  "db-thruster", "db-upright-row", "db-zottman-curl", "dead-bug",
+  "deadlift", "decline-push-up", "diamond-push-up", "dip",
+  "face-pull", "figure-4-glute-stretch", "flutter-kick", "front-squat",
+  "glute-bridge", "goblet-squat", "hammer-curl", "hanging-knee-raise",
+  "hindu-push-up", "hip-thrust", "hollow-hold", "incline-bench-press",
+  "incline-db-press", "incline-push-up", "inverted-row", "jump-squat",
+  "kettlebell-swing", "lat-pulldown", "lateral-raise", "leg-raise",
+  "mountain-climber", "nordic-curl", "overhead-press", "overhead-triceps-extension",
+  "overhead-triceps-stretch", "pike-push-up", "pistol-squat", "plank",
+  "plank-shoulder-tap", "pull-up", "push-up", "renegade-row",
+  "reverse-lunge", "reverse-plank", "romanian-deadlift", "russian-twist",
+  "scapular-pull-ups", "scissors", "seated-cable-row", "side-plank",
+  "single-leg-calf-raise", "single-leg-glute-bridge", "single-leg-kick", "split-squat",
+  "standing-hamstring-stretch", "superman-hold", "triceps-pushdown", "tuck-jump",
+  "v-up", "walking-lunge", "wide-push-up", "world-s-greatest-stretch",
+  "wrist-circles-and-gentle-flexor-stretch", "wrist-flexor-and-extensor-stretch"
+];
+const DEMO_FILES = DEMOS
+  .reduce((a, s) => a.concat(["demos/" + s + "-1.jpg", "demos/" + s + "-2.jpg"]), [])
+  .concat(DEMOS_WEBP.map(s => "demos/" + s + ".webp"));
 
 self.addEventListener("install", e => {
   self.skipWaiting();
