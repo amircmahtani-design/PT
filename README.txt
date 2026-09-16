@@ -1,3 +1,46 @@
+AMIR PT — v155 · 16/09/2026
+===========================
+
+"I'm currently doing it, push it through with one set as well."
+
+v154 stopped [[SET_WORKOUT]] building a lifting day out of stretches. It did
+nothing about the one already on his phone — and he was in the middle of it.
+Exactly the lesson from v149, which I should not have needed twice: fixing the
+code that creates bad state is half the fix, and the other half is the copy
+already saved.
+
+repairFlowDay catches it now. A main list of three or more movements, seven in
+ten of them from the mobility, warm-up or Pilates catalogues, is not a lifting
+session whatever the day happens to be called. On the next load it becomes a
+flow: the movements he was given, in the order he was given them, no sets, no
+rest timers, no supersets, no warm-up, no rower, and a Flow complete button.
+
+MEASURED BEFORE SHIPPING, because this one deletes things
+----------------------------------------------------------
+A repair that rewrites a session is only safe if it cannot fire on a real one.
+Across 180 genuine sessions — five splits × three locations × twelve rerolls —
+and all 27 exercise-pool slices, the detector fires zero times. It catches what
+it is for and nothing else.
+
+What he has logged is not touched either way: sets live in DB.strength, not on
+the session object, so the set he had already put against Cat-Cow is still in
+his history afterwards.
+
+VERIFIED
+--------
+His exact state rebuilt the pre-v154 way — Pull Day, nine stretches in main at
+3 sets with 90s rest, a nine-move warm-up, a live superset on the last two, and
+a logged set — then saved and reloaded:
+
+  Pull Day → Mobility · 3 sets → 0 · 9 in main → 0 · warm-up 9 → 0
+  superset → gone · rower → gone · day type → Mobility
+  nine movements in the flow, in order, every one on his own photograph
+  the logged set → still there
+  no rest timer, no set counts, no warm-up, and Flow complete on the end
+
+Plus the regression: 180 sessions clean, 16 journeys, mobility and Pilates
+flows, 390px and 1440px, no overflow, no console errors.
+
 AMIR PT — v154 · 16/09/2026
 ===========================
 

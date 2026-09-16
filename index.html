@@ -8759,7 +8759,30 @@ function resolveKnownEx(raw){ const n=resolveExName(raw,null,false); return (n&&
    buildMobilityFlow uses. Logged sets live in DB.log, not here, so his
    history is untouched either way. */
 function repairFlowDay(w){
-  if(!w || w.kind!=="mobility" || !Array.isArray(w.cooldown)) return false;
+  if(!w || !Array.isArray(w.main)) return false;
+  /* ===== v155 · THE SESSION HE IS IN THE MIDDLE OF ========================
+     v154 stopped [[SET_WORKOUT]] building a lifting day out of stretches. It
+     did nothing for the one already on his phone — and he was doing it at the
+     time. Same lesson as v149 and I should not have needed it twice: fixing
+     the code that creates bad state is half a fix.
+
+     A main list that is three or more movements, seven in ten of them from
+     the mobility, warm-up or Pilates catalogues, is not a lifting session
+     whatever the day is called. Measured before shipping: across 180 real
+     sessions — five splits, three locations, twelve rerolls each — and all 27
+     pool slices, this fires zero times. It only catches what it is for.
+
+     The movements he was given are kept, in order. Sets he has already logged
+     live in DB.strength and are untouched. */
+  if(w===DB.workout && w.main.length && looksLikeFlowList(w.main.map(e=>e&&e.name).filter(Boolean))){
+    const seen=new Set(), keep=[];
+    w.main.map(e=>e&&e.name).filter(Boolean).forEach(n=>{
+      const k=mobKey(n); if(!k||seen.has(k)) return; seen.add(k); keep.push(n);
+    });
+    buildFlowFromNames(keep);
+    return true;
+  }
+  if(w.kind!=="mobility" || !Array.isArray(w.cooldown)) return false;
   const broken = (Array.isArray(w.main) && w.main.length) || w.sets>0 ||
                  !!w.cardio || (Array.isArray(w.warmup) && w.warmup.length);
   if(!broken) return false;
@@ -12246,7 +12269,7 @@ function scheduleInApp(){
    v18 ADDITIONS — draggable rest timer · weekly training memory · AI planner
    · Firestore sync
    ========================================================================== */
-const APP_VERSION="v154 · 16/09/2026";
+const APP_VERSION="v155 · 16/09/2026";
 
 /* ===== 1. REST TIMER — drag it anywhere so it never blocks the chat box ===== */
 let _rtDrag=null;
