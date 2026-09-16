@@ -1,3 +1,53 @@
+AMIR PT — v150 · 16/09/2026
+===========================
+
+"You keep saying you've removed it but I keep seeing it in my mobility
+workout. Since you can't seem to remove it in mobility allow it to be
+collapsible so I can close it when I don't need it."
+
+Fair. Three versions, two confident "fixed" messages, and it was still there.
+
+WHAT THE SCREENSHOT SAID THAT I HAD NOT WORKED OUT
+---------------------------------------------------
+The WARM-UP section was on screen, right above the rowing block. Warm-up is
+only drawn when flowDay(w) is FALSE. So his mobility day was never being
+recognised as a mobility day at all — and every guard I had added in v145,
+v147 and v149 keys off exactly that function. I kept fixing paths that were
+already correct for a day the app never classified as mobility in the first
+place.
+
+The day TYPE he set survives independently of whatever the session object
+drifted into, so flowDay asks pickSplit() now as a third test, and the word
+list got "stretching", "restorative" and "flow" added. On a day whose type is
+Mobility the block does not render at all, whatever happened to the session.
+
+THE PART THAT DOES NOT DEPEND ON ME GUESSING RIGHT
+---------------------------------------------------
+That is still a guess, and he has had enough of those, so he gets the control
+he asked for.
+
+The Concept2 block was the only thing on the sheet built as a bare div rather
+than a sheetSec — which is precisely why it was the one thing he could not
+collapse. It is a sheetSec now, like Warm-up, Session Setup and Cool-down, and
+sheetSec already persists open/closed in DB.prefs.openSheet.
+
+It defaults CLOSED. He has said three times he does not want this block;
+one tap to open it on a day he does want to row is the right way round, and
+the summary line ("◆ Concept2 Row · 2,000m") keeps it findable. Open it and
+that is remembered too, across reloads and across days.
+
+Verified against the exact state in his screenshot — a session whose kind and
+title both fail the mobility test, warm-up visible, eight movements in main:
+the block renders collapsed to one line, opens with the banner, timer and log
+box intact, and stays closed after a reload once closed. And with the day type
+set to Mobility on a session that has drifted, it is gone entirely.
+
+THE LESSON
+----------
+When a fix does not land twice, stop fixing and re-read what the user is
+actually looking at. The warm-up being visible was in the first screenshot
+too, and it was the whole answer.
+
 AMIR PT — v149 · 16/09/2026
 ===========================
 

@@ -5097,10 +5097,28 @@ function rowWarmupMins(){ const t=timeBudget(); return t.row? (t.rowMins||10) : 
 function showRowWarmup(w){ return !w.travel && hasRower() && !flowDay(w); }
 /* v48 — rowing is its own block now, not part of the warm-up. It sits directly
    above the first lift, with its own stopwatch so the mm:ss fills itself in. */
+/* ===== v150 · THE ROW BLOCK CLOSES, AND STAYS CLOSED =====================
+   Third time he has told me the rowing is still on his mobility day. Twice I
+   removed a path it turned out not to be coming through, and told him it was
+   fixed. His screenshot settles it: the WARM-UP section is on screen too,
+   which only happens when flowDay(w) is false — so his day is not being
+   recognised as a mobility day at all, and every guard I have added keys off
+   exactly that. Widening the detection is worth doing and is below, but it is
+   another guess, and he has had enough of my guesses.
+
+   So he gets the control he asked for. This was the one block on the sheet
+   built as a bare div instead of a sheetSec, which is why it was the one
+   thing he could not collapse. It is a sheetSec now, like Warm-up and
+   Cool-down, and sheetSec already persists open/closed in DB.prefs.openSheet.
+
+   It defaults CLOSED. He has said three times that he does not want this
+   block; one tap to open it on a day he does want to row is the right way
+   round, and the summary line keeps it findable. Open it once and it stays
+   open, because that is remembered too. */
 function rowBlockHTML(travel){
   const dist=travel?"1,000m":"2,000m";
   const pace=travel?"Quick easy row.":"Easy pace ~2:10–2:20 /500m · ~9 min.";
-  return "<div class='sheet-sec'><h3>◆ Concept2 Row</h3>"+
+  const body=
     "<div class='rowbanner'><img src='"+ROW_SVG+"' alt='someone rowing'></div>"+
     "<div class='name' style='margin-top:12px'>Row · "+dist+"</div>"+
     "<div class='sm' style='margin-top:4px'>"+pace+" Time it here, or type it in yourself.</div>"+
@@ -5109,7 +5127,8 @@ function rowBlockHTML(travel){
     "<div class='logrow mt'>"+
       "<input id='warmRowTime' inputmode='text' placeholder='mm:ss' style='text-align:center'>"+
       "<button onclick='addWarmupRow("+(travel?1:0)+")'>Log</button></div>"+
-    "<div id='warmRowMsg' class='sm' style='margin-top:8px'></div></div>";
+    "<div id='warmRowMsg' class='sm' style='margin-top:8px'></div>";
+  return sheetSec("row","◆ Concept2 Row",dist,body,false);
 }
 /* Rowing stopwatch — stop it and the time drops straight into the log box. */
 let _rowInt=null,_rowStart=0;
@@ -5370,10 +5389,21 @@ function sheetAnchor(){
 
    On a flow day the movements ARE the session. One flow, and whatever
    lifting has been added, underneath it. */
+const FLOWNAME=/\b(mobility|pilates|yoga|stretch|stretching|recovery|restorative|flow)\b/i;
 function flowDay(w){
   if(!w) return false;
   if(w.kind==="mobility") return true;
-  return /\b(mobility|pilates|yoga|stretch|recovery)\b/i.test(String(w.title||"")+" "+String(w.flowTitle||""));
+  if(FLOWNAME.test(String(w.title||"")+" "+String(w.flowTitle||""))) return true;
+  /* v150 — his screenshot had the WARM-UP section on screen next to the rowing
+     block, and warm-up is only drawn when this returns false. So the day he
+     calls his mobility day was not matching on either of the two things above:
+     the workout object's kind had drifted off "mobility", and its title was not
+     one of these words either. What he actually set is the DAY TYPE, and that
+     survives independently of whatever the session object ended up as. Ask it. */
+  try{
+    if(typeof pickSplit==="function" && FLOWNAME.test(String(pickSplit()||""))) return true;
+  }catch(e){}
+  return false;
 }
 function _renderSheetInner(w){
   const host=document.getElementById('workoutSheet');
@@ -12037,7 +12067,7 @@ function scheduleInApp(){
    v18 ADDITIONS — draggable rest timer · weekly training memory · AI planner
    · Firestore sync
    ========================================================================== */
-const APP_VERSION="v149 · 16/09/2026";
+const APP_VERSION="v150 · 16/09/2026";
 
 /* ===== 1. REST TIMER — drag it anywhere so it never blocks the chat box ===== */
 let _rtDrag=null;
