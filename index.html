@@ -5139,6 +5139,23 @@ function sheetAnchor(){
     return null;
   }catch(e){ return null; }
 }
+/* ===== v140 · A MOBILITY DAY IS ALL MOBILITY ==========================
+   "When I do mobility I don't need warm up and cool down since it's all
+   mobility."
+
+   A mobility day with no sets already rendered as a single flow. But put one
+   lift on it — which the coach can do now — and it fell into the normal
+   branch and grew a Warm-up section AND a Cool-down section on top of a
+   session that is mobility from end to end: three lists of stretches for one
+   session of stretching.
+
+   On a flow day the movements ARE the session. One flow, and whatever
+   lifting has been added, underneath it. */
+function flowDay(w){
+  if(!w) return false;
+  if(w.kind==="mobility") return true;
+  return /\b(mobility|pilates|yoga|stretch|recovery)\b/i.test(String(w.title||"")+" "+String(w.flowTitle||""));
+}
 function _renderSheetInner(w){
   const host=document.getElementById('workoutSheet');
   if(!host) return;
@@ -5191,13 +5208,15 @@ function _renderSheetInner(w){
   circuitBarHTML()+
   setupSecHTML(w)+
   sessBarHTML()+
-  sheetSec("warm","Warm-up",moveCount(w.warmup), w.warmup.map(m=>mvHTML(m)).join(''), false)+
+  (flowDay(w)? "" : sheetSec("warm","Warm-up",moveCount(w.warmup), w.warmup.map(m=>mvHTML(m)).join(''), false))+
   (showRowWarmup(w)? rowBlockHTML(w.travel) : "")+
   "<div class='sheet-sec'><h3>◆ Main workout · log each set</h3>"+exHTML+
     "<div class='addrow'><button class='btn sec' onclick='toggleAddBox()'>➕ Add an exercise</button></div>"+
     "<div id='addBox'></div></div>"+
   (cardio?cardioBlockHTML(cardio,true):"")+
-  sheetSec("cool","Cool-down · timed",moveCount(w.cooldown),coolBodyHTML(w.cooldown),false)+
+  (flowDay(w)
+    ? sheetSec("mob", (w.flowTitle || "Mobility flow · timed"), moveCount(w.cooldown), coolBodyHTML(w.cooldown), true)
+    : sheetSec("cool","Cool-down · timed",moveCount(w.cooldown),coolBodyHTML(w.cooldown),false))+
   sheetSec("rec","Recovery notes","","<div class='recovery'>"+w.recovery+"</div>",false)+
   completeBlockHTML(w)+"</div>";
   /* v82 — show the structure, or he has no way of knowing a programme exists. */
@@ -11703,7 +11722,7 @@ function scheduleInApp(){
    v18 ADDITIONS — draggable rest timer · weekly training memory · AI planner
    · Firestore sync
    ========================================================================== */
-const APP_VERSION="v139 · 16/09/2026";
+const APP_VERSION="v140 · 16/09/2026";
 
 /* ===== 1. REST TIMER — drag it anywhere so it never blocks the chat box ===== */
 let _rtDrag=null;

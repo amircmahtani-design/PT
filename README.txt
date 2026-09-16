@@ -1,7 +1,51 @@
-AMIR PT — v139 · 16/09/2026
+AMIR PT — v140 · 16/09/2026
 ===========================
 
 Upload index.html AND sw.js.
+
+
+A MOBILITY DAY IS ALL MOBILITY
+==============================
+A mobility or Pilates day with no sets already showed one flow and nothing
+else. But put a single lift on it — which the coach can do now — and it fell
+through to the normal branch and grew a Warm-up section AND a Cool-down
+section on top of a session that is stretching from end to end. Three lists
+of stretches for one session of stretching.
+
+  A flow day shows the flow, and whatever lifting has been added underneath
+  it. No warm-up, no cool-down. A normal training day is untouched.
+
+    lifting day         setup · warm-up · cool-down · recovery
+    mobility day        flow
+    mobility + a lift   setup · flow · recovery
+
+
+VISUALS-NEEDED.txt — THE MOBILITY AND PILATES LIST
+==================================================
+A new file in the repo, and the answer to "give me all my mobility images
+and the Pilates ones".
+
+  Of the 58 mobility and Pilates movements, 37 are already your own
+  photographs. 21 are still borrowed from the free exercise pack, matched
+  by NAME — which is exactly why some of them are the wrong movement. The
+  matcher reads names. It cannot look at a picture.
+
+  Seven are plainly wrong and worth shooting first:
+
+      Band shoulder dislocates    showing a chest-and-shoulder stretch
+      Single Leg Kick             showing a plyometric butt-kick drill
+      Scissors                    showing a scissor kick
+      Cat-cow                     showing only the cat half
+      Couch stretch (hip flexor)  showing a kneeling hip flexor
+      Standing hamstring stretch  showing a runner's lunge
+      Wrist flexor & extensor     showing a kneeling forearm stretch
+
+  The other fourteen are the right movement under a different name — they
+  work, they are just not yours.
+
+  The file lists every one with the exact two filenames, and what each is
+  currently showing so you can judge it yourself. Same as the child's pose:
+  one photo with the start and the end in it is fine, I split it.
 
 
 A SESSION YOU ASK FOR IS BUILT, NOT DESCRIBED

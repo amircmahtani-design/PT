@@ -1,0 +1,131 @@
+MOBILITY AND PILATES VISUALS — WHAT IS STILL BORROWED
+======================================================
+v140 · 16/09/2026
+
+Every movement in the app has a picture. 37 of the mobility and Pilates
+ones are your own photographs. The 21 below are still borrowed from the
+free exercise pack, matched by NAME — which is why some of them are the
+wrong movement. The matcher reads names; it cannot look at a picture.
+
+Two frames each, start and end, the way you shot the child's pose:
+one photo with both positions in it works fine — I split it.
+
+
+PLAINLY THE WRONG MOVEMENT — SHOOT THESE FIRST  (7)
+===================================================
+
+  Band shoulder dislocates
+      demos/band-shoulder-dislocates-1.jpg  and  demos/band-shoulder-dislocates-2.jpg
+      now showing: “Chest And Front Of Shoulder Stretch”  — a different stretch entirely, not the band passing overhead
+
+  Single Leg Kick
+      demos/single-leg-kick-1.jpg  and  demos/single-leg-kick-2.jpg
+      now showing: “Single Leg Butt Kick”  — a plyometric butt-kick drill — nothing to do with the Pilates exercise
+
+  Scissors
+      demos/scissors-1.jpg  and  demos/scissors-2.jpg
+      now showing: “Scissor Kick”  — a scissor kick, not the Pilates scissors
+
+  Cat-cow
+      demos/cat-cow-1.jpg  and  demos/cat-cow-2.jpg
+      now showing: “Cat Stretch”  — only the cat half; the cow half is missing
+
+  Couch stretch (hip flexor)
+      demos/couch-stretch-hip-flexor-1.jpg  and  demos/couch-stretch-hip-flexor-2.jpg
+      now showing: “Kneeling Hip Flexor”  — a kneeling hip flexor — the rear foot is not up against anything
+
+  Standing hamstring stretch
+      demos/standing-hamstring-stretch-1.jpg  and  demos/standing-hamstring-stretch-2.jpg
+      now showing: “Runner's Stretch”  — a runner's lunge, not a standing hamstring stretch
+
+  Wrist flexor & extensor stretch
+      demos/wrist-flexor-and-extensor-stretch-1.jpg  and  demos/wrist-flexor-and-extensor-stretch-2.jpg
+      now showing: “Kneeling Forearm Stretch”  — kneeling on the hands, not the standing arm-out version
+
+
+BORROWED BUT LOOKS RIGHT — REPLACE WHEN YOU CAN  (14)
+=====================================================
+
+Same movement under a different name. They work; they are just not yours,
+and the pack's gym and lighting do not match your own photographs.
+
+  Concept2 row — easy
+      demos/concept2-row-easy-1.jpg  and  demos/concept2-row-easy-2.jpg
+      now showing: “Rowing, Stationary”
+
+  Brisk walk or skipping
+      demos/brisk-walk-or-skipping-1.jpg  and  demos/brisk-walk-or-skipping-2.jpg
+      now showing: “Fast Skipping”
+
+  Arm circles
+      demos/arm-circles-1.jpg  and  demos/arm-circles-2.jpg
+      now showing: “Arm Circles”
+
+  Band pull-aparts
+      demos/band-pull-aparts-1.jpg  and  demos/band-pull-aparts-2.jpg
+      now showing: “Band Pull Apart”
+
+  Scapular pull-ups
+      demos/scapular-pull-ups-1.jpg  and  demos/scapular-pull-ups-2.jpg
+      now showing: “Scapular Pull-Up”
+
+  World's greatest stretch
+      demos/world-s-greatest-stretch-1.jpg  and  demos/world-s-greatest-stretch-2.jpg
+      now showing: “World's Greatest Stretch”
+
+  Glute bridge
+      demos/glute-bridge-1.jpg  and  demos/glute-bridge-2.jpg
+      now showing: “Butt Lift (Bridge)”
+
+  Bodyweight squat to depth
+      demos/bodyweight-squat-to-depth-1.jpg  and  demos/bodyweight-squat-to-depth-2.jpg
+      now showing: “Bodyweight Squat”
+
+  Wrist circles & gentle flexor stretch
+      demos/wrist-circles-and-gentle-flexor-stretch-1.jpg  and  demos/wrist-circles-and-gentle-flexor-stretch-2.jpg
+      now showing: “Wrist Circles”
+
+  Dead bug
+      demos/dead-bug-1.jpg  and  demos/dead-bug-2.jpg
+      now showing: “Dead Bug”
+
+  Cross-body shoulder stretch
+      demos/cross-body-shoulder-stretch-1.jpg  and  demos/cross-body-shoulder-stretch-2.jpg
+      now showing: “Shoulder Stretch”
+
+  Overhead triceps stretch
+      demos/overhead-triceps-stretch-1.jpg  and  demos/overhead-triceps-stretch-2.jpg
+      now showing: “Triceps Stretch”
+
+  Figure-4 glute stretch
+      demos/figure-4-glute-stretch-1.jpg  and  demos/figure-4-glute-stretch-2.jpg
+      now showing: “Ankle On The Knee”
+
+  Calf stretch on a wall
+      demos/calf-stretch-on-a-wall-1.jpg  and  demos/calf-stretch-on-a-wall-2.jpg
+      now showing: “Calf Stretch Hands Against Wall”
+
+
+ALREADY YOURS (37)
+====================
+
+  Wall slides, Doorway pec opener, Scapular push-ups, Open-book
+  rotations, Dead hang, Prone Y-T-W raises, Leg swings — front to back,
+  Leg swings — side to side, 90/90 hip switches, Ankle rocks on a wall,
+  Light band curls & pushdowns, Bird dog, Doorway pec stretch, Lat
+  stretch on a doorframe, Child's pose with side reach, Cobra stretch,
+  Supine spinal twist, Child's pose, Box breathing, The Hundred, Roll-
+  Up, Single Leg Circles, Rolling Like a Ball, Single Leg Stretch,
+  Double Leg Stretch, Spine Stretch Forward, Swan, Shoulder Bridge, Side
+  Kick Series, Criss-Cross, Saw, Spine Twist, Swimming, Mermaid Stretch,
+  Roll Over, Teaser, Leg Pull Front
+
+
+HOW THEY GO IN
+==============
+
+Send me the photos and I do the rest. For the record, each one is two
+files in demos/ named exactly as listed above, plus its slug added to
+LOCAL_DEMOS in index.html and to DEMOS in sw.js so the service worker
+pre-caches it for the garage. A local photograph outranks every remote
+source automatically, so nothing else has to change.
