@@ -2668,9 +2668,9 @@ const VPOOLS={
         acc:["Hip Abduction","Bulgarian Split Squat","Walking Lunge","Reverse Lunge","Step-up","Nordic Curl","Single-leg Glute Bridge","Calf Raise","Wall Sit","Glute Bridge","Pistol Squat","Jump Squat"]},
   push:{anchor:["Bench Press","Overhead Press","Incline DB Press","DB Bench Press","DB Shoulder Press","DB Floor Press","Incline Bench Press","Close-grip Bench Press"],
         acc:["Lateral Raise","Triceps Pushdown","Overhead Triceps Extension","Diamond Push-up","Bench Dip","Push-up","Pike Push-up","Decline Push-up","Archer Push-up","Cable Fly","Cable Lateral Raise","Dip","Landmine Press"]},
-  pull:{anchor:["Pull-up","Lat Pulldown","Chin-up","Seated Cable Row","DB Row"],
+  pull:{anchor:["Pull-up","Barbell Row","Lat Pulldown","Chin-up","Seated Cable Row","DB Row"],
         acc:["Reverse Snow Angel Hold","Face Pull","DB Curl","Hammer Curl","Band Pull-Apart","Prone Y-T-W Raise","Renegade Row","Inverted Row","Dead Hang","Reverse Snow Angel","Superman Hold","Chest-supported Row","DB Reverse Fly","DB Shrug","Towel Row"]},
-  upper:{anchor:["Bench Press","Overhead Press","Pull-up","Lat Pulldown","Incline Bench Press"],
+  upper:{anchor:["Bench Press","Barbell Row","Overhead Press","Pull-up","Lat Pulldown","Incline Bench Press"],
         acc:["Reverse Snow Angel Hold","DB Curl","Hammer Curl","Lateral Raise","Triceps Pushdown","Face Pull","Push-up","Bench Dip","Plank","Dip","Cable Fly","DB Reverse Fly","Cable Lateral Raise","Hanging Knee Raise"]},
   full:{anchor:["Barbell Back Squat","Deadlift","Bench Press","Overhead Press","Front Squat","Kettlebell Swing"],
         acc:["Barbell Row","Pull-up","Walking Lunge","Plank","Farmer Carry","DB Thruster","Hip Thrust","Hanging Knee Raise","DB Clean and Press","Box Jump","Bear Crawl","Ab Wheel"]},
@@ -3979,9 +3979,16 @@ function layoffInfo(){
    is a good row \u2014 but the load stops below where it hurt, and the card says
    why rather than silently refusing to add weight. Get stronger on the
    supported variants instead; that is what they are for. */
-const LOAD_CAPS={
-  "barbell row":{kg:35, why:"45kg bent-over rows gave you lower back pain. Chest-supported, cable and TRX rows carry the heavy work \u2014 this one stays honest."}
-};
+/* v144 \u2014 EMPTY, deliberately. The one entry in here capped Barbell Row at
+   35kg on the strength of a line in his brief about 45kg rows having hurt his
+   back. He says his back does not hurt. A ceiling built on a sentence nobody
+   can stand behind is worse than no ceiling: it silently blocks progression on
+   a lift he is fine with and tells him an injury he has not got.
+
+   The mechanism is kept because it is the right shape for a real one. Adding
+   a cap is one line, and the card says WHY rather than the weight quietly
+   refusing to move. */
+const LOAD_CAPS={};
 function loadCapFor(name){
   const c=LOAD_CAPS[String(name||"").trim().toLowerCase()];
   return c||null;
@@ -7973,9 +7980,9 @@ Object.keys(PHYSIQUE_PRIORITY).map(g=>"  "+g+": "+PHYSIQUE_PRIORITY[g]).join("\n
 "  He has: a Brute Force 360 PTX rack with dual adjustable CABLE stacks, a multi-grip pull-up bar and a landmine post; an Olympic barbell and plates; an adjustable bench; a TRX; a Concept2 rower; bands; and fixed hex dumbbells to 10kg AND NO HEAVIER.\n"+
 "  He has NO leg press, NO leg curl and NO leg extension. They are not in the app and you do not program them. Hamstrings get Romanian deadlifts, hip thrusts, Nordic curls and single-leg work; quads get squats, split squats and lunges.\n"+
 "  The 10kg dumbbell ceiling is the thing that catches people out. A dumbbell movement cannot be a driver for him \u2014 he tops out the rack in a session. Anything meant to be loaded over weeks is barbell, cable or a pull-up bar. Dumbbells are for isolation, where light is correct anyway.\n\n"+
-"TWO INJURIES, AND THEY ARE NOT NEGOTIABLE:\n"+
+"HIS INJURY, AND IT IS NOT NEGOTIABLE:\n"+
 "  LEFT WRIST (TFCC). No loaded wrist extension that hurts. Neutral grip, landmine and dumbbell variants over straight-wrist barbell pressing. If he says the wrist is talking, change the session that turn.\n"+
-"  LOWER BACK. 45kg unsupported bent-over barbell rows gave him back pain. The app now caps that movement at 35kg and says so on the card. Do not program heavy unsupported bent-over rowing to get around it \u2014 chest-supported rows, cable rows, TRX rows and single-arm supported work carry the heavy back volume, and they are better for the lats anyway.\n\n"+
+"  That is the only injury on record. Do not invent others, do not program around aches he has not reported, and do not tell him a lift is risky for him unless he has told you it is.\n\n"+
 "THE BLOCK, AND WHY NOTHING CHANGES FOR NO REASON:\n"+
 "  He trains in 4-6 week blocks. The anchors hold for the whole block so they can actually be loaded and measured; accessories rotate; the block ends and the next one anchors on something else. A movement swapped out after two sessions has told you nothing \u2014 you cannot measure progress on a lift he did twice.\n"+
 "  So: vary DELIBERATELY. Because a pattern is under-trained, because something hurts, because a lift has genuinely stalled across a block. Never for variety's sake, and never the same session twice running either.\n\n"+
@@ -11817,7 +11824,7 @@ function scheduleInApp(){
    v18 ADDITIONS — draggable rest timer · weekly training memory · AI planner
    · Firestore sync
    ========================================================================== */
-const APP_VERSION="v143 · 16/09/2026";
+const APP_VERSION="v144 · 16/09/2026";
 
 /* ===== 1. REST TIMER — drag it anywhere so it never blocks the chat box ===== */
 let _rtDrag=null;

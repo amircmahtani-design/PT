@@ -1,7 +1,37 @@
-AMIR PT — v143 · 16/09/2026
+AMIR PT — v144 · 16/09/2026
 ===========================
 
 Upload index.html AND sw.js.
+
+
+THE BACK THING IS OFF
+=====================
+v143 capped Barbell Row at 35kg and told the coach your lower back was an
+injury to program around. That came from a line in your own brief — "45 kg
+barbell rows previously caused lower-back pain" — and I took it as fact
+without checking it with you. You say your back is fine.
+
+  A ceiling nobody can stand behind is worse than no ceiling. It silently
+  blocks progression on a lift you are fine with, and it tells you about
+  an injury you have not got.
+
+  Barbell Row is back as an anchor in Pull and Upper, at whatever weight
+  the progression earns. The cap is gone. The brief no longer mentions
+  your back, and the coach is now told plainly: the wrist is the only
+  injury on record, do not invent others, and do not tell you a lift is
+  risky for you unless you have said it is.
+
+  The capping mechanism itself is kept, empty. It is the right shape for a
+  real injury — a ceiling with the REASON printed on the card, rather than
+  the weight quietly refusing to move. If something does start hurting,
+  say so and it is one line to put in.
+
+EVERYTHING ELSE FROM v143 STANDS
+  No leg press, leg curl, leg extension or hack squat — you own none of
+  them. 6-15 reps weighted by movement. Volume ceilings shaped to the V.
+  The 10kg dumbbell ceiling stated as a hard constraint. 4-6 week blocks
+  with anchors held long enough to measure. Deficit means preserve and
+  build slowly, not chase PBs.
 
 
 THE COACH, AGAINST YOUR BRIEF

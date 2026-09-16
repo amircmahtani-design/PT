@@ -1,7 +1,7 @@
 EVERY EXERCISE IN THE APP — AND WHICH NEED A PHOTO
 ==================================================
 
-v143 · 16/09/2026
+v144 · 16/09/2026
 
 The complete list. Everything here is something the app can actually put
 in front of you; there is nothing outside it and nothing dead inside it.
@@ -276,12 +276,12 @@ NOT IN THE APP, DELIBERATELY
 ============================
 
 Leg Press and Hack Squat were anchors in your legs pool. You have no leg
-press and no hack squat, so the app was building blocks around machines
-in someone else's gym. Removed, along with Leg Curl and Leg Extension.
-Hamstrings are Romanian deadlifts, hip thrusts, Nordic curls and single-
-leg work; quads are squats, split squats and lunges.
+press and no hack squat, so the app was building blocks around machines in
+someone else's gym. Removed, along with Leg Curl and Leg Extension.
+Hamstrings are Romanian deadlifts, hip thrusts, Nordic curls and single-leg
+work; quads are squats, split squats and lunges.
 
-Barbell Row is no longer an anchor and is capped at 35kg, because 45kg
-bent-over rows gave you back pain. It stays in as an accessory. The
-heavy back volume goes to chest-supported rows, cable rows, TRX rows and
-single-arm supported work — better for the lats anyway.
+Barbell Row is IN, unrestricted, as an anchor. A 35kg ceiling was briefly
+put on it on the strength of a line about 45kg rows having hurt your back.
+You said your back is fine, so it is gone. Your wrist remains the only
+injury the app programs around.
