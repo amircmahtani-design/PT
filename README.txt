@@ -1,3 +1,79 @@
+AMIR PT — v176 · 17/09/2026
+===========================
+
+"You have two lat pulldowns. You're making the same mistake as the AI — think
+first. Come on, this is basic. Make sure there is never a repeat exercise or a
+variation of the same exercise in the same workout. Always refer to the guide I
+gave you. I want all muscle groups hit."
+
+HE IS RIGHT, AND IT IS THE BUG THE PROGRAM EXISTS TO PREVENT
+------------------------------------------------------------
+v163 was written because the AI gave him Barbell Row twice. I then typed
+Lat Pulldown and Single-arm Lat Pulldown into the same session by hand, and it
+sat there for thirteen versions. Same exercise, one arm at a time. The reason
+the program exists is that my attention is not a check, and then I used my
+attention as the check.
+
+IT IS A FUNCTION NOW
+--------------------
+moveFamily() says what a movement fundamentally IS — pulldown, row, hinge,
+squat, single-leg knee, incline press, flat press, overhead press, lateral
+raise, rear delt fly, face pull, trunk flexion, trunk bracing and so on. Two
+movements of one family never share a session.
+
+  · auditProgram() runs the whole 4-week table at boot. If a session ever
+    repeats a movement again it says so in the console before he sees it.
+  · validateWorkout() runs it on EVERY session before it reaches the screen,
+    so a coach edit or a pool-built day gets caught too: "Lat Pulldown +
+    Single-arm Lat Pulldown are the same movement done two ways."
+
+WHAT CHANGED IN THE PROGRAM
+---------------------------
+Pull Day — the Single-arm Lat Pulldown slot is gone from all four weeks, and
+so is Cable Straight-arm Pulldown, which put the word "pulldown" on the sheet
+twice in weeks 2, 3 and 4. The slot went to the muscle the day was missing
+rather than to a third lat movement:
+
+  Lat Pulldown · Seated Cable Row · DB Reverse Fly · Face Pull · Hammer Curl ·
+  Cable Crunch
+
+Legs & Core — Bulgarian Split Squat and Goblet Squat were both on the sheet,
+which reads as a repeat and trains the same thing twice. Reverse Lunge takes
+the single-leg slot: Squat and Lunge, bilateral and unilateral, no shared word
+and no shared job.
+
+ALL MUSCLE GROUPS, ACROSS THE WEEK
+----------------------------------
+  Mon Upper    chest, back, shoulders, arms
+  Tue Legs     legs, core, back
+  Wed Mobility 12 areas, full body
+  Thu Pull     back, shoulders, arms, core
+  Fri Push     chest, shoulders, arms
+
+Every group on at least two days except legs, which is his own priority 7.
+Core is now on two days instead of one — a flat waist is the first thing on
+his list of goals and it had one slot a week.
+
+STILL 6 MOVEMENTS, STILL INSIDE THE HOUR
+----------------------------------------
+Weeks 1-3: 62-66 minutes. Week 4 deload: 54-60. None over budget.
+
+TWO JUDGEMENT CALLS, SAID OUT LOUD
+----------------------------------
+1. Push Day keeps Incline DB Press, Bench Press AND DB Shoulder Press. Three
+   presses, but three different angles — upper chest (his priority 2), flat
+   chest, overhead — and it is what HIS document says. A strict reading of
+   "no variation of the same exercise" would gut the push day. Flagged rather
+   than changed.
+2. Bulgarian Split Squat is out of the program entirely as a consequence of
+   the Legs fix. It is a good movement. If he would rather keep it, it
+   replaces Reverse Lunge and Goblet Squat comes out — one swap, his call.
+
+VERIFIED: auditProgram reports no repeats in any of the 16 sessions; the
+validator catches one if it is ever introduced; 16 sessions match the table;
+6 movements each; none over budget; five screens clean at 390px and 360px;
+no console errors.
+
 AMIR PT — v175 · 17/09/2026
 ===========================
 

@@ -3866,18 +3866,74 @@ function pickPrehab(){
    at or above target. If he wants arms or waist higher it is a swap, not an
    addition, and it comes out of the compounds.
    ========================================================================== */
+/* ===== v176 \u00b7 NEVER THE SAME MOVEMENT TWICE IN ONE SESSION ============
+   "You have two lat pulldowns. You\u2019re making the same mistake as the AI.
+   Make sure there is never a repeat exercise or a variation of the same
+   exercise in the same workout."
+
+   He is right and it is the same fault that produced Barbell Row twice at
+   v163 \u2014 the fault the master program was written to end. I then wrote it
+   back in by hand: Lat Pulldown and Single-arm Lat Pulldown are one exercise
+   done two ways, and they sat in the same session for thirteen versions.
+
+   So it is a function now, not my attention. A movement's FAMILY is what it
+   fundamentally is; two movements of one family never share a session. It
+   runs over the program at boot and over every session before it is shown. */
+function moveFamily(name){
+  const s=String(name||"").toLowerCase();
+  if(/pulldown/.test(s))                    return /straight-arm/.test(s)? "straight-arm pulldown" : "pulldown";
+  if(/pull-?up|chin-?up/.test(s))           return "pulldown";           /* same job, same muscles */
+  if(/\brow\b|row$/.test(s))                 return "row";
+  if(/pullover/.test(s))                    return "pullover";
+  if(/face pull/.test(s))                   return "face pull";
+  if(/reverse fly|rear delt/.test(s))       return "rear delt fly";
+  if(/lateral raise/.test(s))               return "lateral raise";
+  if(/shrug/.test(s))                       return "shrug";
+  if(/\bfly\b/.test(s))                      return "chest fly";
+  if(/incline.*(press|bench)/.test(s))      return "incline press";
+  if(/shoulder press|overhead press|arnold|push press|military/.test(s)) return "overhead press";
+  if(/bench press|floor press|chest press|push-?up|\bdip\b/.test(s))     return "flat press";
+  if(/pushdown|triceps/.test(s))            return "triceps";
+  if(/curl/.test(s))                        return /hammer|zottman/.test(s)? "hammer curl"
+                                                 : /leg curl|nordic/.test(s)? "hamstring curl" : "biceps curl";
+  if(/calf/.test(s))                        return "calf";
+  if(/split squat|lunge|step-?up|pistol/.test(s)) return "single-leg knee";
+  if(/squat/.test(s))                       return "squat";
+  if(/deadlift|pull-?through|good ?morning|hip thrust|glute bridge/.test(s)) return "hinge";
+  if(/crunch|sit-?up|hollow|leg raise|ab wheel|rollout/.test(s))  return "trunk flexion";
+  if(/plank|dead bug|pallof|bird dog|carry|swimmer/.test(s))      return "trunk bracing";
+  return s;                                  /* unknown: only clashes with itself */
+}
+/* Every pair in one session that is really the same movement. */
+function familyClashes(names){
+  const seen={}, out=[];
+  (names||[]).forEach(n=>{ const f=moveFamily(n); (seen[f]=seen[f]||[]).push(n); });
+  Object.keys(seen).forEach(f=>{ if(seen[f].length>1) out.push(seen[f].join(" + ")); });
+  return out;
+}
+/* Run over the written program at boot. It cannot fix a table I typed wrong,
+   but it will never again be my eyes that are the check. */
+function auditProgram(){
+  const bad=[];
+  Object.keys(PROGRAM).forEach(wk=>Object.keys(PROGRAM[wk]).forEach(sp=>{
+    const c=familyClashes(PROGRAM[wk][sp].map(x=>x[0]));
+    if(c.length) bad.push("week "+wk+" "+sp+": "+c.join("; "));
+  }));
+  if(bad.length) console.error("PROGRAM REPEATS A MOVEMENT:\n"+bad.join("\n"));
+  return bad;
+}
 const PROGRAM_WEEKS=4;
 const PROGRAM={
   1:{
     "Upper Body":[["Incline DB Press",4,"10"],["Lat Pulldown",4,"10"],
                   ["Seated Cable Row",3,"12"],["Lateral Raise",3,"15"],["Cable Fly",3,"12"],
                   ["DB Curl",2,"12"]],
-    "Legs & Core":[["Romanian Deadlift",4,"10"],["Bulgarian Split Squat",3,"10 each leg"],
-                  ["Goblet Squat",3,"12"],["Calf Raise",3,"15"],["Cable Crunch",3,"12"],
+    "Legs & Core":[["Romanian Deadlift",4,"10"],["Goblet Squat",3,"12"],
+                  ["Reverse Lunge",3,"10 each leg"],["Calf Raise",3,"15"],["Cable Crunch",3,"12"],
                   ["Dead Bug",2,"10 each side"]],
     "Pull Day":[["Lat Pulldown",4,"10"],["Seated Cable Row",4,"10"],
-                  ["Single-arm Lat Pulldown",3,"12 each side"],["DB Reverse Fly",3,"15"],["Face Pull",3,"15"],
-                  ["Hammer Curl",2,"10"]],
+                  ["DB Reverse Fly",3,"15"],["Face Pull",3,"15"],["Hammer Curl",3,"10"],
+                  ["Cable Crunch",2,"12"]],
     "Push Day":[["Incline DB Press",4,"8\u201310"],["Bench Press",3,"10"],
                   ["DB Shoulder Press",3,"10"],["Lateral Raise",3,"15"],["Cable Fly",3,"12"],
                   ["Triceps Pushdown",2,"12"]]
@@ -3886,12 +3942,12 @@ const PROGRAM={
     "Upper Body":[["Incline DB Press",4,"8\u201310"],["Lat Pulldown",4,"8\u201310"],
                   ["DB Single-arm Row",3,"10 each side"],["Lateral Raise",3,"12\u201315"],["Cable Fly",3,"12"],
                   ["Hammer Curl",2,"10"]],
-    "Legs & Core":[["Romanian Deadlift",4,"8"],["Bulgarian Split Squat",3,"8 each leg"],
-                  ["Goblet Squat",3,"12"],["Calf Raise",3,"15"],["Band Pallof Press",3,"12 each side"],
+    "Legs & Core":[["Romanian Deadlift",4,"8"],["Goblet Squat",4,"10"],
+                  ["Reverse Lunge",3,"12 each leg"],["Calf Raise",3,"15"],["Band Pallof Press",3,"12 each side"],
                   ["Reverse Crunch",2,"12"]],
     "Pull Day":[["Lat Pulldown",4,"8\u201310"],["Chest-supported Row",4,"10"],
-                  ["Cable Straight-arm Pulldown",3,"12"],["DB Reverse Fly",3,"15"],["Face Pull",3,"12"],
-                  ["DB Curl",2,"10"]],
+                  ["DB Reverse Fly",3,"15"],["Face Pull",3,"12"],["DB Curl",3,"10"],
+                  ["Reverse Crunch",2,"12"]],
     "Push Day":[["Incline DB Press",4,"8"],["Bench Press",3,"8\u201310"],
                   ["DB Shoulder Press",3,"10"],["Cable Lateral Raise",3,"15"],["Cable Fly",3,"15"],
                   ["Triceps Pushdown",2,"10"]]
@@ -3900,12 +3956,12 @@ const PROGRAM={
     "Upper Body":[["Incline DB Press",4,"8"],["Lat Pulldown",4,"10"],
                   ["Chest-supported Row",3,"10"],["Cable Lateral Raise",3,"15"],["Cable Fly",3,"15"],
                   ["Incline DB Curl",2,"10"]],
-    "Legs & Core":[["Romanian Deadlift",4,"8\u201310"],["Goblet Squat",3,"10"],
-                  ["Bulgarian Split Squat",3,"12 each leg"],["Calf Raise",3,"20"],["Cable Crunch",3,"15"],
+    "Legs & Core":[["Romanian Deadlift",4,"8\u201310"],["Goblet Squat",4,"10"],
+                  ["Reverse Lunge",3,"12 each leg"],["Calf Raise",3,"20"],["Cable Crunch",3,"15"],
                   ["Dead Bug",2,"12 each side"]],
     "Pull Day":[["Lat Pulldown",4,"8"],["DB Single-arm Row",4,"10 each side"],
-                  ["Cable Straight-arm Pulldown",3,"15"],["DB Reverse Fly",3,"15"],["Face Pull",3,"15"],
-                  ["Incline DB Curl",2,"10"]],
+                  ["DB Reverse Fly",3,"15"],["Face Pull",3,"15"],["Incline DB Curl",3,"10"],
+                  ["Cable Crunch",2,"15"]],
     "Push Day":[["Incline DB Press",4,"8"],["Bench Press",3,"10"],
                   ["DB Shoulder Press",3,"8\u201310"],["Lateral Raise",3,"12\u201315"],["Cable Fly",3,"12"],
                   ["Triceps Pushdown",2,"12"]]
@@ -3914,12 +3970,12 @@ const PROGRAM={
     "Upper Body":[["Incline DB Press",3,"10"],["Lat Pulldown",3,"10"],
                   ["Seated Cable Row",3,"12"],["Lateral Raise",3,"15"],["Cable Fly",2,"12"],
                   ["DB Curl",2,"12"]],
-    "Legs & Core":[["Romanian Deadlift",3,"10"],["Bulgarian Split Squat",3,"10 each leg"],
-                  ["Goblet Squat",3,"12"],["Calf Raise",3,"15"],["Band Pallof Press",2,"12 each side"],
+    "Legs & Core":[["Romanian Deadlift",3,"10"],["Goblet Squat",3,"12"],
+                  ["Reverse Lunge",2,"10 each leg"],["Calf Raise",3,"15"],["Band Pallof Press",2,"12 each side"],
                   ["Reverse Crunch",2,"12"]],
     "Pull Day":[["Lat Pulldown",3,"10"],["Seated Cable Row",3,"10"],
-                  ["Cable Straight-arm Pulldown",3,"12"],["DB Reverse Fly",3,"15"],["Face Pull",2,"15"],
-                  ["Hammer Curl",2,"12"]],
+                  ["DB Reverse Fly",3,"15"],["Face Pull",2,"15"],["Hammer Curl",2,"12"],
+                  ["Reverse Crunch",2,"12"]],
     "Push Day":[["Incline DB Press",3,"10"],["Bench Press",3,"10"],
                   ["DB Shoulder Press",3,"10"],["Lateral Raise",3,"15"],["Cable Fly",2,"15"],
                   ["Triceps Pushdown",2,"12"]]
@@ -12708,7 +12764,7 @@ function scheduleInApp(){
    v18 ADDITIONS — draggable rest timer · weekly training memory · AI planner
    · Firestore sync
    ========================================================================== */
-const APP_VERSION="v175 · 17/09/2026";
+const APP_VERSION="v176 · 17/09/2026";
 
 /* ===== 1. REST TIMER — drag it anywhere so it never blocks the chat box ===== */
 let _rtDrag=null;
@@ -19167,6 +19223,11 @@ function validateWorkout(w,opts){
      (The gap in COMPOUND is real and wider than this — it misses every
      pulldown — but it also sets rest and time estimates, so widening it is
      its own change with its own testing, not a line in this one.) */
+  /* v176 — the same movement twice, whatever built the session. */
+  try{
+    familyClashes((w.main||[]).map(e=>e.name)).forEach(c=>
+      warnings.push(c+" are the same movement done two ways — one of them should be something else."));
+  }catch(e){}
   if(!w.programmed){
     const firstAcc=w.main.findIndex(e=>!isCompound(e.name)&&!e.anchor);
     const lateCompound=w.main.findIndex((e,i)=>i>firstAcc&&firstAcc>=0&&(isCompound(e.name)||e.anchor));
@@ -20149,6 +20210,7 @@ function localCoachReply(t,receipts,failures){
 
 
 function boot(){
+  try{ auditProgram(); }catch(e){}
   const d=new Date(), hr=d.getHours();
   document.getElementById('greetLine').textContent=hr<12?"Good Morning":hr<18?"Good Afternoon":"Good Evening";
   document.getElementById('todayDate').textContent=d.toLocaleDateString('en-GB',{weekday:'long',day:'numeric',month:'long'});
