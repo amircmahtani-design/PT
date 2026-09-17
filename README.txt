@@ -1,3 +1,52 @@
+AMIR PT — v180 · 17/09/2026
+===========================
+
+"I logged the workout, 2 of the 3 logs show hard, and in Today it says still
+2 to go — and then the coach knows I've done them."
+
+Three chips on the card. Two "Logged · hard" banners stacked up. A line
+underneath saying 2 to go. And a coach congratulating him on finishing. Four
+things looking at the same three sets and only one of them right.
+
+THE COUNT
+---------
+logSet appends the new chip straight into the sets row, deliberately: a full
+re-render mid-set moves the card under his thumb while he is holding a
+dumbbell. The "So far / Today · N to go" block underneath is built by the last
+FULL render and was never touched again.
+
+So both were reading DB.strength and only one of them was reading it recently.
+Three chips, "2 to go", and the coach — which asks at the moment it speaks —
+correctly saying well done.
+
+The block has an id now and is re-rendered by everything that changes a set:
+logging one, rating one, logging a timed hold. Deleting one already rebuilt
+the whole card.
+
+Verified by driving the real UI three times: 2 to go → 1 to go → "Done · all 3
+sets logged".
+
+THE STACKED BANNERS
+-------------------
+Rating a set replaced the "How did that set feel?" prompt with a plain div —
+no id, and nothing anywhere ever removed one. Rate three sets and three
+"Logged · hard" banners sit on the card for the rest of the session. He rated
+two, so he had two.
+
+One per card now, replaced each time, and cleared the moment the next prompt
+appears. The effort is on the chip's dot anyway; the banner is a two-second
+confirmation, not a record.
+
+NOT A BUG
+---------
+The coach knowing he had finished was the one part working correctly. It reads
+the sets at the moment it speaks, which is exactly what the line under the
+chips was not doing.
+
+VERIFIED: three real logs through the UI, counter correct at every step, never
+more than one banner; 16 sessions match; no repeats; all inside the hour; five
+screens clean; no console errors.
+
 AMIR PT — v179 · 17/09/2026
 ===========================
 

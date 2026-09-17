@@ -7585,7 +7585,16 @@ function exBlockHTML(e,i){
   return "<div class='exb"+(e.grp?" grouped":"")+"' id='exb"+i+"'>"+order+exImgHTML(e.name,e.muscles)+
     "<div class='name'>"+e.name+"</div><div class='scheme'>"+e.scheme+" · rest "+e.rest+"</div>"+
     "<div class='setlog' id='sl"+i+"'>"+chips+"</div>"+input+
-    coachLineHTML(e)+
+    /* ===== v180 \u00b7 THE COUNT AND THE CHIPS CAME FROM ONE PLACE AND ONLY ONE
+       OF THEM WAS REFRESHED =================================================
+       logSet appends the new chip straight into #sl, for speed and so the card
+       does not jump under his thumb mid-set. The "So far / Today \u00b7 N to go"
+       block underneath is built once, by the last FULL render, and was never
+       touched again. So he logged three sets, saw three chips, and read
+       "2 to go" under them. Both were reading DB.strength; only one of them
+       was reading it recently.
+       It has an id now and is re-rendered by everything that changes a set. */
+    "<div id='cl"+i+"'>"+coachLineHTML(e)+"</div>"+
     notes+
     "<div class='cue'><b>Cue:</b> "+e.cue+"</div>"+
     exEditHTML(e.name,
@@ -7618,6 +7627,11 @@ function firstSentence(t){
   let out=(m? m[0] : str).trim();
   if(out.length>92) out=out.slice(0,90).replace(/[\s,;:\u2014-]+$/,"")+"\u2026";
   return out;
+}
+function refreshCoachLine(i){
+  const host=document.getElementById('cl'+i); if(!host) return;
+  const e=DB.workout&&DB.workout.main&&DB.workout.main[i]; if(!e) return;
+  try{ host.innerHTML=coachLineHTML(e); }catch(err){}
 }
 function coachLineHTML(e){
   let p=null; try{ p=progressionFor(e.name); }catch(err){ p=null; }
@@ -7848,6 +7862,7 @@ function toggleHold(i){
     const hwv=hw? parseFloat(hw.value) : NaN;
     saveSet(ex.name,{w:isNaN(hwv)?0:hwv, r:sec, timed:true}); markSession();
     const sl=document.getElementById('sl'+i); if(sl) sl.insertAdjacentHTML('beforeend',setChip({w:0,r:sec,timed:true}));
+    refreshCoachLine(i);
     afterLog(i);
     showEffortPrompt(i,ex);
     const cb=document.getElementById('cb'+i); if(cb) cb.innerHTML="<div class='coachbubble'><div class='who'>◆ Coach</div>"+holdReply(sec)+"</div>";
@@ -7905,6 +7920,7 @@ async function logSet(i){
      progression panel agree with the set he just logged. */
   try{ if(logNeedsWeight(ex.name,ex)) ex.rec=recommendLoad(ex.name); }catch(e){}
   const sl=document.getElementById('sl'+i); if(sl) sl.insertAdjacentHTML('beforeend',setChip(rec));
+  refreshCoachLine(i);
   ri.value=''; wi.value=w; afterLog(i);
   showEffortPrompt(i,ex);
   refreshDoneCard();
@@ -12773,7 +12789,7 @@ function scheduleInApp(){
    v18 ADDITIONS — draggable rest timer · weekly training memory · AI planner
    · Firestore sync
    ========================================================================== */
-const APP_VERSION="v179 · 17/09/2026";
+const APP_VERSION="v180 · 17/09/2026";
 
 /* ===== 1. REST TIMER — drag it anywhere so it never blocks the chat box ===== */
 let _rtDrag=null;
@@ -13624,6 +13640,7 @@ function effortPromptHTML(i,ex,setIdx){
 }
 function showEffortPrompt(i,ex){
   const host=document.getElementById('eff'+i); if(host) host.remove();
+  const done=document.getElementById('effdone'+i); if(done) done.remove();
   const sets=todaySets(ex.name); if(!sets.length) return;
   const anchor=document.getElementById('sl'+i);
   if(anchor) anchor.insertAdjacentHTML('afterend',effortPromptHTML(i,ex,sets.length-1));
@@ -13666,10 +13683,16 @@ function setEffort(i,setIdx,e){
   const host=document.getElementById('eff'+i);
   if(host){
     const m=EFFORT[e];
-    host.outerHTML="<div class='effdone' style='color:"+m.col+"'>Logged \u00b7 "+m.lab.toLowerCase()+"</div>";
+    /* v180 \u2014 this replaced the prompt with an un-id'd div, and nothing ever
+       took one away. Rate three sets and three "Logged \u00b7 hard" banners stack
+       up on the card for the rest of the session. One per card now, replaced
+       each time, and cleared when the next prompt appears. */
+    const old=document.getElementById('effdone'+i); if(old) old.remove();
+    host.outerHTML="<div class='effdone' id='effdone"+i+"' style='color:"+m.col+"'>Logged \u00b7 "+m.lab.toLowerCase()+"</div>";
   }
   const sl=document.getElementById('sl'+i);
   if(sl) sl.innerHTML=todaySets(ex.name).map((s,k)=>setChip(s,i,k)).join('');
+  refreshCoachLine(i);
   try{ renderStrengthPBs(); }catch(err){}
 
   /* EASY: move it now, for the next set of this exercise. */
