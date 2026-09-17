@@ -1,3 +1,46 @@
+AMIR PT — v171 · 17/09/2026
+===========================
+
+"The 7 movements thing should be clickable so I can edit, and I should be
+able to change all exercises in one go at the top and also if I want to edit
+each exercise separately."
+
+THE CHIPS ARE BUTTONS
+---------------------
+"3–4 sets" and "7 movements · reps per exercise" are the first two things on
+the screen and they describe the session, so they are what he reached for.
+They were labels. Tapping either now scrolls to the bar that changes the
+session and outlines it for a moment, so it is obvious what just answered
+him. Each carries a small EDIT so it reads as a control before he taps it.
+
+The phase chip is not a session setting and stays a plain chip.
+
+ALL OF THEM AT ONCE, OR ONE AT A TIME
+-------------------------------------
+Sets across the whole session arrived in v170. Reps are the other half, and
+they are the row underneath now: type a target, Apply to all, every movement
+takes it. It runs through the same verified action the exercise cards use, so
+it is one undoable change rather than seven.
+
+Timed holds are left alone. A 45-second plank is not a rep count and writing
+"10" onto it would be nonsense; the bar says so when a session has any.
+
+Per-exercise editing already existed and has not moved — Sets − / + and a rep
+box on every card. The bar now says so out loud, because the reason he asked
+for it is that nothing told him it was there.
+
+AND THE SUMMARY WAS READING THE ENDS OF A LIST
+----------------------------------------------
+"Reps per set · 10–12" over a session of 10, 10, 12 each side, 15, 15, 10, 12.
+It took the first and last written rather than the smallest and largest. It
+reads the numbers now: 10–15.
+
+VERIFIED: chips render as buttons and scroll to the bar; Apply to all writes
+one target to all seven movements; a single card still changes on its own and
+the header follows it (3–5 after one movement went to 5); holds untouched;
+mobility still has no bar at all. 16 programmed sessions match, Week 1 of 4
+holds, five tabs at 390px and 1440px, no console errors.
+
 AMIR PT — v170 · 17/09/2026
 ===========================
 

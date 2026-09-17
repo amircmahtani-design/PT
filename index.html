@@ -628,6 +628,10 @@ details.sec2[open] .secsum2:after{content:"\2212";}
 .psecbody .card{margin:0 0 4px;border:none;background:transparent;padding:14px 14px 16px;}
 .psecbody .hcard{margin:0;border:none;background:transparent;}
 .psec.moved{outline:2px solid var(--orange);outline-offset:3px;}
+/* v171 — a chip that is a control says so, quietly. */
+.tapchip{cursor:pointer;}
+.tapchip .pe{font-size:10px;font-weight:800;text-transform:uppercase;letter-spacing:.5px;opacity:.55;margin-left:5px;}
+.flashbar{outline:2px solid var(--orange);outline-offset:3px;border-radius:18px;transition:outline-color .3s;}
 .smove{display:flex;gap:5px;margin-left:auto;}
 .smove+.chev,.smove~.pse{margin-left:8px;}
 .smove .hb{background:var(--pill);border:1px solid var(--line);color:var(--txt);
@@ -5715,6 +5719,27 @@ function setsRange(w){
   return {min:ns[0], max:ns[ns.length-1], list:ns,
           text: ns.length>1? ns[0]+"\u2013"+ns[ns.length-1] : String(ns[0])};
 }
+/* v171 \u2014 what the movements say their reps are, summarised the way the set
+   counts are. Holds are counted apart: 45 seconds is not a rep target and
+   writing one over it would be nonsense. */
+function repsSummary(w){
+  const reps=[], holds=[];
+  ((w&&w.main)||[]).forEach(e=>{
+    const t=String(e.reps||"").trim();
+    if(!t) return;
+    (/\bs$|sec/i.test(t)? holds : reps).push(t);
+  });
+  const uniq=[...new Set(reps)];
+  /* v171.1 \u2014 the first written and the last written are not the smallest and
+     the largest. 10, 10, "12 each side", 15, 15, 10, 12 came out as "10\u201312"
+     because it took the ends of the list. Read the numbers. */
+  const nums=[];
+  reps.forEach(t=>{ (String(t).match(/\d+(?:\.\d+)?/g)||[]).forEach(n=>nums.push(+n)); });
+  const lo=nums.length? Math.min(...nums) : null, hi=nums.length? Math.max(...nums) : null;
+  return {reps:uniq, holds:holds.length,
+          text: uniq.length===1? uniq[0]
+              : (lo!=null? (lo===hi? String(lo) : lo+"\u2013"+hi) : null)};
+}
 function setsPickerHTML(w){
   const locked=!!(DB.setsOverride && DB.setsOverride.date===today());
   const r=setsRange(w);
@@ -5726,11 +5751,40 @@ function setsPickerHTML(w){
     : (w.programmed
         ? "The program sets <b>"+(r?r.text:"\u2013")+"</b> per movement. Tap a number to put the whole session on one figure for today."
         : "Chosen from your readiness \u2014 <b>"+(r?r.text:w.sets)+"</b>"+(r&&r.list.length>1? ", the main lifts taking the extra set":"")+". Tap a number to put the whole session on one figure for today.");
+  const rp=repsSummary(w);
   return "<div class='setsbar'><div class='lab'>Sets per exercise"+
       (r? " \u00b7 <span style='color:var(--gold)'>"+r.text+" now</span>" : "")+"</div>"+
     "<div class='setsrow'>"+[2,3,4,5].map(btn).join('')+
       "<button class='setspick auto"+(locked?"":" on")+"' onclick='pickSets(0)'>"+autoLab+"</button></div>"+
-    "<div class='sm'>"+note+"</div></div>";
+    "<div class='sm'>"+note+"</div>"+
+    /* v171 \u2014 "I should be able to change all exercises in one go at the top."
+       Sets were half of it. This writes one rep target to every movement,
+       through the same verified action the cards already use. */
+    "<div class='lab' style='margin-top:15px'>Reps per set"+
+      (rp.text? " \u00b7 <span style='color:var(--gold)'>"+escapeHtml(rp.text)+" now</span>" : "")+"</div>"+
+    "<div class='setsrow'>"+
+      "<input class='txtin' id='allReps' style='flex:2;text-align:center' placeholder='e.g. 10 or 8-12'>"+
+      "<button class='setspick auto' onclick='pickAllReps()'>Apply to all</button></div>"+
+    "<div class='sm'>Puts every movement on the same target"+
+      (rp.holds? ". The "+rp.holds+" timed hold"+(rp.holds===1?"":"s")+" here keep their seconds \u2014 a hold is not a rep count" : "")+
+      ". Any single exercise can still be changed on its own card below.</div>"+
+  "</div>";
+}
+function pickAllReps(){
+  const v=(val('allReps')||"").trim();
+  if(!v){ toast("Type a rep target first \u2014 10, or 8-12"); return; }
+  const res=runAction("set_reps",{all:true, reps:v});
+  if(!res.ok){ toast(res.error||"That didn\u2019t work"); return; }
+  toast(res.receipt.lines[0]);
+}
+/* v171 \u2014 the chips in the header describe the session, so tapping one now
+   takes him to where the session is changed. They are the first thing he
+   reads and they were not controls. */
+function openSessionEditor(){
+  const el=document.getElementById('setsBarWrap'); if(!el) return;
+  try{ el.scrollIntoView({behavior:'smooth', block:'center'}); }catch(e){ el.scrollIntoView(); }
+  el.classList.add('flashbar');
+  setTimeout(()=>{ try{ el.classList.remove('flashbar'); }catch(e){} }, 1700);
 }
 /* The always-visible copy. ONE function builds it, so the bar and anything
    else that shows a set count can never disagree. */
@@ -6012,13 +6066,18 @@ function _renderSheetInner(w){
        of 2s because it printed the session default and they carried the
        program's figures. One number, taken from the same place the bar below
        it takes its own. */
+    /* v171 — both chips are buttons now. They describe the session; tapping
+       one goes to the bar that changes it, rather than being a label he reads
+       and then hunts for the control. The phase chip is not a session
+       setting, so it stays a plain chip. */
     "<div class='meta'>"+(function(){
       const r=(typeof setsRange==="function")? setsRange(w) : null;
       const mine=!!(DB.setsOverride && DB.setsOverride.date===today());
-      const setsChip="<span class='pill orange'>"+(r? r.text : w.sets)+" sets</span>";
-      if(mine)         return setsChip+"<span class='pill'>every movement · your call</span>";
-      if(w.programmed) return setsChip+"<span class='pill'>"+w.main.length+" movements · reps per exercise</span>";
-      return setsChip+"<span class='pill'>"+w.reps+"</span>";
+      const tap=(cls,txt)=>"<button class='pill "+cls+" tapchip' onclick='openSessionEditor()' aria-label='edit sets and reps for the whole session'>"+txt+" <span class='pe'>edit</span></button>";
+      const setsChip=tap("orange",(r? r.text : w.sets)+" sets");
+      if(mine)         return setsChip+tap("","every movement · your call");
+      if(w.programmed) return setsChip+tap("",w.main.length+" movements · reps per exercise");
+      return setsChip+tap("",w.reps);
     })()+
       "<span class='pill purple'>"+w.phase+"</span></div></div>"+
   "<div id='wkMenu' data-open='0'></div>"+
@@ -12573,7 +12632,7 @@ function scheduleInApp(){
    v18 ADDITIONS — draggable rest timer · weekly training memory · AI planner
    · Firestore sync
    ========================================================================== */
-const APP_VERSION="v170 · 17/09/2026";
+const APP_VERSION="v171 · 17/09/2026";
 
 /* ===== 1. REST TIMER — drag it anywhere so it never blocks the chat box ===== */
 let _rtDrag=null;
