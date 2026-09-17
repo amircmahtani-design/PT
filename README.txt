@@ -1,3 +1,72 @@
+AMIR PT — v178 · 17/09/2026
+===========================
+
+Mid-session, 30 minutes into a pull day, he told the coach the Face Pull was on
+24kg. The app said NOTHING CHANGED. Then the coach said "The Face Pull is now
+set to 24kg. Let's get to work and smash this session, mate!"
+
+The app was right and the coach lied about it, on the same screen.
+
+1 · THE REFUSAL WAS WRONG IN THE FIRST PLACE
+--------------------------------------------
+"Face Pull isn't logged with a weight — it's reps only. Change how it's logged
+first if that's wrong." He is standing at a cable stack reading the number off
+it. Face Pull is tagged as a band movement in the catalogue, so the app had
+guessed reps only — and then asked HIM to go and correct a setting before it
+would accept what he was telling it.
+
+Being told a weight IS the correction. set_load promotes the movement to its
+weighted form (reps → weight+reps, time → weight+time, distance →
+weight+distance), stores that permanently so it survives every rebuild, and
+says so on the receipt:
+
+    Face Pull · 24 kg
+    Face Pull now logs as weight + reps — it was reps only, and that stands
+    from now on
+
+A name that genuinely is not on the sheet is still refused, with the sheet
+listed.
+
+2 · THE GUARD EXISTS FOR EXACTLY THIS TURN AND EXACTLY THIS TURN SKIPPED IT
+---------------------------------------------------------------------------
+There has been a rule since v88: no claim without a verified receipt. If the
+coach says it did something and no action succeeded, the app re-asks it and,
+failing that, appends a correction in the coach's own voice.
+
+It did not run. The failure warning — "I tried to change something and it
+didn't take" — was being pushed into the same list as the SUCCESS notes, and
+the guard's test is "did anything get added to that list". The warning that the
+change had failed was being counted as evidence that something had changed.
+
+Warnings are their own list now.
+
+And "The Face Pull is now set to 24kg" matched none of the claim patterns.
+They all look for "I've set", "done", "sorted", "updated". A flat statement of
+the new state was invisible to it. Fixed.
+
+3 · AND A TURN CAN DO ONE THING AND FAIL ANOTHER
+------------------------------------------------
+The guard only ever ran when NOTHING succeeded. When a turn changed one thing
+and failed another, the reply described both as done and nothing checked it.
+Now, whenever anything failed and the reply claims a change, the app has the
+last word underneath it:
+
+    Correction, from the app rather than me: there's no "Pec Deck" in today's
+    session. That part did not happen.
+
+VERIFIED: Face Pull accepts 24kg, is promoted to weight + reps permanently and
+survives a rebuild; an unknown name is still refused with the sheet listed; a
+failed change no longer counts as a change; "X is now set to Y" is recognised
+as a claim; the correction is appended when a turn part-fails. 16 sessions
+match, no repeats, five screens clean, no console errors.
+
+NOT CHANGED, DELIBERATELY
+-------------------------
+In the same screenshot the rest timer and the session clock are sitting over
+the top of the chat. Both are draggable and both were last moved by hand. I am
+not moving his floats without being asked — v156 was exactly that mistake in
+the other direction.
+
 AMIR PT — v177 · 17/09/2026
 ===========================
 

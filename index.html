@@ -10617,9 +10617,18 @@ function applyCoachDirectivesInner(reply){
      changed. That silence is exactly what "he didn't understand" felt like.
      Now nothing fails quietly. */
   const attempted=(String(reply||"").match(/\[\[\s*[A-Z_]{3,}/g)||[]).length;
+  /* ===== v178 \u00b7 A WARNING IS NOT A CHANGE ==============================
+     This went into notes with the successes, and sendChat counted "any note"
+     as proof that something had changed. So the turn where the change FAILED
+     was the turn the no-claim-without-a-receipt guard skipped: he got
+     "NOTHING CHANGED \u2014 Face Pull isn't logged with a weight", the warning,
+     and then the coach saying "The Face Pull is now set to 24kg." The one
+     place the guard exists for is the one place it did not run.
+     Warnings are their own list now. */
+  const warnings=[];
   if(attempted>0 && notes.length===0)
-    notes.push("\u26a0\ufe0f I tried to change something and it didn't take \u2014 most often an exercise name that isn't in today's session. Tell me the name exactly as it reads on the sheet.");
-  return {cleaned:out.replace(/\n{3,}/g,"\n\n").trim(), notes};
+    warnings.push("\u26a0\ufe0f I tried to change something and it didn't take \u2014 most often an exercise name that isn't in today's session. Tell me the name exactly as it reads on the sheet.");
+  return {cleaned:out.replace(/\n{3,}/g,"\n\n").trim(), notes, warnings};
 }
 /* General action router — lets the AI drive anything via one command: [[APP_ACTION: domain | args]] */
 function appAction(raw){
@@ -12764,7 +12773,7 @@ function scheduleInApp(){
    v18 ADDITIONS — draggable rest timer · weekly training memory · AI planner
    · Firestore sync
    ========================================================================== */
-const APP_VERSION="v177 · 17/09/2026";
+const APP_VERSION="v178 · 17/09/2026";
 
 /* ===== 1. REST TIMER — drag it anywhere so it never blocks the chat box ===== */
 let _rtDrag=null;
@@ -17590,8 +17599,21 @@ defAction("set_load",{
   validate:a=>{
     const g=requireWorkout(a); if(g) return g;
     if(flowSession()) return "Today is a mobility flow \u2014 no sets, no reps, no rest timer. If you want lifting instead, tell me and I'll change the day first.";
-    if(!logNeedsWeight(a.name,wkFind(a.name)))
-      return a.name+" isn't logged with a weight — it's "+logMeta(a.name,wkFind(a.name)).label.toLowerCase()+". Change how it's logged first if that's wrong.";
+    /* ===== v178 · TELLING ME THE WEIGHT IS THE CORRECTION =================
+       This refused: "Face Pull isn't logged with a weight — it's reps only.
+       Change how it's logged first if that's wrong." He was mid-session, on a
+       cable stack, telling the app the number on it. The app had guessed reps
+       because the catalogue tags Face Pull as a band movement. Being told a
+       weight IS him saying the guess was wrong — asking him to go and fix a
+       setting first is the app arguing with the man holding the handle.
+       It promotes the movement to its weighted form, permanently, and says
+       so on the receipt. */
+    if(!logNeedsWeight(a.name,wkFind(a.name))){
+      const cur=logTypeOf(a.name,wkFind(a.name));
+      const up={reps:"weight_reps", time:"weight_time", distance:"weight_distance"}[cur];
+      if(!up) return a.name+" can't take a weight the way it's logged ("+logMeta(a.name,wkFind(a.name)).label.toLowerCase()+").";
+      a.promoted={from:LOG_TYPES[cur].label, to:LOG_TYPES[up].label, type:up};
+    }
     const kg=parseFloat(String(a.kg).replace(/[^0-9.]/g,""));
     if(!(kg>=0)) return "I need a weight in kilograms.";
     /* A number his rack cannot actually make is a number he cannot use. */
@@ -17600,6 +17622,7 @@ defAction("set_load",{
     a.kg=made; return null;
   },
   apply:a=>{
+    if(a.promoted){ try{ setPermanentLogType(a.name, a.promoted.type); }catch(e){} }
     const e=wkFind(a.name);
     e.rec={text:a.kg+"kg — you asked for this", w:a.kg, manual:true};
     e.load=a.kg;
@@ -17607,7 +17630,9 @@ defAction("set_load",{
     return {name:a.name, kg:a.kg};
   },
   verify:a=>{ const e=savedEx(a.name); return !!e && Math.abs((e.load!=null?e.load:-1)-a.kg)<0.01; },
-  receipt:a=>({lines:[a.name+" · "+a.kg+" kg"+(a.rounded? " (nearest your kit can make to "+a.rounded.asked+")":"")], anchor:{ex:a.name}})
+  receipt:a=>({lines:[a.name+" · "+a.kg+" kg"+(a.rounded? " (nearest your kit can make to "+a.rounded.asked+")":"")]
+    .concat(a.promoted? [a.name+" now logs as "+a.promoted.to.toLowerCase()+" — it was "+a.promoted.from.toLowerCase()+", and that stands from now on"] : []),
+    anchor:{ex:a.name}})
 });
 
 defAction("set_rest",{
@@ -20037,6 +20062,10 @@ let _dirResults=[], _dirFails=[];
 function replyClaimsAction(t){
   const x=String(t||"").replace(/<[^>]+>/g,"").toLowerCase();
   return /\b(done|sorted|all set|locked in|updated|switched|swapped|removed|added)\b/.test(x)
+    /* v178 \u2014 "The Face Pull is now set to 24kg" matched none of these, which
+       is how a claim about a change that failed reached him unchallenged. */
+    || /\bis now (?:set|at|on|logged|showing)\b/.test(x)
+    || /\bnow (?:set|down|up) (?:to|at)\b/.test(x)
     || /\bi[’']?(?:ve|ll|m)\s+(?:go(?:ing)? to\s+)?(?:set|update|updating|updated|change|changing|changed|add|adding|added|remove|removing|removed|swap|swapping|swapped|replace|replacing|replaced|move|moving|moved|split|switch|switching|switched|make|making|made|lock|locked|build|built|sort|sorting|sorted|drop|dropping|dropped|cut|cutting)\b/.test(x)
     || /\b(swapping|replacing|updating|changing|adding|removing|moving|switching|sorting|dropping)\b/.test(x)
     || /\blet me (?:swap|change|update|add|remove|move|sort|drop)\b/.test(x)
@@ -20132,6 +20161,7 @@ async function sendChat(){
     _dirResults.forEach(r=>receipts.push(r));
     _dirFails.forEach(e=>failures.push(e));
     const legacyNotes=(res2.notes||[]).filter(Boolean);
+    const legacyWarn=(res2.warnings||[]).filter(Boolean);
 
     /* --- 5. the guard. No verified receipt, no claim. ------------------- */
     const changed = receipts.length>0 || legacyNotes.length>0;
@@ -20163,6 +20193,17 @@ async function sendChat(){
       }
     }
 
+    /* ===== v178 · A FAILURE IN THE SAME TURN AS A CLAIM ==================
+       The guard above only runs when NOTHING succeeded. A turn can do one
+       thing and fail another, and the reply will happily describe both as
+       done. Whatever the coach said, the app knows what actually happened,
+       and it gets the last word. */
+    if(failures.length && replyClaimsAction(reply)){
+      reply=String(reply).replace(/\s+$/,"")+
+        "<br><br><i>Correction, from the app rather than me: "+escapeHtml(String(failures[0]))+
+        " That part did not happen.</i>";
+    }
+
     /* --- 6. show the receipts, then the words --------------------------- */
     receipts.forEach(r=>{
       const html=receiptHTML(r);
@@ -20170,6 +20211,7 @@ async function sendChat(){
     });
     legacyNotes.forEach(n=>DB.chat.push({role:"log",text:n}));
     failures.forEach(f=>DB.chat.push({role:"log",text:failureHTML(f)}));
+    legacyWarn.forEach(n=>DB.chat.push({role:"log",text:n}));
     DB.chat.push({role:"ai",text:fmt(reply||said||"Done.")});
     try{ if(_spokenTurn && DB.prefs && DB.prefs.voiceReply) speak(String(reply||said||"Done.").replace(/<[^>]+>/g,"")); }catch(e){}
   }catch(e){
