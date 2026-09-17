@@ -1,3 +1,78 @@
+AMIR PT — v173 · 17/09/2026
+===========================
+
+"Look at the format on top, this looks poor. It should just say Train. Come on
+man. Do your auditing and the blue box should be collapsible. I'm back to me
+checking everything you audit."
+
+Fair. He is right that he found all three of these, and the screenshot he sent
+contained a fourth I had not been looking for.
+
+1 · THE HEADER
+--------------
+The Build button lived inside the header with white-space:nowrap and
+flex:0 0 auto, so it could not shrink. Then the button's label CHANGES after
+the first tap — to "🧠 Coach: build today's session from my week" — and a
+label that grows after the first tap is a layout that breaks after the first
+tap. It pushed "Log as you go" onto two lines and ran off the right edge.
+
+The header is a title now: "Log as you go / Train", nothing else. The button
+has its own row where its width is nobody's problem, and its label no longer
+changes length.
+
+2 · THE BLUE BOX FOLDS AWAY
+--------------------------
+It is the first thing on Train and three paragraphs tall, so every session
+started by scrolling past it. Same collapsible card as everywhere else in the
+app, and it remembers whether he left it open.
+
+3 · WHAT THE SCREENSHOT ACTUALLY SHOWED
+--------------------------------------
+Under the blue box, in red: "Adjusted for Dubai: Lat Pulldown → Barbell Row,
+Seated Cable Row → Bent-Arm Barbell Pullover, Single-arm Lat Pulldown → Bent
+Over Barbell Row, Face Pull → Overhead Press." Five movements, not six. On a
+sheet still labelled "Programmed".
+
+Two separate faults, both mine:
+
+  a) "Build today's session" predates the master program and still behaved
+     like it: "decide the whole thing", [[SET_WORKOUT: five exercises]]. On a
+     programmed day it threw the program away and invented a session — the one
+     thing he asked the coach never to do. It now COACHES a programmed day
+     instead: same movements, and the coach gives the load call, the focus and
+     the readiness read. Any directive that would change the sheet is stripped
+     rather than run.
+
+  b) upgradeGear is the SECOND COPY of the logic v161 fixed in the builder.
+     Matching on primary muscle alone turned a Face Pull — tagged "shoulders" —
+     into an Overhead Press, because a barbell outranks a cable. It never got
+     the pattern guard. That is the third time this session I have found one
+     rule with two implementations and only one of them fixed. It now has the
+     guard, it does not run on a programmed session at all, and it only
+     upgrades IMPROVISED movements: a push-up really is a bench press without
+     a bench, but a cable is not a worse barbell.
+
+     And one thing the rules cannot see: a Face Pull and a DB Upright Row
+     share their pattern, their primary muscle and their entire muscle list,
+     so every rule rates them interchangeable. They are not. Named in
+     NEVER_UPGRADE with the reason, rather than pretended away.
+
+THE AUDIT HE ASKED FOR
+----------------------
+Written as a harness rather than a look: every element on every screen at
+390px and 360px, flagging anything whose box runs past the viewport. First
+run found the Train header and one more — a button on Progress. That one
+turned out to be inside a deliberate horizontal scroller, so the harness now
+ignores scrollers and the finding was NOT "fixed". Second run: all five
+screens clean at both widths, every section heading on one line.
+
+It runs from here on, with the rest of them.
+
+VERIFIED: five screens clean at 390px and 360px; the plan card collapses and
+is remembered across a reload; upgradeGear makes zero swaps on a programmed
+session and no longer produces a press on a pull day; 16 programmed sessions
+match; all within budget; the week holds; no console errors.
+
 AMIR PT — v172 · 17/09/2026
 ===========================
 
