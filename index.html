@@ -1561,8 +1561,8 @@ a{color:var(--orange);}
       <button class="btn" onclick="forceUpdate()">Force update now</button>
       <div class="hint mt" style="font-size:12px">Force update throws away the stored copy of the app and downloads it again from scratch. Your training history, photos and settings are not touched \u2014 they live somewhere else on the phone.</div>
     </div>
-    <div class="hint center mt" id="verLine" style="font-size:12px"></div>
-    <div style="height:20px"></div>
+    <div class="hint center mt" id="verLine" data-nosec="1" style="font-size:12px"></div>
+    <div style="height:20px" data-nosec="1"></div>
   </section>
 
 </div>
@@ -6692,6 +6692,16 @@ async function forceUpdate(){
   setTimeout(()=>{ location.replace(location.pathname+"?u="+Date.now()); }, 400);
 }
 /* What is running, and what the server has. */
+/* The line at the bottom of Settings. Always visible, and it says both
+   numbers once the server has been asked. */
+function setVerLine(live){
+  const v=document.getElementById('verLine'); if(!v) return;
+  const mine=(typeof appVerNum==="function")? appVerNum() : null;
+  let tail="";
+  if(live && mine && live>mine) tail=" \u00b7 <span style='color:var(--gold)'>v"+live+" is available</span>";
+  else if(live && mine && live===mine) tail=" \u00b7 <span style='color:var(--green)'>latest</span>";
+  v.innerHTML="Amir PT \u00b7 "+escapeHtml(APP_VERSION)+tail;
+}
 async function renderVersionBox(){
   const box=document.getElementById('verBox'); if(!box) return;
   let live=null, err=null;
@@ -6701,6 +6711,7 @@ async function renderVersionBox(){
     else err="the server answered "+r.status;
   }catch(e){ err="no connection to the server"; }
   const mine=appVerNum();
+  try{ setVerLine(live); }catch(e){}
   box.innerHTML =
     "<b>Running on this phone:</b> "+escapeHtml(APP_VERSION)+"<br>"+
     "<b>Newest on the server:</b> "+(live? ("v"+live) : ("unknown \u2014 "+(err||"could not read it")))+"<br>"+
@@ -12879,7 +12890,7 @@ function scheduleInApp(){
    v18 ADDITIONS — draggable rest timer · weekly training memory · AI planner
    · Firestore sync
    ========================================================================== */
-const APP_VERSION="v164 · 17/09/2026";
+const APP_VERSION="v165 · 17/09/2026";
 
 /* ===== 1. REST TIMER — drag it anywhere so it never blocks the chat box ===== */
 let _rtDrag=null;
@@ -16071,6 +16082,15 @@ function collapsibleSettings(){
   };
   kids.forEach(el=>{
     if(el.classList&&el.classList.contains('section-h')){ flush(); current=el; }
+    /* ===== v165 · THE VERSION LINE KEPT GETTING SWALLOWED ================
+       This sweeps every sibling after a section heading into that heading's
+       collapsed <details>, and the version stamp sits at the very bottom of
+       the page — so it belonged to whichever section happened to be last, and
+       was invisible unless he opened it. Adding the App version card in v164
+       moved it into a section that starts closed, and it vanished completely.
+       data-nosec pins an element at the root: it is not in any section, so it
+       is always on screen. */
+    else if(el.dataset && el.dataset.nosec==="1"){ flush(); }
     else if(current) bucket.push(el);
   });
   flush();
@@ -20510,7 +20530,7 @@ function boot(){
   try{ sessFloatSync(); if(sessRunning()) sessTickStart(); }catch(e){}
   try{ updateSyncDot(); }catch(e){}
   try{ bindHomeCards(); }catch(e){}
-  { const v=document.getElementById('verLine'); if(v) v.textContent="Amir PT · "+APP_VERSION; }
+  { try{ setVerLine(null); }catch(e){ const v=document.getElementById('verLine'); if(v) v.textContent="Amir PT · "+APP_VERSION; } }
 }
 boot();
 try{ collapsibleSettings(); }catch(e){}

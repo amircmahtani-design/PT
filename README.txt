@@ -1,3 +1,34 @@
+AMIR PT — v165 · 17/09/2026
+===========================
+
+"And bottom of settings I used to get the latest version, now that disappeared.
+I want that back."
+
+collapsibleSettings walks the children of the Settings page and sweeps every
+sibling after a section heading into that heading's collapsed <details>. The
+version stamp sits at the very bottom of the page, so it has always belonged to
+whichever section happened to be last — visible only when that one was open.
+Adding the App version card in v164 gave it a new last section, closed by
+default, and the line vanished completely.
+
+It is pinned at the root now. data-nosec="1" on an element flushes the current
+section before it, so it sits outside every <details> and is always on screen.
+
+And it says more than it used to. Once the server has been asked:
+
+    Amir PT · v165 · 17/09/2026 · latest                    (in green)
+    Amir PT · v165 · 17/09/2026 · v166 is available         (in gold)
+
+so the bottom of Settings answers both questions at a glance — what he is
+running, and whether there is anything newer — without opening anything.
+
+Verified: the line is outside every collapsed section, visible with the page as
+it opens, reads "latest" when the versions match and names the newer one in
+gold when the server is ahead.
+
+STILL TRUE FROM v164: none of this reaches his phone until GitHub Pages is
+switched on. Settings → Pages → Deploy from a branch → main → / (root).
+
 AMIR PT — v164 · 17/09/2026
 ===========================
 
