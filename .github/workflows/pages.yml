@@ -1,0 +1,48 @@
+# Publishes the app to GitHub Pages on every push to main.
+#
+# Amir could not reach Settings -> Pages from his phone (the link does nothing
+# in the mobile web UI), so this does it for him: configure-pages with
+# enablement:true switches Pages on through the API the first time it runs,
+# then uploads the whole repo and deploys it. No settings to find, and every
+# future push publishes itself within a minute.
+name: Deploy to GitHub Pages
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: pages
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - name: Check out
+        uses: actions/checkout@v4
+
+      - name: Turn Pages on and read its settings
+        uses: actions/configure-pages@v5
+        with:
+          enablement: true
+
+      # The app is a static site at the repo root: index.html, sw.js,
+      # manifest.json, the icons and demos/.
+      - name: Package the site
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: .
+
+      - name: Deploy
+        id: deployment
+        uses: actions/deploy-pages@v4
