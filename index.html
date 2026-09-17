@@ -3979,7 +3979,15 @@ const PROGRAM={
    the coach writes the next one. */
 function programWeek(){
   let w=1;
-  try{ w=blockWeek(); }catch(e){ w=1; }
+  try{
+    /* v166 — blockWeek reads DB.block.start, and an expired block is only
+       rolled over by ensureBlock. Reading it first meant the session was built
+       from a week the app was about to stop being in: coming back after a long
+       gap gave him week 2's Pull Day on a sheet that said Week 1 of 4. Settle
+       the block first, then ask which week it is. */
+    ensureBlock();
+    w=blockWeek();
+  }catch(e){ w=1; }
   return ((Math.max(1,w)-1) % PROGRAM_WEEKS)+1;
 }
 /* The session for a day, or null when this day is not in the program (a
@@ -4165,6 +4173,9 @@ function buildWorkout(){
   }
   const estF=estimateMinutes(main,sets,tb);
   const _built={title: split, tag: L.tag, loc:key, mins:tb.mins, est:estF, version:1, groups:{},
+    /* v166 — which build made this, so a session left over from an older one
+       can be recognised and replaced. */
+    builtWith: APP_VERSION,
     trimNote: trimNote||null,
     date: today(),
     blockWeek: (function(){ try{ return blockWeek(); }catch(e){ return 1; } })(),
@@ -5585,6 +5596,37 @@ function watchTileHTML(name,dataAttrs){ return "<a class='imgwrap watch'"+(dataA
    properly with the key and swap in a blob. */
 /* Swap a dead tile for the animated free-pack pair, in place. */
 function exImgHTML(name,muscles){ return demoTileHTML(name); }
+/* ===== v166 · A SESSION BUILT BY THE PREVIOUS VERSION =====================
+   He uploaded v165 and still got the old Pull Day — Barbell Row twice, none of
+   the program. Nothing was wrong with the program: ensureWorkout only rebuilds
+   when DB.workout.date is not today, and his session had already been built
+   THAT MORNING by the old app. A new version therefore inherits whatever the
+   old one had already put on the sheet, and the master program never ran.
+
+   Every built session now records the build that made it. If the one on the
+   sheet came from a different version, today is a day the program covers, and
+   that session is not a programmed one, it is rebuilt.
+
+   Not if he has already logged a set today: that would pull the sheet out from
+   under a session he is in the middle of. In that case it stands, and tomorrow
+   is right. His history is untouched either way — logged sets live in
+   DB.strength, not on the session. */
+function upgradeTodayToProgram(){
+  const w=DB.workout;
+  if(!w || w.programmed) return false;
+  if(w.builtWith===APP_VERSION) return false;
+  if(typeof todayCleared==="function" && todayCleared()) return false;
+  let prog=null;
+  try{ prog=programFor(pickSplit()); }catch(e){ return false; }
+  if(!prog) return false;
+  let logged=0;
+  try{ logged=(w.main||[]).reduce((n,e)=>n+todaySets(e.name).length,0); }catch(e){}
+  if(logged) return false;
+  DB.workout=null;
+  try{ ensureWorkout(); }catch(e){}
+  try{ save(); }catch(e){}
+  return true;
+}
 function ensureWorkout(){
   /* v115 — a day he deliberately cleared or turned into a rest day is a
      DECISION, and the builder does not get to overrule a decision. This is the
@@ -12890,7 +12932,7 @@ function scheduleInApp(){
    v18 ADDITIONS — draggable rest timer · weekly training memory · AI planner
    · Firestore sync
    ========================================================================== */
-const APP_VERSION="v165 · 17/09/2026";
+const APP_VERSION="v166 · 17/09/2026";
 
 /* ===== 1. REST TIMER — drag it anywhere so it never blocks the chat box ===== */
 let _rtDrag=null;
@@ -20519,6 +20561,8 @@ function boot(){
   /* v149 — repair a mobility day an older build converted into a lifting day
      BEFORE the first render, so he never sees the broken version at all. */
   try{ if(DB.workout && repairFlowDay(DB.workout)){ save(); } }catch(e){}
+  /* v166 — and replace a session an OLDER BUILD left behind. */
+  try{ upgradeTodayToProgram(); }catch(e){}
   if(todayCleared()){ renderWorkoutSheet(null); try{ renderHeroCard(); }catch(e){} }
   else if(DB.workout){ renderWorkoutSheet(DB.workout); try{ renderHeroCard(); }catch(e){} }
   /* v133 — the hero card left Home, and this was the one place that wrote to

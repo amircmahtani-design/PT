@@ -1,3 +1,59 @@
+AMIR PT — v166 · 17/09/2026
+===========================
+
+Upload index.html AND sw.js.
+
+"I have 165 but I want 166 with the proper workout."
+
+He was right, and the program was not the problem. It was sitting there ready:
+programFor("Pull Day") returned the correct seven movements the whole time.
+
+ensureWorkout only rebuilds a session when DB.workout.date is not today. His
+session had already been built THAT MORNING by v146, before he uploaded v165 —
+so the new version inherited the old one's sheet and the master program never
+ran once. He got Barbell Row twice on v165 for exactly the same reason he got
+it on v146.
+
+Every version I have ever shipped has had this hole. It only became visible now
+because this is the first time a version changed what the builder PRODUCES
+rather than how it behaves.
+
+WHAT CHANGED
+------------
+Every built session records the build that made it (builtWith). On boot, if the
+session on the sheet came from a different version, today is a day the program
+covers, and that session is not a programmed one, it is rebuilt.
+
+It is NOT rebuilt if he has already logged a set today — that would pull the
+sheet out from under a session he is in the middle of. Then it stands and
+tomorrow is right. Logged sets live in DB.strength, not on the session, so his
+history is untouched either way.
+
+AND A SECOND ONE FOUND WHILE TESTING IT
+----------------------------------------
+The first fix produced WEEK 2's Pull Day on a sheet headed "Week 1 of 4".
+blockWeek reads DB.block.start, and an expired block is only rolled over by
+ensureBlock — which had not run yet. Coming back to the app after a gap
+therefore served a week the app was about to stop being in. programWeek settles
+the block first now, then asks which week it is.
+
+VERIFIED against his actual state rather than a fresh install — the old six-day
+schedule, a 40-day-old block, and a session already built today by the old app
+with Barbell Row twice in it. After the upgrade the sheet reads:
+
+    Lat Pulldown                4 x 10
+    Seated Cable Row            4 x 10
+    Single-arm Lat Pulldown     3 x 12 each side
+    DB Reverse Fly              4 x 15
+    Face Pull                   3 x 15
+    Hammer Curl                 3 x 10
+    Cable Curl                  3 x 12
+
+which is week 1 Thursday exactly as he wrote it. The mid-session guard checked
+separately: with two sets already logged today the old session is left alone
+and both sets survive. All 16 programmed sessions still match, mobility still
+12/12 areas, 390px and 1440px, no overflow, no console errors.
+
 HOW THIS APP REACHES HIS PHONE — READ THIS BEFORE SAYING A VERSION IS "OUT"
 ===========================================================================
 
