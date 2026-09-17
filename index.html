@@ -4016,8 +4016,10 @@ function buildWorkout(){
   const est0=estimateMinutes(main,sets,tb);
   note+=" "+tb.mins+" min available"+(est0.row?" (including a "+est0.row+" min row)":"")+" \u2014 "+main.length+" moves \u00d7 "+sets+" sets fits in about "+est0.total+".";
   /* Amir's manual set count beats everything \u2014 readiness, AI, rebuilds. */
+  let manualSets=0;
   if(DB.setsOverride && DB.setsOverride.date===today()){
     sets=DB.setsOverride.sets;
+    manualSets=sets;
     note+=" You've set this session to "+sets+" sets yourself \u2014 that stands.";
   }
   /* Warm-up and cool-down come from THIS session's movements, not a fixed list. */
@@ -4086,7 +4088,11 @@ function buildWorkout(){
          lean throughout. */
       const isAnchor=(anchors||[]).indexOf(n)>=0;
       const pEx = prog? prog.find(x=>x.n===n) : null;
-      const n_sets = pEx? pEx.sets : (travel? sets : (isAnchor? 4 : 3));
+      /* v170 \u2014 a set count HE set for today outranks the program, the same way
+         it already outranked readiness and the AI. Without this the picker at
+         the top of Train did nothing on a programmed day: the rebuild put the
+         program's figures straight back. */
+      const n_sets = manualSets? manualSets : (pEx? pEx.sets : (travel? sets : (isAnchor? 4 : 3)));
       /* v97 — if he has said a movement is reps rather than a hold (or the
          reverse), that decision outlives the session it was made in. */
       const tmd = (typeof isTimed==="function")? isTimed(n, e.timed) : !!e.timed;
@@ -5650,7 +5656,11 @@ function timeBarHTML(w){
     ? "<button class='setspick auto"+(t.row?" on":"")+"' onclick='toggleRowWarmup()'>"+(t.row?"Row "+(t.rowMins||10)+" min":"No row")+"</button>"
     : "";
   const over=est.total>t.mins+3;
-  return "<div class='setsbar'><div class='lab'>Time available</div>"+
+  /* v170 \u2014 an id, because refreshTimeBar used to grab the first .setsbar on
+     the page and the sets picker is now above it. Replacing "the first bar"
+     was fine while the time bar WAS the first bar; it is a rule about
+     position, and position changed. */
+  return "<div class='setsbar' id='timeBar'><div class='lab'>Time available</div>"+
     "<div class='timerow'>"+
       "<button class='st' onclick='nudgeTime(-5)' aria-label='five minutes less'>\u2212</button>"+
       "<input class='timein' id='timeMins' type='number' inputmode='numeric' min='10' max='150' value='"+t.mins+"' "+
@@ -5682,20 +5692,51 @@ function toggleRowWarmup(){ const t=timeBudget(); setTimeBudget(null,!t.row); re
 /* Update just the time bar, without rebuilding the sheet under his thumb. */
 function refreshTimeBar(){
   if(!DB.workout) return;
-  const host=document.querySelector('.setsbar'); if(!host) return;
+  const host=document.getElementById('timeBar'); if(!host) return;
   const wrap=document.createElement('div');
   wrap.innerHTML=timeBarHTML(DB.workout);
   const fresh=wrap.firstChild; if(fresh) host.replaceWith(fresh);
 }
+/* ===== v170 \u00b7 SETS, AT THE TOP, FOR THE WHOLE SESSION =================
+   "I should be able to change at the top how many sets and it should adapt to
+   the full train page."
+
+   It was buried inside Session setup, which is collapsed, so the only set
+   count he ever saw was the chip in the header \u2014 and on a programmed session
+   that chip was the session default while every movement underneath carried
+   the program's own figure. 4 in the header, 2 on the exercises, and no way
+   to change either without opening a drawer he had no reason to open.
+
+   One bar, always visible, directly under the session header, and it says
+   what the movements actually say. */
+function setsRange(w){
+  const ns=[...new Set(((w&&w.main)||[]).map(e=>e.sets).filter(n=>n>0))].sort((a,b)=>a-b);
+  if(!ns.length) return null;
+  return {min:ns[0], max:ns[ns.length-1], list:ns,
+          text: ns.length>1? ns[0]+"\u2013"+ns[ns.length-1] : String(ns[0])};
+}
 function setsPickerHTML(w){
-  const cur=w.sets, locked=!!(DB.setsOverride && DB.setsOverride.date===today());
-  const btn=n=>"<button class='setspick"+(locked&&cur===n?" on":"")+"' onclick='pickSets("+n+")'>"+n+"</button>";
-  return "<div class='setsbar'><div class='lab'>Sets per exercise</div>"+
+  const locked=!!(DB.setsOverride && DB.setsOverride.date===today());
+  const r=setsRange(w);
+  const cur=locked? (DB.setsOverride.sets) : (r&&r.list.length===1? r.min : 0);
+  const btn=n=>"<button class='setspick"+(cur===n?" on":"")+"' onclick='pickSets("+n+")'>"+n+"</button>";
+  const autoLab = w.programmed? "Program" : "Auto";
+  const note = locked
+    ? "Every movement is on <b>"+DB.setsOverride.sets+"</b> because you set it. Tap <b>"+autoLab+"</b> to hand it back."
+    : (w.programmed
+        ? "The program sets <b>"+(r?r.text:"\u2013")+"</b> per movement. Tap a number to put the whole session on one figure for today."
+        : "Chosen from your readiness \u2014 <b>"+(r?r.text:w.sets)+"</b>"+(r&&r.list.length>1? ", the main lifts taking the extra set":"")+". Tap a number to put the whole session on one figure for today.");
+  return "<div class='setsbar'><div class='lab'>Sets per exercise"+
+      (r? " \u00b7 <span style='color:var(--gold)'>"+r.text+" now</span>" : "")+"</div>"+
     "<div class='setsrow'>"+[2,3,4,5].map(btn).join('')+
-      "<button class='setspick auto"+(locked?"":" on")+"' onclick='pickSets(0)'>Auto</button></div>"+
-    "<div class='sm'>"+(locked
-      ? "Manual \u2014 you set <b>"+cur+"</b>. Tap <b>Auto</b> to hand it back to the coach."
-      : "Coach chose <b>"+cur+"</b> from your readiness. Tap a number to override for today.")+"</div></div>";
+      "<button class='setspick auto"+(locked?"":" on")+"' onclick='pickSets(0)'>"+autoLab+"</button></div>"+
+    "<div class='sm'>"+note+"</div></div>";
+}
+/* The always-visible copy. ONE function builds it, so the bar and anything
+   else that shows a set count can never disagree. */
+function setsBarHTML(w){
+  if(!w || !(w.main||[]).length || w.sets===0) return "";
+  return "<div class='sheet' id='setsBarWrap' style='margin-bottom:12px'>"+setsPickerHTML(w)+"</div>";
 }
 /* ===== v110 \u00b7 REST FOR THE WHOLE SESSION, WHERE HE IS LOOKING =========
    Both rest defaults existed, buried in Settings. This is the screen he is on
@@ -5787,7 +5828,9 @@ function exRestLabel(w){
 }
 function setupSecHTML(w){
   return sheetSec("setup","Session setup", setupSummary(w),
-    dayPickHTML(w)+timeBarHTML(w)+setsPickerHTML(w)+restPickerHTML(w), false);
+    /* v170 \u2014 the sets picker moved out to its own bar at the top. Leaving a
+       second copy in here is how two readouts of one number start disagreeing. */
+    dayPickHTML(w)+timeBarHTML(w)+restPickerHTML(w), false);
 }
 /* v130 — which day this is, and "give me different movements", used to sit
    above the session as two pieces of chrome you scrolled past every time. They
@@ -5965,11 +6008,21 @@ function _renderSheetInner(w){
        range: it is 4x10, 4x10, 3x12 each side, 4x15... Printing "4 sets ·
        8-12 reps" above it contradicts every line underneath. Those two chips
        describe a generated session, so they only appear on one. */
-    "<div class='meta'>"+(w.programmed
-      ? "<span class='pill orange'>Programmed</span><span class='pill'>"+w.main.length+" movements · sets and reps per exercise</span>"
-      : "<span class='pill orange'>"+w.sets+" sets</span><span class='pill'>"+w.reps+"</span>")+
+    /* v170 — the chip now reads the movements. It said "4 sets" over a sheet
+       of 2s because it printed the session default and they carried the
+       program's figures. One number, taken from the same place the bar below
+       it takes its own. */
+    "<div class='meta'>"+(function(){
+      const r=(typeof setsRange==="function")? setsRange(w) : null;
+      const mine=!!(DB.setsOverride && DB.setsOverride.date===today());
+      const setsChip="<span class='pill orange'>"+(r? r.text : w.sets)+" sets</span>";
+      if(mine)         return setsChip+"<span class='pill'>every movement · your call</span>";
+      if(w.programmed) return setsChip+"<span class='pill'>"+w.main.length+" movements · reps per exercise</span>";
+      return setsChip+"<span class='pill'>"+w.reps+"</span>";
+    })()+
       "<span class='pill purple'>"+w.phase+"</span></div></div>"+
   "<div id='wkMenu' data-open='0'></div>"+
+  setsBarHTML(w)+
   fixBar+
   circuitBarHTML()+
   setupSecHTML(w)+
@@ -9390,17 +9443,29 @@ function setSessionSets(n,manual){
   if(!manual && locked) return DB.setsOverride.sets;      // Amir's call wins
   if(manual) DB.setsOverride={date:today(),sets:n};
   DB.workout.sets=n;
-  /* Applying to all clears any per-exercise tweaks \u2014 that's what "all" means. */
-  DB.workout.main=(DB.workout.main||[]).map(e=>{ const o=exObject(e.name); delete o.sets; return o; });
+  /* ===== v170 \u00b7 IN PLACE, NOT REBUILT ===================================
+     This rebuilt every entry from the catalogue and deleted its set count, so
+     the sheet fell back to the session default. That worked for a generated
+     session and destroyed a programmed one: the rebuild threw away the rep
+     target the program had written on each movement ("10", "12 each side")
+     and put a re-derived range in its place.
+     Write the number onto each movement instead and keep everything else \u2014
+     his rep targets, his logging corrections, his rest. */
+  (DB.workout.main||[]).forEach(e=>{
+    e.sets=n;
+    const tail=String(e.scheme||"").split("\u00b7").slice(1).join("\u00b7").trim();
+    e.scheme = n+" sets"+(tail? " \u00b7 "+tail : "");
+  });
   finalizeCoachEdit();
   return n;
 }
 function coachSetSets(n){ return setSessionSets(n,!_aiPlanningSets); }
 function clearSetsOverride(){ DB.setsOverride=null; DB.workout=null; save(); ensureWorkout(); }
 function pickSets(n){
-  if(n===0){ clearSetsOverride(); toast("Sets back to the coach's call"); return; }
+  const wasProg=!!(DB.workout&&DB.workout.programmed);
+  if(n===0){ clearSetsOverride(); toast(wasProg? "Back to the program\u2019s sets" : "Sets back to the coach\u2019s call"); return; }
   const r=setSessionSets(n,true);
-  if(r) toast(r+" sets per exercise \u2014 locked for today");
+  if(r) toast(r+" sets on every movement \u2014 today only");
 }
 function coachSectionArr(sec){ const s=/warm/i.test(sec)?'warmup':'cooldown'; return {key:s, arr: s==='warmup'?DB.workout.warmup:DB.workout.cooldown}; }
 /* Set a single warm-up/cool-down item's icon (match by text substring or 1-based index). */
@@ -12508,7 +12573,7 @@ function scheduleInApp(){
    v18 ADDITIONS — draggable rest timer · weekly training memory · AI planner
    · Firestore sync
    ========================================================================== */
-const APP_VERSION="v169 · 17/09/2026";
+const APP_VERSION="v170 · 17/09/2026";
 
 /* ===== 1. REST TIMER — drag it anywhere so it never blocks the chat box ===== */
 let _rtDrag=null;

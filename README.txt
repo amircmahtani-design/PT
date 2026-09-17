@@ -1,3 +1,66 @@
+AMIR PT — v170 · 17/09/2026
+===========================
+
+"The workouts show 2 sets of everything, it should be 3. Currently it says
+4 sets but the exercises are set at 2. I should be able to change at the top
+how many sets and it should adapt to the full train page."
+
+FOUR IN THE HEADER, TWO ON THE MOVEMENTS
+----------------------------------------
+Both numbers were real and neither was wrong on its own. The chip printed
+w.sets — the session default, chosen from his readiness. The movements
+printed the program's own figures, which in week 4, the deload, drop to 2 on
+the last three exercises. Two different facts under one label.
+
+The chip reads the movements now, the same way the bar below it does. Where
+they differ it shows the range: "3–4 sets".
+
+(He will not see week 4's twos again for a month. v169 put him on week 1,
+where Pull Day is 4, 4, 3, 4, 3, 3, 3.)
+
+THE CONTROL, WHERE HE IS LOOKING
+--------------------------------
+The sets picker already existed. It was inside Session setup, which is
+collapsed, so in practice it did not. It now has its own bar directly under
+the session header, always open, and it says what the session actually says:
+
+    SETS PER EXERCISE · 3–4 NOW
+    [2] [3] [4] [5] [Program]
+
+On a generated session the last button reads Auto, as before. On a programmed
+one it reads Program, because that is what it hands back to.
+
+AND IT NOW DOES SOMETHING ON A PROGRAMMED DAY
+---------------------------------------------
+Two reasons it did not:
+
+1. setSessionSets rebuilt every movement from the catalogue and deleted its
+   set count so the sheet would fall back to the session default. Fine for a
+   generated session, destructive for a programmed one: the rebuild threw away
+   the rep target the program had written on each movement — "10", "12 each
+   side" — and re-derived a range in its place. It writes the number onto each
+   movement in place now and leaves everything else alone.
+
+2. The builder read the program's set count in preference to everything. So
+   even when the picker worked, the next rebuild put the program's figures
+   straight back. A figure HE set for today now outranks the program, exactly
+   as it already outranked readiness and the AI. It is still today-only: the
+   program is back tomorrow, and Program hands it back immediately.
+
+ONE MORE, FOUND BY MOVING THE BAR
+---------------------------------
+refreshTimeBar replaced "the first .setsbar on the page" with a fresh time
+bar. That was true while the time bar WAS the first one. Putting the sets
+picker above it meant every time nudge silently ate the sets picker and left
+two time bars. It was a rule about POSITION, and the position changed. Both
+bars carry ids now and are addressed by name.
+
+VERIFIED: programmed day — chip and bar agree at 3–4, tap 3 and all seven
+movements go to 3 with every rep target intact ("12 each side" survives), tap
+Program and the program's 4,4,3,4,3,3,3 comes back. Generated day — same, with
+Auto. Mobility — no sets bar at all, as it should be. 16 programmed sessions
+match, Week 1 of 4 holds, five tabs at 390px and 1440px, no console errors.
+
 AMIR PT — v169 · 17/09/2026
 ===========================
 
