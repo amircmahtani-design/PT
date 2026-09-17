@@ -1,3 +1,110 @@
+AMIR PT — v163 · 17/09/2026
+===========================
+
+"I told it to redo my pull day workout. It's repeated barbell row twice and
+honestly it's not a great workout. Perhaps we build good workouts into the
+system and just rotate them, because I'm not impressed with the AI building
+workouts." — plus a complete 4-week program.
+
+THE BUILDER'S OBJECTIVE WAS WRONG
+----------------------------------
+The pool-and-anchor builder was written to keep sessions VARIED. That is the
+wrong objective. Variety is not a training stimulus; progressive overload is,
+and he cannot overload a movement the app might swap out next week. Barbell
+Row twice on one sheet was the symptom; reinventing the session every week was
+the disease.
+
+The session for a given week and day is LOOKED UP now, not invented. Four
+weeks x five training days, his movements, his sets, his reps, in his order.
+The pools, anchors and accessory scoring still exist and still run for a custom
+day type or a location where the kit cannot support the program — but on a
+normal week in Dubai nothing is chosen at random.
+
+FOUR THINGS WERE QUIETLY REWRITING HIS PROGRAM
+-----------------------------------------------
+Putting the data in was twenty minutes. Making the app actually show it took
+finding four separate things that mangled it:
+
+1. THE GEAR "UPGRADE". A late step prefers the better-loaded version of a
+   movement. It turned Seated Cable Row into Barbell Row, Cable Fly into Bench
+   Press and Cable Curl into Barbell Curl, because a barbell outranks a cable
+   stack. Right when the app chose the movement, completely wrong when he did.
+   Skipped on a programmed day.
+
+2. THE CLOCK. planForTime fits an invented session to the time budget by
+   dropping movements off the end — so seven exercises went in and five came
+   out, every week, and what it deleted was the arm work. The program is
+   already written to 55-70 minutes. Skipped on a programmed day.
+
+3. applyLogTypeToEx REBUILT THE SCHEME from the catalogue every time it ran,
+   so "3 sets x 12" became "3 sets · 8-12". A programmed prescription is his
+   and outranks the guess.
+
+4. A BARBELL ROW IS NOT A ROWING MACHINE. inferredLogType matched /row\b/ to
+   catch the Concept2 and caught every row in the catalogue instead — Barbell
+   Row, Seated Cable Row, DB Row, Chest-supported Row. All classified as
+   DISTANCE work, so the log row asked for METRES instead of kilos and reps.
+   This was not a program bug: it has been wrong for every row he has ever
+   logged. Only the machine is distance now.
+
+WHAT HE GETS
+-------------
+Monday Upper Body, Tuesday Legs & Core, Wednesday Mobility, Thursday Pull,
+Friday Push. Week 1 Upper reads:
+
+    Incline DB Press    4 sets · 10 reps · rest 1m 45s
+    Lat Pulldown        4 sets · 10 reps · rest 1m 45s
+    Seated Cable Row    3 sets · 12 reps · rest 1m 45s
+    Lateral Raise       4 sets · 15 reps · rest 1m
+    Cable Fly           3 sets · 12 reps · rest 1m
+    DB Curl             3 sets · 12 reps · rest 1m
+    Triceps Pushdown    3 sets · 12 reps · rest 1m
+
+105s on a compound, 60s on an isolation — inside his 90-120 / 45-75 bands. The
+block is four weeks now rather than five, so the block and the program cannot
+drift apart, and week 4 is his written deload.
+
+PROGRESSION ALREADY WORKED — IT JUST HAD NOTHING STABLE TO PROGRESS
+---------------------------------------------------------------------
+With last week's numbers in, the card says exactly what he asked for:
+
+    Incline DB Press · LAST 22.5kg x 10, 10, 9, 8
+      → "Stay at 22.5kg. Master it with excellent form before we add load."
+    Lat Pulldown · LAST 50kg x 10, 10, 10, 10
+      → "52.5kg — 4 clean sets at 50kg, all about right. That's mastered."
+
+That is the behaviour he described, almost word for word. It was already built;
+what it lacked was a movement that came back week after week.
+
+THE COACH'S BRIEF
+-----------------
+Told plainly what it may change (weight, reps, rest, order, a like-for-like
+substitution when kit is unavailable) and what it may not (replacing a core
+movement, padding the session, rebuilding the day). If he asks to redo a day it
+must give him the PROGRAMMED session and coach the loads. The phrase "let's
+change your workout to keep your body guessing" is named as forbidden. When the
+block ends it may write the next one, keeping 70-80% of the movements.
+
+VERIFIED
+--------
+All 16 programmed sessions checked movement by movement against the program:
+every name, every set count, every rep target matches, in order, with no
+repeats. Rest bands correct throughout. Every row logs kilos and reps. Mobility
+day untouched — still the 15-move head-to-toe flow. 390px and 1440px, no
+overflow, no console errors.
+
+THREE THINGS HE SHOULD KNOW
+----------------------------
+· Seven movements are new to the catalogue and have no photograph of his yet,
+  so they show the Watch-demo link. They are listed at the top of
+  EXERCISES.txt; four of them appear every week.
+· The app estimates these sessions at 72-74 minutes against his 55-70 target.
+  That includes the 2km row. The program is his, so nothing was trimmed — but
+  if they run long, the last isolation exercise is the place to cut.
+· Wednesday still uses the 15-move head-to-toe mobility flow from v158 rather
+  than the 7-item lists in the document, because it covers more and he approved
+  it two days ago. Say the word if you would rather have the written version.
+
 AMIR PT — v162 · 16/09/2026
 ===========================
 

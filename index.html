@@ -2600,6 +2600,17 @@ const EXTRA_LIB={
  "Barbell Curl":{m:["arms"],eq:"bb",cue:"Elbows pinned to the ribs, no swinging.",wristAlt:"EZ bar or dumbbells — straight bar loads the wrist"},
  "Hip Abduction":{m:["legs"],eq:"band",cue:"Slow out, slower back. Glute medius.",wristAlt:"No wrist load — good"},
  "Cable Fly":{m:["chest"],eq:"mach",cue:"Soft elbows, hug the arms together, squeeze.",wristAlt:"Neutral handles"},
+ /* v163 — the seven movements his master program uses that the app did not
+    have. All cable or bodyweight, all doable on the rack's dual stacks. The
+    four without a photograph of his own show the Watch-demo link and are
+    named at the top of EXERCISES.txt. */
+ "Cable Curl":{m:["arms"],eq:"mach",cue:"Elbows pinned to your sides, curl with the cable — constant tension top to bottom.",wristAlt:"Neutral or rope handle"},
+ "Cable Pull-Through":{m:["legs"],eq:"mach",cue:"Rope between the legs, hinge back, then drive the hips forward and squeeze the glutes. Back stays flat.",wristAlt:"No wrist load"},
+ "Cable Straight-arm Pulldown":{m:["back"],eq:"mach",cue:"Arms long, pull the bar to your thighs from the lats alone. No elbow bend.",wristAlt:"Neutral — ideal"},
+ "Single-arm Lat Pulldown":{m:["back"],eq:"mach",cue:"One side at a time, let the shoulder blade travel all the way up, then pull it down and in.",wristAlt:"Neutral handle"},
+ "Single-arm Triceps Extension":{m:["arms"],eq:"mach",cue:"Elbow high and still, extend from the elbow only. Light — this is a finisher.",wristAlt:"Neutral handle"},
+ "Incline DB Curl":{m:["arms"],eq:"db",cue:"Lie back on the incline, arms hanging behind you. That stretch at the bottom is the whole point.",wristAlt:"Neutral grip — fine"},
+ "Reverse Crunch":{m:["core"],eq:"bw",cue:"Knees to chest, curl the hips off the floor. Slow down on the way back — no swinging.",wristAlt:"No wrist load"},
  "Chest-supported Row":{m:["back"],eq:"mach",cue:"Chest on the pad, row to the ribs. No cheating with the low back.",wristAlt:"Neutral grip — fine"},
  "Cable Lateral Raise":{m:["shoulders"],eq:"mach",cue:"Constant tension, lead with the elbow.",wristAlt:"Neutral grip — fine"},
  "Cable Crunch":{m:["core"],eq:"mach",cue:"Curl the ribs to the hips. It's a crunch, not a hip hinge.",wristAlt:"Rope, neutral grip"},
@@ -3631,7 +3642,9 @@ const PREHAB = [
 ];
 
 /* ===== THE BLOCK ===== */
-function blockWeeks(){ return 5; }          /* 4 working weeks + a deload */
+/* v163 — the block IS the program now: four weeks, the fourth written as the
+   deload. Five weeks meant the block and the program drifted apart by one. */
+function blockWeeks(){ return 4; }          /* 3 working weeks + a written deload */
 function currentBlock(){ return DB.block||null; }
 function blockWeek(){
   const b=currentBlock(); if(!b||!b.start) return 1;
@@ -3886,6 +3899,102 @@ function pickPrehab(){
   const top=scored.slice(0,4);
   return top.length? top[wk%top.length].x : PREHAB[0];
 }
+/* ==========================================================================
+   v163 · THE MASTER PROGRAM
+   --------------------------------------------------------------------------
+   "The app should STOP randomly generating completely different workouts every
+   week. The following 4-week block becomes Amir's STANDARD MASTER PROGRAM. The
+   AI Coach's job is to COACH the program, not constantly reinvent it."
+
+   He is right, and the evidence was on his screen: he asked for a Pull day and
+   got Barbell Row twice. The pool-and-anchor builder was designed to keep a
+   session varied, which is the wrong objective — variety is not a training
+   stimulus, progressive overload is, and you cannot overload a movement the
+   app might swap out next week.
+
+   So the session for a given week and day is now LOOKED UP, not invented. Four
+   weeks, five training days, in his order, with his set and rep targets. The
+   builder's pools, anchors and accessory scoring still exist and still run for
+   anything outside the program — a custom day type, a location where the kit
+   is missing — but on a normal week in Dubai nothing is chosen at random.
+
+   Rest comes from the movement: 105s on a compound, 60s on an isolation,
+   inside the 90-120 / 45-75 bands he specified.
+
+   Week 4 is the deload and is written as one: the volume is already reduced,
+   so nothing else needs to cut it.
+   ========================================================================== */
+const PROGRAM_WEEKS=4;
+const PROGRAM={
+  1:{
+    "Upper Body":[["Incline DB Press",4,"10"],["Lat Pulldown",4,"10"],["Seated Cable Row",3,"12"],
+                  ["Lateral Raise",4,"15"],["Cable Fly",3,"12"],["DB Curl",3,"12"],["Triceps Pushdown",3,"12"]],
+    "Legs & Core":[["Romanian Deadlift",4,"10"],["Bulgarian Split Squat",3,"10 each leg"],["Goblet Squat",3,"12"],
+                  ["Cable Pull-Through",3,"12"],["Calf Raise",4,"15"],["Cable Crunch",3,"12"],["Dead Bug",3,"10 each side"]],
+    "Pull Day":[["Lat Pulldown",4,"10"],["Seated Cable Row",4,"10"],["Single-arm Lat Pulldown",3,"12 each side"],
+                  ["DB Reverse Fly",4,"15"],["Face Pull",3,"15"],["Hammer Curl",3,"10"],["Cable Curl",3,"12"]],
+    "Push Day":[["Incline DB Press",4,"8–10"],["Bench Press",3,"10"],["DB Shoulder Press",3,"10"],
+                  ["Lateral Raise",4,"15"],["Cable Fly",3,"12"],["Triceps Pushdown",3,"12"],["Single-arm Triceps Extension",3,"12"]]
+  },
+  2:{
+    "Upper Body":[["Incline DB Press",4,"8–10"],["Lat Pulldown",4,"8–10"],["DB Single-arm Row",3,"10 each side"],
+                  ["Lateral Raise",4,"12–15"],["Cable Fly",3,"12"],["Hammer Curl",3,"10"],["Overhead Triceps Extension",3,"12"]],
+    "Legs & Core":[["Romanian Deadlift",4,"8"],["Bulgarian Split Squat",4,"8 each leg"],["Goblet Squat",3,"12"],
+                  ["Reverse Lunge",3,"10 each leg"],["Calf Raise",4,"15"],["Band Pallof Press",3,"12 each side"],["Reverse Crunch",3,"12"]],
+    "Pull Day":[["Lat Pulldown",4,"8–10"],["Chest-supported Row",4,"10"],["Cable Straight-arm Pulldown",3,"12"],
+                  ["DB Reverse Fly",4,"15"],["Face Pull",3,"12"],["DB Curl",3,"10"],["Hammer Curl",3,"12"]],
+    "Push Day":[["Incline DB Press",4,"8"],["Bench Press",4,"8–10"],["DB Shoulder Press",3,"10"],
+                  ["Cable Lateral Raise",4,"15"],["Cable Fly",3,"15"],["Triceps Pushdown",3,"10"],["Overhead Triceps Extension",3,"12"]]
+  },
+  3:{
+    "Upper Body":[["Incline DB Press",4,"8"],["Lat Pulldown",4,"10"],["Chest-supported Row",4,"10"],
+                  ["Cable Lateral Raise",4,"15"],["Cable Fly",3,"15"],["Incline DB Curl",3,"10"],["Triceps Pushdown",3,"10"]],
+    "Legs & Core":[["Romanian Deadlift",4,"8–10"],["Bulgarian Split Squat",3,"12 each leg"],["Goblet Squat",4,"10"],
+                  ["Cable Pull-Through",3,"15"],["Calf Raise",4,"20"],["Cable Crunch",3,"15"],["Dead Bug",3,"12 each side"]],
+    "Pull Day":[["Lat Pulldown",4,"8"],["DB Single-arm Row",4,"10 each side"],["Cable Straight-arm Pulldown",3,"15"],
+                  ["DB Reverse Fly",4,"15"],["Face Pull",3,"15"],["Incline DB Curl",3,"10"],["Cable Curl",3,"12"]],
+    "Push Day":[["Incline DB Press",4,"8"],["Bench Press",3,"10"],["DB Shoulder Press",3,"8–10"],
+                  ["Lateral Raise",5,"12–15"],["Cable Fly",3,"12"],["Triceps Pushdown",3,"12"],["Single-arm Triceps Extension",3,"12"]]
+  },
+  4:{
+    "Upper Body":[["Incline DB Press",3,"10"],["Lat Pulldown",3,"10"],["Seated Cable Row",3,"12"],
+                  ["Lateral Raise",3,"15"],["Cable Fly",3,"12"],["DB Curl",2,"12"],["Triceps Pushdown",2,"12"]],
+    "Legs & Core":[["Romanian Deadlift",3,"10"],["Bulgarian Split Squat",3,"10 each leg"],["Goblet Squat",3,"12"],
+                  ["Reverse Lunge",2,"10 each leg"],["Calf Raise",3,"15"],["Band Pallof Press",2,"12 each side"],["Reverse Crunch",2,"12"]],
+    "Pull Day":[["Lat Pulldown",3,"10"],["Seated Cable Row",3,"10"],["Cable Straight-arm Pulldown",3,"12"],
+                  ["DB Reverse Fly",3,"15"],["Face Pull",2,"15"],["Hammer Curl",2,"12"],["Cable Curl",2,"12"]],
+    "Push Day":[["Incline DB Press",3,"10"],["Bench Press",3,"10"],["DB Shoulder Press",2,"10"],
+                  ["Lateral Raise",3,"15"],["Cable Fly",2,"15"],["Triceps Pushdown",2,"12"]]
+  }
+};
+/* Which week of the block we are in, 1-4, wrapping so the block repeats until
+   the coach writes the next one. */
+function programWeek(){
+  let w=1;
+  try{ w=blockWeek(); }catch(e){ w=1; }
+  return ((Math.max(1,w)-1) % PROGRAM_WEEKS)+1;
+}
+/* The session for a day, or null when this day is not in the program (a
+   mobility day, a custom day type, a location that cannot run it). */
+function programFor(split,week){
+  const wk=week||programWeek();
+  const days=PROGRAM[wk]; if(!days) return null;
+  const list=days[split]; if(!list) return null;
+  /* Every movement has to be doable where he is standing. Away from the rack
+     the program cannot run, and the pools take over as before. */
+  const usable=list.filter(x=>{ try{ return canDoHere(x[0],locKey()) && !exBanned(x[0]); }catch(e){ return true; } });
+  if(usable.length < list.length-1) return null;
+  return usable.map(x=>({n:x[0], sets:x[1], reps:x[2]}));
+}
+function programIsDeloadWeek(){ return programWeek()===PROGRAM_WEEKS; }
+/* 90-120s on a compound, 45-75s on an isolation, as he specified. The generic
+   COMPOUND regex is built for the pools and calls an Incline DB Press and a
+   Lat Pulldown isolation work, which would have given the two biggest lifts of
+   the week a 60-second rest. The program names its own. */
+const PROGRAM_COMPOUND=new Set(["Incline DB Press","Incline Bench Press","Bench Press","DB Bench Press",
+  "DB Shoulder Press","Lat Pulldown","Single-arm Lat Pulldown","Seated Cable Row","Chest-supported Row",
+  "DB Single-arm Row","Romanian Deadlift","Bulgarian Split Squat","Goblet Squat","Reverse Lunge"]);
+function programRest(name){ return PROGRAM_COMPOUND.has(name)? 105 : 60; }
 function buildWorkout(){
   const ci=latestCheckin(), key=locKey(), L=LOC();
   /* Unknown reads as neutral, exactly as it did before any check-in existed —
@@ -3921,7 +4030,18 @@ function buildWorkout(){
      The anchors are fixed for the whole block so they can actually be loaded;
      everything after them moves, so the small muscles and the patterns that
      get skipped keep getting covered. */
+  /* ===== v163 · LOOKED UP, NOT INVENTED ==================================
+     The master program owns the five training days. Anchors, accessory
+     scoring and the rotation still exist and still run for anything outside
+     it — a custom day type, or a location where the kit cannot support the
+     program — but on a normal week nothing here is chosen at random, and the
+     same movements come back week after week so they can actually be loaded. */
+  let prog=null;
+  try{ prog=programFor(split); }catch(e){ prog=null; }
   let anchors=[], prehabPick=null;
+  if(prog){
+    main=prog.map(x=>x.n);
+  } else
   try{
     anchors=anchorsFor(split);
     const acc=pickAccessories(split,key,Math.max(0,4-anchors.length),anchors);
@@ -3953,7 +4073,13 @@ function buildWorkout(){
      under-estimates the session and it overruns. Fit against the real shape,
      and never trim an anchor or the prehab slot — cut accessories first. */
   const wanted=main.slice();
-  const fit=planForTime(main,tb,{anchors:anchors||[], keepLast:!!prehabPick});
+  /* v163 — planForTime fits an INVENTED session to the clock by dropping
+     movements off the end. On a programmed day that quietly deleted the arm
+     work: seven exercises went in and five came out, every week. The program
+     is already written to 55-70 minutes; it is the session, not a suggestion
+     for one. */
+  const fit = prog? {names:main, sets:sets}
+                  : planForTime(main,tb,{anchors:anchors||[], keepLast:!!prehabPick});
   /* v122 - the note above is written from readiness ("Recovered and firing -
      full volume") and the clock then quietly cuts the sets underneath it, so
      the sheet said 2 sets while the note promised 4 and nothing explained the
@@ -3992,7 +4118,12 @@ function buildWorkout(){
   const coolFor=buildCooldown(main,{wrist});
   /* In Dubai and Madrid, prefer the loaded version of a movement over the
      bodyweight one where the kit exists. */
-  if(!L.short){
+  /* v163 — and NOT on a programmed day. This step prefers the better-loaded
+     version of a movement, which is right when the app chose the movement and
+     completely wrong when he did: it turned Seated Cable Row into Barbell Row,
+     Cable Fly into Bench Press and Cable Curl into Barbell Curl, because a
+     barbell outranks a cable stack. His program says cable. It means cable. */
+  if(!L.short && !prog){
     const claimed=new Set(main);
     main=main.map(n=>{
       /* v86 — an anchor is deliberately fixed for the whole block. Swapping it
@@ -4029,6 +4160,8 @@ function buildWorkout(){
     trimNote: trimNote||null,
     date: today(),
     blockWeek: (function(){ try{ return blockWeek(); }catch(e){ return 1; } })(),
+    programWeek: prog? (function(){ try{ return programWeek(); }catch(e){ return null; } })() : null,
+    programmed: !!prog,
     blockWeeks: blockWeeks(),
     deloadWeek: (function(){ try{ return blockIsDeload(); }catch(e){ return false; } })(),
     anchors: anchors||[],
@@ -4042,17 +4175,23 @@ function buildWorkout(){
          need and the compounds less than they deserve. Travel sessions stay
          lean throughout. */
       const isAnchor=(anchors||[]).indexOf(n)>=0;
-      const n_sets = travel? sets : (isAnchor? 4 : 3);
+      const pEx = prog? prog.find(x=>x.n===n) : null;
+      const n_sets = pEx? pEx.sets : (travel? sets : (isAnchor? 4 : 3));
       /* v97 — if he has said a movement is reps rather than a hold (or the
          reverse), that decision outlives the session it was made in. */
       const tmd = (typeof isTimed==="function")? isTimed(n, e.timed) : !!e.timed;
       return {name:n, muscles:e.m, cue:e.cue, wristNote: flagged[n]||null, timed:tmd,
         sets:n_sets, anchor:isAnchor,
+        /* The program's own targets, so the sheet shows what he wrote rather
+           than a range the app re-derived. */
+        reps: pEx? pEx.reps : undefined,
+        restSec: pEx? programRest(n) : undefined,
+        programmed: !!pEx,
         /* v138 \u2014 was a third hand-written copy of the same string, so a rep
            range he had earned or typed was thrown away by every rebuild.
            One function decides what a scheme says. */
-        scheme: schemeFor(n, n_sets, {timed:tmd}),
-        rest: travel? "45\u201360s":"90s", rec: tmd?null:recommendLoad(n)};}),
+        scheme: pEx? (n_sets+" sets \u00b7 "+pEx.reps+(/\d/.test(pEx.reps)&&!/s$|sec|each/.test(pEx.reps)?" reps":"")) : schemeFor(n, n_sets, {timed:tmd}),
+        rest: pEx? fmtRest(programRest(n)) : (travel? "45\u201360s":"90s"), rec: tmd?null:recommendLoad(n)};}),
     cooldown:coolFor, recovery: travel?"Hydrate between drinks \ud83d\ude04. Grab some protein when you can. You're maintaining beautifully \u2014 don't stress the holiday.":"Hydrate (aim 3L). 30\u201340g protein within the hour. Lights out by 11. Recovery builds the physique."};
   /* v115 — readiness ADJUSTS the built session rather than replacing the
      programme, and a missed week biases what the next session covers. */
@@ -4065,6 +4204,11 @@ function buildWorkout(){
       for(let guard=0; guard<6; guard++){
         const est=estimateMinutes(_built.main, _built.sets, tb);
         if(est.total<=tb.mins+3){ _built.est=est; break; }
+        /* v163 — the trimmer exists to fit an invented session into the
+           clock. A programmed one is already written to 55-70 minutes, and
+           quietly dropping its last two exercises would undo the whole point
+           of having a program. */
+        if(prog) { _built.est=est; break; }
         const trimmable=_built.main.filter(e=>!e.anchor && (e.sets||_built.sets)>2);
         if(trimmable.length){
           const worst=trimmable[trimmable.length-1];
@@ -8876,7 +9020,14 @@ coachingDoctrine()+
 "The emoji in these directives is only a fallback for when there is no photograph of that movement. Do not spend effort choosing them.\n\n"+
 "WEEKLY SCHEDULE & DAY TYPES:\n"+
 "HIS WEEK STARTS ON MONDAY \u2014 always list and think Mon-first, never Sunday-first.\n"+
-"THE WEEK HE HAS SETTLED ON: Monday UPPER BODY, Tuesday legs and core, Wednesday mobility, Thursday pull, Friday push, Saturday and Sunday rest. Monday was a cardio day until he asked whether upper would serve the physique better; it does, because it takes chest, back and shoulders from once a week to twice, and twice beats once for building shape. HIS CONDITIONING IS THE 2KM ROW HE DOES AS THE WARM-UP ON EVERY LIFTING DAY, plus the walk on the front of the Wednesday flow. That is four rows a week. NEVER tell him the week is short of cardio and never propose swapping a lifting day for a cardio day: he has told me plainly that this covers it, and the app no longer counts a dedicated cardio DAY as the only way conditioning happens. If he ever says the conditioning is slipping, the answer is a longer row on the end of Monday, not a fourth rest day. SATURDAY AND SUNDAY ARE ALWAYS REST \u2014 do not schedule anything on them, and do not suggest he trains through the weekend. Three lifting days, one cardio, one mobility, two off. If you think a change would serve his goal better, say so once, briefly, and leave the decision to him; never just move a day.\n[[SET_WEEKDAY: Monday | Cardio Day]] · [[SET_WEEKLY_SCHEDULE: Mon Cardio Day; Tue Pull Day; Wed Full Body; Thu Push Day; Fri Legs & Core; Sat Upper Body; Sun Rest]] · [[CREATE_DAY_TYPE: Mobility Day]] · [[CREATE_DAY_TYPE: Cardio Day | kind:cardio | note:Zone 2 engine work]] · [[REMOVE_SCHEDULE_DAY_TYPE: Rest]]\n"+
+"THE WEEK HE HAS SETTLED ON: Monday UPPER BODY, Tuesday legs and core, Wednesday mobility, Thursday pull, Friday push, Saturday and Sunday rest. Monday was a cardio day until he asked whether upper would serve the physique better; it does, because it takes chest, back and shoulders from once a week to twice, and twice beats once for building shape. === THE MASTER PROGRAM — READ THIS BEFORE CHANGING ANY SESSION ===\n"+
+"He has written a 4-week block and it is now what the app builds. Monday Upper Body, Tuesday Legs & Core, Wednesday Mobility, Thursday Pull, Friday Push. Week 4 is the deload and is already written as one. The block repeats until he asks for a new one.\n"+
+"YOUR JOB IS TO COACH THIS PROGRAM, NOT TO REINVENT IT. He said it plainly: \"The app should STOP randomly generating completely different workouts every week. The AI Coach's job is to COACH the program, not constantly reinvent it.\" Variety is not a training stimulus. Progressive overload is, and he cannot overload a movement you keep swapping out.\n"+
+"WHAT YOU MAY CHANGE FREELY: the weight, the rep target, the rest, the order of the exercises, and a like-for-like substitution when the kit is genuinely unavailable (travelling, a machine occupied). Coach every set: what he lifted last time, what to aim for today, when to add load and when to hold.\n"+
+"WHAT YOU MAY NOT DO: replace a core movement because it would be more interesting, add exercises to pad the session, or rebuild the day. Incline Press, Lat Pulldown, a row, Lateral Raise, Romanian Deadlift and Bulgarian Split Squat stay unless there is a real reason. If he asks you to redo or rebuild a day, give him the PROGRAMMED session for that day and week and coach the loads — do not generate a different one.\n"+
+"HOW TO TALK ABOUT PROGRESSION: \"Last time you completed all four sets at 60kg. Today let's try 62kg.\" or \"You missed the final two reps last time, so stay at the same load today and complete all four sets before increasing.\" NEVER: \"let's change your workout to keep your body guessing.\" Never raise the load if the reps or the form went backwards.\n"+
+"WHEN THE BLOCK ENDS you may write the next 4-week block, but keep 70-80% of the movements so the loading continues; only 20-30% rotates. The goal never changes: lean athletic Mario Casas physique — lateral delts and upper chest first, then lat width and upper back, then arms for definition, a flat waist, and legs trained seriously but for athletic proportion rather than size.\n\n"+
+"HIS CONDITIONING IS THE 2KM ROW HE DOES AS THE WARM-UP ON EVERY LIFTING DAY, plus the walk on the front of the Wednesday flow. That is four rows a week. NEVER tell him the week is short of cardio and never propose swapping a lifting day for a cardio day: he has told me plainly that this covers it, and the app no longer counts a dedicated cardio DAY as the only way conditioning happens. If he ever says the conditioning is slipping, the answer is a longer row on the end of Monday, not a fourth rest day. SATURDAY AND SUNDAY ARE ALWAYS REST \u2014 do not schedule anything on them, and do not suggest he trains through the weekend. Three lifting days, one cardio, one mobility, two off. If you think a change would serve his goal better, say so once, briefly, and leave the decision to him; never just move a day.\n[[SET_WEEKDAY: Monday | Cardio Day]] · [[SET_WEEKLY_SCHEDULE: Mon Cardio Day; Tue Pull Day; Wed Full Body; Thu Push Day; Fri Legs & Core; Sat Upper Body; Sun Rest]] · [[CREATE_DAY_TYPE: Mobility Day]] · [[CREATE_DAY_TYPE: Cardio Day | kind:cardio | note:Zone 2 engine work]] · [[REMOVE_SCHEDULE_DAY_TYPE: Rest]]\n"+
 "(CREATE_DAY_TYPE options after the name, pipe-separated: kind:cardio|mobility|strength, main:Ex1,Ex2, sets:4, note:...)\n\n"+
 "EXERCISE LIBRARY (add anything not built-in):\n"+
 "[[ADD_LIBRARY_EXERCISE: Seated Cable Row | muscles:back,arms | cue:Drive elbows to hips | category:Pull | equipment:cable | sets:3 | reps:10 | wrist:neutral grip | media:https://...gif]]  (only name is required)\n\n"+
@@ -12670,7 +12821,7 @@ function scheduleInApp(){
    v18 ADDITIONS — draggable rest timer · weekly training memory · AI planner
    · Firestore sync
    ========================================================================== */
-const APP_VERSION="v162 · 16/09/2026";
+const APP_VERSION="v163 · 17/09/2026";
 
 /* ===== 1. REST TIMER — drag it anywhere so it never blocks the chat box ===== */
 let _rtDrag=null;
@@ -16826,7 +16977,14 @@ function inferredLogType(name){
   const e=EX(name)||guessEx(name)||{};
   if(e.timed) return "time";
   if(typeof isLoadless==="function" && isLoadless(name)) return "reps";
-  if(/carry|walk|farmer|sled|run|row\b|sprint|shuttle/i.test(String(name))) return "distance";
+  /* ===== v163 · A BARBELL ROW IS NOT A ROWING MACHINE ==================
+     "row\\b" was meant to catch the Concept2 and caught every row in the
+     catalogue instead — Barbell Row, Seated Cable Row, DB Row, Chest-supported
+     Row. All of them were classified as DISTANCE work, so the log row asked
+     for metres instead of kilos and reps, and the rep target was thrown away.
+     His programmed "Seated Cable Row 3 x 12" came out as "3 sets · 6-10" with
+     a metres box under it. Only the machine is distance. */
+  if(/carry|walk|farmer|sled|\brun\b|sprint|shuttle|concept ?2|\berg\b|rowing machine|^row\b/i.test(String(name))) return "distance";
   const eq=eqOf(name);
   return (eq==="bw")? "reps" : "weight_reps";
 }
@@ -16887,7 +17045,14 @@ function applyLogTypeToEx(e){
   if(!e) return e;
   const t=logTypeOf(e.name,e), meta=LOG_TYPES[t];
   e.timed=!!meta.timed;
-  try{ e.scheme=schemeFor(e.name, exSets(e), e); }catch(err){}
+  /* v163 — this rebuilt the scheme from the catalogue every time it ran, which
+     threw away the program's own rep target: "3 sets · 12" became "3 sets ·
+     8-12". A programmed prescription is his, and outranks the guess. */
+  if(e.programmed && e.reps){
+    e.scheme=exSets(e)+" sets \u00b7 "+e.reps+(/\d/.test(e.reps)&&!/s$|sec|each/.test(e.reps)?" reps":"");
+  } else {
+    try{ e.scheme=schemeFor(e.name, exSets(e), e); }catch(err){}
+  }
   if(meta.weight){ try{ e.rec=recommendLoad(e.name); }catch(err){} }
   else delete e.rec;
   return e;
