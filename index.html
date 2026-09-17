@@ -630,6 +630,8 @@ details.sec2[open] .secsum2:after{content:"\2212";}
 .psec.moved{outline:2px solid var(--orange);outline-offset:3px;}
 /* v171 — a chip that is a control says so, quietly. */
 .tapchip{cursor:pointer;}
+/* v175 — the picker supplies its own spacing inside a collapsible card. */
+#setsBarWrap .setsbar{padding:0;border-bottom:none;}
 .tapchip .pe{font-size:10px;font-weight:800;text-transform:uppercase;letter-spacing:.5px;opacity:.55;margin-left:5px;}
 .flashbar{outline:2px solid var(--orange);outline-offset:3px;border-radius:18px;transition:outline-color .3s;}
 .smove{display:flex;gap:5px;margin-left:auto;}
@@ -5836,15 +5838,30 @@ function pickAllReps(){
    reads and they were not controls. */
 function openSessionEditor(){
   const el=document.getElementById('setsBarWrap'); if(!el) return;
+  if(!el.open) el.open=true;                      /* v175 \u2014 it is closed by default */
   try{ el.scrollIntoView({behavior:'smooth', block:'center'}); }catch(e){ el.scrollIntoView(); }
   el.classList.add('flashbar');
   setTimeout(()=>{ try{ el.classList.remove('flashbar'); }catch(e){} }, 1700);
 }
 /* The always-visible copy. ONE function builds it, so the bar and anything
    else that shows a set count can never disagree. */
+/* ===== v175 \u00b7 IT FOLDS AWAY TOO ======================================
+   "The edit should be collapsible." Right: it is a control he uses once and
+   then scrolls past for the rest of the session, and at v171 it grew a second
+   row and started taking half the screen. Closed by default, with the current
+   answer on the summary line so he does not have to open it to read it \u2014 and
+   the EDIT chips in the header open it on the way to it. */
 function setsBarHTML(w){
   if(!w || !(w.main||[]).length || w.sets===0) return "";
-  return "<div class='sheet' id='setsBarWrap' style='margin-bottom:12px'>"+setsPickerHTML(w)+"</div>";
+  const r=setsRange(w), rp=repsSummary(w);
+  const sum="Sets &amp; reps \u00b7 <b>"+(r? r.text : w.sets)+" sets</b>"+(rp&&rp.text? " \u00b7 <b>"+escapeHtml(rp.text)+"</b> reps":"");
+  const open=!!(DB.prefs && DB.prefs.setsBarOpen);
+  return "<details class='hcard mt' id='setsBarWrap'"+(open?" open":"")+" ontoggle='rememberSetsBar(this)'>"+
+    "<summary class='hsum'><span class='t'>"+sum+"</span><span class='chev'>\u203a</span></summary>"+
+    "<div class='hbody'>"+setsPickerHTML(w)+"</div></details>";
+}
+function rememberSetsBar(el){
+  try{ DB.prefs=DB.prefs||{}; DB.prefs.setsBarOpen=!!el.open; save(); }catch(e){}
 }
 /* ===== v110 \u00b7 REST FOR THE WHOLE SESSION, WHERE HE IS LOOKING =========
    Both rest defaults existed, buried in Settings. This is the screen he is on
@@ -12691,7 +12708,7 @@ function scheduleInApp(){
    v18 ADDITIONS — draggable rest timer · weekly training memory · AI planner
    · Firestore sync
    ========================================================================== */
-const APP_VERSION="v174 · 17/09/2026";
+const APP_VERSION="v175 · 17/09/2026";
 
 /* ===== 1. REST TIMER — drag it anywhere so it never blocks the chat box ===== */
 let _rtDrag=null;

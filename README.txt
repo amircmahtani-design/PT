@@ -1,3 +1,31 @@
+AMIR PT — v175 · 17/09/2026
+===========================
+
+"The edit should be collapsible."
+
+Right. It is a control he uses once and then scrolls past for the rest of the
+session, and at v171 it grew a second row for reps and started taking half the
+screen. On his phone the Start training button was below the fold.
+
+Closed by default, with the answer on the summary line so he never has to open
+it to read it:
+
+    Sets & reps · 2–4 sets · 10–15 reps                          ›
+
+The EDIT chips in the header open it on their way to it, so the route he asked
+for in v171 still works in one tap. It remembers whether he left it open, and
+the summary updates the moment he changes anything — tap 3 and it reads
+"3 sets" before the fold closes.
+
+Third collapsible in three versions (the plan card at v173, which then went
+with the planner at v174, and this one). The pattern is the same every time:
+something useful gets added at the top of Train, and it is useful once.
+
+VERIFIED: closed on load, opens from the EDIT chip, summary follows a change
+while open, closed state survives a reload; Start training is back above the
+fold; five screens clean at 390px and 360px; 16 programmed sessions match; no
+console errors.
+
 AMIR PT — v174 · 17/09/2026
 ===========================
 
