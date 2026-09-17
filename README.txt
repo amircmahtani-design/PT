@@ -1,3 +1,65 @@
+AMIR PT — v167 · 17/09/2026
+===========================
+
+"It also says week 4 out of 5 I want it to be week 1 out of 4. All the saved
+workouts stay in progress but this is my first week of really training."
+
+WEEK 4 OF 5
+-----------
+His stored block was the five-week one, started 24 days before the master
+program existed. blockExpired could not retire it: it compares against
+blockWeeks(), which is 4 now, and week 4 has not expired. So the block sat
+there forever, and the header read a week of a block the app no longer has
+against a program that only runs to four.
+
+ensureBlock now also starts a new block when the stored one's LENGTH is not
+the current length. A block of a different shape is by definition from an
+older version of the app. His starts today: week 1 of 4, program week 1.
+
+Logged sets live in DB.strength, never on the block, so his history and his
+progression are untouched — the saved workouts stay in Progress exactly as
+they were. That was his condition and it is worth being explicit about.
+
+AND THE HEADER READ THE SHEET, NOT THE BLOCK
+--------------------------------------------
+blockWeek and blockWeeks are stamped onto a session when it is built, and the
+bar printed the stamps. A session that survives a block change — one with
+sets already logged, which v166 deliberately leaves alone — therefore went on
+printing the old week and the old block length under the new block. The bar is
+live status, so it reads the block now and falls back to the stamp.
+
+THREE THINGS ON THE SAME SHEET THAT DESCRIBED A SESSION HE NO LONGER HAS
+------------------------------------------------------------------------
+All three came from the same place: a programmed session being described by
+code written for a generated one.
+
+1. "4 sets · 8–12 reps" above a sheet of 4x10, 4x10, 3x12 each side, 4x15.
+   A programmed session has no single set count or rep range. It says
+   "Programmed · 7 movements · sets and reps per exercise" instead, and the
+   two old chips stay on generated sessions where they are true.
+
+2. "65 min · 4 sets · rest 1m" in the session setup line, from the global
+   defaults rather than the sheet. Now "3–4 sets · rest 1m–1m 45s", read off
+   the movements.
+
+3. "Seated Cable Row is a main lift sitting after isolation work. Move it up."
+   about the second movement of the day, in the order the program specifies.
+   COMPOUND is a name pattern: "Lat Pulldown" does not match it, "Seated Cable
+   Row" does (row$). So the opening lift read as isolation and the one after
+   it read as a main lift. The order rule is for sessions the app assembled
+   and no longer runs on programmed ones.
+   The gap in COMPOUND is real and wider than this — it misses every pulldown
+   — but it also drives rest and the time estimate, so widening it is its own
+   change with its own testing. NOT done here. Noted.
+
+VERIFIED against his exact state: five-week block 24 days old, old six-day
+schedule, this morning's session with Barbell Row in it. After the upgrade:
+Week 1 of 4, program week 1, the sheet is week 1 Thursday as written, the
+Barbell Row history still there. Mid-session case checked separately — two
+sets logged today, old session left standing, both sets intact, and the bar
+correctly reads Week 1 of 4 over it. 16 programmed sessions still match,
+mobility 12/12, 390px and 1440px, no overflow, no console errors.
+
 AMIR PT — v166 · 17/09/2026
 ===========================
 

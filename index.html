@@ -3749,7 +3749,17 @@ function newBlock(){
   return DB.block;
 }
 function ensureBlock(){
-  if(!DB.block || blockExpired() || DB.block.loc!==locKey()) newBlock();
+  /* ===== v167 · A BLOCK FROM BEFORE THE PROGRAM IS NOT THIS PROGRAM ======
+     His block was still the five-week one, started weeks before the master
+     program existed, so Train opened on "Week 4 of 5" — a week of a block
+     that no longer exists, against a program that only has four. blockExpired
+     could not catch it: week 4 of a 4-week block has not expired.
+     A stored block whose length is not the current length is by definition
+     from an older shape of the app. Start a fresh one, dated today: week 1
+     of 4, week 1 of the program. Logged sets live in DB.strength and are not
+     touched by this — his history and his progression stay exactly as they
+     are. */
+  if(!DB.block || blockExpired() || DB.block.loc!==locKey() || DB.block.weeks!==blockWeeks()) newBlock();
   /* A split added since the block started still needs anchors. */
   const key=locKey();
   Object.values(DB.schedule||{}).forEach(sp=>{
@@ -5861,10 +5871,31 @@ function setupSummary(w){
   const bits=[];
   try{ const t=timeBudget(); if(t&&t.mins) bits.push(t.mins+" min"); }catch(e){}
   try{ bits.push(exSetsLabel(w)); }catch(e){ if(w&&w.sets) bits.push(w.sets+" sets"); }
-  try{ const r=restDefaults(); bits.push("rest "+fmtRest(r.sets)); }catch(e){}
+  try{ bits.push(exRestLabel(w)); }catch(e){}
   return bits.filter(Boolean).join(" \u00b7 ");
 }
-function exSetsLabel(w){ return (w&&w.sets? w.sets+" sets" : ""); }
+/* v167 — a programmed session carries its own set count and its own rest on
+   every movement, so one global figure in the summary was simply wrong: it
+   read "4 sets · rest 1m" over a sheet of 4x10, 3x12 and 105s compound
+   rests. Summarise what is actually on the sheet. */
+function exSetsLabel(w){
+  try{
+    if(w && w.programmed && (w.main||[]).length){
+      const ns=[...new Set(w.main.map(e=>e.sets).filter(n=>n>0))].sort((a,b)=>a-b);
+      if(ns.length) return (ns.length>1? ns[0]+"–"+ns[ns.length-1] : ns[0])+" sets";
+    }
+  }catch(e){}
+  return (w&&w.sets? w.sets+" sets" : "");
+}
+function exRestLabel(w){
+  try{
+    if(w && w.programmed && (w.main||[]).length){
+      const rs=[...new Set(w.main.map(e=>e.restSec).filter(n=>n>0))].sort((a,b)=>a-b);
+      if(rs.length) return "rest "+(rs.length>1? fmtRest(rs[0])+"–"+fmtRest(rs[rs.length-1]) : fmtRest(rs[0]));
+    }
+  }catch(e){}
+  try{ return "rest "+fmtRest(restDefaults().sets); }catch(e){ return ""; }
+}
 function setupSecHTML(w){
   return sheetSec("setup","Session setup", setupSummary(w),
     dayPickHTML(w)+timeBarHTML(w)+setsPickerHTML(w)+restPickerHTML(w), false);
@@ -6041,7 +6072,14 @@ function _renderSheetInner(w){
   const exHTML=w.main.map((e,i)=>exBlockHTML(e,i)).join('');
   host.innerHTML=
   "<div class='sheet'>"+wkHeaderHTML(w)+
-    "<div class='meta'><span class='pill orange'>"+w.sets+" sets</span><span class='pill'>"+w.reps+"</span><span class='pill purple'>"+w.phase+"</span></div></div>"+
+    /* v167 — a programmed session does not have ONE set count or ONE rep
+       range: it is 4x10, 4x10, 3x12 each side, 4x15... Printing "4 sets ·
+       8-12 reps" above it contradicts every line underneath. Those two chips
+       describe a generated session, so they only appear on one. */
+    "<div class='meta'>"+(w.programmed
+      ? "<span class='pill orange'>Programmed</span><span class='pill'>"+w.main.length+" movements · sets and reps per exercise</span>"
+      : "<span class='pill orange'>"+w.sets+" sets</span><span class='pill'>"+w.reps+"</span>")+
+      "<span class='pill purple'>"+w.phase+"</span></div></div>"+
   "<div id='wkMenu' data-open='0'></div>"+
   fixBar+
   circuitBarHTML()+
@@ -6079,9 +6117,15 @@ function _renderSheetInner(w){
         if(hd && hd.parentNode) hd.parentNode.insertBefore(bar, hd.nextSibling);
         else host.insertBefore(bar, host.firstChild);
       }
-      bar.innerHTML="<span class='bw'>Week "+w.blockWeek+" of "+w.blockWeeks+"</span>"+
+      /* v167 — the block is live state, not a property of the sheet. Stamped
+         values date from the build, so a session that survives a block change
+         (one with sets already logged) printed the old week and the old block
+         length. Read them now, fall back to the stamp. */
+      const _bw=(function(){ try{ return blockWeek(); }catch(e){ return w.blockWeek; } })();
+      const _bn=(function(){ try{ return blockWeeks(); }catch(e){ return w.blockWeeks; } })();
+      bar.innerHTML="<span class='bw'>Week "+_bw+" of "+_bn+"</span>"+
         (w.trimNote? "<span class='bt'>\u23f3 "+escapeHtml(w.trimNote)+"</span>":"")+
-        (w.deloadWeek? "<span class='bd'>Deload</span>":"")+
+        ((function(){ try{ return blockIsDeload(); }catch(e){ return !!w.deloadWeek; } })()? "<span class='bd'>Deload</span>":"")+
         ((w.anchors&&w.anchors.length)? "<span class='ba'>Anchors: "+w.anchors.map(escapeHtml).join(" + ")+"</span>":"")+
         ((w.prehab)? "<span class='bp'>"+escapeHtml(w.prehab.n)+" — "+escapeHtml(w.prehab.why)+"</span>":"");
     }
@@ -12932,7 +12976,7 @@ function scheduleInApp(){
    v18 ADDITIONS — draggable rest timer · weekly training memory · AI planner
    · Firestore sync
    ========================================================================== */
-const APP_VERSION="v166 · 17/09/2026";
+const APP_VERSION="v167 · 17/09/2026";
 
 /* ===== 1. REST TIMER — drag it anywhere so it never blocks the chat box ===== */
 let _rtDrag=null;
@@ -19538,10 +19582,24 @@ function validateWorkout(w,opts){
   }
   /* 6 · order. A heavy compound after the isolation work that fatigues it is
      the wrong way round; say so rather than silently reshuffling his choices. */
-  const firstAcc=w.main.findIndex(e=>!isCompound(e.name)&&!e.anchor);
-  const lateCompound=w.main.findIndex((e,i)=>i>firstAcc&&firstAcc>=0&&(isCompound(e.name)||e.anchor));
-  if(firstAcc>=0&&lateCompound>firstAcc)
-    warnings.push(w.main[lateCompound].name+" is a main lift sitting after isolation work. Move it up unless that's deliberate.");
+  /* ===== v167 · DO NOT SECOND-GUESS THE PROGRAM ========================
+     On a programmed day this fired on its own sheet: COMPOUND is a name
+     pattern, and "Lat Pulldown" does not match it while "Seated Cable Row"
+     does (row$). So the opening movement read as isolation, the second read
+     as a main lift, and Train printed "Seated Cable Row is a main lift
+     sitting after isolation work. Move it up" — about the correct order,
+     written into the program, on the line it already occupies.
+     The program owns the order of a programmed session. This rule is for
+     sessions that were assembled, and it still runs on every one of them.
+     (The gap in COMPOUND is real and wider than this — it misses every
+     pulldown — but it also sets rest and time estimates, so widening it is
+     its own change with its own testing, not a line in this one.) */
+  if(!w.programmed){
+    const firstAcc=w.main.findIndex(e=>!isCompound(e.name)&&!e.anchor);
+    const lateCompound=w.main.findIndex((e,i)=>i>firstAcc&&firstAcc>=0&&(isCompound(e.name)||e.anchor));
+    if(firstAcc>=0&&lateCompound>firstAcc)
+      warnings.push(w.main[lateCompound].name+" is a main lift sitting after isolation work. Move it up unless that's deliberate.");
+  }
   /* 7 · group sanity. */
   resyncGroups(w);
   Object.keys(w.groups||{}).forEach(g=>{
