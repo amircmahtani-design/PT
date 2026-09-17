@@ -987,7 +987,6 @@ a{color:var(--orange);}
       <summary class="hsum"><span class="t">Weekly plan</span><span class="chev">›</span></summary>
       <div class="hbody">
       <div class="card-title"><span>Weekly plan</span><span class="itin-edit">pick from the dropdowns</span></div>
-      <div id="weekPlanOut"></div>
       <div id="itinList"></div>
       </div>
     </details>
@@ -1048,8 +1047,6 @@ a{color:var(--orange);}
          lines and ran the button off the right edge. A header is a title. The
          button gets its own row, where its width is nobody else's problem. -->
     <div class="head"><div><div class="greet">Log as you go</div><h1 class="display">Train</h1></div></div>
-    <button class="btn sec" id="planBtn" style="margin-bottom:14px" onclick="aiPlanToday(true)">🧠 Build today’s session</button>
-    <div id="planOut"></div>
     <!-- v130 — the day picker only stands on its own when there is no session
          on screen to put it inside. With a sheet up it lives in Session setup,
          so Train opens on the workout itself. -->
@@ -1620,7 +1617,7 @@ const DEFAULTS = {
   /* His nutritionist owns these. They live here only so the coach can see what
      the deficit is doing to his RECOVERY and program around it. */
   nutrition:{calorieTarget:1500, proteinTarget:null, phase:"Lean recomp — nutritionist-led", log:[]},
-  cardio:null, readiness:null, aiPlan:null, restCall:null, setsOverride:null, completed:{}, tomorrow:null,
+  cardio:null, readiness:null, restCall:null, setsOverride:null, completed:{}, tomorrow:null,
   session:null,
   wx:{key:"", on:false, plan:"free", synced:null, count:0, quota:null, quotaLeft:null,
       autoGif:false, reqMonth:null, reqUsed:0, fedHost:0},
@@ -1633,7 +1630,7 @@ const DEFAULTS = {
   rest:{ sets:90, ex:150 },
   cloud:{on:true, config:JSON.stringify(FB_CONFIG,null,2), syncId:FB_SYNC_DEFAULT, last:null, syncKeys:false},
   prefs:{visualMode:"auto", showIcons:true, exerciseGifs:true, workoutFormat:"list", coachStyle:"Warm, confident and direct",
-         autoPlan:true, restPos:null, restMini:false, sessPos:null,
+         restPos:null, restMini:false, sessPos:null,
          /* v115 — 45 seconds a side is his default now, and it is a stored
             preference rather than whatever each library entry happened to say. */
          cooldown:{sec:45, perSide:true, source:"default"}},
@@ -2167,7 +2164,7 @@ function go(s){
   if(s==='coach') renderChat();
   if(s==='progress'){ drawChart(); renderRowingLog(); try{ renderWeightLog(); }catch(e){} }
   if(s==='progress'){ try{ renderHistory(); }catch(e){} }
-  if(s==='workout'){ ensureWorkout(); renderReadiness(); maybeAutoPlan(); }
+  if(s==='workout'){ ensureWorkout(); renderReadiness(); }
   if(s==='today'){ renderWeek(); renderReadiness(); renderFirstRun(); renderTomorrow(); }
   _curScreen=s;
   try{ dedupeHeadings(); foldProse(); }catch(e){}
@@ -5595,7 +5592,8 @@ function upgradeTodayToProgram(){
 function ensureWorkout(){
   /* v115 — a day he deliberately cleared or turned into a rest day is a
      DECISION, and the builder does not get to overrule a decision. This is the
-     first of the guards; maybeAutoPlan() and aiPlanToday() have their own. */
+     first of the guards. (The AI planner had two more; it was removed in
+     v174 — the program builds the session and nothing overwrites it.) */
   if(todayCleared()){
     const host=document.getElementById('workoutSheet');
     if(host) host.innerHTML=clearedSheetHTML();
@@ -7948,13 +7946,12 @@ async function submitCheckin(){
   else DB.checkins.push(ci);
   if(ci.weight){ DB.weights.push(ci.weight); if(DB.weights.length>400) DB.weights=DB.weights.slice(-400); }
   if(ci.plan==="Rest"){ DB.dayOverride={date:today(),split:"Rest"}; }
-  DB.workout=null; DB.aiPlan=null; save();
+  DB.workout=null; save();
   const btn=document.getElementById('ciSubmit'); btn.disabled=true; btn.innerHTML="<span class='spin'></span> Analysing…";
   const analysis=await analyseCheckin(ci);
   btn.disabled=false; btn.innerHTML="Analyse My Day";
   document.getElementById('ciResult').innerHTML="<div class='card mt'><div class='card-title'><span>Coach’s read · "+LOC().label+"</span></div><div class='coachnote'><div class='who'>◆ Coach</div>"+analysis+"</div><button class='btn green mt' onclick=\"go('workout')\">Open today's workout</button></div>";
   renderMetrics(); try{ drawChart(); renderWeightLog(); }catch(e){} updateStatus(); renderItin(); renderWeek(); renderReadiness(); toast("Check-in saved · "+LOC().label);
-  maybeAutoPlan();
 }
 async function analyseCheckin(ci){
   if(DB.ai.provider==="openai"&&DB.ai.key){
@@ -9555,7 +9552,6 @@ function coachSwapWorkoutEx(oldRaw,newRaw){
 /* Set the sets for today's session.
    manual=true  \u2192 Amir asked, so it sticks even when the workout is rebuilt or replanned.
    manual=false \u2192 the coach/AI proposing, which never overrules a manual choice. */
-let _aiPlanningSets=false;
 function setSessionSets(n,manual){
   n=parseInt(n); if(isNaN(n)||n<1||n>8) return null;
   coachEnsureWorkout();
@@ -9579,7 +9575,9 @@ function setSessionSets(n,manual){
   finalizeCoachEdit();
   return n;
 }
-function coachSetSets(n){ return setSessionSets(n,!_aiPlanningSets); }
+/* v174 — the only caller that ever set this to "not manual" was the AI
+   planner, which is gone. A set change asked for out loud is his. */
+function coachSetSets(n){ return setSessionSets(n,true); }
 function clearSetsOverride(){ DB.setsOverride=null; DB.workout=null; save(); ensureWorkout(); }
 function pickSets(n){
   const wasProg=!!(DB.workout&&DB.workout.programmed);
@@ -9737,11 +9735,11 @@ function normLoc(v){ const s=String(v||"").toLowerCase();
   if(/dubai|uae|home|emirates|jlt|business bay/.test(s)) return "dubai";
   return LOCS[s]?s:null; }
 function setLocation(key){ const k=LOCS[key]?key:"dubai"; if(DB.profile.location===k) return LOCS[k].label;
-  DB.profile.location=k; DB.workout=null; DB.aiPlan=null; save();
+  DB.profile.location=k; DB.workout=null; save();
   try{ ensureWorkout(); }catch(e){} try{ updateStatus(); }catch(e){} try{ renderWeek(); }catch(e){}
   return LOCS[k].label; }
 function coachSetLocation(v){ const k=normLoc(v); if(!k) return null; return setLocation(k); }
-function coachSetMode(v){ DB.profile.mode=String(v||"").trim(); DB.workout=null; DB.aiPlan=null; save(); ensureWorkout(); updateStatus(); return DB.profile.mode; }
+function coachSetMode(v){ DB.profile.mode=String(v||"").trim(); DB.workout=null; save(); ensureWorkout(); updateStatus(); return DB.profile.mode; }
 function coachSetEquipment(v){ const raw=String(v||"").trim(); const parts=raw.split('|').map(x=>x.trim());
   const k=(parts.length>1&&normLoc(parts[0]))||locKey(); const txt=parts.length>1?parts.slice(1).join(' | '):raw;
   DB.profile.equip=DB.profile.equip||{}; DB.profile.equip[k]=txt; if(k==="dubai") DB.profile.equipment=txt;
@@ -9836,13 +9834,13 @@ function coachEx(name){
 }
 /* ===== v81 · A SESSION HE HAS TOUCHED IS NOT THE PLANNER'S TO REBUILD =====
    The coach would reorder the session, say so, and mean it \u2014 DB.workout.main
-   really did change. Then he'd open Train, maybeAutoPlan() would fire because
+   really did change. Then he'd open Train, the auto-planner would fire because
    no AI plan existed for today yet, and it would rebuild the whole session
    from scratch. His change was real for about four seconds.
 
-   Anything that deliberately edits the session now stamps it. The auto-planner
-   leaves a stamped session alone; the Build button still works, because that
-   is him asking. */
+   Anything that deliberately edits the session stamps it, and that stamp is
+   still what keeps the block builder and the version upgrade off it. The AI
+   planner this guard was written against is gone as of v174. */
 function markSessionTouched(){ stampWorkout(); }
 function coachAfterEx(){
   markSessionTouched();
@@ -12624,7 +12622,7 @@ function saveProfile(){
   DB.profile.equip=DB.profile.equip||{};
   DB.profile.equip.dubai=val('setEquipDubai').trim(); DB.profile.equip.madrid=val('setEquipMadrid').trim(); DB.profile.equip.greece=val('setEquipGreece').trim();
   DB.profile.equipment=DB.profile.equip.dubai;
-  DB.workout=null; DB.aiPlan=null; save(); updateStatus(); document.getElementById('greetName').textContent=DB.profile.name; toast("Profile saved — coach updated");
+  DB.workout=null; save(); updateStatus(); document.getElementById('greetName').textContent=DB.profile.name; toast("Profile saved — coach updated");
 }
 function exportData(){
   const out=Object.assign({},DB,{photos:(DB.photos||[]).map(p=>Object.assign({},p,{src:photoSrc(p)}))});
@@ -12693,7 +12691,7 @@ function scheduleInApp(){
    v18 ADDITIONS — draggable rest timer · weekly training memory · AI planner
    · Firestore sync
    ========================================================================== */
-const APP_VERSION="v173 · 17/09/2026";
+const APP_VERSION="v174 · 17/09/2026";
 
 /* ===== 1. REST TIMER — drag it anywhere so it never blocks the chat box ===== */
 let _rtDrag=null;
@@ -12845,262 +12843,20 @@ function trainingContext(){
     "\n\nLOAD PROGRESSION PER LIFT (last 3 sessions each):\n"+prog+effLine;
 }
 
-/* ===== v173 \u00b7 THE BLUE BOX FOLDS AWAY =================================
-   "The blue box should be collapsible." It is the first thing on Train and it
-   is three paragraphs tall; once he has read it he is scrolling past it to get
-   to the session every single time. Same shape as every other collapsible
-   card in the app, and it remembers whether he left it open. */
-function planCardHTML(body, open){
-  const isOpen = (open!==undefined)? open : !(DB.prefs && DB.prefs.planClosed);
-  return "<details class='hcard mt' id='planCard'"+(isOpen?" open":"")+" ontoggle='rememberPlanCard(this)'>"+
-    "<summary class='hsum'><span class='t'>\u25c6 Today\u2019s plan \u00b7 "+escapeHtml(LOC().label)+"</span><span class='chev'>\u203a</span></summary>"+
-    "<div class='hbody'>"+body+"</div></details>";
-}
-function rememberPlanCard(el){
-  try{ DB.prefs=DB.prefs||{}; DB.prefs.planClosed=!el.open; save(); }catch(e){}
-}
-/* ===== 3. THE COACH BUILDS THE SESSION — Amir never edits a workout again ===== */
-let _planning=false;
-/* v173 \u2014 short, and the SAME length it started at. A label that grows after
-   the first tap is a layout that breaks after the first tap. */
-const PLAN_LABEL="\uD83E\uDDE0 Build today\u2019s session";
-/* Available isn't the same as appropriate. In a full gym a push-up is a
-   downgrade from a bench press \u2014 upgrade to the best kit he has here. */
-/* v173 \u2014 kept out of the gear upgrade: chosen for a job, not for their kit. */
-const NEVER_UPGRADE=new Set(["Face Pull","Band Pull-apart","Band Pallof Press","Dead Bug","Bird Dog"]);
-function upgradeGear(){
-  if(!DB.workout||!Array.isArray(DB.workout.main)) return [];
-  const key=locKey();
-  if(key==="greece") return [];                     // bodyweight IS the best kit there
-  /* ===== v173 \u00b7 THE SAME BUG AS v161, IN THE OTHER COPY =================
-     v161 fixed this in the BUILDER: matching on primary muscle alone turned a
-     Face Pull \u2014 tagged "shoulders" \u2014 into an Overhead Press, because a barbell
-     outranks a cable. A rear-delt horizontal pull became a vertical press, on
-     a pull day. This is the second copy of that logic and it never got the
-     fix, so "Build today's session" still did it: Lat Pulldown \u2192 Barbell Row,
-     Face Pull \u2192 Overhead Press, on his pull day, this morning.
-     Three times now the same shape of bug: one rule, two implementations, one
-     of them fixed. The substitute has to be the same MOVEMENT, better loaded.
+/* ===== v174 · THE COACH DOES NOT BUILD SESSIONS =========================
+   "And I don't need coach to build any session."
 
-     And it does not run on a programmed session at all. The program names its
-     own movements; "better kit" is not a reason to replace one of them. */
-  if(DB.workout.programmed) return [];
-  const swapped=[];
-  /* Track picks as we go \u2014 otherwise two press-ups both "upgrade" to the same bench. */
-  const taken=new Set(DB.workout.main.map(x=>x.name));
-  DB.workout.main=DB.workout.main.map(e=>{
-    const cur=EX(e.name)||guessEx(e.name);
-    if(gearRank(e.name,key)<=1) return e;            // already top-tier kit
-    /* v173 \u2014 "better kit" only means something when the movement is IMPROVISED.
-       A push-up really is a bench press without a bench. A cable or a machine
-       is not a worse barbell, it is a different tool chosen on purpose \u2014 and
-       ranking a dumbbell above a cable turned a Face Pull into a DB Upright
-       Row, which is a rear-delt movement becoming a shoulder-impingement one.
-       Only bodyweight and bands get upgraded. */
-    if(["bw","band"].indexOf(eqOf(e.name))<0) return e;
-    /* Some movements are in a session for a job no substitute does, and the
-       app has no signal that says so: a Face Pull and a DB Upright Row share
-       their pattern, their primary muscle and their whole muscle list, so
-       every rule here rates them interchangeable. They are not \u2014 one is rear
-       delts and cuff health, the other is the movement most likely to annoy a
-       shoulder. Named, with the reason, rather than pretended away. */
-    if(NEVER_UPGRADE.has(e.name)) return e;
-    const want=(cur.m||["core"])[0];
-    const better=allExNames()
-      .filter(n=>canDoHere(n,key) && !taken.has(n))
-      .filter(n=>{ const x=EX(n)||{};
-        return (x.m||[])[0]===want && !!x.timed===!!cur.timed
-               && patternOf(n)===patternOf(e.name); })
-      .filter(n=>gearRank(n,key)<gearRank(e.name,key))
-      .sort((a,b)=>(gearRank(a,key)-gearRank(b,key))||(((EX(a)||{}).pop||500)-((EX(b)||{}).pop||500)))[0];
-    if(!better) return e;
-    taken.delete(e.name); taken.add(better);
-    swapped.push(e.name+" \u2192 "+better);
-    return exObject(better);
-  });
-  return swapped;
-}
-function substituteUnavailable(){
-  if(!DB.workout||!Array.isArray(DB.workout.main)) return [];
-  const pool=POOLS[locKey()], swapped=[];
-  const flat=[...pool.push,...pool.pull,...pool.legs,...pool.full];
-  DB.workout.main=DB.workout.main.map(e=>{
-    if(canDoHere(e.name)) return e;
-    const want=((EX(e.name)||guessEx(e.name)).m||["core"])[0];
-    const used=DB.workout.main.map(x=>x.name);
-    const alt=flat.find(n=>canDoHere(n) && used.indexOf(n)<0 && (((EX(n)||{}).m)||[]).indexOf(want)>=0)
-           || flat.find(n=>canDoHere(n) && used.indexOf(n)<0);
-    if(!alt) return e;
-    swapped.push(e.name+" \u2192 "+alt);
-    return exObject(alt);
-  });
-  return swapped;
-}
-/* v56 — "plan my whole week". Reads what he's actually trained, decides the
-   split AND where the rest days go, and writes it into the schedule. */
-let _weekPlanning=false;
-async function aiPlanWeek(){
-  const btn=document.getElementById('weekPlanBtn'), out=document.getElementById('weekPlanOut');
-  if(DB.ai.provider!=="openai"||!DB.ai.key){ toast("Add your OpenAI key in Settings first"); go('settings'); return; }
-  if(_weekPlanning) return; _weekPlanning=true;
-  if(btn){ btn.disabled=true; btn.innerHTML="<span class='spin'></span> Reading your training\u2026"; }
-  if(out) out.innerHTML="<div class='card mt center muted'><span class='spin'></span> Coach is planning your week\u2026</div>";
-  try{
-    const known=allSplits().join(", ");
-    const sys=coachSystem()+
-"\n\n=== YOU ARE PLANNING HIS WHOLE WEEK RIGHT NOW ===\n"+
-"Decide all seven days: what he trains, and CRUCIALLY where the rest days go. Rest is a decision, not a gap.\n"+
-"HARD RULES:\n"+
-"0. HIS WEEK STARTS ON MONDAY. List the days Mon, Tue, Wed, Thu, Fri, Sat, Sun \u2014 in that order, always. Never lead with Sunday.\n"+
-"1. Base it on what he has ACTUALLY trained (the digest above), not on what the current plan says. Hit the neglected groups first.\n"+
-"2. Never put two heavy sessions for the same muscle group on consecutive days.\n"+
-"3. At least one full rest day, and at most two consecutive training days without an easier one, given the Klinefelter recovery load.\n"+
-"4. Flexibility and mobility are a real goal \u2014 give him at least one mobility or Pilates day in the week, not just cool-downs.\n"+
-"5. You may invent session types he doesn't have yet with [[CREATE_DAY_TYPE: Name]] before assigning them.\n"+
-"HIS EXISTING SESSION TYPES: "+known+"\n"+
-"OUTPUT FORMAT \u2014 the directive FIRST, on its own line, all seven days:\n"+
-"[[SET_WEEKLY_SCHEDULE: Mon X; Tue X; Wed X; Thu X; Fri X; Sat X; Sun X]]\n"+
-"Then 3-5 short lines: the logic, which group you're prioritising and why, and where the rest falls. No bullet lists, no preamble.";
-    const usr="Plan my full week from "+ukDate()+". I'm in "+LOC().label+" ("+currentEquipment()+"). Decide the training days and the rest days and write it into my plan.";
-    const reply=await callAI([{role:"system",content:sys},{role:"user",content:usr}],700);
-    if(!reply){
-      if(out) out.innerHTML="<div class='card mt'><div class='coachnote'><div class='who'>\u25c6 Coach</div>Couldn't reach the AI just then \u2014 your plan is unchanged. Tap again to retry.</div></div>";
-    } else {
-      const {cleaned,notes}=applyCoachDirectives(reply);
-      save(); renderItin(); renderTomorrow(); try{ renderWeek(); }catch(e){}
-      if(out) out.innerHTML="<div class='card mt'><div class='coachnote'><div class='who'>\u25c6 Coach</div>"+
-        fmt(escapeHtml(cleaned||"Week updated."))+
-        (notes&&notes.length? "<div class='sm' style='margin-top:10px'>"+notes.map(escapeHtml).join("<br>")+"</div>":"")+
-        "</div></div>";
-      toast("Week planned \u2705");
-    }
-  }catch(e){
-    if(out) out.innerHTML="<div class='card mt'><div class='coachnote'><div class='who'>\u25c6 Coach</div>That didn't go through ("+escapeHtml(String(e&&e.message||e))+"). Your plan is unchanged.</div></div>";
-  }finally{
-    _weekPlanning=false;
-    if(btn){ btn.disabled=false; btn.textContent="Ask the coach to plan my week"; }
-  }
-}
-async function aiPlanToday(force){
-  const btn=document.getElementById('planBtn'), out=document.getElementById('planOut');
-  if(DB.ai.provider!=="openai"||!DB.ai.key){ if(force){ toast("Add your OpenAI key in Settings first"); go('settings'); } return; }
-  /* Automatic runs never overwrite a session he has shaped. A press of the
-     button is him asking, so that still goes ahead \u2014 after a warning. */
-  if(todayCleared() && !force) return;
-  if(!force && DB.workout && (DB.workout.touched || (DB.workout.version||1)>1)) return;
-  if(force && DB.workout && DB.workout.touched){
-    const logged=((DB.workout.main)||[]).reduce((a,e)=>a+todaySets(e.name).length,0);
-    if(!confirm("You've already changed today's session"+(logged? " and logged "+logged+" set"+(logged===1?"":"s"):"")+
-                ".\n\nBuilding a new one replaces it. Carry on?")) return;
-  }
-  if(_planning) return; _planning=true;
-  if(btn){ btn.disabled=true; btn.innerHTML="<span class='spin'></span> Reading your week\u2026"; }
-  if(out) out.innerHTML="<div class='card mt center muted'><span class='spin'></span> Coach is looking at what you've done\u2026</div>";
-  try{
-    coachEnsureWorkout();
-    /* ===== v173 \u00b7 IT COACHES THE PROGRAM, IT DOES NOT REPLACE IT =========
-       This button predates the master program and still behaved like it:
-       "decide the whole thing", [[SET_WORKOUT: five exercises]]. Tapped on a
-       programmed day it threw away the program and invented a session \u2014 which
-       is the one thing he asked the coach never to do ("the AI Coach's job is
-       to COACH the program, not constantly reinvent it"), and this morning it
-       handed him a pull day with an Overhead Press in it.
-       On a programmed day the movements are settled. What the coach is for is
-       the load call, the focus and the readiness read. */
-    if(DB.workout && DB.workout.programmed){
-      const r=await coachProgrammedDay(out);
-      if(r) return;
-    }
-    const avail=promptExNames();
-    const sys=coachSystem()+
-"\n\n=== YOU ARE PLANNING TODAY'S SESSION RIGHT NOW ===\n"+
-"Amir should NEVER have to edit a workout himself. You decide the whole thing from what he has actually done.\n"+
-"HARD RULES:\n"+
-"1. Use ONLY exercises from AVAILABLE EXERCISES (that is literally all he can do in "+LOC().label+" today). Anything else is a wasted session.\n"+
-"2. Prioritise the muscle groups with the fewest sets in the last 7 days and the longest time since trained \u2014 the digest above tells you exactly which.\n"+
-"3. Do not repeat the same main lifts he did in the last 48 hours.\n"+
-"4. Respect the TFCC wrist, Klinefelter recovery, and today's check-in (sleep / energy / pain).\n"+
-"4b. Obey the READINESS CALL above. If it says REST, do not program a hard session \u2014 say so and prescribe mobility instead. If it says DELOAD, cut a set and say why. If Amir has overruled it, build what he asked for but hold him to clean technique.\n"+
-"5. Progressive overload: reference his actual last numbers on the first two lifts and set the call for today.\n"+
-"6. TIME IS A HARD CONSTRAINT. He has "+timeBudget().mins+" minutes total"+(timeBudget().row?", of which "+(timeBudget().rowMins||10)+" is his rowing warm-up":"")+", plus about "+(LOC().short?3:5)+" min mobility and 4 min cool-down. That leaves roughly "+Math.max(4,timeBudget().mins-(timeBudget().row?(timeBudget().rowMins||10):0)-(LOC().short?3:5)-4)+" minutes of actual lifting. Budget about (40s work + 70-105s rest) per set plus a minute to change station. Program only what genuinely fits \u2014 a session that runs over is a session he abandons.\n"+
-"7. Sets: 2 if he's beaten up or in Greece, 3 normal, 4 if recovered and in Dubai \u2014 within the time limit above.\n"+
-"OUTPUT FORMAT \u2014 directives first, each on its own line:\n"+
-"[[SET_WORKOUT: Exercise One, Exercise Two, Exercise Three, Exercise Four, Exercise Five]]\n"+
-"[[SET_SETS: 3]]\n"+
-"Then 3-4 short lines: what you picked, WHY based on his week (name the neglected group), and the load call on the first lift. No preamble, no bullet lists.\n"+
-"AVAILABLE EXERCISES IN "+LOC().label.toUpperCase()+": "+avail.join(", ");
-    const usr="Plan my session for "+today()+". Scheduled split: "+pickSplit()+". I'm in "+LOC().label+" ("+currentEquipment()+"). I have "+timeBudget().mins+" minutes"+(timeBudget().row?" including a "+(timeBudget().rowMins||10)+" minute row":"")+". Read my week and tell me exactly what to do.";
-    const reply=await callAI([{role:"system",content:sys},{role:"user",content:usr}],900);
-    if(!reply){
-      DB.workout=buildWorkout(); save(); renderWorkoutSheet(DB.workout);
-      if(out) out.innerHTML=planCardHTML("<div class='coachnote'>Couldn\u2019t reach the AI just then \u2014 I\u2019ve built your session from your history instead. Tap the button again to retry.</div>", true);
-      return;
-    }
-    _aiPlanningSets=true;
-    let res;
-    try{ res=applyCoachDirectives(reply); } finally { _aiPlanningSets=false; }
-    const swapped=substituteUnavailable().concat(upgradeGear());
-    if(swapped.length) finalizeCoachEdit();
-    DB.aiPlan={date:today(),loc:locKey()}; save();
-    renderWorkoutSheet(DB.workout);
-    const note=fmt(res.cleaned||"Session's ready.");
-    const warn=swapped.length? "<div class='sm' style='margin-top:8px;color:#ff8f84'>Adjusted for "+LOC().label+": "+swapped.join(", ")+"</div>" : "";
-    if(out) out.innerHTML=planCardHTML("<div class='coachnote'>"+note+warn+"</div>", true);
-  }catch(e){
-    console.error("aiPlanToday",e);
-    if(out) out.innerHTML=planCardHTML("<div class='coachnote'>That broke on my side ("+escapeHtml(String(e&&e.message||e))+"). Your workout is untouched.</div>", true);
-  }finally{
-    _planning=false;
-    if(btn){ btn.disabled=false; btn.innerHTML=PLAN_LABEL; }
-  }
-}
-/* The programmed-day path: no SET_WORKOUT, no substitutions, no gear upgrade.
-   The sheet it is talking about is the sheet he is looking at. */
-async function coachProgrammedDay(out){
-  const w=DB.workout;
-  const list=(w.main||[]).map(e=>e.name+" "+e.sets+"\u00d7"+(e.reps||"?")).join("; ");
-  const sys=coachSystem()+
-"\n\n=== TODAY IS A PROGRAMMED DAY. THE SESSION IS ALREADY WRITTEN. ===\n"+
-"Today's sheet, in order: "+list+"\n"+
-"You are NOT choosing the exercises. They come from his 4-week master program and they do not change week to week \u2014 that is the whole point of it, and he asked for it explicitly.\n"+
-"DO NOT output [[SET_WORKOUT]], [[SET_SETS]] or any directive that changes what is on the sheet. If you genuinely think a movement is wrong for today, say so in one line and leave it to him.\n"+
-"WHAT YOU DO GIVE HIM, in 3-4 short lines, no bullets, no preamble:\n"+
-"1. The load call on the first two lifts, using his actual last numbers from the history above. Name the weight.\n"+
-"2. What to focus on today, given his check-in, his readiness call and what he trained in the last 48 hours.\n"+
-"3. One line on the week: which of his priorities this session is serving.\n"+
-"If the readiness call says REST or DELOAD, say that plainly and tell him what to cut \u2014 he cuts it, you do not.\n";
-  const usr="Coach me through today, "+today()+". "+pickSplit()+", week "+programWeek()+" of the program, in "+LOC().label+". I have "+timeBudget().mins+" minutes.";
-  const reply=await callAI([{role:"system",content:sys},{role:"user",content:usr}],700);
-  if(!reply) return false;
-  /* Anything that WOULD have changed the sheet is stripped rather than run. */
-  const cleaned=String(reply).replace(/\[\[[^\]]*\]\]/g,"").trim();
-  DB.aiPlan={date:today(),loc:locKey()}; save();
-  if(out) out.innerHTML=planCardHTML("<div class='coachnote'>"+fmt(cleaned||"Session's ready \u2014 it's the program's, unchanged.")+
-    "<div class='sm' style='margin-top:8px;color:var(--dim)'>Week "+programWeek()+" of 4 \u00b7 the movements come from your program and were not changed.</div></div>", true);
-  return true;
-}
-function maybeAutoPlan(){
-  if(!DB.prefs || DB.prefs.autoPlan===false) return;
-  /* v115 — opening Train must never rebuild over an intentional state. */
-  if(todayCleared()) return;
-  if(DB.workout && (DB.workout.touched || (DB.workout.version||1)>1)) return;
-  if(DB.workout && (DB.workout.groups && Object.keys(DB.workout.groups).length)) return;
-  if(DB.workout && DB.workout.cooldownLocked) return;
-  if(DB.workout && DB.workout.painAdapted) return;
-  if(DB.ai.provider!=="openai"||!DB.ai.key) return;
-  if(DB.aiPlan && DB.aiPlan.date===today() && DB.aiPlan.loc===locKey()) return;
-  /* He or the coach has already shaped today deliberately. Rebuilding over the
-     top of that is how a change he was told had been made vanished on the way
-     to the Train tab. */
-  if(DB.workout && DB.workout.touched) return;
-  /* Sets already logged means the session is in progress \u2014 never rebuild under
-     him mid-workout either. */
-  try{ if(((DB.workout&&DB.workout.main)||[]).some(e=>todaySets(e.name).length)) return; }catch(e){}
-  const w=DB.workout;
-  if(w && (w.kind==='cardio'||w.kind==='mobility'||w.sets===0)) return;   // rest / cardio days stay as-is
-  if(readinessCall().verdict==='rest') return;                            // coach called a rest day
-  aiPlanToday(false);
-}
+   Section 3 of this file used to be "THE COACH BUILDS THE SESSION — Amir never
+   edits a workout again": a Build button, an auto-planner that fired whenever
+   he opened Train, an AI prompt that invented five exercises, and two
+   substitution passes to make them legal afterwards. Right idea before the
+   master program existed, wrong one after it, and yesterday it handed him a
+   pull day with an Overhead Press in it.
+
+   All of it is gone — the button, the planner, the week planner, the two
+   substitution passes. The program decides the session; he changes it from the
+   bar at the top of Train or on the cards; the coach coaches, in the Coach
+   tab, when he asks it something. Nothing writes a session behind him. */
 
 /* ===== 5. READINESS — the coach decides rest vs train, Amir can overrule =====
    Signals: consecutive training days, weekly volume, today's check-in, and whether
@@ -13257,7 +13013,7 @@ function readinessCall(){
 }
 function setRestOverride(v){
   DB.restCall={date:today(),override:v||null};
-  DB.workout=null; DB.aiPlan=null; save();
+  DB.workout=null; save();
   try{ ensureWorkout(); }catch(e){}
   renderReadiness(); try{ updateStatus(); }catch(e){}
   toast(v==="rest"?"Rest day it is \uD83D\uDE34" : v==="push"?"Full send \u2014 volume back up \uD83D\uDCAA" : v==="train"?"Session's built \u2014 go easy on the first set":"Back to the coach's call");
@@ -14345,7 +14101,7 @@ function setTimeBudget(mins,row){
   DB.timeBudget=Object.assign({},timeBudget(),{});
   if(mins!=null) DB.timeBudget.mins=Math.max(10,Math.min(150,+mins||TIME_DEF.mins));
   if(row!=null)  DB.timeBudget.row=!!row;
-  DB.workout=null; DB.aiPlan=null; save();
+  DB.workout=null; save();
   try{ ensureWorkout(); }catch(e){}
   return DB.timeBudget;
 }
@@ -18206,7 +17962,6 @@ defAction("clear_day",{
       DB.session=null;
     }
     DB.workout=null;
-    DB.aiPlan={date:today(), loc:locKey(), cleared:true};   /* stops the planner re-running */
     setDayState({cleared:true, restDay:!!a.rest, mode:a.mode||"delete",
                  keptWork:(a.mode==="discard")?0:logged, reason:a.reason||null});
     if(a.rest) DB.dayOverride={date:today(), split:"Rest"};
@@ -18228,7 +17983,6 @@ defAction("restore_day",{
   apply:a=>{
     clearDayState();
     if(DB.dayOverride&&DB.dayOverride.date===today()&&DB.dayOverride.split==="Rest") DB.dayOverride={date:null,split:null};
-    DB.aiPlan=null;
     DB.workout=buildWorkout();
     resyncGroups(DB.workout);
     return {names:wkMain().map(e=>e.name)};

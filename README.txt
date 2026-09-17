@@ -1,3 +1,51 @@
+AMIR PT — v174 · 17/09/2026
+===========================
+
+"And I don't need coach to build any session."
+
+GONE, NOT HIDDEN
+----------------
+Section 3 of index.html was titled "THE COACH BUILDS THE SESSION — Amir never
+edits a workout again". That is a sentence from before the master program
+existed. Everything under it has been removed:
+
+  · the Build today's session button
+  · the auto-planner that fired every time he opened Train, and again after
+    every check-in, with no button press at all
+  · the AI prompt that invented five exercises and wrote them in with
+    [[SET_WORKOUT]]
+  · the week planner, which had lost its button in v162 and had been sitting
+    there running on nothing since
+  · substituteUnavailable() and upgradeGear(), the two passes that made the
+    invented session legal afterwards — and between them produced yesterday's
+    "Lat Pulldown → Barbell Row, Face Pull → Overhead Press"
+  · the collapsible plan card added in v173, which now has nothing to show
+  · DB.aiPlan, the marker that tracked whether the planner had run today
+
+280 lines out, 34 in.
+
+WHAT DECIDES A SESSION NOW
+--------------------------
+The program. Four weeks, five day types, written down. He changes it from the
+bar at the top of Train — sets and reps for the whole session — or on any
+individual card. Nothing else writes to the sheet.
+
+The coach still coaches. It is in the Coach tab, it can still change today's
+session if he ASKS it to, and it still reads his week, his loads and his
+readiness. What it no longer does is decide the session on its own, or run at
+all without being asked.
+
+ONE THING WORTH KNOWING
+-----------------------
+The auto-planner is the reason Train sometimes felt like it had a mind of its
+own: it fired on opening the tab, before v81 gave it a "don't touch a session
+he changed" guard, and again after every check-in. That is now impossible
+rather than guarded.
+
+VERIFIED: five screens clean at 390px and 360px, no console errors; Train opens
+straight on the session; 16 programmed sessions still match; all within budget;
+mobility 12/12; the whole action journey passes end to end.
+
 AMIR PT — v173 · 17/09/2026
 ===========================
 
