@@ -1,3 +1,51 @@
+AMIR PT — v184 · 17/09/2026
+===========================
+
+"And how do I log the crunches doing 20 each set?"
+
+He asked how, because the card gave him no way. It read
+
+    Normal Crunches
+    3 sets · 20 reps · rest 90s
+    0:00   ▶ Start hold
+
+A prescription in reps and a stopwatch to log it with. The card was arguing
+with itself and he had to ask a person to settle it.
+
+THE RULE WAS RIGHT AND IT WAS READING THE WRONG THING
+-----------------------------------------------------
+v184 gave the app his rule: core and Pilates are time. That is right for a
+plank, a hollow hold, a dead bug — the core work he HOLDS. It is wrong for a
+crunch, which he COUNTS. The rule read the muscle group and ignored the thing
+written directly above it: the dose on the sheet.
+
+A written dose is not a hint, it is an instruction. "20" is a rep count. "45s"
+is a clock. So where a session says a number of reps, and the catalogue does
+not insist the movement is a hold, it logs as reps.
+
+  Crunch · 20        → reps          Crunch · 45s      → time
+  Reverse Crunch 15  → reps          Dead Bug · 45s    → time
+  Leg Raise · 12     → reps          Hollow Hold 30s   → time
+  Cable Crunch 12    → kg × reps     Plank · 20        → time (it is a hold
+  Pallof · 12/side   → reps                               whatever is written)
+
+AND THE LINE ABOVE IT
+---------------------
+applyLogTypeToEx rebuilt the scheme from the catalogue unless the session was
+a programmed one — so an exercise the COACH had set to 20 reps still printed
+"30–60s hold". Any dose the exercise carries now wins, programmed or not.
+
+TWO SMALLER ONES ON THE SAME CARD
+---------------------------------
+A bodyweight set logged as "0kg × 20". No weight, no kilos: it reads "20 reps"
+now, on the pill and in the delete confirmation.
+
+VERIFIED: thirteen movement-and-dose combinations classify correctly; the card
+reads "3 sets · 20 reps", offers a single reps box with no weight field and no
+hold button, and logging 20 stores {r:20} and shows a "20 reps" pill; holds are
+untouched; 16 sessions match; no repeats; the action journey passes; five
+screens clean; no console errors.
+
 AMIR PT — v183 · 17/09/2026
 ===========================
 

@@ -7442,9 +7442,10 @@ function setChip(sset,exIdx,setIdx){
   const e=effortOf(sset), m=e?EFFORT[e]:null;
   const cls="setchip"+(e? " e"+e : "");
   const title=m? " title='"+m.lab+"'" : "";
+  /* v184 — a bodyweight set is not "0kg × 20". No weight, no kilos. */
   const body=sset.timed? ((sset.w? sset.w+"kg · ":"")+sset.r+"s hold")
            : sset.dist? ((sset.w? sset.w+"kg · ":"")+sset.r+"m")
-           : (sset.w+"kg × "+sset.r);
+           : (sset.w? (sset.w+"kg × "+sset.r) : (sset.r+" reps"));
   if(exIdx==null) return "<span class='"+cls+"'"+title+">"+body+"</span>";
   return "<span class='"+cls+"'"+title+">"+body+
     "<button class='chipx' onclick='event.stopPropagation();delLoggedSet("+exIdx+","+setIdx+")' aria-label='delete this set'>\u2715</button></span>";
@@ -7455,7 +7456,7 @@ function delLoggedSet(exIdx,setIdx){
   const sess=arr.find(s=>s.date===today());
   if(!sess||!sess.sets||!sess.sets[setIdx]) return;
   const s=sess.sets[setIdx];
-  const label=s.timed? (s.r+"s hold") : (s.w+"kg × "+s.r);
+  const label=s.timed? (s.r+"s hold") : (s.w? (s.w+"kg × "+s.r) : (s.r+" reps"));
   if(!confirm("Delete this set?\n\n"+ex.name+" — "+label)) return;
   sess.sets.splice(setIdx,1);
   if(!sess.sets.length){
@@ -12816,7 +12817,7 @@ function scheduleInApp(){
    v18 ADDITIONS — draggable rest timer · weekly training memory · AI planner
    · Firestore sync
    ========================================================================== */
-const APP_VERSION="v183 · 17/09/2026";
+const APP_VERSION="v184 · 17/09/2026";
 
 /* ===== 1. REST TIMER — drag it anywhere so it never blocks the chat box ===== */
 let _rtDrag=null;
@@ -16878,15 +16879,43 @@ function inferredLogType(name){
      3. the catalogue's guess
    The session object's own legacy `timed` flag is only consulted when it
    disagrees with nothing, so an old saved workout still reads correctly. */
+/* ===== v184 · THE CARD MUST NOT ARGUE WITH ITSELF ========================
+   "How do I log the crunches doing 20 each set?" — under a card reading
+   "3 sets · 20 reps · rest 90s" with a HOLD TIMER as the only way to log it.
+
+   v179 gave the app his rule: core and Pilates are time. That is right for a
+   plank, a hollow hold, a dead bug — the core work he holds. It is wrong for
+   a crunch, which he counts. The rule was reading the muscle and ignoring the
+   thing sitting right above it: the dose on the sheet.
+
+   A written dose is not a hint, it is an instruction. "20" is a rep count.
+   "45s" is a clock. So where the session says a NUMBER of reps and the
+   catalogue does not insist the movement is a hold, it logs as reps — and
+   the prescription and the log row can no longer say different things. */
+function doseIsReps(exObj){
+  const t=String((exObj&&exObj.reps)||"").trim();
+  if(!t) return false;
+  if(/\b\d+\s*(s|sec|secs|second|seconds|m|min|mins)\b|\d+s\b/i.test(t)) return false;
+  return /\d/.test(t);
+}
 function logTypeOf(name,exObj){
   if(exObj && isLogType(exObj.logType)) return exObj.logType;
   const p=permanentLogType(name);
   if(p) return p;
+  let t;
   if(exObj && typeof exObj.timed==="boolean" && !("logType" in exObj)){
     /* an exercise object built before v115 */
-    return exObj.timed? "time" : inferredLogType(name);
+    t = exObj.timed? "time" : inferredLogType(name);
+  } else {
+    t = inferredLogType(name);
   }
-  return inferredLogType(name);
+  /* The sheet says reps, so the log row says reps. A movement the catalogue
+     genuinely calls a hold (Plank, Hollow Hold, Dead Hang) is left alone. */
+  if(t==="time" && doseIsReps(exObj) && !((EX(name)||{}).timed)){
+    const eq=eqOf(name);
+    return (["bb","db","mach","kb","plate"].indexOf(eq)>=0)? "weight_reps" : "reps";
+  }
+  return t;
 }
 function logMeta(name,exObj){ return LOG_TYPES[logTypeOf(name,exObj)]||LOG_TYPES.weight_reps; }
 function logNeedsWeight(name,exObj){ return !!logMeta(name,exObj).weight; }
@@ -16931,8 +16960,12 @@ function applyLogTypeToEx(e){
   /* v163 — this rebuilt the scheme from the catalogue every time it ran, which
      threw away the program's own rep target: "3 sets · 12" became "3 sets ·
      8-12". A programmed prescription is his, and outranks the guess. */
-  if(e.programmed && e.reps){
-    e.scheme=exSets(e)+" sets \u00b7 "+e.reps+(/\d/.test(e.reps)&&!/s$|sec|each/.test(e.reps)?" reps":"");
+  /* v184 — and a dose HE has been given outranks it too, programmed or not.
+     Without this the line read "3 sets · 30–60s hold" over an exercise the
+     coach had just set to 20 reps: the card arguing with itself one line
+     higher up. If the exercise carries a dose, the scheme IS that dose. */
+  if(e.reps){
+    e.scheme=exSets(e)+" sets \u00b7 "+e.reps+(/\d/.test(e.reps)&&!/s$|sec|each|min/.test(e.reps)?" reps":"");
   } else {
     try{ e.scheme=schemeFor(e.name, exSets(e), e); }catch(err){}
   }
