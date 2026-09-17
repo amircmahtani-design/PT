@@ -54,28 +54,31 @@ separately: with two sets already logged today the old session is left alone
 and both sets survive. All 16 programmed sessions still match, mobility still
 12/12 areas, 390px and 1440px, no overflow, no console errors.
 
-HOW THIS APP REACHES HIS PHONE — READ THIS BEFORE SAYING A VERSION IS "OUT"
-===========================================================================
+HOW THIS APP REACHES HIS PHONE — PAGES IS ON AS OF 17/09/2026
+============================================================
 
-Pushing to main is NOT publishing. GitHub Pages is off on this repository
-(has_pages: false) and no Action deploys it, so a commit on main is not on his
-phone. It is a file in a repository and nothing more.
+He turned GitHub Pages on himself, source main / (root). The v166 commit
+(8c43179) deployed successfully at 04:59 UTC and the app is live at
 
-Every version up to v146 ended with "Upload index.html AND sw.js", because that
-is how he actually got them: he uploaded the files to his host by hand. At v146
-I told him that was no longer necessary and that he only had to refresh the
-PWA. That was simply wrong, and I never checked it. Everything from v147 to
-v165 has been sitting here unpublished while he sent screenshots of bugs I had
-already fixed and I told him to force-close the app.
+    https://amircmahtani-design.github.io/PT/
 
-SO, UNTIL PAGES IS ON: end every version by telling him which files to upload.
-index.html and sw.js for a normal change; add demos/ when photographs change.
+From here a push to main IS publishing. No more "upload index.html and sw.js"
+at the end of every version — he refreshes and the service worker fetches the
+new HTML (network-first), then the version at the bottom of Settings should
+read the one just shipped.
 
-TO MAKE IT AUTOMATIC: Settings -> Pages -> Source -> Deploy from a branch ->
-main -> /(root). A workflow cannot do this for itself — GitHub refuses a
-workflow token the right to create a Pages site ("Resource not accessible by
-integration"), and the same wall applies to my access. It is a one-time change
-only the repository owner can make.
+STILL TRUE, AND WORTH REMEMBERING
+---------------------------------
+Committing is not deploying. Check the run before saying a version is out:
+a push fires both "pages build and deployment" and the pages.yml workflow, and
+neither is instant. If a version does not appear on his phone, look at the run
+first — the old failure was nineteen versions sitting in this repository
+unpublished (v147-v165) while he sent screenshots of bugs already fixed.
+
+The Pages URL is a DIFFERENT ORIGIN from wherever he was uploading files
+before. localStorage does not cross origins, so a browser opening the new
+address starts with no history unless it signs in and pulls from Firestore.
+Do not assume his data followed him.
 
 
 AMIR PT — v165 · 17/09/2026
