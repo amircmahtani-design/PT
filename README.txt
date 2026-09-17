@@ -1,3 +1,54 @@
+AMIR PT — v181 · 17/09/2026
+===========================
+
+"Rather than showing the green pills as those colours it would be easier if I
+saw them as the colours that correspond to difficulty, so I don't look at the
+small dot in the green box. Make the full box the colour I found the effort —
+green easy, yellow about right, red hard. I never use the really hard pill so
+delete it."
+
+THE PILL IS THE ANSWER NOW
+--------------------------
+The effort was a seven-pixel dot inside a box that was green no matter what he
+had answered. The one thing he wanted to see at a glance — which sets were hard
+— was the smallest mark on the card, sitting inside a colour that contradicted
+it.
+
+  logged, not yet rated   neutral
+  easy                    green
+  about right             amber
+  hard                    red
+
+The dot is gone from the card and from the history lines on Progress, where
+the numbers themselves now carry the colour.
+
+Unrated is deliberately neutral rather than green. If everything is green, the
+colour says nothing.
+
+GRINDER IS GONE
+---------------
+Four levels where he uses three is a decision he makes after every set for no
+gain, and "hard" and "a grind" were never separable in practice. Hard takes
+red, which was Grinder's colour. Sets already rated Grinder read as Hard —
+nothing in his history is rewritten, only read one level lower. The spoken log
+("that was a grind") and the chat command both write Hard now.
+
+AND TWO THINGS I FOUND WHILE IN THERE
+-------------------------------------
+1. The ✕ on a pill has always sat on top of the last digit — "5kg × 15✕". The
+   rule that made room for it set padding-right, and a second .setchip rule
+   forty lines later set the padding shorthand, which silently overrode it. It
+   is set in the winning rule now.
+2. A pill added the moment he logs a set had NO ✕ at all: logSet called
+   setChip() without the index it needs to build the button, so a mistyped set
+   could not be deleted until something re-rendered the card. Passed.
+
+VERIFIED: three sets rated easy / about right / hard render green / amber / red
+with the right backgrounds and no dots; a legacy set stored as Grinder renders
+red; the prompt offers three buttons; the ✕ clears the text; a freshly logged
+pill has its ✕; the counter still tracks; 16 sessions match; no repeats; five
+screens clean; no console errors.
+
 AMIR PT — v180 · 17/09/2026
 ===========================
 

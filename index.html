@@ -209,12 +209,19 @@ textarea.txtin{min-height:88px;resize:vertical;line-height:1.45;}
 .rowcard .big{font-weight:800;font-size:20px;color:#fff;}
 .rowcard .sm{font-size:13px;color:var(--muted);font-weight:600;margin-top:2px;}
 .setlog{display:flex;gap:8px;margin-top:12px;flex-wrap:wrap;}
-.setchip{position:relative;padding-right:26px;}
+.setchip{position:relative;}
 .chipx{position:absolute;right:4px;top:50%;transform:translateY(-50%);
   background:transparent;border:none;color:var(--muted);font-size:12px;font-weight:800;
   padding:4px 5px;line-height:1;opacity:.65;}
 .chipx:active{opacity:1;color:var(--red);}
-.setchip{background:#0c2716;border:1px solid #154d2c;border-radius:9px;padding:7px 11px;font-size:13.5px;font-weight:700;color:var(--green);}
+/* v181 — a logged set with no rating yet is neutral, so the three colours mean
+   what they say. The whole pill carries the answer; the dot is gone. */
+/* The padding-right on the rule above was overridden by this shorthand, which
+   is why the ✕ has always sat on top of the last digit. It lives here now. */
+.setchip{background:#16130f;border:1px solid var(--line);border-radius:9px;padding:7px 28px 7px 11px;font-size:13.5px;font-weight:700;color:var(--txt);}
+.setchip.e1{background:#0c2716;border-color:#1d6b3e;color:#3fe08a;}
+.setchip.e2{background:#2a1f0a;border-color:#6b4c15;color:#f0b24a;}
+.setchip.e3{background:#2a1512;border-color:#7d2c24;color:#ff8a7d;}
 .logrow.noweight input[inputmode='numeric']{flex:1 1 auto;}
 .logrow{display:flex;gap:8px;margin-top:12px;align-items:stretch;}
 .logrow input{flex:1 1 0;min-width:0;width:100%;text-align:center;padding:13px 6px;font-size:16px;}
@@ -374,10 +381,8 @@ textarea.txtin{min-height:88px;resize:vertical;line-height:1.45;}
 .effchip:active{transform:scale(.95);}
 .effchip.e1{color:#3fe08a;border-color:#154d2c;}
 .effchip.e2{color:#f0b24a;border-color:#4d3a15;}
-.effchip.e3{color:#ff8a2b;border-color:#5c3a15;}
-.effchip.e4{color:#ff5a4d;border-color:#5c1c17;}
+.effchip.e3{color:#ff5a4d;border-color:#5c1c17;}
 .effdone{margin-top:10px;font-size:12.5px;font-weight:800;}
-.effdot{display:inline-block;width:7px;height:7px;border-radius:50%;margin-right:5px;vertical-align:1px;}
 .savewarn{background:#2a1512;border:1px solid #5c1c17;color:#ffb4ab;border-radius:12px;padding:12px 14px;font-size:13px;line-height:1.6;margin-bottom:14px;}
 .warnbtn{background:#5c1c17;border:1px solid #7d2c24;color:#ffd9d4;border-radius:9px;padding:5px 11px;font-size:12px;font-weight:700;margin-top:6px;margin-right:6px;}
 .pbwrap{border-bottom:1px solid var(--line);}
@@ -7425,13 +7430,17 @@ function learnRepRange(name){
 /* v109 — a mis-tap logged a 1-second hold and there was no way to remove it
    without going to the coach. The chip IS the set; tapping the x deletes it. */
 function setChip(sset,exIdx,setIdx){
+  /* v181 — the pill IS the answer. No dot: the colour of the whole box is how
+     that set felt, and an unrated one is plainly neutral so the colours mean
+     something. */
   const e=effortOf(sset), m=e?EFFORT[e]:null;
-  const dot=m? "<i class='effdot' style='background:"+m.col+"' title='"+m.lab+"'></i>" : "";
+  const cls="setchip"+(e? " e"+e : "");
+  const title=m? " title='"+m.lab+"'" : "";
   const body=sset.timed? ((sset.w? sset.w+"kg · ":"")+sset.r+"s hold")
            : sset.dist? ((sset.w? sset.w+"kg · ":"")+sset.r+"m")
            : (sset.w+"kg × "+sset.r);
-  if(exIdx==null) return "<span class='setchip'>"+dot+body+"</span>";
-  return "<span class='setchip'>"+dot+body+
+  if(exIdx==null) return "<span class='"+cls+"'"+title+">"+body+"</span>";
+  return "<span class='"+cls+"'"+title+">"+body+
     "<button class='chipx' onclick='event.stopPropagation();delLoggedSet("+exIdx+","+setIdx+")' aria-label='delete this set'>\u2715</button></span>";
 }
 function delLoggedSet(exIdx,setIdx){
@@ -7861,7 +7870,8 @@ function toggleHold(i){
     const hw=document.getElementById('hw'+i);
     const hwv=hw? parseFloat(hw.value) : NaN;
     saveSet(ex.name,{w:isNaN(hwv)?0:hwv, r:sec, timed:true}); markSession();
-    const sl=document.getElementById('sl'+i); if(sl) sl.insertAdjacentHTML('beforeend',setChip({w:0,r:sec,timed:true}));
+    const sl=document.getElementById('sl'+i);
+    if(sl) sl.insertAdjacentHTML('beforeend',setChip({w:0,r:sec,timed:true},i,todaySets(ex.name).length-1));
     refreshCoachLine(i);
     afterLog(i);
     showEffortPrompt(i,ex);
@@ -7919,7 +7929,11 @@ async function logSet(i){
   /* Recompute from what he has now actually done, so the load call and the
      progression panel agree with the set he just logged. */
   try{ if(logNeedsWeight(ex.name,ex)) ex.rec=recommendLoad(ex.name); }catch(e){}
-  const sl=document.getElementById('sl'+i); if(sl) sl.insertAdjacentHTML('beforeend',setChip(rec));
+  /* v181 — with no index the chip renders without its delete button, so a set
+     logged by mistake could not be removed until something re-rendered the
+     card. Pass it. */
+  const sl=document.getElementById('sl'+i);
+  if(sl) sl.insertAdjacentHTML('beforeend',setChip(rec,i,todaySets(ex.name).length-1));
   refreshCoachLine(i);
   ri.value=''; wi.value=w; afterLog(i);
   showEffortPrompt(i,ex);
@@ -9781,7 +9795,7 @@ function coachLogSet(raw){ const p=String(raw||"").split('|').map(x=>x.trim()); 
   const tail=p.slice(3).join(' ').toLowerCase();
   const rpe=parseFloat((tail.match(/rpe\s*([0-9.]+)/)||[])[1]);
   if(!isNaN(rpe)) set.e = rpe<=6.5?1 : rpe<=8?2 : rpe<=9.4?3 : 4;
-  else if(/grind|failure|brutal/.test(tail)) set.e=4;
+  else if(/grind|failure|brutal/.test(tail)) set.e=3;   /* v181 — Hard is the top of the scale now */
   else if(/\bhard\b|tough|heavy/.test(tail)) set.e=3;
   else if(/easy|light|comfortable/.test(tail)) set.e=1;
   else if(/right|solid/.test(tail)) set.e=2;
@@ -10839,7 +10853,7 @@ const INTENTS = [
   {re:/^(?:that|it|last set|this)\s+(?:one\s+)?(?:felt|was|is|seemed)?\s*(easy|light|too light)$/i, run:(m,C)=>C.felt(1)},
   {re:/^(?:that|it|last set|this)\s+(?:one\s+)?(?:felt|was|is|seemed)?\s*(hard|heavy|tough|too heavy)$/i, run:(m,C)=>C.felt(3)},
   {re:/^(?:that|it|last set|this)\s+(?:one\s+)?(?:felt|was|is|seemed)?\s*(?:about\s+right|fine|ok|okay|good)$/i, run:(m,C)=>C.felt(2)},
-  {re:/^(?:i\s+was\s+)?(?:grinding|struggling|it was a grind)$/i, run:(m,C)=>C.felt(4)},
+  {re:/^(?:i\s+was\s+)?(?:grinding|struggling|it was a grind)$/i, run:(m,C)=>C.felt(3)},
   {re:/^(?:i\s+)?(?:only\s+)?(?:got|managed|did)\s+(\d+)(?:\s*reps?)?$/i, run:(m,C)=>C.gotReps(m[1])},
   {re:/^(?:skip|stop)\s+(?:the\s+)?(?:rest of\s+)?(?:this|these)?\s*sets?$/i, run:(m,C)=>C.skipRest()},
   {re:/^(?:delete|remove|undo)\s+(?:that|the last)\s+set$/i, run:(m,C)=>C.delSet()},
@@ -12633,7 +12647,11 @@ function renderHistory(){
   const cardFor=({d,g,label})=>{
     const col=splitColour(label);
     const liftLines=g.lifts.map(l=>{ const top=Math.max(...l.sets.map(s=>s.w));
-      const reps=l.sets.map(s=>{ const m=effortMeta(effortOf(s)); return (m?"<i class='effdot' style='background:"+m.col+"'></i>":"")+s.w+"\u00d7"+s.r; }).join(" ");
+      /* v181 — the dot is gone everywhere; the number itself carries the
+         colour, the same three the pills on Train use. */
+      const reps=l.sets.map(s=>{ const m=effortMeta(effortOf(s));
+        const txt=s.w+"\u00d7"+s.r;
+        return m? "<span style='color:"+m.col+"' title='"+m.lab+"'>"+txt+"</span>" : txt; }).join(" ");
       return "<div class='hline'><span class='en'>"+l.ex+" <span class='muted' style='font-weight:600;font-size:12px'>"+reps+"</span></span><span class='ev'>"+top+"kg <button class='del' onclick=\"delStrength('"+l.ex.replace(/'/g,"\\'")+"','"+d+"')\">\u2715</button></span></div>"; }).join('');
     const rowLines=g.rows.map(r=>"<div class='hline'><span class='en'>\ud83d\udea3 Row "+r.dist+"</span><span class='ev'>"+r.time+"</span></div>").join('');
     const flowLine=g.flow? "<div class='hline'><span class='en'>\uD83E\uDDD8 "+escapeHtml(g.flow.title||"Mobility")+
@@ -12789,7 +12807,7 @@ function scheduleInApp(){
    v18 ADDITIONS — draggable rest timer · weekly training memory · AI planner
    · Firestore sync
    ========================================================================== */
-const APP_VERSION="v180 · 17/09/2026";
+const APP_VERSION="v181 · 17/09/2026";
 
 /* ===== 1. REST TIMER — drag it anywhere so it never blocks the chat box ===== */
 let _rtDrag=null;
@@ -13611,13 +13629,26 @@ function registerSW(){
    v22 — EFFORT (RPE). One tap after a set tells the coach what the numbers
    can't: whether 60kg×8 was comfortable or a near-miss.
    ========================================================================== */
+/* ===== v181 · THREE LEVELS, AND THE WHOLE PILL IS THE ANSWER ===========
+   "Make the full box the colour I found the effort — green easy, yellow about
+   right, red hard. I never use the really hard pill so delete it."
+
+   The effort was a 7-pixel dot inside a green box, and the box was green
+   whatever he had answered. The one thing he wanted at a glance — which sets
+   were hard — was the smallest mark on the card, sitting inside a colour that
+   contradicted it.
+
+   Grinder is gone. Four levels where he uses three is a decision he makes
+   every set for no gain, and "hard" and "a grind" were never separable in
+   practice. A set already rated Grinder reads as Hard: nothing in his history
+   is rewritten, only read one level lower. */
 const EFFORT={
   1:{lab:"Easy",       short:"E", col:"#3fe08a", rpe:6,   note:"had plenty left"},
   2:{lab:"About right",short:"R", col:"#f0b24a", rpe:7.5, note:"solid, 2-3 in reserve"},
-  3:{lab:"Hard",       short:"H", col:"#ff8a2b", rpe:9,   note:"close to failure"},
-  4:{lab:"Grinder",    short:"G", col:"#ff5a4d", rpe:10,  note:"everything he had"}
+  3:{lab:"Hard",       short:"H", col:"#ff5a4d", rpe:9.5, note:"close to failure"}
 };
-function effortOf(set){ const e=set&&set.e; return (e>=1&&e<=4)? e : null; }
+const EFFORT_MAX=3;
+function effortOf(set){ const e=set&&set.e; return (e>=1)? Math.min(e,EFFORT_MAX) : null; }
 function effortMeta(e){ return EFFORT[e]||null; }
 /* Mean effort across a session's sets, or null if he didn't tap any. */
 function sessionEffort(sets){
@@ -13626,13 +13657,13 @@ function sessionEffort(sets){
 }
 function effortWord(avg){
   if(avg==null) return null;
-  return avg<=1.5?"easy" : avg<=2.4?"about right" : avg<=3.3?"hard" : "a grind";
+  return avg<=1.5?"easy" : avg<=2.4?"about right" : "hard";
 }
-function effortRPE(avg){ if(avg==null) return null; return Math.round((5.5+avg*1.15)*2)/2; }
+function effortRPE(avg){ if(avg==null) return null; return Math.round((4.9+avg*1.5)*2)/2; }
 
-/* --- capture: four chips under the set he just logged --- */
+/* --- capture: three chips under the set he just logged --- */
 function effortPromptHTML(i,ex,setIdx){
-  const chips=[1,2,3,4].map(e=>{
+  const chips=[1,2,3].map(e=>{
     const m=EFFORT[e];
     return "<button class='effchip e"+e+"' onclick=\"setEffort("+i+","+setIdx+","+e+")\">"+m.lab+"</button>";
   }).join('');
