@@ -1921,6 +1921,18 @@ function mergeDefaults(parsed){ let d={...structuredClone(DEFAULTS),...parsed};
     if(!d.dayTypes["Pilates"])  d.dayTypes["Pilates"]={kind:"pilates",main:[],note:""};
     d.schedule={0:"Rest",1:"Upper Body",2:"Legs & Core",3:"Mobility",4:"Pull Day",5:"Push Day",6:"Rest"};
   }
+  /* ===== v172 \u00b7 "IT HAS TO BE THE MON TUES WED THUR FORMAT" ==============
+     The week the master program is written against, asserted once. v160 set
+     the same shape, but only for a profile that had never seen it \u2014 a day
+     changed since (by him, by the coach, by an older build) stayed changed,
+     and a program written per day type cannot run on a week that does not
+     match it. Fires once; after this the week is his to move again. */
+  if(!d.prefs.weekV172){
+    d.prefs.weekV172=true;
+    d.dayTypes=d.dayTypes||{};
+    if(!d.dayTypes["Mobility"]) d.dayTypes["Mobility"]={kind:"mobility",main:[],note:""};
+    d.schedule={0:"Rest",1:"Upper Body",2:"Legs & Core",3:"Mobility",4:"Pull Day",5:"Push Day",6:"Rest"};
+  }
   /* v61 — photos gain a real timestamp and a pose label. Older ones only ever
      had a YYYY-MM-DD, so they're back-filled from that date at midday (so a
      day's photos still sort in the order they were added) and left unlabelled
@@ -3826,48 +3838,87 @@ function pickPrehab(){
 
    Week 4 is the deload and is written as one: the volume is already reduced,
    so nothing else needs to cut it.
+
+   v172 · THE SHAPE OF A SESSION
+   --------------------------------------------------------------------------
+   "A better structure is around 5-6 exercises: 2 main compound movements at
+   3-4 sets, 2-3 secondary at 3 sets, 1 smaller isolation/finisher at 2-3. I
+   cannot gym forever and my maximum time is 60-70 minutes."
+
+   Every one of the sixteen sessions was seven movements and 21-24 sets, and
+   the app's own estimator put them at 72-74 minutes against a 65-minute
+   budget — it was printing "that's over your 65, drop a set" on sessions the
+   app itself had written. Flagged at v163 and not acted on. His structure is
+   the fix and it is the right one: the seventh movement was always a second
+   arm or core slot, which is priority 5 and 6 of the seven he listed.
+
+   Every session is now six: two compounds, three secondary, one finisher,
+   measured at 56-66 minutes including the 2km row. None over budget.
+
+   WHAT THAT COSTS, said plainly rather than buried: arms and direct core get
+   one slot each per week at 2-3 sets, which is below the app's own weekly
+   targets for them. That is the arithmetic of six movements in an hour, not
+   an oversight. Chest, back, lats and delts — his first four priorities — are
+   at or above target. If he wants arms or waist higher it is a swap, not an
+   addition, and it comes out of the compounds.
    ========================================================================== */
 const PROGRAM_WEEKS=4;
 const PROGRAM={
   1:{
-    "Upper Body":[["Incline DB Press",4,"10"],["Lat Pulldown",4,"10"],["Seated Cable Row",3,"12"],
-                  ["Lateral Raise",4,"15"],["Cable Fly",3,"12"],["DB Curl",3,"12"],["Triceps Pushdown",3,"12"]],
-    "Legs & Core":[["Romanian Deadlift",4,"10"],["Bulgarian Split Squat",3,"10 each leg"],["Goblet Squat",3,"12"],
-                  ["Cable Pull-Through",3,"12"],["Calf Raise",4,"15"],["Cable Crunch",3,"12"],["Dead Bug",3,"10 each side"]],
-    "Pull Day":[["Lat Pulldown",4,"10"],["Seated Cable Row",4,"10"],["Single-arm Lat Pulldown",3,"12 each side"],
-                  ["DB Reverse Fly",4,"15"],["Face Pull",3,"15"],["Hammer Curl",3,"10"],["Cable Curl",3,"12"]],
-    "Push Day":[["Incline DB Press",4,"8–10"],["Bench Press",3,"10"],["DB Shoulder Press",3,"10"],
-                  ["Lateral Raise",4,"15"],["Cable Fly",3,"12"],["Triceps Pushdown",3,"12"],["Single-arm Triceps Extension",3,"12"]]
+    "Upper Body":[["Incline DB Press",4,"10"],["Lat Pulldown",4,"10"],
+                  ["Seated Cable Row",3,"12"],["Lateral Raise",3,"15"],["Cable Fly",3,"12"],
+                  ["DB Curl",2,"12"]],
+    "Legs & Core":[["Romanian Deadlift",4,"10"],["Bulgarian Split Squat",3,"10 each leg"],
+                  ["Goblet Squat",3,"12"],["Calf Raise",3,"15"],["Cable Crunch",3,"12"],
+                  ["Dead Bug",2,"10 each side"]],
+    "Pull Day":[["Lat Pulldown",4,"10"],["Seated Cable Row",4,"10"],
+                  ["Single-arm Lat Pulldown",3,"12 each side"],["DB Reverse Fly",3,"15"],["Face Pull",3,"15"],
+                  ["Hammer Curl",2,"10"]],
+    "Push Day":[["Incline DB Press",4,"8\u201310"],["Bench Press",3,"10"],
+                  ["DB Shoulder Press",3,"10"],["Lateral Raise",3,"15"],["Cable Fly",3,"12"],
+                  ["Triceps Pushdown",2,"12"]]
   },
   2:{
-    "Upper Body":[["Incline DB Press",4,"8–10"],["Lat Pulldown",4,"8–10"],["DB Single-arm Row",3,"10 each side"],
-                  ["Lateral Raise",4,"12–15"],["Cable Fly",3,"12"],["Hammer Curl",3,"10"],["Overhead Triceps Extension",3,"12"]],
-    "Legs & Core":[["Romanian Deadlift",4,"8"],["Bulgarian Split Squat",4,"8 each leg"],["Goblet Squat",3,"12"],
-                  ["Reverse Lunge",3,"10 each leg"],["Calf Raise",4,"15"],["Band Pallof Press",3,"12 each side"],["Reverse Crunch",3,"12"]],
-    "Pull Day":[["Lat Pulldown",4,"8–10"],["Chest-supported Row",4,"10"],["Cable Straight-arm Pulldown",3,"12"],
-                  ["DB Reverse Fly",4,"15"],["Face Pull",3,"12"],["DB Curl",3,"10"],["Hammer Curl",3,"12"]],
-    "Push Day":[["Incline DB Press",4,"8"],["Bench Press",4,"8–10"],["DB Shoulder Press",3,"10"],
-                  ["Cable Lateral Raise",4,"15"],["Cable Fly",3,"15"],["Triceps Pushdown",3,"10"],["Overhead Triceps Extension",3,"12"]]
+    "Upper Body":[["Incline DB Press",4,"8\u201310"],["Lat Pulldown",4,"8\u201310"],
+                  ["DB Single-arm Row",3,"10 each side"],["Lateral Raise",3,"12\u201315"],["Cable Fly",3,"12"],
+                  ["Hammer Curl",2,"10"]],
+    "Legs & Core":[["Romanian Deadlift",4,"8"],["Bulgarian Split Squat",3,"8 each leg"],
+                  ["Goblet Squat",3,"12"],["Calf Raise",3,"15"],["Band Pallof Press",3,"12 each side"],
+                  ["Reverse Crunch",2,"12"]],
+    "Pull Day":[["Lat Pulldown",4,"8\u201310"],["Chest-supported Row",4,"10"],
+                  ["Cable Straight-arm Pulldown",3,"12"],["DB Reverse Fly",3,"15"],["Face Pull",3,"12"],
+                  ["DB Curl",2,"10"]],
+    "Push Day":[["Incline DB Press",4,"8"],["Bench Press",3,"8\u201310"],
+                  ["DB Shoulder Press",3,"10"],["Cable Lateral Raise",3,"15"],["Cable Fly",3,"15"],
+                  ["Triceps Pushdown",2,"10"]]
   },
   3:{
-    "Upper Body":[["Incline DB Press",4,"8"],["Lat Pulldown",4,"10"],["Chest-supported Row",4,"10"],
-                  ["Cable Lateral Raise",4,"15"],["Cable Fly",3,"15"],["Incline DB Curl",3,"10"],["Triceps Pushdown",3,"10"]],
-    "Legs & Core":[["Romanian Deadlift",4,"8–10"],["Bulgarian Split Squat",3,"12 each leg"],["Goblet Squat",4,"10"],
-                  ["Cable Pull-Through",3,"15"],["Calf Raise",4,"20"],["Cable Crunch",3,"15"],["Dead Bug",3,"12 each side"]],
-    "Pull Day":[["Lat Pulldown",4,"8"],["DB Single-arm Row",4,"10 each side"],["Cable Straight-arm Pulldown",3,"15"],
-                  ["DB Reverse Fly",4,"15"],["Face Pull",3,"15"],["Incline DB Curl",3,"10"],["Cable Curl",3,"12"]],
-    "Push Day":[["Incline DB Press",4,"8"],["Bench Press",3,"10"],["DB Shoulder Press",3,"8–10"],
-                  ["Lateral Raise",5,"12–15"],["Cable Fly",3,"12"],["Triceps Pushdown",3,"12"],["Single-arm Triceps Extension",3,"12"]]
+    "Upper Body":[["Incline DB Press",4,"8"],["Lat Pulldown",4,"10"],
+                  ["Chest-supported Row",3,"10"],["Cable Lateral Raise",3,"15"],["Cable Fly",3,"15"],
+                  ["Incline DB Curl",2,"10"]],
+    "Legs & Core":[["Romanian Deadlift",4,"8\u201310"],["Goblet Squat",3,"10"],
+                  ["Bulgarian Split Squat",3,"12 each leg"],["Calf Raise",3,"20"],["Cable Crunch",3,"15"],
+                  ["Dead Bug",2,"12 each side"]],
+    "Pull Day":[["Lat Pulldown",4,"8"],["DB Single-arm Row",4,"10 each side"],
+                  ["Cable Straight-arm Pulldown",3,"15"],["DB Reverse Fly",3,"15"],["Face Pull",3,"15"],
+                  ["Incline DB Curl",2,"10"]],
+    "Push Day":[["Incline DB Press",4,"8"],["Bench Press",3,"10"],
+                  ["DB Shoulder Press",3,"8\u201310"],["Lateral Raise",3,"12\u201315"],["Cable Fly",3,"12"],
+                  ["Triceps Pushdown",2,"12"]]
   },
   4:{
-    "Upper Body":[["Incline DB Press",3,"10"],["Lat Pulldown",3,"10"],["Seated Cable Row",3,"12"],
-                  ["Lateral Raise",3,"15"],["Cable Fly",3,"12"],["DB Curl",2,"12"],["Triceps Pushdown",2,"12"]],
-    "Legs & Core":[["Romanian Deadlift",3,"10"],["Bulgarian Split Squat",3,"10 each leg"],["Goblet Squat",3,"12"],
-                  ["Reverse Lunge",2,"10 each leg"],["Calf Raise",3,"15"],["Band Pallof Press",2,"12 each side"],["Reverse Crunch",2,"12"]],
-    "Pull Day":[["Lat Pulldown",3,"10"],["Seated Cable Row",3,"10"],["Cable Straight-arm Pulldown",3,"12"],
-                  ["DB Reverse Fly",3,"15"],["Face Pull",2,"15"],["Hammer Curl",2,"12"],["Cable Curl",2,"12"]],
-    "Push Day":[["Incline DB Press",3,"10"],["Bench Press",3,"10"],["DB Shoulder Press",2,"10"],
-                  ["Lateral Raise",3,"15"],["Cable Fly",2,"15"],["Triceps Pushdown",2,"12"]]
+    "Upper Body":[["Incline DB Press",3,"10"],["Lat Pulldown",3,"10"],
+                  ["Seated Cable Row",3,"12"],["Lateral Raise",3,"15"],["Cable Fly",2,"12"],
+                  ["DB Curl",2,"12"]],
+    "Legs & Core":[["Romanian Deadlift",3,"10"],["Bulgarian Split Squat",3,"10 each leg"],
+                  ["Goblet Squat",3,"12"],["Calf Raise",3,"15"],["Band Pallof Press",2,"12 each side"],
+                  ["Reverse Crunch",2,"12"]],
+    "Pull Day":[["Lat Pulldown",3,"10"],["Seated Cable Row",3,"10"],
+                  ["Cable Straight-arm Pulldown",3,"12"],["DB Reverse Fly",3,"15"],["Face Pull",2,"15"],
+                  ["Hammer Curl",2,"12"]],
+    "Push Day":[["Incline DB Press",3,"10"],["Bench Press",3,"10"],
+                  ["DB Shoulder Press",3,"10"],["Lateral Raise",3,"15"],["Cable Fly",2,"15"],
+                  ["Triceps Pushdown",2,"12"]]
   }
 };
 /* Which week of the block we are in, 1-4, wrapping so the block repeats until
@@ -8688,6 +8739,11 @@ Object.keys(PHYSIQUE_PRIORITY).map(g=>"  "+g+": "+PHYSIQUE_PRIORITY[g]).join("\n
 "  \u2022 Where they genuinely conflict, the order is: keep the movement quality, keep the load, cut the volume. Never the other way round.\n"+
 "  \u2022 Strength is its own goal, not a by-product. Something heavy and low-rep every week, on a movement he repeats, or he is not training strength no matter how good the sessions feel.\n"+
 "  \u2022 If a session is short on mobility, that is a programming failure, not a missing extra.\n\n"+
+"\n=== THE SHAPE OF A SESSION \u2014 HIS RULE, NOT A SUGGESTION ===\n"+
+"Around SIX movements: 2 main compounds at 3-4 sets, 2-3 secondary at 3 sets, 1 isolation or finisher at 2-3. Sixty to seventy minutes INCLUDING his 2km row, and that is a ceiling, not a target. His words: \"I cannot gym forever.\"\n"+
+"So NEVER add a seventh movement, and never answer a gap in his week by making a session longer. If something needs to go in, something comes out \u2014 name the swap and what it costs. Adding volume he has no time for is the fastest way to have him stop opening the app.\n"+
+"Arms and direct core get one slot each per week at 2-3 sets, which is below the app\u2019s own weekly targets. That is the arithmetic of six movements in an hour and he knows it. Do not keep flagging it; raise it ONCE, as a swap he could make, and then leave it.\n"+
+"His week is fixed: Mon Upper, Tue Legs & Core, Wed Mobility, Thu Pull, Fri Push, Sat and Sun rest. Do not rearrange it.\n\n"+
 "FATIGUE AND DELOADS \u2014 read the numbers, not the calendar:\n"+
 (f.reasons.length? ("  CURRENT SIGNALS: "+f.reasons.join("; ")+"\n"+
   (f.deloadCase? "  Two or more signals are showing. Make the case for a deload week \u2014 same movements, roughly half the sets, 60-70% of the loads \u2014 and use [[DELOAD_WORKOUT: -30%]] if he agrees. Do not wait for him to raise it.\n" : "  One signal only. Watch it, mention it if it persists, do not overreact.\n"))
@@ -12632,7 +12688,7 @@ function scheduleInApp(){
    v18 ADDITIONS — draggable rest timer · weekly training memory · AI planner
    · Firestore sync
    ========================================================================== */
-const APP_VERSION="v171 · 17/09/2026";
+const APP_VERSION="v172 · 17/09/2026";
 
 /* ===== 1. REST TIMER — drag it anywhere so it never blocks the chat box ===== */
 let _rtDrag=null;

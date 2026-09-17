@@ -1,3 +1,71 @@
+AMIR PT — v172 · 17/09/2026
+===========================
+
+"A better structure is around 5–6 exercises: 2 main compound movements at 3–4
+sets, 2–3 secondary at 3 sets, 1 smaller isolation/finisher at 2–3. Since I
+cannot gym forever and my maximum time is 60–70 mins, adjust the workouts —
+and make sure it reflects on ALL workouts. Also it has to be the Mon Tues Wed
+Thur format."
+
+EVERY SESSION WAS SEVEN MOVEMENTS AND OVER HIS CLOCK
+----------------------------------------------------
+All sixteen ran 21–24 sets, and the app's own estimator put them at 72–74
+minutes against a 65-minute budget. It was printing "that's over your 65, drop
+a set or an exercise" on sessions the app itself had written. I flagged that
+at v163 and did not act on it, which was the wrong call: a session he cannot
+finish is not a session.
+
+His structure is the fix and it is the right one. The seventh movement was
+always a second arm or core slot — priorities 5 and 6 of the seven he listed.
+
+ALL SIXTEEN, REWRITTEN
+----------------------
+Six movements each: two compounds (3–4 sets), three secondary (3 sets), one
+finisher (2–3). 16–19 sets. Measured with the app's own estimator, including
+the 2km row:
+
+  week 1   Upper 64m   Legs 64m   Pull 62m   Push 64m
+  week 2   Upper 64m   Legs 66m   Pull 62m   Push 64m
+  week 3   Upper 64m   Legs 64m   Pull 62m   Push 64m
+  week 4   Upper 58m   Legs 61m   Pull 56m   Push 60m   (deload)
+
+None over budget. The week 4 deload now finishes in under an hour, which is
+what a deload should feel like.
+
+Thursday, week 1, as he will see it today:
+  Lat Pulldown 4x10 · Seated Cable Row 4x10 · Single-arm Lat Pulldown 3x12
+  each side · DB Reverse Fly 3x15 · Face Pull 3x15 · Hammer Curl 2x10
+
+WHAT IT COSTS, SAID OUT LOUD
+----------------------------
+Arms and direct core now get one slot each per week at 2–3 sets, below the
+app's own weekly targets for them. That is the arithmetic of six movements in
+an hour, not an oversight. His first four priorities — lateral delts, upper
+chest, lat width, upper back and rear delts — are at or above target, which is
+the right place for the volume to sit given what he is building.
+
+If he wants arms or waist higher it is a SWAP and it comes out of a compound.
+The coach knows to offer it once and then stop mentioning it.
+
+THE WEEK
+--------
+Mon Upper · Tue Legs & Core · Wed Mobility · Thu Pull · Fri Push · Sat+Sun rest,
+asserted once on load. v160 set the same shape but only for a profile that had
+never seen it, so a day changed since — by him, by the coach, by an older build
+— stayed changed. A program written per day type cannot run on a week that
+does not match it. Fires once; after that the week is his to move again.
+
+THE COACH
+---------
+It now carries the session shape as a rule, not a preference: six movements,
+60–70 minutes including the row, never a seventh, and if something goes in
+something comes out — named, with what it costs. Plus the fixed week, and the
+instruction to raise the arms/core shortfall once and then leave it alone.
+
+VERIFIED: 16 sessions, 6 movements each, all within budget on the app's own
+estimator; drifted week corrected on load; Week 1 of 4 holds; mobility
+untouched at 12/12 areas; five tabs at 390px and 1440px; no console errors.
+
 AMIR PT — v171 · 17/09/2026
 ===========================
 
