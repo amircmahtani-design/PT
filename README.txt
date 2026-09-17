@@ -1,3 +1,51 @@
+AMIR PT — v177 · 17/09/2026
+===========================
+
+"At the end of the day it's many weeks of workouts, so one week it can have it,
+another it can remove it. Use that type of logic."
+
+That is the answer to both of the questions I left open at v176, and it is a
+better answer than either of mine. I had framed them as keep-or-drop. Across
+four weeks neither is necessary: a movement can hold a slot on the weeks where
+it does not collide with anything, and step out on the weeks where it does.
+
+WHAT CAME BACK
+--------------
+Bulgarian Split Squat. It was out of the program entirely at v176 because it
+cannot share a sheet with a Goblet Squat. It now OWNS weeks 2 and 4, as the
+single knee movement of the day; Goblet Squat and Reverse Lunge take weeks 1
+and 3. Nobody had to lose.
+
+Single-arm Lat Pulldown. He was right that it cannot sit next to a Lat
+Pulldown. It can replace one: week 3's Pull Day opens on it, at 4x10 each
+side, and the Lat Pulldown steps out for that week.
+
+The flat bench rotates rather than being argued about. Weeks 1, 3 and 4 run
+Bench Press; week 2 runs Close-grip Bench Press — same slot, same pattern,
+more triceps, and a different lift to progress.
+
+THE RULE STILL HOLDS EVERYWHERE
+-------------------------------
+auditProgram() reports no repeats in any of the sixteen sessions. Every one is
+five or six movements, every one inside the hour: weeks 1-3 run 62-65 minutes,
+week 4's deload 53-60.
+
+Two sessions are five movements rather than six — weeks 2 and 4 of Legs & Core,
+where Bulgarian Split Squat is the only knee movement. That is deliberate and
+inside the 5-6 he asked for; it is also the hardest single-leg work in the
+program, so the day does not need padding.
+
+PHOTOGRAPHS
+-----------
+Three movements now in the program have none, so they show no image at all
+rather than a wrong one: Single-arm Lat Pulldown, Incline DB Curl, Reverse
+Crunch. Listed at the top of EXERCISES.txt. Everything else in all sixteen
+sessions has one.
+
+VERIFIED: no repeats in 16 sessions; every movement doable in Dubai and not on
+his banned list; 5-6 movements each; none over budget; mobility 12/12; five
+screens clean at 390px and 360px; no console errors.
+
 AMIR PT — v176 · 17/09/2026
 ===========================
 

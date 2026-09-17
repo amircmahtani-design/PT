@@ -1,3 +1,15 @@
+STILL NEEDED — as of v177 (17/09/2026)
+======================================
+
+Three movements now IN the 4-week program have no photograph, so they show no
+image at all (never a wrong one):
+
+  single-arm-lat-pulldown   — week 3 Pull Day, the day's main vertical pull
+  incline-db-curl           — week 3 Upper Body and week 3 Pull Day
+  reverse-crunch            — weeks 2 and 4, Legs & Core and Pull Day
+
+Every other movement in all sixteen sessions has one.
+
 EVERY EXERCISE IN THE APP — AND WHAT IT SHOWS
 =============================================
 
