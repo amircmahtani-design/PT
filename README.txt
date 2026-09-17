@@ -1,3 +1,64 @@
+AMIR PT — v185 · 17/09/2026
+===========================
+
+"Mobility in the Progress tab is wrong. Just make sure when it's a mobility day
+it knows this. Sometimes mobility can be replaced with Pilates by the way."
+
+    MAIN PROGRESSION LIFTS
+    Mobility        Barbell Back Squat, Deadlift
+
+On a day with no barbell in it at all.
+
+IT WAS READING A SYSTEM THE PROGRAM REPLACED
+--------------------------------------------
+The card listed b.anchors — the two lifts the old pool builder pinned to each
+day type for the length of a block. Since v163 the master program owns the
+five training days, so those anchors were stale for ALL of them, not just
+Wednesday. Upper Body said "Band Lat Pulldown, Incline Bench Press"; the
+program says Incline DB Press and Lat Pulldown. On the mobility day the
+anchors were not just stale, they were absurd.
+
+The card asks the same two questions Train asks now: what KIND of day is this,
+and if it lifts, what does the program say this week.
+
+    Upper Body      Incline DB Press, Lat Pulldown
+    Legs & Core     Romanian Deadlift, Goblet Squat
+    Mobility        Mobility flow — 12 areas, full body. No lifts to progress.
+    Pull Day        Lat Pulldown, Seated Cable Row
+    Push Day        Incline DB Press, Bench Press
+
+And it lists the days in HIS week, in order, rather than whatever the block
+happens to hold anchors for.
+
+PILATES IS A REAL SUBSTITUTE, SO IT IS TREATED AS ONE
+------------------------------------------------------
+splitKindOf() answers "what kind of day is this" from a day type's NAME, the
+way flowDay() answers it for a built session. Pilates and mobility are both
+flow days; cardio is cardio; everything else lifts. Set Wednesday to Pilates
+and the card reads "Pilates flow — controlled, timed. No lifts to progress."
+
+The day itself was already right: a Pilates day builds an 11-movement mat flow
+with its own three-level plan, no sets, no lifts.
+
+AND A MIGRATION THAT WAS WAITING TO UNDO HIS FIRST EDIT
+-------------------------------------------------------
+Found while testing exactly that swap. The v172 week assertion runs on LOAD,
+and a brand-new profile has never been loaded from storage — so its flag was
+still unset the first time he changed a day. Set Wednesday to Pilates, reopen
+the app, and the migration fired and put Mobility back. Silently.
+
+Two fixes: a fresh profile already carries the correct week in DEFAULTS, so it
+is stamped as migrated at birth; and when the migration DOES run on an older
+profile, a Wednesday that is already a flow day is left alone. Pilates stays
+Pilates.
+
+VERIFIED: the card reads correctly for mobility, for Pilates and for all four
+lifting days; a legacy week with Pilates on Wednesday is corrected everywhere
+else and keeps its Pilates; a legacy week with no flow day gets Mobility; a
+day changed on a fresh profile survives a reload. 16 sessions match, no
+repeats, mobility 12/12, the action journey passes, five screens clean, no
+console errors.
+
 AMIR PT — v184 · 17/09/2026
 ===========================
 

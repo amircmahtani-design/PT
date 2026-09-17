@@ -1940,7 +1940,13 @@ function mergeDefaults(parsed){ let d={...structuredClone(DEFAULTS),...parsed};
     d.prefs.weekV172=true;
     d.dayTypes=d.dayTypes||{};
     if(!d.dayTypes["Mobility"]) d.dayTypes["Mobility"]={kind:"mobility",main:[],note:""};
-    d.schedule={0:"Rest",1:"Upper Body",2:"Legs & Core",3:"Mobility",4:"Pull Day",5:"Push Day",6:"Rest"};
+    if(!d.dayTypes["Pilates"])  d.dayTypes["Pilates"] ={kind:"pilates", main:[],note:""};
+    /* v185 — "sometimes mobility can be replaced with Pilates". A day that is
+       ALREADY a flow day is the day this was trying to create, so leave it:
+       Wednesday set to Pilates stays Pilates. */
+    const was=(d.schedule||{})[3];
+    const keepFlow=/pilates|barre|mobility|yoga|stretch|flow/i.test(String(was||""));
+    d.schedule={0:"Rest",1:"Upper Body",2:"Legs & Core",3:(keepFlow? was : "Mobility"),4:"Pull Day",5:"Push Day",6:"Rest"};
   }
   /* v61 — photos gain a real timestamp and a pose label. Older ones only ever
      had a YYYY-MM-DD, so they're back-filled from that date at midday (so a
@@ -2048,7 +2054,17 @@ function migrate129(d){
 }
 function load(){ try{
   let s=localStorage.getItem(STORE_KEY) || localStorage.getItem(BACKUP_KEY);
-  return s? mergeDefaults(JSON.parse(s)) : structuredClone(DEFAULTS);
+  if(s) return mergeDefaults(JSON.parse(s));
+  /* ===== v185 · A MIGRATION MUST NOT BE WAITING TO UNDO HIS FIRST EDIT ====
+     The v172 week assertion runs on LOAD, and a brand-new profile has never
+     been loaded from storage — so the flag was still unset the first time he
+     changed a day. Set Wednesday to Pilates, reopen, and the migration fired
+     and put Mobility back. A fresh profile already carries the right week in
+     DEFAULTS, so there is nothing to migrate: stamp it as done. */
+  const fresh=structuredClone(DEFAULTS);
+  fresh.prefs=fresh.prefs||{};
+  fresh.prefs.weekV160=true; fresh.prefs.weekV172=true;
+  return fresh;
 }catch(e){ return structuredClone(DEFAULTS); } }
 function save(){
   DB._rev=Date.now();
@@ -3451,6 +3467,21 @@ function swapMedia(el,url,name){
   paintDemos();
 }
 function catOf(name){ const e=EX(name); return (e&&e.cat) || catFromName(name); }
+/* v185 — what KIND of day a split is, by name. flowDay() answers this for a
+   built session; this answers it for a day type, which is what the planner,
+   the week table and the programme card all need. Pilates counts as a flow
+   day: he swaps it in for mobility whenever he feels like it. */
+function splitKindOf(split){
+  const s=String(split||"").trim();
+  if(!s || s==="Rest") return "rest";
+  const t=(DB.dayTypes||{})[s];
+  if(t && t.kind) return t.kind;
+  if(/pilates|barre/i.test(s))                      return "pilates";
+  if(/mobility|yoga|stretch|recovery|restorative|flow/i.test(s)) return "mobility";
+  if(/cardio|row|hiit|interval|conditioning/i.test(s)) return "cardio";
+  return "lift";
+}
+function splitIsFlow(split){ const k=splitKindOf(split); return k==="mobility"||k==="pilates"; }
 function pickSplit(){ if(DB.dayOverride && DB.dayOverride.date===today() && DB.dayOverride.split) return DB.dayOverride.split; return DB.schedule[new Date().getDay()] || "Full Body"; }
 function todaySets(ex){ const a=DB.strength[ex]; if(!a) return []; const x=a.find(o=>o.date===today()); return x?x.sets:[]; }
 function markSession(){ if(DB.lastSessionDate!==today()){ DB.lastSessionDate=today(); save(); updateStreak(); toast("Session started · "+(DB.streak||1)+" day run "); } }
@@ -12817,7 +12848,7 @@ function scheduleInApp(){
    v18 ADDITIONS — draggable rest timer · weekly training memory · AI planner
    · Firestore sync
    ========================================================================== */
-const APP_VERSION="v184 · 17/09/2026";
+const APP_VERSION="v185 · 17/09/2026";
 
 /* ===== 1. REST TIMER — drag it anywhere so it never blocks the chat box ===== */
 let _rtDrag=null;
@@ -20157,8 +20188,34 @@ function renderProgrammeView(){
   let b; try{ b=blockSummary(); }catch(e){ el.innerHTML="<div class='sm'>Programme information isn't available yet.</div>"; return; }
   const sched=Object.keys(DB.schedule).map(k=>+k).sort((a,b2)=>((a+6)%7)-((b2+6)%7))
     .map(k=>"<div class='pgrow'><span class='k'>"+DOW[k]+"</span><span class='v'>"+escapeHtml(DB.schedule[k])+"</span></div>").join("");
-  const anchors=Object.keys(b.anchors||{}).map(k=>
-    "<div class='pgrow'><span class='k'>"+escapeHtml(k)+"</span><span class='v'>"+escapeHtml((b.anchors[k]||[]).join(", ")||"—")+"</span></div>").join("");
+  /* ===== v185 · A MOBILITY DAY HAS NO PROGRESSION LIFTS ==================
+     "Mobility in Progress is wrong. Just make sure when it's a mobility day it
+     knows this."
+
+     This card listed b.anchors, the two lifts the old pool builder pinned per
+     day type. Since v163 the program owns the five training days, so the
+     anchors were stale for ALL of them — and on WEDNESDAY they were absurd:
+     "Mobility · Barbell Back Squat, Deadlift" on a day with no barbell in it
+     at all.
+
+     The card now asks the same questions Train asks: what KIND of day is it,
+     and if it lifts, what does the program actually say this week. */
+  const dayLine=(split)=>{
+    const k=splitKindOf(split);
+    if(k==="mobility") return "Mobility flow — 12 areas, full body. No lifts to progress.";
+    if(k==="pilates")  return "Pilates flow — controlled, timed. No lifts to progress.";
+    if(k==="cardio")   return ((DB.cardio&&DB.cardio.name)||"Concept2 Row")+" — conditioning, no lifts to progress.";
+    try{
+      const prog=programFor(split);
+      if(prog&&prog.length) return prog.slice(0,2).map(x=>x.n).join(", ");
+    }catch(e){}
+    return ((b.anchors||{})[split]||[]).join(", ")||"—";
+  };
+  /* Every day type in his week, in his week's order, not whatever the block
+     happens to have anchors for. */
+  const splits=[...new Set([1,2,3,4,5,6,0].map(d=>(DB.schedule||{})[d]).filter(x=>x&&x!=="Rest"))];
+  const anchors=splits.map(k=>
+    "<div class='pgrow'><span class='k'>"+escapeHtml(k)+"</span><span class='v'>"+escapeHtml(dayLine(k))+"</span></div>").join("");
   const vol=weeklyVolume(7);
   const volRow=Object.keys(PHYSIQUE_TARGET||{}).map(g=>{
     const got=vol[g]||0, want=PHYSIQUE_TARGET[g];
