@@ -1,3 +1,58 @@
+AMIR PT — v169 · 17/09/2026
+===========================
+
+"It's saying week 4 of 4 I want it to read week 1 of 4."
+
+I FIXED THE WRONG THING IN v167
+-------------------------------
+v167 retired a block whose stored LENGTH was not the current length, on the
+reasoning that his was still the five-week one. It was not. blockWeeks()
+became 4 back in v163, so any block started since then already stored 4, and
+that test never fired on his.
+
+What said "of 5" was never the block. It was the SESSION, stamped with
+blockWeeks() at the moment v146 built it. v167 made the bar read the block
+instead of the stamp, so the number changed — to "Week 4 of 4" — and the week
+behind it did not move at all. The screenshot that came back said exactly
+that, and it was right.
+
+THE TEST THAT ACTUALLY WORKS
+----------------------------
+A block is this program's block only if this program started it. Blocks carry
+builtWith now, the same stamp v166 put on sessions. A block without it was
+started before the stamp existed, therefore before the program existed, and
+is replaced by one starting today.
+
+His has no stamp, whatever its stored length, so it goes and he opens on
+Week 1 of 4. It can only fire once — every block after it carries the stamp
+and rolls over on schedule as before.
+
+AND THE SESSION ON TOP OF IT
+-----------------------------
+upgradeTodayToProgram stopped at "this session is already programmed". But
+WHICH week a session is programmed to comes from the block, so the moment the
+block moved, his sheet was a week the app is no longer in: week 4's deload,
+under a heading reading Week 1 of 4. Programmed or not, a session this build
+did not make gets rebuilt. The version stamp was always the real test.
+
+Still untouched: a session with sets already logged today. That one stands,
+because pulling the sheet out mid-session is worse than a week number being
+briefly wrong, and tomorrow is right either way.
+
+VERIFIED against both shapes of his block — stored weeks:4 (v163–v166) and the
+older weeks:5 — each with no stamp, and a session v166 had already built into
+the week 4 deload. Both end on Week 1 of 4, no Deload chip, week 1's Pull Day
+as written: Lat Pulldown 4x10, Seated Cable Row 4x10, Single-arm Lat Pulldown
+3x12 each side, DB Reverse Fly 4x15, Face Pull 3x15, Hammer Curl 3x10, Cable
+Curl 3x12. History intact. Mid-session guard re-checked. 16 programmed
+sessions match, five tabs render, 390px and 1440px, no console errors.
+
+A NOTE TO SELF
+--------------
+Two versions were spent on this because I diagnosed from what the screen said
+rather than from what was stored. "Week 4 of 5" was a rendering of a stale
+stamp, and I read it as a fact about the block. Read the state, not the label.
+
 AMIR PT — v168 · 17/09/2026
 ===========================
 

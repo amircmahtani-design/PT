@@ -3608,6 +3608,10 @@ function newBlock(){
     weeks: blockWeeks(),
     loc: key,
     anchors,
+    /* v169 — which build started this block. Same idea as builtWith on a
+       session: without it there is no way to tell a block that belongs to
+       this program from one that was running before the program existed. */
+    builtWith: APP_VERSION,
     n: ((DB.block&&DB.block.n)||0)+1
   };
   save();
@@ -3624,7 +3628,19 @@ function ensureBlock(){
      of 4, week 1 of the program. Logged sets live in DB.strength and are not
      touched by this — his history and his progression stay exactly as they
      are. */
-  if(!DB.block || blockExpired() || DB.block.loc!==locKey() || DB.block.weeks!==blockWeeks()) newBlock();
+  /* ===== v169 · THE LENGTH TEST WAS NOT ENOUGH ==========================
+     v167 retired a block whose length was not the current length, on the
+     reasoning that his was still the five-week one. It was not: blockWeeks()
+     became 4 in v163, so any block started since then already stored 4 and
+     the test never fired. What said "of 5" was the SESSION, stamped when it
+     was built by v146 — which is why the number changed in v167, when the bar
+     started reading the block, and the week behind it did not.
+     A block is only this program's block if this program started it. Blocks
+     carry builtWith now; one without it predates the stamp, therefore
+     predates the program, and is replaced by a block starting today. It fires
+     once, and every block after it rolls over on schedule as before. */
+  if(!DB.block || blockExpired() || DB.block.loc!==locKey()
+     || DB.block.weeks!==blockWeeks() || !DB.block.builtWith) newBlock();
   /* A split added since the block started still needs anchors. */
   const key=locKey();
   Object.values(DB.schedule||{}).forEach(sp=>{
@@ -5488,7 +5504,15 @@ function exImgHTML(name,muscles){ return demoTileHTML(name); }
    DB.strength, not on the session. */
 function upgradeTodayToProgram(){
   const w=DB.workout;
-  if(!w || w.programmed) return false;
+  if(!w) return false;
+  /* ===== v169 · A PROGRAMMED SESSION CAN STILL BE THE WRONG ONE ==========
+     This used to stop at "it is already programmed". But WHICH week it is
+     programmed to comes from the block, and when the block moves — as it does
+     the first time v169 retires an unstamped one — the session on the sheet is
+     a week the app is no longer in. He would have had week 4's deload under a
+     heading reading Week 1 of 4. The version stamp below is the real test and
+     always was: a session this build did not make gets rebuilt, programmed or
+     not. */
   if(w.builtWith===APP_VERSION) return false;
   if(typeof todayCleared==="function" && todayCleared()) return false;
   let prog=null;
@@ -12484,7 +12508,7 @@ function scheduleInApp(){
    v18 ADDITIONS — draggable rest timer · weekly training memory · AI planner
    · Firestore sync
    ========================================================================== */
-const APP_VERSION="v168 · 17/09/2026";
+const APP_VERSION="v169 · 17/09/2026";
 
 /* ===== 1. REST TIMER — drag it anywhere so it never blocks the chat box ===== */
 let _rtDrag=null;
