@@ -1,3 +1,75 @@
+AMIR PT — v179 · 17/09/2026
+===========================
+
+"Honestly it's easy. If it's weights it's always kgs and reps. If it's bands
+it's reps. If it's core or Pilates it's time. And if it's mobility I just see
+it."
+
+Four lines. They replace the pile of guesswork that decided his cable Face
+Pull was reps-only yesterday.
+
+WHAT THE APP WAS DOING
+----------------------
+inferredLogType() asked, in this order: is the catalogue's `timed` flag set;
+is the name on a hardcoded "loadless" list; does the name look like a rowing
+machine; and finally, is the equipment tag "bw". Everything else fell through
+to weight + reps. There was no rule about core, no rule about bands, and the
+equipment tag — a guess — was doing the deciding.
+
+So: Face Pull is tagged "band" in the catalogue, therefore reps only, therefore
+the app refused the weight he was reading off the stack. And Dead Bug, which
+is a hold, asked him for a rep count.
+
+WHAT IT DOES NOW — HIS RULE, IN HIS ORDER
+----------------------------------------
+  0. the rowing machine and loaded carries are metres. They always were.
+  1. if it's weights (barbell, dumbbell, machine, cable, kettlebell)
+     → kilos and reps
+  2. if it's bands → reps
+  3. if it's core or Pilates → time
+  4. anything the catalogue already calls a hold → time
+  5. everything else is bodyweight strength → reps
+
+The ORDER is the whole thing. Loaded beats core, which is why a Cable Crunch
+is kilos and reps and a Dead Bug is seconds.
+
+One trap inside it: "core" has to be the PRIMARY muscle, not merely listed. A
+Reverse Lunge carries core as its second tag and is a leg movement with a rep
+count. Caught in testing, before it shipped a lunge you hold for 45 seconds.
+
+FACE PULL IS A CABLE, NOT A BAND
+--------------------------------
+Its own catalogue entry says "Pull to eyebrows, thumbs back" and its wrist
+note says "Rope, neutral". It is a rope on a cable stack and it was tagged
+band. Fixed at the source, so it comes out as kilos and reps for good — not
+just because he corrected it yesterday.
+
+AND THE PROGRAM STOPPED CONTRADICTING ITSELF
+--------------------------------------------
+Two movements were written as reps and are now classified as time, which would
+have put "12 reps" above a stopwatch:
+
+  Dead Bug        2 x 10 each side  →  2 x 45s   (and 50s in week 3)
+  Reverse Crunch  3 x 12            →  Hollow Hold 3 x 30s
+
+Reverse Crunch is out and Hollow Hold is in: if the core slot is timed, it
+should be a movement that is actually held. Band Pallof Press stays on reps —
+it is a band, and his rule says bands are reps.
+
+THE WHOLE LIBRARY, RE-READ
+--------------------------
+  63 weight + reps · 80 reps · 43 time · 2 distance
+
+Spot-checked: Push-up, Pull-up, Chin-up, Glute Bridge, Nordic Curl and Band Row
+are reps; Plank, Side Plank, Bird Dog, Leg Raise, Ab Wheel and Dead Hang are
+time; Barbell Row and DB Calf Raise are kilos and reps; Farmer Carry and the
+Concept2 are metres.
+
+VERIFIED: no session repeats a movement; 16 sessions match the table; Hollow
+Hold renders as "2 sets · 30s" with a timer and Face Pull as "3 sets · 15 reps"
+with a kilos box and a suggested 26.5kg; all inside the hour; mobility 12/12;
+no console errors.
+
 AMIR PT — v178 · 17/09/2026
 ===========================
 
