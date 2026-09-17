@@ -1,3 +1,56 @@
+AMIR PT — v164 · 17/09/2026
+===========================
+
+"It's not updating the new app."
+
+THE ACTUAL REASON, AND IT IS NOT CACHING
+-----------------------------------------
+    has_pages: false
+    workflow runs: 0
+
+GitHub Pages is NOT ENABLED on the repository and no Action has ever run. There
+is no server publishing these commits. Every push to main has been landing
+correctly — main is at v163, the files are right, I checked them through the
+API — and then going nowhere.
+
+So every "force-close the app and reopen" I have given him for the last several
+versions was useless advice, and worse than useless: it sent him to look for a
+build that was never served. The v157 update banner has the same problem — it
+asks the server for the newest version, and there is no server.
+
+Worse, I talked myself into this. An earlier note in this file had me ending
+every version message with "upload index.html and sw.js", and at v146 I
+"corrected" that to "nothing to upload, just refresh the PWA". The original
+instruction was right. The correction was the mistake, and it has cost him
+about fifteen versions of confusion.
+
+THE FIX IS ONE SETTING, ONCE
+-----------------------------
+Repository → Settings → Pages → Source: "Deploy from a branch" → main → / (root).
+After that every push deploys itself within a minute and the update banner and
+the version panel below both start telling the truth.
+
+WHAT SHIPPED HERE ANYWAY
+-------------------------
+Settings now has an App version panel that states both numbers plainly:
+
+    Running on this phone:  v164 · 17/09/2026
+    Newest on the server:   v164
+    Up to date.
+
+and, when they differ, says so in gold. Two buttons under it: "Check for a new
+version", and "Force update now", which unregisters every service worker,
+deletes every cache and reloads with a cache-busting query.
+
+Force update does NOT touch his data. Verified: a planted lift and a stale
+cache went in, the cache came out empty and the lift survived intact. History,
+photos, check-ins and settings live in localStorage and IndexedDB, which it
+does not go near.
+
+None of this reaches him until one build carrying it loads, which is the
+chicken and egg I cannot solve from inside a version he is not running. The
+Pages setting is what breaks the loop.
+
 AMIR PT — v163 · 17/09/2026
 ===========================
 

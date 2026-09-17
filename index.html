@@ -1554,6 +1554,13 @@ a{color:var(--orange);}
         <input type="file" accept=".json,application/json" style="display:none" onchange="importData(this)" /></label>
       <button class="btn ghost" onclick="resetAll()" style="color:var(--red);border-color:#5c1c17">Reset everything</button>
     </div>
+    <div class="section-h">App version</div>
+    <div class="card">
+      <div class="hint mb" id="verBox" style="font-size:13px;line-height:1.7">Checking…</div>
+      <button class="btn sec mb" onclick="checkForUpdate(true)">Check for a new version</button>
+      <button class="btn" onclick="forceUpdate()">Force update now</button>
+      <div class="hint mt" style="font-size:12px">Force update throws away the stored copy of the app and downloads it again from scratch. Your training history, photos and settings are not touched \u2014 they live somewhere else on the phone.</div>
+    </div>
     <div class="hint center mt" id="verLine" style="font-size:12px"></div>
     <div style="height:20px"></div>
   </section>
@@ -2257,6 +2264,7 @@ function go(s){
   if(s==='browse') renderBrowse();
   if(s==='settings'){
     collapsibleSettings(); renderCatList();
+    try{ renderVersionBox(); }catch(e){}
     /* v98.1 — these renders had ended up inside setDefaultRest(), a rest-timer
        function, so the voice card and the kit card only appeared if he happened
        to nudge a rest timer first. They belong here, where Settings opens. */
@@ -6631,9 +6639,10 @@ document.addEventListener('visibilitychange',function(){ if(!document.hidden) re
    when he is ready. Nothing reloads underneath him. */
 function appVerNum(){ const m=String(APP_VERSION).match(/v(\d+)/); return m? +m[1] : 0; }
 let _updSeen=0, _updLast=0;
-async function checkForUpdate(){
+async function checkForUpdate(manual){
+  if(manual){ _updLast=0; try{ renderVersionBox(); }catch(e){} }
   try{
-    if(Date.now()-_updLast < 120000) return;
+    if(!manual && Date.now()-_updLast < 120000) return;
     _updLast=Date.now();
     const r=await fetch('sw.js?ts='+Date.now(),{cache:'no-store'});
     if(!r.ok) return;
@@ -6649,6 +6658,55 @@ async function checkForUpdate(){
       if(b) b.classList.add('show');
     }
   }catch(e){}
+}
+/* ===== v164 · WHEN THE SERVICE WORKER WILL NOT LET GO =====================
+   "It's not updating the new app." The banner added in v157 only helps once a
+   build carrying it has loaded at least once, and an installed iOS PWA can sit
+   on the same page for days without ever re-fetching. That is a chicken and
+   egg I cannot solve from inside a version he is not running, so this is the
+   escape hatch: unregister every service worker, delete every cache, and
+   reload from the network.
+
+   It does NOT touch his data. History, photos, check-ins and settings live in
+   localStorage and IndexedDB, which this does not go near — only the cached
+   copy of the app itself. */
+async function forceUpdate(){
+  const box=document.getElementById('verBox');
+  const say=t=>{ if(box) box.innerHTML=t; };
+  say("Clearing the stored copy\u2026");
+  try{
+    if(navigator.serviceWorker && navigator.serviceWorker.getRegistrations){
+      const rs=await navigator.serviceWorker.getRegistrations();
+      await Promise.all(rs.map(r=>r.unregister().catch(()=>{})));
+    }
+  }catch(e){}
+  try{
+    if(window.caches && caches.keys){
+      const ks=await caches.keys();
+      await Promise.all(ks.map(k=>caches.delete(k).catch(()=>{})));
+    }
+  }catch(e){}
+  try{ save(); }catch(e){}
+  say("Downloading the newest version\u2026");
+  /* A changed query string is the one thing a stale HTTP cache cannot serve. */
+  setTimeout(()=>{ location.replace(location.pathname+"?u="+Date.now()); }, 400);
+}
+/* What is running, and what the server has. */
+async function renderVersionBox(){
+  const box=document.getElementById('verBox'); if(!box) return;
+  let live=null, err=null;
+  try{
+    const r=await fetch('sw.js?ts='+Date.now(),{cache:'no-store'});
+    if(r.ok){ const m=(await r.text()).match(/amirpt-v(\d+)/); if(m) live=+m[1]; }
+    else err="the server answered "+r.status;
+  }catch(e){ err="no connection to the server"; }
+  const mine=appVerNum();
+  box.innerHTML =
+    "<b>Running on this phone:</b> "+escapeHtml(APP_VERSION)+"<br>"+
+    "<b>Newest on the server:</b> "+(live? ("v"+live) : ("unknown \u2014 "+(err||"could not read it")))+"<br>"+
+    (live&&live>mine ? "<span style='color:var(--gold)'>There is a newer version. Tap Force update.</span>"
+     : live&&live===mine ? "<span style='color:var(--green)'>Up to date.</span>"
+     : live&&live<mine ? "This phone is ahead of the server." : "");
 }
 function applyUpdate(){
   try{ save(); }catch(e){}
@@ -12821,7 +12879,7 @@ function scheduleInApp(){
    v18 ADDITIONS — draggable rest timer · weekly training memory · AI planner
    · Firestore sync
    ========================================================================== */
-const APP_VERSION="v163 · 17/09/2026";
+const APP_VERSION="v164 · 17/09/2026";
 
 /* ===== 1. REST TIMER — drag it anywhere so it never blocks the chat box ===== */
 let _rtDrag=null;
