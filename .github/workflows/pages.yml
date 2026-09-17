@@ -1,10 +1,20 @@
 # Publishes the app to GitHub Pages on every push to main.
 #
 # Amir could not reach Settings -> Pages from his phone (the link does nothing
-# in the mobile web UI), so this does it for him: configure-pages with
-# enablement:true switches Pages on through the API the first time it runs,
-# then uploads the whole repo and deploys it. No settings to find, and every
-# future push publishes itself within a minute.
+# in GitHub's mobile web UI), so the first version of this tried to switch
+# Pages on itself with configure-pages enablement:true. That is not allowed:
+#
+#     Create Pages site failed.
+#     Error: Resource not accessible by integration
+#
+# A workflow's own GITHUB_TOKEN cannot create a Pages site, by design. Pages
+# has to be enabled once, by hand, by the repository owner.
+#
+# So this workflow now waits for that instead of failing loudly. Once Pages is
+# set to "GitHub Actions" as its source, every push deploys itself within a
+# minute. If Pages is set to "Deploy from a branch" instead, GitHub publishes
+# the branch directly and this workflow is unnecessary — the configure step
+# simply finds nothing to do and the job ends green rather than red.
 name: Deploy to GitHub Pages
 
 on:
@@ -31,18 +41,35 @@ jobs:
       - name: Check out
         uses: actions/checkout@v4
 
-      - name: Turn Pages on and read its settings
+      - name: Read the Pages settings
+        id: pages
+        continue-on-error: true
         uses: actions/configure-pages@v5
-        with:
-          enablement: true
+
+      - name: Say what to do when Pages is not on yet
+        if: steps.pages.outcome != 'success'
+        run: |
+          echo "GitHub Pages is not enabled for this repository, or its source"
+          echo "is a branch rather than Actions, so there is nothing to deploy"
+          echo "from here."
+          echo
+          echo "To publish from this workflow:"
+          echo "  Settings -> Pages -> Build and deployment -> Source:"
+          echo "  GitHub Actions"
+          echo
+          echo "Or, to publish straight from the branch and ignore this file:"
+          echo "  Settings -> Pages -> Source: Deploy from a branch"
+          echo "                    -> Branch: main  /(root)"
 
       # The app is a static site at the repo root: index.html, sw.js,
       # manifest.json, the icons and demos/.
       - name: Package the site
+        if: steps.pages.outcome == 'success'
         uses: actions/upload-pages-artifact@v3
         with:
           path: .
 
       - name: Deploy
         id: deployment
+        if: steps.pages.outcome == 'success'
         uses: actions/deploy-pages@v4
