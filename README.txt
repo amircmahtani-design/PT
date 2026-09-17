@@ -1,3 +1,66 @@
+AMIR PT — v182 · 17/09/2026
+===========================
+
+"It added the crunches but I wanted it to REPLACE the cable crunch with
+crunches. That was the problem."
+
+Exactly that. The coach reached for add_exercise when he had asked for a swap,
+and the app took it at face value. His six-movement pull day became seven with
+two crunches in it — the exact thing v176 made a rule about, enforced
+everywhere except the door the coach comes through.
+
+Reproduced it, and found two more on the way in.
+
+1 · ADDING A MOVEMENT THE SESSION ALREADY COVERS
+-----------------------------------------------
+Same rule, same function as v176: if the sheet already has a movement of this
+family, a second one is not what anybody wants. It now refuses with the answer
+in the refusal:
+
+    Cable Crunch is already doing that job in today's session — they are the
+    same movement. To put Crunch in its place, REPLACE Cable Crunch with
+    Crunch rather than adding it.
+
+The v178 guard then makes the coach answer again, and a refusal that names the
+right action is a retry that works. The swap itself now gives him six
+movements, not seven: Cable Crunch out, Crunch in.
+
+The coach's own instructions say it too, in as many words: change X to Y means
+REPLACE, never ADD, and if you are unsure whether he wants it instead of
+something or as well as it, ask.
+
+2 · "NORMAL CRUNCHES" HAD NOWHERE TO LAND
+----------------------------------------
+The library had a Cable Crunch, a Reverse Crunch and a Bicycle Crunch and no
+plain one. So the resolver did what it does with an unknown name: it MINTED a
+new exercise called "Normal Crunches" with an invented dose of 3 x 30-60s.
+That is how a phrase became a movement with a prescription nobody wrote.
+
+There is a Crunch in the library now, and "normal crunches", "regular crunch",
+"floor crunch", "sit-up" and a bare "crunches" all resolve to it.
+
+3 · AND AN EMPTY NAME MATCHED THE FIRST THING ON THE SHEET
+---------------------------------------------------------
+"".includes("") is true. needInSession falls back to a loose match, and a
+missing or blank name passed that test against the FIRST movement on the
+sheet. So an envelope from the coach carrying a slightly wrong key —
+"exercise" instead of "from" — did not fail. It quietly operated on exercise
+one.
+
+I found it by accident, calling replace_exercise with the wrong keys while
+chasing the crunch swap: it removed his Lat Pulldown and put a Band Lat
+Pulldown in its place, and reported success. A name under two characters is
+now a refusal that lists the sheet.
+
+VERIFIED: "Normal Crunches" resolves to Crunch; adding it is refused with the
+swap named; replacing Cable Crunch with it works and leaves six movements; a
+wrong-key envelope refuses and changes nothing. 16 sessions match, no repeats,
+the whole action journey passes, five screens clean, no console errors.
+
+(The journey harness had gone stale: it added a Lateral Raise to a Push Day,
+which has carried one since v172. The app was right to refuse. Harness fixed,
+app untouched.)
+
 AMIR PT — v181 · 17/09/2026
 ===========================
 

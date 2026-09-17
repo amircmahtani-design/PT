@@ -2456,6 +2456,10 @@ const EXTRA_LIB={
  "Prone Swimmer":{m:["back","shoulders"],eq:"bw",cue:"Face down, arms behind the back and around. Slow, from the shoulder blades.",wristAlt:"No wrist load — good"},
  "Wall Angel":{m:["back","shoulders"],eq:"bw",cue:"Back flat to the wall, slide the arms up without the ribs flaring.",wristAlt:"No wrist load — good"},
  /* ---- bodyweight: core ---- */
+ /* v182 — "Normal Crunches" had nowhere to land: the library had a Cable
+    Crunch, a Reverse Crunch and a Bicycle Crunch and no plain one, so the
+    resolver minted a brand-new exercise with an invented dose. */
+ "Crunch":{m:["core"],eq:"bw",cue:"Ribs to hips, low back stays down. Slow up, slower down.",wristAlt:"No wrist load \u2014 good"},
  "Bicycle Crunch":{m:["core"],eq:"bw",cue:"Slow. Rotate from the ribs, opposite elbow towards knee.",wristAlt:"No wrist load — good"},
  "Leg Raise":{m:["core"],eq:"bw",cue:"Low back pinned, lower the legs only as far as you can keep it pinned.",wristAlt:"No wrist load — good"},
  "V-Up":{m:["core"],eq:"bw",cue:"Fold up, fingertips to toes, lower with control.",wristAlt:"No wrist load — good"},
@@ -8849,6 +8853,7 @@ Object.keys(PHYSIQUE_PRIORITY).map(g=>"  "+g+": "+PHYSIQUE_PRIORITY[g]).join("\n
 "So NEVER add a seventh movement, and never answer a gap in his week by making a session longer. If something needs to go in, something comes out \u2014 name the swap and what it costs. Adding volume he has no time for is the fastest way to have him stop opening the app.\n"+
 "Arms and direct core get one slot each per week at 2-3 sets, which is below the app\u2019s own weekly targets. That is the arithmetic of six movements in an hour and he knows it. Do not keep flagging it; raise it ONCE, as a swap he could make, and then leave it.\n"+
 "His week is fixed: Mon Upper, Tue Legs & Core, Wed Mobility, Thu Pull, Fri Push, Sat and Sun rest. Do not rearrange it.\n\n"+
+"CHANGE X TO Y MEANS REPLACE, NEVER ADD. \"Change the cable crunch to normal crunches\" is one action, replace_exercise, from the old movement to the new one. Adding the new one leaves BOTH on his sheet, which is a seven-movement session with the same muscle trained twice \u2014 the two things he has told you not to do. If you are unsure whether he wants it instead of something or as well as it, ask; do not add and hope.\n\n"+
 "FATIGUE AND DELOADS \u2014 read the numbers, not the calendar:\n"+
 (f.reasons.length? ("  CURRENT SIGNALS: "+f.reasons.join("; ")+"\n"+
   (f.deloadCase? "  Two or more signals are showing. Make the case for a deload week \u2014 same movements, roughly half the sets, 60-70% of the loads \u2014 and use [[DELOAD_WORKOUT: -30%]] if he agrees. Do not wait for him to raise it.\n" : "  One signal only. Watch it, mention it if it persists, do not overreact.\n"))
@@ -9158,6 +9163,8 @@ async function callAI(messages,maxTokens){
 /* Ordered most-specific first. A vague pattern must NEVER hijack a specific request
    (this is what turned "barbell squat" back into "Goblet Squat"). */
 const ALIAS=[
+  [/\bnormal crunch|\bregular crunch|\bstandard crunch|\bfloor crunch|\bsit.?up/,"Crunch"],
+  [/^crunch(es)?$/,"Crunch"],
   [/\bback squat\b|\bbarbell squat\b|\bbb squat\b/,"Barbell Back Squat"],
   [/\bfront squat\b/,"Front Squat"],
   [/\bgoblet\b/,"Goblet Squat"],
@@ -12807,7 +12814,7 @@ function scheduleInApp(){
    v18 ADDITIONS — draggable rest timer · weekly training memory · AI planner
    · Firestore sync
    ========================================================================== */
-const APP_VERSION="v181 · 17/09/2026";
+const APP_VERSION="v182 · 17/09/2026";
 
 /* ===== 1. REST TIMER — drag it anywhere so it never blocks the chat box ===== */
 let _rtDrag=null;
@@ -17345,12 +17352,21 @@ function requireWorkout(a){
 }
 /* Resolve a spoken name to something in TODAY'S session. */
 function needInSession(raw){
+  /* ===== v182 · NO NAME IS NOT A MATCH ==================================
+     "".includes("") is true, so a missing or blank name fell past the exact
+     match into the loose one and silently selected the FIRST movement on the
+     sheet. An envelope from the coach carrying the wrong key — "exercise"
+     instead of "from" — therefore did not fail: it quietly operated on
+     exercise one. Found while chasing the crunch swap, by calling
+     replace_exercise with the wrong keys: it removed his Lat Pulldown. */
+  const t=logKey(raw);
+  if(t.length<2) return {ok:false, error:"I need the name of the movement. What's on the sheet is: "+
+    (wkMain().map(e=>e.name).join(", ")||"nothing yet")+"."};
   const n=resolveExName(raw);
   const e=n? wkFind(n) : null;
   if(e) return {ok:true, ex:e, name:e.name};
   /* Loose match on the sheet before giving up — he says "the lunges", the
      sheet says "Walking Lunge". */
-  const t=logKey(raw);
   const loose=wkMain().find(x=>logKey(x.name).includes(t)||t.includes(logKey(x.name)));
   if(loose) return {ok:true, ex:loose, name:loose.name};
   return {ok:false, error:"There's no “"+String(raw).trim()+"” in today's session. What's on the sheet is: "+
@@ -17386,6 +17402,24 @@ defAction("add_exercise",{
     if(!n) return "I don't know an exercise called “"+a.raw+"”. Give me the name as it appears in the catalogue and I'll add it.";
     a.name=n;
     if(wkFind(a.name)) return a.name+" is already in today's session.";
+    /* ===== v182 \u00b7 HE ASKED FOR A SWAP AND GOT AN ADDITION ================
+       "It added the crunches but I wanted it to REPLACE the cable crunch with
+       crunches. That was the problem."
+
+       The coach reached for add_exercise and the app took it at face value, so
+       his six-movement pull day became seven with two crunches in it \u2014 the
+       exact thing v176 made a rule about, enforced everywhere except the door
+       the coach comes through.
+
+       Same rule, same function: if the session already has a movement of this
+       family, adding a second is not what anybody wants. Say which one covers
+       it and name the action that does what he asked. The v178 guard then
+       makes the coach answer again, with the right one. */
+    try{
+      const clash=(wkMain()||[]).find(x=>moveFamily(x.name)===moveFamily(a.name));
+      if(clash) return clash.name+" is already doing that job in today's session \u2014 they are the same movement. "+
+        "To put "+a.name+" in its place, REPLACE "+clash.name+" with "+a.name+" rather than adding it.";
+    }catch(e){}
     if(exBanned(a.name)) return "You told me never to program "+a.name+" again. Say “allow "+a.name+" again” if you've changed your mind.";
     if(!canDoHere(a.name,locKey())){
       const alt=nearestHere(a.name,locKey());
