@@ -1,3 +1,27 @@
+HOW THIS APP REACHES HIS PHONE — READ THIS BEFORE SAYING A VERSION IS "OUT"
+===========================================================================
+
+Pushing to main is NOT publishing. GitHub Pages is off on this repository
+(has_pages: false) and no Action deploys it, so a commit on main is not on his
+phone. It is a file in a repository and nothing more.
+
+Every version up to v146 ended with "Upload index.html AND sw.js", because that
+is how he actually got them: he uploaded the files to his host by hand. At v146
+I told him that was no longer necessary and that he only had to refresh the
+PWA. That was simply wrong, and I never checked it. Everything from v147 to
+v165 has been sitting here unpublished while he sent screenshots of bugs I had
+already fixed and I told him to force-close the app.
+
+SO, UNTIL PAGES IS ON: end every version by telling him which files to upload.
+index.html and sw.js for a normal change; add demos/ when photographs change.
+
+TO MAKE IT AUTOMATIC: Settings -> Pages -> Source -> Deploy from a branch ->
+main -> /(root). A workflow cannot do this for itself — GitHub refuses a
+workflow token the right to create a Pages site ("Resource not accessible by
+integration"), and the same wall applies to my access. It is a one-time change
+only the repository owner can make.
+
+
 AMIR PT — v165 · 17/09/2026
 ===========================
 
