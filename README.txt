@@ -1,3 +1,71 @@
+AMIR PT — v168 · 17/09/2026
+===========================
+
+"Let's remove the food tab completely. I always forget to add it and tbh it
+doesn't do anything so no point really."
+
+THE WHOLE FEATURE, NOT JUST THE TAB
+-----------------------------------
+Removing the button and leaving the machinery behind would have left him with
+a coach that still asks about food he can no longer log. So all of it went:
+
+  · the Food tab and its screen — running totals, add a meal, add a drink,
+    whole day at once, recent days
+  · the "Today's food" box on Home
+  · the AI meal-macro estimator
+  · the drinks table (wine / beer / spirits / cocktails, with the alcohol
+    maths that fed it)
+  · [[LOG_NUTRITION]] — the coach can no longer write intake at all
+  · the logged-intake reasoning in the coach's prompt and on the Plan card
+
+Six tabs are five: Home, Train, Coach, Progress, Settings.
+
+WHAT STAYED, AND WHY
+--------------------
+HIS DATA. Meals and logged days are still in storage and still in the backup
+and restore path. Nothing was deleted — only stopped being shown. If he ever
+wants any of it back, it is there.
+
+The calorie figure his nutritionist sets. energyContext used to prefer his
+logged days and fall back to that figure; now the figure is all there is. It
+still drives the deficit line on the Plan card and the coach's read on how
+hard to push, which is the part that was doing work.
+
+todayCheckin(). Food was its original reason to exist — it creates the day's
+record so intake could be written before he had checked in — but the weight
+log and the coach's directives both reach the day through it now.
+
+THE COACH
+---------
+Its prompt used to carry his logged intake and an instruction on how to read
+it. That block now says the app does not track food, the figure is his
+nutritionist's rather than a record of what he ate, and — explicitly — never
+ask him to log food and never ask what he has eaten. He was already ignoring
+the tab; a coach that keeps bringing it up would be the same nag in a new
+place.
+
+ONE GUARD
+---------
+go() threw if asked for a screen that no longer exists, which would have left
+the app on a blank body. Anything asking for the food screen — a saved tab, an
+old coach instruction — lands on Home instead.
+
+VERIFIED: all five tabs open and render at 390px and 1440px, no overflow, no
+console errors; go("food") lands on Home; the 16 programmed sessions still
+match; mobility 12/12; the whole action journey passes end to end. 522 lines
+of code removed against 30 added.
+
+NOT DONE, AND WORTH KNOWING
+---------------------------
+The restore summary still counts "N meals" when old backups come back. That
+is his data being preserved, so the count is honest, and the alternative is
+touching the sync path for a cosmetic line. Left alone deliberately.
+
+A Greece session came back with Band Lat Pulldown, Band Face Pull and Band
+Curl while the coach's own location rules say Greece is bodyweight only, no
+bands. Found while testing this, unrelated to it, and not changed without
+asking him whether he actually takes bands.
+
 AMIR PT — v167 · 17/09/2026
 ===========================
 
