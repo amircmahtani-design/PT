@@ -6166,6 +6166,8 @@ function _renderSheetInner(w){
       _validating=false;
     }
   }catch(e){ _validating=false; }
+  /* v183 — a restore stays on screen for the rest of the session. */
+  try{ (w.restored||[]).forEach(n=>{ if(_v.fixes.indexOf(n)<0) _v.fixes.push(n); }); }catch(e){}
   const fixBar=(_v.fixes.length||_v.warnings.length)
     ? "<div class='fixbar'>"+
       (_v.fixes.length? "<div class='k'>I changed this before showing it to you</div>"+_v.fixes.map(f=>"<div class='l'>· "+escapeHtml(f)+"</div>").join("") : "")+
@@ -12814,7 +12816,7 @@ function scheduleInApp(){
    v18 ADDITIONS — draggable rest timer · weekly training memory · AI planner
    · Firestore sync
    ========================================================================== */
-const APP_VERSION="v182 · 17/09/2026";
+const APP_VERSION="v183 · 17/09/2026";
 
 /* ===== 1. REST TIMER — drag it anywhere so it never blocks the chat box ===== */
 let _rtDrag=null;
@@ -17492,6 +17494,9 @@ defAction("remove_exercise",{
       return {name:a.name, flow:true, keptSets:0};
     }
     const logged=todaySets(a.name).length;
+    /* v183 \u2014 a deliberate removal is remembered, so the repair below does not
+       put it straight back. */
+    DB.workout.dropped=[...new Set([...(DB.workout.dropped||[]), a.name])];
     DB.workout.main=DB.workout.main.filter(e=>!nameEq(e.name,a.name));
     resyncSections(); resyncGroups(DB.workout);
     return {name:a.name, keptSets:logged};
@@ -17561,6 +17566,8 @@ defAction("replace_exercise",{
     }
     const i=wkIndex(a.from);
     const old=DB.workout.main[i];
+    /* v183 — swapped out on purpose, so it is not restored behind him. */
+    DB.workout.dropped=[...new Set([...(DB.workout.dropped||[]), a.from])];
     const e=exObject(a.to);
     /* A swap inside a group replaces one exercise without destroying the
        other — the group id and the prescription travel with the slot. */
@@ -19352,6 +19359,56 @@ function validateWorkout(w,opts){
      (The gap in COMPOUND is real and wider than this — it misses every
      pulldown — but it also sets rest and time estimates, so widening it is
      its own change with its own testing, not a line in this one.) */
+  /* ===== v183 · WORK HE DID TODAY DOES NOT VANISH FROM TODAY =============
+     "It's deleted a couple of the workouts I did today. I did face pull and
+     cable row and they're not in my workout right now."
+
+     They were removed by the blank-name bug v182 found: an envelope from the
+     coach with the wrong key resolved to no name, the loose match said
+     "".includes("") is true, and it silently took whichever movement was
+     first on the sheet. Twice.
+
+     His SETS were never at risk — they live in DB.strength under the
+     exercise name, not on the session — but the movement disappearing off the
+     sheet hides them, which is indistinguishable from losing them.
+
+     So: anything with sets logged today that is not on today's sheet goes
+     back on it, in its programmed position where there is one. A movement he
+     removed HIMSELF is remembered in dropped[] and left alone. */
+  try{
+    const have=new Set((w.main||[]).map(e=>logKey(e.name)));
+    const dropped=new Set((w.dropped||[]).map(n=>logKey(n)));
+    let prog=null;
+    try{ prog=w.programmed? programFor(w.title) : null; }catch(e){ prog=null; }
+    Object.keys(DB.strength||{}).forEach(name=>{
+      if(!todaySets(name).length) return;
+      if(have.has(logKey(name)) || dropped.has(logKey(name))) return;
+      const pEx=prog? prog.find(x=>logKey(x.n)===logKey(name)) : null;
+      const e=exObject(name);
+      if(pEx){ e.sets=pEx.sets; e.reps=pEx.reps; e.scheme=pEx.sets+" sets · "+pEx.reps; }
+      try{ applyLogTypeToEx(e); }catch(err){}
+      /* Back in its programmed place: before the first movement on the sheet
+         that the program puts after it. Appending would have him finishing on
+         a lift he already did. */
+      let at=w.main.length;
+      if(pEx){
+        const mine=prog.findIndex(x=>logKey(x.n)===logKey(name));
+        const after=w.main.findIndex(x=>{
+          const j=prog.findIndex(y=>logKey(y.n)===logKey(x.name));
+          return j>=0 && j>mine;
+        });
+        if(after>=0) at=after;
+      }
+      w.main.splice(at,0,e);
+      have.add(logKey(name));
+      const note=name+" \u00b7 put back on today's sheet \u2014 you logged "+todaySets(name).length+
+        " set"+(todaySets(name).length===1?"":"s")+" on it and it wasn't there";
+      fixes.push(note);
+      /* Kept on the session so he sees it on the NEXT render too. A silent
+         restore of something that silently vanished is the same fault twice. */
+      w.restored=[...new Set([...(w.restored||[]), note])];
+    });
+  }catch(e){}
   /* v176 — the same movement twice, whatever built the session. */
   try{
     familyClashes((w.main||[]).map(e=>e.name)).forEach(c=>

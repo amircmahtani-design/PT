@@ -1,3 +1,60 @@
+AMIR PT — v183 · 17/09/2026
+===========================
+
+"It's deleted a couple of the workouts I did today. I did face pull and cable
+row and they're not in my workout right now. And I did do them and logged them
+in, so not sure where they've gone."
+
+FIRST, THE PART THAT MATTERS
+----------------------------
+His SETS were never lost. Logged sets live in DB.strength under the exercise
+NAME, not on the session, which is why every version of the remove flow says
+so. What he lost was the movement's card — and a card that is gone hides the
+sets behind it, which from where he is standing is indistinguishable from
+losing them.
+
+WHAT TOOK THEM
+--------------
+The bug v182 found an hour earlier. An envelope from the coach with the wrong
+key resolved to no name; needInSession fell through to its loose match;
+"".includes("") is true; so it silently took whichever movement was FIRST on
+the sheet. He ran the crunch swap several times. Face Pull and Seated Cable
+Row were what happened to be first.
+
+That door is shut as of v182. This is the clean-up.
+
+ANYTHING HE TRAINED TODAY IS ON TODAY'S SHEET
+---------------------------------------------
+The validator now checks, before the session is shown: is there an exercise
+with sets logged today that is not on the sheet? If so it goes back, in its
+programmed position — before the first movement the program places after it,
+so he is not left finishing on a lift he already did.
+
+It says so, and keeps saying so for the rest of the session rather than
+restoring in silence:
+
+    I changed this before showing it to you
+    · Face Pull · put back on today's sheet — you logged 2 sets on it and it
+      wasn't there
+    · Seated Cable Row · put back on today's sheet — you logged 2 sets on it
+      and it wasn't there
+
+A silent restore of something that silently vanished would be the same fault
+twice.
+
+AND A REMOVAL HE MEANT STAYS A REMOVAL
+--------------------------------------
+remove_exercise and replace_exercise record the movement in dropped[], so
+taking something off the sheet after training it does not fight him — it goes
+and it stays gone. Only what he did NOT ask to remove comes back.
+
+VERIFIED against his exact situation: two movements with sets logged today,
+deleted off the sheet; after a reload both are back in programmed order with
+their sets on them and the note explaining it. A movement removed on purpose
+is still gone after a reload. 16 sessions match, no repeats, the action
+journey passes, the crunch swap behaves, five screens clean, no console
+errors.
+
 AMIR PT — v182 · 17/09/2026
 ===========================
 
