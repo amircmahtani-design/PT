@@ -5764,20 +5764,67 @@ function showRowWarmup(w){ return !w.travel && hasRower() && !flowDay(w); }
    block; one tap to open it on a day he does want to row is the right way
    round, and the summary line keeps it findable. Open it once and it stays
    open, because that is remembered too. */
-function rowBlockHTML(travel){
+/* ===== v186 · THE ROW REMEMBERS THAT HE ROWED ==========================
+   "I logged my rowing time but it doesn't show in the workout."
+
+   It did log — it went into DB.rowing and it is in his history. What it did
+   not do is STAY on the card. The only acknowledgement was a line written
+   into a div by hand, and the next time anything re-rendered the sheet that
+   div came back empty. Exactly the fault v180 fixed for the set counter: the
+   card was patched in place and then rebuilt from a source that knew nothing
+   about it.
+
+   Every exercise shows its logged sets as chips read from storage, so they
+   survive any re-render. The row does the same now: today's rows are read
+   from DB.rowing every time the block is drawn, with an ✕ to remove one. */
+function todayRows(){
+  return (DB.rowing||[]).map((r,i)=>({r,i})).filter(x=>x.r && x.r.date===today());
+}
+function delTodayRow(i){
+  const r=(DB.rowing||[])[i]; if(!r) return;
+  if(!confirm("Delete this row?\n\n"+(r.dist||"")+" · "+(r.time||""))) return;
+  DB.rowing.splice(i,1); save();
+  try{ renderRowing(); renderRowingLog(); }catch(e){}
+  try{ refreshRowBlock(); }catch(e){}
+  toast("Deleted");
+}
+function rowChipsHTML(){
+  const rows=todayRows();
+  if(!rows.length) return "";
+  return "<div class='setlog'>"+rows.map(({r,i})=>
+    "<span class='setchip e1'>"+escapeHtml((r.name? r.name+" · ":"")+(r.dist||"")+" · "+(r.time||""))+
+    "<button class='chipx' onclick='event.stopPropagation();delTodayRow("+i+")' aria-label='delete this row'>\u2715</button></span>"
+  ).join("")+"</div>";
+}
+function rowBodyHTML(travel){
   const dist=travel?"1,000m":"2,000m";
   const pace=travel?"Quick easy row.":"Easy pace ~2:10–2:20 /500m · ~9 min.";
-  const body=
-    "<div class='rowbanner'><img src='"+ROW_SVG+"' alt='someone rowing'></div>"+
+  return "<div class='rowbanner'><img src='"+ROW_SVG+"' alt='someone rowing'></div>"+
     "<div class='name' style='margin-top:12px'>Row · "+dist+"</div>"+
     "<div class='sm' style='margin-top:4px'>"+pace+" Time it here, or type it in yourself.</div>"+
+    rowChipsHTML()+
     "<div class='holdrow'><div class='hold-cd' id='rowCd'>0:00</div>"+
       "<button class='holdbtn' id='rowBtn' onclick='toggleRowClock()'>▶ Start row</button></div>"+
     "<div class='logrow mt'>"+
       "<input id='warmRowTime' inputmode='text' placeholder='mm:ss' style='text-align:center'>"+
-      "<button onclick='addWarmupRow("+(travel?1:0)+")'>Log</button></div>"+
-    "<div id='warmRowMsg' class='sm' style='margin-top:8px'></div>";
-  return sheetSec("row","◆ Concept2 Row",dist,body,false);
+      "<button onclick='addWarmupRow("+(travel?1:0)+")'>Log</button></div>";
+}
+function refreshRowBlock(){
+  const host=document.getElementById('rowBody'); if(!host) return;
+  const travel=!!(DB.workout&&DB.workout.travel);
+  host.innerHTML=rowBodyHTML(travel?1:0);
+  /* The folded-up header says it too, so he can see it without opening the
+     section — the same way every other section shows its own state. */
+  try{
+    const m=document.querySelector('#sec-row .secsum2 .m');
+    if(m) m.textContent=(todayRows().length? "done · " : "")+(travel?"1,000m":"2,000m");
+  }catch(e){}
+}
+function rowBlockHTML(travel){
+  const dist=travel?"1,000m":"2,000m";
+  const done=todayRows().length;
+  return sheetSec("row","◆ Concept2 Row",(done? "done · "+dist : dist),
+    "<div id='rowBody'>"+rowBodyHTML(travel)+"</div>",false);
 }
 /* Rowing stopwatch — stop it and the time drops straight into the log box. */
 let _rowInt=null,_rowStart=0;
@@ -5801,9 +5848,11 @@ function addWarmupRow(travel){
   const dist=travel?"1000m":"2000m"; const time=(val('warmRowTime')||"").trim();
   if(isNaN(timeToSec(time))){ toast("Use mm:ss  e.g. 9:20"); return; }
   autoStartSession(); DB.rowing.push({dist,time,date:today()}); markSession(); save(); renderRowing(); renderRowingLog();
-  const m=document.getElementById('warmRowMsg'); if(m) m.innerHTML="✅ Logged <b>"+dist+" · "+time+"</b> — saved to your rowing history.";
-  const inp=document.getElementById('warmRowTime'); if(inp) inp.value="";
-  toast("Row logged 🚣");
+  /* v186 — redraw the block from storage rather than writing a note into it,
+     so it is still there after the next render. */
+  try{ refreshRowBlock(); }catch(e){}
+  const cd=document.getElementById('rowCd'); if(cd) cd.textContent="0:00";
+  toast("Row logged 🚣 · "+dist+" in "+time);
 }
 function timeBarHTML(w){
   const t=timeBudget();
@@ -12848,7 +12897,7 @@ function scheduleInApp(){
    v18 ADDITIONS — draggable rest timer · weekly training memory · AI planner
    · Firestore sync
    ========================================================================== */
-const APP_VERSION="v185 · 17/09/2026";
+const APP_VERSION="v186 · 18/09/2026";
 
 /* ===== 1. REST TIMER — drag it anywhere so it never blocks the chat box ===== */
 let _rtDrag=null;

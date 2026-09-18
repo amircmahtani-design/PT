@@ -1,3 +1,45 @@
+AMIR PT — v186 · 18/09/2026
+===========================
+
+"I logged my rowing time but it doesn't show in the workout."
+
+It logged. The row went into DB.rowing and it is in his history and in his
+rowing PBs. What it did not do is STAY ON THE CARD.
+
+The only acknowledgement the block gave was a line of text written by hand
+into an empty div — "Logged 2000m · 9:20" — and the next time anything
+re-rendered the sheet, that div came back empty. Which is to say: exactly the
+fault v180 fixed for the set counter, six days and one screen over. The card
+was patched in place, and then rebuilt from a source that knew nothing about
+the patch.
+
+WHAT EVERY OTHER BLOCK ALREADY DOES
+-----------------------------------
+An exercise shows its logged sets as chips READ FROM STORAGE every time it is
+drawn, which is why they survive a re-render, a tab change and a reload. The
+row block now does the same: today's rows come out of DB.rowing whenever the
+block is built.
+
+  ◆ CONCEPT2 ROW                                    done · 2,000m
+     [ 2000m · 9:20 ✕ ]
+
+With the ✕ to take one off, like a set. And the folded-up header says "done"
+so he can see it without opening the section — the state is on the screen, not
+in a variable that the next render forgets.
+
+The transient message is gone entirely. A note that only exists until
+something else happens is worse than no note: it teaches him the app
+registered it, and then takes it back.
+
+VERIFIED: log a row and the chip appears immediately; it survives a full
+re-render of the sheet; it survives a reload; the header reads "done · 2,000m"
+in all three; deleting it removes it from the block and from his history. 16
+sessions match, no repeats, the action journey passes, five screens clean, no
+console errors.
+
+(Two harnesses were pinned to a Thursday exercise and broke when the date
+rolled to Friday. Fixed to read whatever is on the sheet. The app was fine.)
+
 AMIR PT — v185 · 17/09/2026
 ===========================
 
