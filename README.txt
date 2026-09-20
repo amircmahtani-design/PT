@@ -1,3 +1,58 @@
+AMIR PT — v188 · 20/09/2026
+===========================
+
+"Add also in my workouts side planks and plank where you dip from side to side
+because my fattest part of my body is my tire around my belly."
+
+Both are in. The reason he gave is worth one honest sentence, once, and then
+never again: no core movement removes fat from the area it trains. The tyre
+comes off with the deficit his nutritionist runs. What these two DO is build
+the obliques and the deep core that hold the waist in, which is worth doing
+for the shape of it — and neither is the heavy weighted side-bending his own
+brief rules out, which would thicken the waist rather than tighten it.
+
+THE MOVEMENT HE DESCRIBED
+-------------------------
+"Plank where you dip from side to side" is not a side plank, so it is not
+filed as one. Plank Hip Dips: a forearm plank, hips rotating down towards the
+floor one side then the other, shoulders square. Named so the two can never be
+read as the same thing — they sit in the same programme.
+
+WHERE THEY GO
+-------------
+Core had one slot on Legs & Core and one on Pull Day. Rather than add a
+seventh movement anywhere — his 5-6 rule stands — they take core slots that
+were already there, rotating the way he asked for at v177:
+
+  wk1  Tue  Cable Crunch 3x12 · Side Plank 2x40s each side
+       Thu  Plank Hip Dips 2x12 each side
+  wk2  Tue  Band Pallof Press 3x12 each side · Hollow Hold 3x30s
+       Thu  Side Plank 2x40s each side
+  wk3  Tue  Cable Crunch 3x15 · Plank Hip Dips 2x15 each side
+       Thu  Side Plank 2x45s each side
+  wk4  Tue  Band Pallof Press 2x12 each side · Hollow Hold 2x30s
+       Thu  Side Plank 2x30s each side
+
+Side planks in three weeks out of four, the dips in two. Dead Bug rotates out
+for this block. Nothing repeats a movement inside a session and every session
+is still six or fewer and inside the hour — weeks 1-3 at 61-65 minutes, the
+deload at 52-54.
+
+LOGGED THE WAY EACH ONE IS DONE
+-------------------------------
+Side Plank is a hold, so it is seconds. Plank Hip Dips are counted, so they
+are reps. Both fall out of the rules he set at v179 and v184 without a special
+case — the dose on the sheet decides.
+
+PHOTOGRAPH
+----------
+Side Plank has one. Plank Hip Dips does not, so it will show no image at all
+rather than a wrong one. Top of EXERCISES.txt with the other two.
+
+VERIFIED: no session repeats a movement; 16 sessions match; both classify
+correctly from their doses; all inside the hour; five screens clean; no
+console errors.
+
 AMIR PT — v187 · 20/09/2026
 ===========================
 

@@ -2482,6 +2482,12 @@ const EXTRA_LIB={
  "Russian Twist":{m:["core"],eq:"bw",cue:"Lean back, rotate side to side from the waist. Chest stays open.",wristAlt:"No wrist load — good"},
  "Flutter Kick":{m:["core"],eq:"bw",cue:"Small fast kicks, low back glued down.",timed:true,wristAlt:"No wrist load — good"},
  "Side Plank Rotation":{m:["core"],eq:"bw",cue:"From side plank, thread the top arm under and back open.",wristAlt:"Forearm version — no wrist load"},
+ /* v188 — "plank where you dip from side to side". A FRONT plank, hips
+    rotating down towards the floor on one side then the other: obliques
+    under tension through a range rather than a static hold. Named so it
+    cannot be read as a side plank, which is a different movement and is in
+    the program alongside it. */
+ "Plank Hip Dips":{m:["core"],eq:"bw",cue:"Forearm plank. Rotate the hips down towards the floor one side, then the other. Slow — the shoulders stay square.",wristAlt:"Forearm — no wrist load"},
  "Bear Crawl":{m:["core","shoulders"],eq:"bw",cue:"Knees an inch off the floor, opposite hand and foot, hips low.",timed:true,wristAlt:"Loaded wrist — go easy"},
  "Hollow Rock":{m:["core"],eq:"bw",cue:"Hollow position, rock from the mid-back. Never let the low back lift.",wristAlt:"No wrist load — good"},
  /* ---- bodyweight: conditioning ---- */
@@ -3987,10 +3993,10 @@ const PROGRAM={
                   ["DB Curl",2,"12"]],
     "Legs & Core":[["Romanian Deadlift",4,"10"],["Goblet Squat",3,"12"],
                   ["Reverse Lunge",3,"10 each leg"],["Calf Raise",3,"15"],["Cable Crunch",3,"12"],
-                  ["Dead Bug",2,"45s"]],
+                  ["Side Plank",2,"40s each side"]],
     "Pull Day":[["Lat Pulldown",4,"10"],["Seated Cable Row",4,"10"],
                   ["DB Reverse Fly",3,"15"],["Face Pull",3,"15"],["Hammer Curl",3,"10"],
-                  ["Cable Crunch",2,"12"]],
+                  ["Plank Hip Dips",2,"12 each side"]],
     "Push Day":[["Incline DB Press",4,"8\u201310"],["Bench Press",3,"10"],
                   ["DB Shoulder Press",3,"10"],["Lateral Raise",3,"15"],["Cable Fly",3,"12"],
                   ["Triceps Pushdown",2,"12"]]
@@ -4004,7 +4010,7 @@ const PROGRAM={
                   ["Hollow Hold",3,"30s"]],
     "Pull Day":[["Lat Pulldown",4,"8\u201310"],["Chest-supported Row",4,"10"],
                   ["DB Reverse Fly",3,"15"],["Face Pull",3,"12"],["DB Curl",3,"10"],
-                  ["Hollow Hold",2,"30s"]],
+                  ["Side Plank",2,"40s each side"]],
     "Push Day":[["Incline DB Press",4,"8"],["Close-grip Bench Press",3,"8\u201310"],
                   ["DB Shoulder Press",3,"10"],["Cable Lateral Raise",3,"15"],["Cable Fly",3,"15"],
                   ["Triceps Pushdown",2,"10"]]
@@ -4015,10 +4021,10 @@ const PROGRAM={
                   ["Incline DB Curl",2,"10"]],
     "Legs & Core":[["Romanian Deadlift",4,"8\u201310"],["Goblet Squat",4,"10"],
                   ["Reverse Lunge",3,"12 each leg"],["Calf Raise",3,"20"],["Cable Crunch",3,"15"],
-                  ["Dead Bug",2,"50s"]],
+                  ["Plank Hip Dips",2,"15 each side"]],
     "Pull Day":[["Single-arm Lat Pulldown",4,"10 each side"],["Chest-supported Row",4,"10"],
                   ["DB Reverse Fly",3,"15"],["Face Pull",3,"15"],["Incline DB Curl",3,"10"],
-                  ["Cable Crunch",2,"15"]],
+                  ["Side Plank",2,"45s each side"]],
     "Push Day":[["Incline DB Press",4,"8"],["Bench Press",3,"10"],
                   ["DB Shoulder Press",3,"8\u201310"],["Lateral Raise",3,"12\u201315"],["Cable Fly",3,"12"],
                   ["Triceps Pushdown",2,"12"]]
@@ -4032,7 +4038,7 @@ const PROGRAM={
                   ["Hollow Hold",2,"30s"]],
     "Pull Day":[["Lat Pulldown",3,"10"],["Seated Cable Row",3,"10"],
                   ["DB Reverse Fly",3,"15"],["Face Pull",2,"15"],["Hammer Curl",2,"12"],
-                  ["Hollow Hold",2,"30s"]],
+                  ["Side Plank",2,"30s each side"]],
     "Push Day":[["Incline DB Press",3,"10"],["Bench Press",3,"10"],
                   ["DB Shoulder Press",3,"10"],["Lateral Raise",3,"15"],["Cable Fly",2,"15"],
                   ["Triceps Pushdown",2,"12"]]
@@ -12937,7 +12943,7 @@ function scheduleInApp(){
    v18 ADDITIONS — draggable rest timer · weekly training memory · AI planner
    · Firestore sync
    ========================================================================== */
-const APP_VERSION="v187 · 20/09/2026";
+const APP_VERSION="v188 · 20/09/2026";
 
 /* ===== 1. REST TIMER — drag it anywhere so it never blocks the chat box ===== */
 let _rtDrag=null;

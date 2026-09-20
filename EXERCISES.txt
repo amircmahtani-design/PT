@@ -1,3 +1,14 @@
+STILL NEEDED — as of v188 (20/09/2026)
+======================================
+
+  plank-hip-dips            — NEW. Forearm plank, hips rotating down to one
+                               side then the other. In weeks 1 and 3.
+  single-arm-lat-pulldown   — week 3 Pull Day
+  incline-db-curl           — week 3 Upper Body and week 3 Pull Day
+
+Side Plank already has one. Every other movement in the sixteen sessions has
+one too.
+
 STILL NEEDED — as of v177 (17/09/2026)
 ======================================
 
