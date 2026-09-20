@@ -1,3 +1,53 @@
+AMIR PT — v189 · 20/09/2026
+===========================
+
+"And banded dead bug as well. I need this added in my workouts so that there is
+enough core workout for the full week."
+
+The second half of that is the real instruction. Core had three slots — two on
+Tuesday, one on Thursday — which the app's own weekly target said was not
+enough, and I have been flagging it since v172 without fixing it.
+
+THERE IS NO FREE SLOT, SO SOMETHING HAD TO GO
+----------------------------------------------
+Six movements a session, sixty to seventy minutes: his rule, and it stands.
+Core getting a fourth day means an arm finisher losing one.
+
+The finisher on Monday and Friday now alternates between an arm movement and
+a core one, so neither disappears:
+
+  wk1  Mon DB Curl          ·  Fri Band Dead Bug 2x10 each side
+  wk2  Mon Dead Bug         ·  Fri Triceps Pushdown
+  wk3  Mon Incline DB Curl  ·  Fri Band Dead Bug 2x12 each side
+  wk4  Mon Dead Bug         ·  Fri Triceps Pushdown
+
+Core is on FOUR days every week now — Mon or Fri, Tue twice, Thu — at 8 to 10
+sets against a target of 10. It was 7.
+
+  week 1   Tue Cable Crunch, Side Plank · Thu Plank Hip Dips · Fri Band Dead Bug
+  week 2   Mon Dead Bug · Tue Pallof Press, Hollow Hold · Thu Side Plank
+  week 3   Tue Cable Crunch, Plank Hip Dips · Thu Side Plank · Fri Band Dead Bug
+  week 4   Mon Dead Bug · Tue Pallof Press, Hollow Hold · Thu Side Plank
+
+WHAT IT COST, PLAINLY
+---------------------
+Arms drop from 6 sets a week to 5, against a target of 10. That is the real
+price and he should hear it from me rather than notice it in three weeks.
+
+If it has to come from somewhere, the triceps pushdown is the right place:
+triceps already work through three pressing movements twice a week, biceps get
+nothing except curls. So the biceps slot on Thursday survives every week, and
+Friday's pushdown is what alternates out.
+
+If he would rather have the arms back, the swap is one line and it costs the
+fourth core day.
+
+VERIFIED: Band Dead Bug is in Dubai, unbanned, logs in reps (it is a band, and
+bands are reps); both dead bugs have photographs; no session repeats a
+movement; 16 sessions match; every session still six movements and inside the
+hour — weeks 1-3 at 64 minutes, the deload at 58-60. Five screens clean, no
+console errors.
+
 AMIR PT — v188 · 20/09/2026
 ===========================
 
