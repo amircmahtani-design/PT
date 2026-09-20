@@ -3482,6 +3482,23 @@ function splitKindOf(split){
   return "lift";
 }
 function splitIsFlow(split){ const k=splitKindOf(split); return k==="mobility"||k==="pilates"; }
+/* ===== v187 · SATURDAY AND SUNDAY ARE NOT A DEFICIT ====================
+   "My Sat and Sun are sacred rest days. The coach keeps trying to add stuff
+   here."
+
+   On a Sunday the check-in came back with "let's skip the rest day and hit a
+   solid leg and core session today", and it was not the model going rogue —
+   the app ASKED for that. The user message it is sent ends: "Today scheduled:
+   Rest. Use his last 7 days to say what needs hitting today." Handed a
+   digest that says legs and core are behind and an instruction to prescribe,
+   there is only one answer it can give.
+
+   Rest is part of the programme, not a gap in it. A week with two rest days
+   has not missed anything. */
+function isRestDay(split){
+  const s=String(split===undefined? pickSplit() : split).trim();
+  return !s || /^rest$/i.test(s);
+}
 function pickSplit(){ if(DB.dayOverride && DB.dayOverride.date===today() && DB.dayOverride.split) return DB.dayOverride.split; return DB.schedule[new Date().getDay()] || "Full Body"; }
 function todaySets(ex){ const a=DB.strength[ex]; if(!a) return []; const x=a.find(o=>o.date===today()); return x?x.sets:[]; }
 function markSession(){ if(DB.lastSessionDate!==today()){ DB.lastSessionDate=today(); save(); updateStreak(); toast("Session started · "+(DB.streak||1)+" day run "); } }
@@ -8145,13 +8162,31 @@ async function submitCheckin(){
 }
 async function analyseCheckin(ci){
   if(DB.ai.provider==="openai"&&DB.ai.key){
-    const sys=coachSystem()+"\nThe user just did their morning check-in. Warm, direct 3-4 sentence read: comment on the numbers, what it means for today's training/volume, what you're adjusting. Reference injuries/context if relevant.";
-    const usr="Morning check-in: weight "+(ci.weight||'—')+"kg, sleep "+(ciNum(ci.sleep)!=null? ci.sleep+"/10":"not logged")+", energy "+(ciNum(ci.energy)!=null? ci.energy+"/10":"not logged")+", plan: "+(ci.plan||'not said')+", pain: "+(ci.pain||'none')+". Location today: "+LOC().label+" ("+currentEquipment()+"). Today scheduled: "+pickSplit()+". Use his last 7 days (above) to say what needs hitting today.";
+    const rest=isRestDay();
+    const sys=coachSystem()+
+      (rest
+        ? "\nThe user just did their morning check-in and TODAY IS ONE OF HIS TWO REST DAYS. Saturday and Sunday are rest days, always, and they are part of the programme rather than a gap in it. Do NOT propose training, do NOT suggest skipping or moving the rest day, do NOT frame any muscle group as behind or needing catching up, and do NOT offer a light session, a bit of mobility or a walk as a way to get work in. Read his numbers, say what the rest is doing for him, and if anything needs saying about the week ahead, say that. Warm, direct, 3-4 sentences."
+        : "\nThe user just did their morning check-in. Warm, direct 3-4 sentence read: comment on the numbers, what it means for today's training/volume, what you're adjusting. Reference injuries/context if relevant.");
+    const usr="Morning check-in: weight "+(ci.weight||'—')+"kg, sleep "+(ciNum(ci.sleep)!=null? ci.sleep+"/10":"not logged")+", energy "+(ciNum(ci.energy)!=null? ci.energy+"/10":"not logged")+", plan: "+(ci.plan||'not said')+", pain: "+(ci.pain||'none')+". Location today: "+LOC().label+" ("+currentEquipment()+"). Today scheduled: "+pickSplit()+". "+
+      (rest? "It is a REST DAY. Nothing is being trained today and nothing is behind. Do not prescribe anything."
+           : "Use his last 7 days (above) to say what needs hitting today.");
     const out=await callAI([{role:"system",content:sys},{role:"user",content:usr}],220);
     if(out) return fmt(out);
   }
   let bits=[];
   const _slp=ciVal(ci.sleep,7), _eng=ciVal(ci.energy,7);
+  /* v187 — a rest day has no volume to talk about. Without this the offline
+     read opened with "green light for full volume today" and then said it was
+     a rest day, which is the same contradiction one paragraph apart. */
+  if(isRestDay()||ci.plan==="Rest"){
+    bits.push(_slp<=4? "Sleep's low, and today is a rest day anyway — good timing."
+            : _slp>=7? "Slept well. Nothing to spend it on today, which is the point of a rest day."
+            : "Recovery's ticking along.");
+    if(ci.pain) bits.push("Pain flagged — rest is the best thing for it. If it's still there Monday, tell me before you lift.");
+    bits.push("Rest day — that's the programme working, not a day off it. Walk if you feel like it, hydrate, sleep. Back at it tomorrow.");
+    bits.push("Goal stays the same: the physique, not the scale. 💪");
+    return bits.join(" ");
+  }
   if(_slp<=4) bits.push("Sleep's low — trimming volume ~30% so we don't dig a recovery hole. Protecting recovery is how we keep progressing.");
   else if(_slp>=7&&_eng>=8) bits.push("Slept well and high energy — green light for full volume today.");
   else bits.push("Recovery looks fine. Standard session today.");
@@ -8159,7 +8194,6 @@ async function analyseCheckin(ci){
   if(ci.pain){ const p=ci.pain.toLowerCase();
     if(p.includes("wrist")||p.includes("tfcc")) bits.push("Wrist flagged — swapped straight-wrist pressing for neutral-grip. Non-negotiable.");
     if(p.includes("knee")) bits.push("Knee flagged — pulling deep knee flexion, subbing hip-hinge work.");}
-  if(ci.plan==="Rest") bits.push("Rest day logged — walk, hydrate, stretch. See you tomorrow.");
   bits.push("Goal stays the same: the physique, not the scale. 💪");
   return bits.join(" ");
 }
@@ -8936,6 +8970,12 @@ Object.keys(PHYSIQUE_PRIORITY).map(g=>"  "+g+": "+PHYSIQUE_PRIORITY[g]).join("\n
 "So NEVER add a seventh movement, and never answer a gap in his week by making a session longer. If something needs to go in, something comes out \u2014 name the swap and what it costs. Adding volume he has no time for is the fastest way to have him stop opening the app.\n"+
 "Arms and direct core get one slot each per week at 2-3 sets, which is below the app\u2019s own weekly targets. That is the arithmetic of six movements in an hour and he knows it. Do not keep flagging it; raise it ONCE, as a swap he could make, and then leave it.\n"+
 "His week is fixed: Mon Upper, Tue Legs & Core, Wed Mobility, Thu Pull, Fri Push, Sat and Sun rest. Do not rearrange it.\n\n"+
+"=== SATURDAY AND SUNDAY ARE SACRED ===\n"+
+"His words: \"My Sat and Sun are sacred rest days.\" They are part of the programme, not a gap in it, and a week containing them has not missed anything.\n"+
+"On a rest day: never propose training, never suggest moving or skipping the rest, never say a muscle group is behind or needs catching up, and never offer \"just something light\" \u2014 a walk, some mobility, a quick core finisher \u2014 as a way to get work in anyway. Do not ask him if he wants to train. The answer is settled and he settled it.\n"+
+"If the volume figures say a group is short, that is information for the week AHEAD, and Monday is when it is useful. Bring it up then.\n"+
+"The one exception: if HE says he wants to train at the weekend, that is his call and you help him do it well. You never raise it first.\n\n"+
+
 "CHANGE X TO Y MEANS REPLACE, NEVER ADD. \"Change the cable crunch to normal crunches\" is one action, replace_exercise, from the old movement to the new one. Adding the new one leaves BOTH on his sheet, which is a seven-movement session with the same muscle trained twice \u2014 the two things he has told you not to do. If you are unsure whether he wants it instead of something or as well as it, ask; do not add and hope.\n\n"+
 "FATIGUE AND DELOADS \u2014 read the numbers, not the calendar:\n"+
 (f.reasons.length? ("  CURRENT SIGNALS: "+f.reasons.join("; ")+"\n"+
@@ -12897,7 +12937,7 @@ function scheduleInApp(){
    v18 ADDITIONS — draggable rest timer · weekly training memory · AI planner
    · Firestore sync
    ========================================================================== */
-const APP_VERSION="v186 · 18/09/2026";
+const APP_VERSION="v187 · 20/09/2026";
 
 /* ===== 1. REST TIMER — drag it anywhere so it never blocks the chat box ===== */
 let _rtDrag=null;
@@ -13244,6 +13284,14 @@ function setRestOverride(v){
    whether to do it. */
 function todayIsFlow(){
   try{
+    /* ===== v187 · THE CARD ASKED THE SESSION, NOT THE WEEK ================
+       This is why he got "Green light · chest and back need work · Add a set"
+       on a Sunday. A scheduled Rest day DOES build a flow, and the card knows
+       what to do with a flow — but Home renders before Train has built
+       anything, so DB.workout was empty, and FLOWNAME has never matched the
+       word "rest". So it fell through to the green-light branch and started
+       recruiting. Ask the WEEK, which knows without building anything. */
+    if(isRestDay()) return true;
     if(DB.workout && flowDay(DB.workout)) return true;
     if(typeof pickSplit==="function" && FLOWNAME.test(String(pickSplit()||""))) return true;
   }catch(e){}
@@ -13256,24 +13304,36 @@ function flowReadinessHTML(c){
   const w=DB.workout||{};
   const nm=String(w.title||"")+" "+String(w.flowTitle||"")+" "+
            String((typeof pickSplit==="function"? pickSplit() : "")||"");
-  const head = /pilates/i.test(nm)? "Pilates day"
+  const scheduledRest=(typeof isRestDay==="function") && isRestDay();
+  const head = scheduledRest? "Rest day"
+             : /pilates/i.test(nm)? "Pilates day"
              : /\brest\b|recovery/i.test(nm)? "Recovery day"
              : "Mobility day";
   const tired = c.verdict==="rest" || c.verdict==="deload";
-  const body = tired
+  const body = scheduledRest
+    ? "One of your two. Nothing is behind and nothing needs catching up — the rest is part of the programme, not a gap in it. Eat, sleep, walk if you feel like it."
+    : tired
     ? "Good day for it. Nothing here to push or cut — no sets, no load, no PB to chase. Move through the flow, breathe, and let the hard work you've already done actually land."
     : "Today's the easy one by design. No sets, no load — move through the flow, breathe, and turn up fresh tomorrow.";
+  /* v187 — on a rest day the reading line was listing what had not been
+     trained ("chest, back, legs untouched for days") directly under a
+     sentence saying nothing is behind. Coverage is a Monday conversation;
+     today the only question is how recovered he is. */
+  const noCoverage=a=>(a||[]).filter(x=>!/untouched|untrained|need(s)? work|behind|neglect/i.test(String(x)));
   const why = tired
     ? (c.reasons.length? c.reasons.slice(0,3).join(" · ") : "you've been at it hard")
+    : scheduledRest
+    ? (noCoverage(c.green).slice(0,2).join(" · ") || "nothing flagging")
     : (c.green.length? c.green.slice(0,3).join(" · ") : "recovery looks fine");
-  return "<div class='card mt'><div class='card-title'><span>🧘 "+head+"</span>"+
+  return "<div class='card mt'><div class='card-title'><span>"+(scheduledRest? "😴 " : "🧘 ")+head+"</span>"+
     "<span class='pill purple'>"+c.streak+"d streak</span></div>"+
     "<div class='coachnote'><div class='who'>◆ Coach</div>"+body+
       "<div class='sm' style='margin-top:8px'>"+(tired?"Well timed: ":"Reading: ")+why+"</div></div>"+
-    "<div class='readyrow'>"+
-      "<button class='btn green' style='flex:1;margin:0' onclick=\"go('workout')\">Open today's flow</button>"+
-      "<button class='btn ghost' style='flex:1;margin:0' onclick=\"setRestOverride('rest')\">😴 Rest completely</button>"+
-    "</div></div>";
+    (scheduledRest? "" :
+      "<div class='readyrow'>"+
+        "<button class='btn green' style='flex:1;margin:0' onclick=\"go('workout')\">Open today's flow</button>"+
+        "<button class='btn ghost' style='flex:1;margin:0' onclick=\"setRestOverride('rest')\">😴 Rest completely</button>"+
+      "</div>")+"</div>";
 }
 /* v162 — "if the coach sees I'm lacking in something that should appear in the
    blue box." It does now. weekPlanCheck still runs; its findings come out here

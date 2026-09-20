@@ -1,3 +1,64 @@
+AMIR PT — v187 · 20/09/2026
+===========================
+
+"My Sat and Sun are sacred rest days. The coach keeps trying to add stuff
+here."
+
+On a Sunday morning the check-in came back with: "it looks like legs and core
+are a bit neglected … so let's skip the rest day and hit a solid leg and core
+session today."
+
+THE COACH DID NOT GO ROGUE — THE APP ASKED FOR IT
+-------------------------------------------------
+The message analyseCheckin sends ends with: "Today scheduled: Rest. Use his
+last 7 days to say what needs hitting today." Hand a model a digest saying
+legs and core are behind and an instruction to prescribe, and there is only
+one answer it can give. It was doing as it was told.
+
+On a rest day it is now told the opposite, in as many words: today is a rest
+day, nothing is being trained, nothing is behind, do not prescribe anything.
+The offline version short-circuits the same way — it used to open with "green
+light for full volume today" and then mention the rest day two sentences
+later, which is the same contradiction at half the length.
+
+AND THE SAME THING ON HOME, FOR A DIFFERENT REASON
+--------------------------------------------------
+The blue box said "🔥 Green light · chest, back, legs untouched for days —
+chest and back need work" with a "💪 Add a set" button under it.
+
+A scheduled Rest day builds a flow, and the readiness card already knows not
+to push on a flow day. But Home renders before Train has built anything, so
+it asked DB.workout — which was empty — and FLOWNAME has never matched the
+word "rest". So it fell through to the green-light branch and started
+recruiting. It asks the WEEK now, which knows the answer without building
+anything.
+
+A rest day gets its own card:
+
+    😴 Rest day
+    One of your two. Nothing is behind and nothing needs catching up — the
+    rest is part of the programme, not a gap in it. Eat, sleep, walk if you
+    feel like it.
+
+No buttons offering a session. And the reading line no longer lists what has
+not been trained, which was sitting directly under the words "nothing is
+behind".
+
+STANDING DOCTRINE, NOT A PATCH
+------------------------------
+The coach's instructions now carry it for every surface, not just the
+check-in: never propose training on a rest day, never suggest moving or
+skipping it, never call a group behind, and never offer "just something
+light" — a walk, some mobility, a quick core finisher — as a way to get work
+in anyway. Do not even ask. The one exception is him: if HE says he wants to
+train at the weekend, help him do it well. Never raise it first.
+
+VERIFIED on a real Sunday: Home shows the rest card with no training buttons
+and no coverage talk; the offline check-in read is consistent end to end; the
+doctrine carries the rule; rest days still do not count as missed sessions;
+Train still builds Active Recovery. 16 sessions match, no repeats, five
+screens clean, no console errors.
+
 AMIR PT — v186 · 18/09/2026
 ===========================
 
