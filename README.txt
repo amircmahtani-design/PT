@@ -1,3 +1,86 @@
+AMIR PT — v193 · 21/09/2026
+===========================
+
+"The AI assessment is not accurate since I gained weight and I was in fact
+fitter before at 83.3 so the AI coach analysis needs to be improved. It
+doesn't need to be polite to save my feelings I need it to say what it sees."
+
+It told him there had been "noticeable improvement in muscle definition" over
+a six-week window in which he put on 1.5 kg and, by his own read, went
+backwards. Then: "Keep pushing, mate! You're on the right track."
+
+IT WAS NOT BEING KIND. IT HAD NOTHING TO GO ON
+----------------------------------------------
+The call sent two compressed JPEGs, the gap in weeks, and nothing else.
+
+Not his bodyweight on either day — which the app had, and was printing on the
+same card, three lines above the answer. Not one set he had trained in
+between. Not a tape measurement. Asked to compare two dim bathroom mirror
+shots with no data, a model will find progress, because that is the likeliest
+thing to say about two photos of a man who trains.
+
+The call now carries what the app already knows about those two dates:
+
+  GAP: 6 weeks apart (45 days).
+  BODYWEIGHT: 83.3 kg on the first photo → 84.8 kg on the second. UP 1.5 kg.
+  TRAINING BETWEEN THE TWO PHOTOS: 6 logged sessions over 6.4 weeks.
+  SETS PER MUSCLE GROUP: chest 18 (2.8/wk), back 18, legs 0, shoulders 9...
+  TOP WEIGHT MOVED ON: Lat Pulldown 45→50kg.
+  UNCHANGED LOAD ON: Incline DB Press, Cable Crunch.
+  TAPE near those dates: Chest 104→104cm, Waist 88→90cm.
+  PHASE HE IS IN: Lean Recomp / mini-cut.
+
+With the waist going out 2 cm and nothing but one pulldown moving, "noticeable
+improvement" is not a reading it can reach any more. And it is told explicitly:
+where your eyes and these numbers disagree, the numbers win.
+
+AND THE INSTRUCTIONS ASKED FOR THE FLATTERY
+-------------------------------------------
+coachSystem() tells it to be warm and to "name a real win when there is one".
+That is right for every other conversation in this app and wrong for the one
+place he is asking a machine to look at him and say what it sees. The photo
+call added "never body-shaming" on top, and the only honesty instruction it
+carried covered what the model COULDN'T see — nothing gave it permission to
+say what it could see and report that it was worse.
+
+There is now an override, last, after the whole brief:
+
+  - Lead with the verdict. BETTER, NO REAL CHANGE, WORSE or CAN'T TELL, on
+    its own line. Never buried under a compliment.
+  - NO CHANGE and WORSE are correct answers. An encouraging read of a body
+    that has not changed is a lie that costs him months.
+  - Reconcile with the scale. Weight up and no strength change reads as fat
+    gained unless there is evidence otherwise, and you say so.
+  - No "keep pushing", no "on the right track", no "mate". End on the
+    instruction, not the morale.
+  - Never insult him and never moralise — the difference between blunt and
+    cruel is that blunt is about the body and it is useful.
+  - Name the area. "Midsection" is where every vague read goes to hide.
+
+THE SAME BUG WAS IN THE OTHER ONE
+---------------------------------
+Two places put his photographs in front of a model, and only one of them was
+the one he was looking at. The Physique Read asked, in as many words, for an
+"Honest, encouraging read" — two instructions where only one can survive — and
+it also had no idea what his weight had been doing. Both now share one copy of
+the rules and both get the numbers. Fixing the card he pointed at and leaving
+the other is the mistake this file has recorded three times already.
+
+WHAT I CANNOT PROMISE
+---------------------
+I can prove the call now carries the right facts and the right instructions —
+the payloads are captured and checked below. I cannot prove the model will
+obey them every time. If it softens something again, tell me and the rules
+tighten further.
+
+CHECKED
+-------
+Both calls intercepted before they leave the app and the full payload read
+back: the facts block and the override are present in each, with the images
+attached. compareFacts() run against his real pair, 07/08 at 83.3 kg and 21/09
+at 84.8 kg, producing the numbers above. verify16, journey and audit173 clean,
+no page errors.
+
 AMIR PT — v192 · 21/09/2026
 ===========================
 

@@ -12006,10 +12006,18 @@ async function analysePhysique(){
   const lastM=ms[ms.length-1];
   const mLine=lastM? ("\nLogged measurements ("+ukDate(lastM.d)+", "+(lastM.src==="ai"?"photo estimate":"measured")+"): "+
       MEAS_FIELDS.filter(f=>lastM[f[0]]!=null).map(f=>f[1]+" "+lastM[f[0]]+"cm").join(", ")) : "";
+  /* v193 — this used to ask for an "Honest, encouraging read", which is two
+     instructions and only one of them survives. It also read the photos with
+     no idea what his weight had been doing, which is the same blindness that
+     made Then & now call a 1.5 kg gain an improvement. */
+  const trend=(function(){ try{ return weightTrendFacts(56); }catch(e){ return ""; } })();
   const content=[{type:"text",text:"My latest physique photos — "+when+"."+mLine+
-    "\nHonest, encouraging read: estimate body-fat %, which groups are developing well and which to prioritise for the physique I want, and how it fits my phase ("+DB.profile.phase+"). 4-6 sentences, coach tone."}];
+    (trend? "\n\nWHAT THE APP KNOWS — measured facts, not impressions. Where your eyes and these numbers disagree, the numbers win:\n"+trend : "")+
+    "\n\nRead them straight: estimate body-fat %, which groups are actually developing and which are not, and what that means for the physique I want in this phase ("+DB.profile.phase+"). "+
+    "Say plainly if the photos are too poor or too alike to tell. 5-7 sentences."}];
   recent.forEach(p=>{ const src=photoSrc(p); if(src) content.push({type:"image_url",image_url:{url:src}}); });
-  const sys=coachSystem()+"\nYou can see the attached photos. Constructive and specific, never body-shaming; frame around his physique goal and phase.";
+  const sys=coachSystem()+photoReadRules()+
+    "\n- Frame it against his physique goal and phase, and give the body-fat estimate as a range with your confidence in it.";
   const reply=await callAI([{role:"system",content:sys},{role:"user",content}],450);
   out.innerHTML="<div class='card mt'><div class='card-title'><span>Coach's Physique Read · "+ukDate()+"</span></div><div class='coachnote'><div class='who'>◆ Coach</div>"+(reply?fmt(reply):"Couldn't reach the AI — check key/model/billing.")+"</div></div>";
 }
@@ -13015,20 +13023,146 @@ async function aiEstimateMeasurements(){
   }
 }
 /* "What's actually changed between these two?" */
+/* ===== v193 · WHAT A PHOTO READ IS ALLOWED TO SOUND LIKE ===============
+   One copy, because there are two places that put his photographs in front of
+   a model — Then & now, and the Physique Read — and they had drifted into
+   two different instructions. The second one asked, in as many words, for an
+   "Honest, encouraging read", which is a contradiction he then had to sit
+   and read. */
+function photoReadRules(){
+  return "\n\n=== READING HIS PHOTOGRAPHS — THIS OVERRIDES THE PERSONALITY SECTION ABOVE ===\n"+
+    "He has asked for this directly: \"It doesn't need to be polite to save my feelings I need it to say what it sees.\" Honour that.\n"+
+    "- Lead with the verdict. Never bury it under a compliment.\n"+
+    "- NO CHANGE and WORSE are correct, useful answers. Six weeks of ordinary training often produces no visible change, and that is worth saying plainly. An encouraging read of a body that has not changed is a lie that costs him months.\n"+
+    "- RECONCILE WITH THE SCALE AND THE LOG. If he has gained weight and you are about to call him leaner, you need evidence — load going up, a tape measurement, visible detail that was not there before. Without it, the honest reading of weight up and no strength change is fat gained, and you say so.\n"+
+    "- Do not praise effort, do not close on encouragement, do not use 'keep pushing', 'on the right track', 'mate', or any variation. End on the instruction, not the morale.\n"+
+    "- Never insult him and never moralise. Clinical and specific is the register: what you see, where, and what it means. The difference between blunt and cruel is that blunt is about the body and it is useful.\n"+
+    "- Compressed phone photos in different light are weak evidence and you should say so when they are. Weak evidence plus hard numbers beats confident prose.\n"+
+    "- Name the areas. 'Midsection' is where every vague read goes to hide: upper abdomen, lower abdomen, flanks, chest, delts, arms, back width, legs.";
+}
+/* ===== v193 · THE PHOTO READ WAS GUESSING, AND GUESSED FLATTERY ========
+   "The AI assessment is not accurate since I gained weight and I was in fact
+   fitter before at 83.3 so the AI coach analysis needs to be improved. It
+   doesn't need to be polite to save my feelings I need it to say what it
+   sees."
+
+   It told him there had been "noticeable improvement" over a six-week window
+   in which he put on 1.5 kg and, by his own read, went backwards. It was not
+   lying to be kind. It had nothing to go on: the call sent two compressed
+   JPEGs, the gap in weeks, and nothing else. Not his weight on either day —
+   which the app had, and was printing on the same card, three lines above the
+   answer. Not a single set he had trained in between. Asked to compare two
+   dim bathroom mirror shots with no data, a model will find progress, because
+   that is the likeliest thing to say about two photos of someone who trains.
+
+   So this gathers what the app already knows about the two dates and hands it
+   over with the pictures. A verdict that contradicts the scale is now a
+   verdict it has to justify rather than one it can drift into. */
+/* The same hard numbers, for the single-point read: where his weight has gone
+   over a window, and what he trained in it. */
+function weightTrendFacts(days){
+  const L=[]; const now=Date.now(); const cut=now-(days||56)*864e5;
+  const es=(typeof weightEntries==="function"? weightEntries():[])
+    .map(e=>({w:e.w, t:new Date(e.date+"T12:00:00").getTime(), date:e.date}))
+    .filter(e=>!isNaN(e.t) && e.t>=cut).sort((a,b)=>a.t-b.t);
+  if(es.length>=2){
+    const a=es[0], b=es[es.length-1], d=b.w-a.w;
+    const lo=Math.min(...es.map(x=>x.w)), hi=Math.max(...es.map(x=>x.w));
+    L.push("BODYWEIGHT over the last "+Math.round(days/7)+" weeks: "+a.w.toFixed(1)+" kg ("+ukDate(a.date)+") → "+
+      b.w.toFixed(1)+" kg ("+ukDate(b.date)+"), "+
+      (Math.abs(d)<0.3? "flat" : (d>0? "UP "+d.toFixed(1)+" kg" : "DOWN "+Math.abs(d).toFixed(1)+" kg"))+
+      ". Range in that time "+lo.toFixed(1)+"–"+hi.toFixed(1)+" kg over "+es.length+" weigh-ins.");
+  } else if(es.length===1){
+    L.push("BODYWEIGHT: one weigh-in in that window, "+es[0].w.toFixed(1)+" kg — no trend to read.");
+  } else L.push("BODYWEIGHT: nothing weighed in that window, so you have no scale evidence either way.");
+  try{
+    const st=weekStats(Math.min(28,days));
+    const wk=Math.max(1,Math.min(28,days)/7);
+    L.push("TRAINING, last "+Math.round(Math.min(28,days)/7)+" weeks: "+st.sessions+" sessions. Sets per muscle group per week: "+
+      MGROUPS.map(g=>g+" "+(Math.round((st.sets[g]/wk)*10)/10)).join(", ")+".");
+  }catch(e){}
+  const ph=(DB.nutrition&&DB.nutrition.phase)||(DB.profile&&DB.profile.phase)||"";
+  if(ph) L.push("PHASE HE IS IN: "+ph+".");
+  return L.join("\n");
+}
+function compareFacts(A,B){
+  const L=[];
+  const wa=weightNear(A.t), wb=weightNear(B.t);
+  L.push("GAP: "+gapWords(B.t-A.t)+" ("+Math.round((B.t-A.t)/864e5)+" days).");
+  if(wa&&wb){
+    const d=wb.w-wa.w;
+    L.push("BODYWEIGHT: "+wa.w.toFixed(1)+" kg on the first photo → "+wb.w.toFixed(1)+" kg on the second. "+
+      (Math.abs(d)<0.3? "Flat."
+       : (d>0? "UP "+d.toFixed(1)+" kg." : "DOWN "+Math.abs(d).toFixed(1)+" kg.")));
+  } else L.push("BODYWEIGHT: not weighed close enough to one or both photos — you have no scale evidence either way.");
+  /* Everything he actually trained between the two shots. */
+  const all=sessionsByDate(null);
+  const dates=Object.keys(all).filter(d=>{ const t=new Date(d+"T12:00:00").getTime();
+    return !isNaN(t) && t>=A.t-864e5 && t<=B.t+864e5; }).sort();
+  const sets={}, lifts={};
+  MGROUPS.forEach(g=>sets[g]=0);
+  dates.forEach(d=>all[d].lifts.forEach(l=>{
+    const m=((EX(l.ex)||guessEx(l.ex)||{}).m)||[];
+    const n=(l.sets||[]).length;
+    m.forEach((g,i)=>{ if(MGROUPS.indexOf(g)>=0) sets[g]+=n*(i===0?1:0.5); });
+    const top=Math.max(0,...(l.sets||[]).map(x=>+x.w||0));
+    const rec=lifts[l.ex]=lifts[l.ex]||{first:null,last:null};
+    if(rec.first===null) rec.first=top;
+    rec.last=top;
+  }));
+  const rows=dates.reduce((a,d)=>a+(all[d].rows||[]).length,0);
+  const weeks=Math.max(1,(B.t-A.t)/(7*864e5));
+  L.push("TRAINING BETWEEN THE TWO PHOTOS: "+dates.length+" logged sessions over "+
+    (Math.round(weeks*10)/10)+" weeks ("+(Math.round((dates.length/weeks)*10)/10)+" a week)"+
+    (rows? ", plus "+rows+" rowing entries" : "")+".");
+  L.push("SETS PER MUSCLE GROUP IN THAT WINDOW (total, and per week): "+
+    MGROUPS.map(g=>g+" "+Math.round(sets[g])+" ("+(Math.round((sets[g]/weeks)*10)/10)+"/wk)").join(", ")+".");
+  const moved=Object.entries(lifts).filter(([k,v])=>v.first>0&&v.last!==v.first)
+    .map(([k,v])=>k+" "+v.first+"→"+v.last+"kg");
+  const flat=Object.entries(lifts).filter(([k,v])=>v.first>0&&v.last===v.first).map(([k])=>k);
+  L.push("TOP WEIGHT MOVED ON: "+(moved.length? moved.join(", ") : "nothing")+".");
+  if(flat.length) L.push("UNCHANGED LOAD ON: "+flat.join(", ")+".");
+  /* Tape beats a photograph, where there is any. */
+  const near=t=>{ let best=null,gap=1e15;
+    (typeof measSorted==="function"? measSorted():[]).forEach(m=>{
+      const g=Math.abs((m.t||0)-t); if(g<gap && g<21*864e5){ gap=g; best=m; } });
+    return best; };
+  const ma=near(A.t), mb=near(B.t);
+  if(ma&&mb&&ma!==mb){
+    const bits=MEAS_FIELDS.map(([k,lab])=>(ma[k]!=null&&mb[k]!=null)? lab+" "+ma[k]+"→"+mb[k]+"cm" : null).filter(Boolean);
+    if(bits.length) L.push("TAPE MEASUREMENTS near those dates (these outrank anything you think you see): "+bits.join(", ")+".");
+  }
+  const ph=(DB.nutrition&&DB.nutrition.phase)||(DB.profile&&DB.profile.phase)||"";
+  if(ph) L.push("PHASE HE IS IN: "+ph+".");
+  return L.join("\n");
+}
 async function aiCompare(){
   const out=document.getElementById('compareAiOut'); if(!out) return;
   const A=photoByKey(_cmpA), B=photoByKey(_cmpB);
   if(!A||!B){ out.innerHTML="<div class='hint mt'>Pick two photos first.</div>"; return; }
   if(DB.ai.provider!=="openai"||!DB.ai.key){ out.innerHTML="<div class='hint mt'>This needs a live OpenAI key on a paid account.</div>"; return; }
   out.innerHTML="<div class='card mt center muted'><span class='spin'></span> Comparing…</div>";
+  const facts=(function(){ try{ return compareFacts(A,B); }catch(e){ return ""; } })();
   const content=[{type:"text",text:
     "Two physique photos of me, "+gapWords(B.t-A.t)+". The FIRST image is the older one ("+photoWhen(A)+"), "+
-    "the SECOND is the recent one ("+photoWhen(B)+").\n"+
-    "What has actually changed? Be specific about which areas have developed, which haven't moved, and what to prioritise next. "+
-    "If the angle or lighting differs enough that you can't tell, say so rather than inventing progress. 4-6 sentences, coach tone."}];
+    "the SECOND is the recent one ("+photoWhen(B)+").\n\n"+
+    "WHAT THE APP KNOWS ABOUT THOSE TWO DATES — these are measured facts, not impressions. Where your eyes and these numbers disagree, the numbers win:\n"+
+    facts+"\n\n"+
+    "Tell me what actually changed. Open with the verdict in its own short line — BETTER, NO REAL CHANGE, or WORSE — against stage 1, a flat stomach. "+
+    "Then which areas moved, which did not, and what that means for what I do next. "+
+    "If the lighting, distance, posture or time of day differ enough that you cannot honestly tell, say THAT is your verdict and say why. 5-7 sentences."}];
   [A,B].forEach(p=>{ const s=photoSrc(p); if(s) content.push({type:"image_url",image_url:{url:s}}); });
   try{
-    const reply=await callAI([{role:"system",content:coachSystem()+"\nYou can see both photos. Constructive and specific, never body-shaming. Honesty about what you can't see beats flattery."},{role:"user",content}],500);
+    /* ===== v193 · THE ONE CALL WHERE WARMTH IS THE BUG ====================
+       coachSystem() tells it to be warm and to name a real win. That is the
+       right instruction for every other conversation in this app and the
+       wrong one here, where he is asking a machine to look at him and say
+       what it sees. So the photo read gets an override, last, after the
+       whole brief, and it is explicit that "no change" and "worse" are
+       correct answers rather than failures to be softened. */
+    const sys=coachSystem()+photoReadRules()+
+      "\n- For this comparison the verdict is one of exactly four words: BETTER, NO REAL CHANGE, WORSE, or CAN'T TELL. It goes on its own first line.";
+    const reply=await callAI([{role:"system",content:sys},{role:"user",content}],500);
     out.innerHTML="<div class='card mt'><div class='coachnote'><div class='who'>◆ Coach</div>"+fmt(escapeHtml(String(reply||"")))+"</div></div>";
   }catch(e){ out.innerHTML="<div class='hint mt'>Couldn't reach the coach just then.</div>"; }
 }
@@ -13227,7 +13361,7 @@ function scheduleInApp(){
    v18 ADDITIONS — draggable rest timer · weekly training memory · AI planner
    · Firestore sync
    ========================================================================== */
-const APP_VERSION="v192 · 21/09/2026";
+const APP_VERSION="v193 · 21/09/2026";
 
 /* ===== 1. REST TIMER — drag it anywhere so it never blocks the chat box ===== */
 let _rtDrag=null;
