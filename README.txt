@@ -1,3 +1,73 @@
+AMIR PT — v191 · 21/09/2026
+===========================
+
+"It's pull day it worked perfect this morning now it shows pull day and shows
+me recovery day. Please fix"
+
+MY FAULT, FROM YESTERDAY
+------------------------
+v190 fixed recentGrinders(), which had been testing for an effort rating of 4
+since v181 removed the fourth level — so it counted nothing and the coach's
+brief permanently read "Grinder sets in the last 7 days: 0". I changed it to
+count 3s.
+
+That was the wrong repair, and this is what it cost. On the old four-level
+scale a 4 meant "Really hard, to failure" — a genuine grind, and the exact
+level he told me to delete in v181 because he never used it. On the current
+three-level scale a 3 is "Hard — close to failure", which is what a working
+set is SUPPOSED to feel like.
+
+So the count went from a permanent 0 to 21, readiness added two points of
+fatigue for it, his score crossed the rest threshold of four, and the builder
+replaced his session with a Recovery Day. Reproduced exactly, with his three
+reasons and nothing else:
+
+  v190   94 sets +1.5 | 3 lifts backwards +2 | 21 grinder sets +2  = 5.5 → REST
+  v189   94 sets +1.5 | 3 lifts backwards +2                       = 3.5 → deload
+
+Counting every hard set as a grind means the harder he trains the more
+insistently the app tells him to stop. A grind is now a hard set in a session
+that ALSO came apart — rated hard and the reps fell away across it, using the
+test v190 added. Hard reps that held are just training, and the coach's brief
+now says both numbers separately, because "he trains hard" and "he is digging
+a hole" are different facts and only the second is fatigue.
+
+THE BIGGER FAULT, WHICH WAS ALREADY THERE
+-----------------------------------------
+Even with the score right, a readiness verdict should never have been able to
+do that. It replaced the whole programmed session — no warm-up, no movements,
+no sheet. His training day was simply gone and the only way back was a button
+on another card.
+
+The app already had the rule. readinessAdjust() says it in its own header:
+"readiness ADJUSTS, it does not rebuild ... a minor fluctuation must not throw
+the programme away." And then a branch in buildWorkout(), forty lines from the
+top, threw it away. One rule, two implementations, and the wrong one ran
+first — the same shape as v156's float clamps, v173's gear upgrade and v190's
+own ceiling rule.
+
+It is also the rule he has given me twice in his own words: v174, "I don't
+need coach to build any session", and v187, "my Sat and Sun are sacred rest
+days, the coach keeps trying to add stuff here". The programme owns the day in
+BOTH directions. The coach does not get to add a session to his rest day, and
+it does not get to take one off his training day.
+
+A rest verdict now does what a deload does: takes a set off and says why. The
+full "I'd rest today" call keeps its own card at the top of Train, with its
+reasons and its override, which is where advice belongs. The session stays on
+the sheet either way.
+
+CHECKED
+-------
+His exact case reproduced before and after — "Recovery Day" becomes "Upper
+Body" again. A genuinely wrecked week (six days straight, slept 3/10, energy
+3/10, shoulder flagged, every session falling apart) still scores 15.5 and
+still says rest, and still hands him the six-movement session with a set off
+it. A hard week with the reps holding — 48 sets rated hard — now scores 1.5
+and reads "hard sets, but the reps are holding up" instead of demanding a rest
+day. Saturday and Sunday are still rest days. verify16, dupes2, shape, journey,
+audit173, ceil190 and rest187 all clean, no page errors.
+
 AMIR PT — v190 · 21/09/2026
 ===========================
 

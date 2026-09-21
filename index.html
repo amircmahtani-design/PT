@@ -4097,14 +4097,31 @@ function buildWorkout(){
   let split=pickSplit();
   const cooldown=buildCooldown([],{wrist});
   const call=readinessCall();
-  /* Coach-called rest day — overridable from the Readiness card. */
-  if(call.verdict==="rest" && split!=="Rest"){
-    return {title:"Recovery Day", tag:L.tag+" \u00b7 coach called it", loc:key, phase:DB.profile.phase, kind:"mobility", forcedRest:true,
-      note:"I'm calling this one: "+(call.reasons.slice(0,3).join("; ")||"you've been at it hard")+". Rest is the training decision today \u2014 but if you genuinely feel good, overrule me on the card above and I'll build the session.",
-      reps:"\u2014", sets:0, warmup:[], main:[],
-      cooldown:buildMobilityFlow(),
-      recovery:"Protein at every meal, 3L water, lights out early. This is where the physique actually gets built."};
-  }
+  /* ===== v191 · READINESS ADJUSTS, IT DOES NOT DELETE THE SESSION ========
+     "It's pull day ... now it shows me recovery day. Please fix."
+
+     A readiness score of four replaced the whole programmed session with a
+     Recovery Day: no warm-up, no movements, no sheet. His training day was
+     simply gone, and the only way back was a button on another card.
+
+     The app already has the rule. readinessAdjust() says it in its own
+     header — "readiness ADJUSTS, it does not rebuild ... a minor fluctuation
+     must not throw the programme away" — and then this branch, in the
+     builder, threw it away. Same shape as v156's float clamps and v190's
+     ceiling rule: one rule, two implementations, and the wrong one was the
+     one that ran first.
+
+     It is also the rule he has given me twice in his own words: v174, "I
+     don't need coach to build any session", and v187, "my Sat and Sun are
+     sacred rest days, the coach keeps trying to add stuff here". The
+     programme owns the day in both directions. The coach does not get to
+     add a session to his rest day, and it does not get to take one off his
+     training day.
+
+     So a rest verdict now does what a deload does — backs the volume off and
+     says why — and the full "I'd rest today" call keeps its own card at the
+     top of Train, with its reasons and its override, which is where advice
+     belongs. His session stays on the sheet either way. */
   if(DB.dayTypes && DB.dayTypes[split]) return buildCustomDay(split,{travel,wrist,knee,lowEnergy,energy,sleep,cooldown});
   if(split==="Rest"){
     return {title:travel?"Holiday \u00b7 Rest":"Active Recovery",tag:travel?L.label+" \u00b7 Enjoy it":"Recovery Day",phase:DB.profile.phase,
@@ -4155,6 +4172,9 @@ function buildWorkout(){
   else if(energy>=8&&sleep>=7){ sets=4; note=L.blurb+" Recovered and firing \u2014 full volume. Technique first, never ego lift."; }
   else { note=L.blurb+" Solid recovery, standard volume. Own every rep."; }
   if(call.verdict==="deload" && !travel){ sets=Math.max(2,sets-1); note="Backing the volume off a set \u2014 "+(call.reasons.slice(0,2).join("; ")||"you've earned a lighter one")+". Move well, two in reserve, no PB attempts. Tap 'I can push more' if you disagree."; }
+  /* v191 — a rest call is the strongest thing readiness can say, and what it
+     says is "lighter", not "nothing". The session is still here. */
+  if(call.verdict==="rest" && !travel){ sets=Math.max(2,sets-1); note="I'd rest today \u2014 "+(call.reasons.slice(0,2).join("; ")||"you've been at it hard")+". Your session is still here and I've taken a set off it. If you train, keep two in reserve and chase nothing; if you'd rather take the day, that's the better call and the card above will log it as a rest day."; }
   if(call.verdict==="push"){ sets=travel?3:4; note="Full volume, your call \u2014 "+sets+" sets. Technique first; if a rep looks ugly, that set's over."; }
   /* Fit the session to the time he actually has. */
   const tb=timeBudget();
@@ -13099,7 +13119,7 @@ function scheduleInApp(){
    v18 ADDITIONS — draggable rest timer · weekly training memory · AI planner
    · Firestore sync
    ========================================================================== */
-const APP_VERSION="v190 · 21/09/2026";
+const APP_VERSION="v191 · 21/09/2026";
 
 /* ===== 1. REST TIMER — drag it anywhere so it never blocks the chat box ===== */
 let _rtDrag=null;
@@ -13255,8 +13275,11 @@ function trainingContext(){
     "Never ask him to add kilos to one; the progression is reps, then tempo, then a harder movement, and the app is already showing him these exact numbers:\n"+ceilLines) : "";
   const grind=recentGrinders(7), effReg=effortRegressions();
   const unrated=Object.keys(DB.strength||{}).filter(k=>{const a=DB.strength[k]||[];const l=a[a.length-1];return l&&sessionEffort(l.sets)===null;});
+  const hs=recentHardSets(7);
   const effLine="\n\nHOW IT HAS FELT (his own effort taps \u2014 trust these over rep counts):"+
-    "\n  Grinder sets in the last 7 days: "+grind+
+    "\n  Sets he rated hard in the last 7 days: "+hs.hard+" of "+hs.total+
+    "  (hard is where a working set should be \u2014 this is not fatigue on its own)"+
+    "\n  Of those, sets in a session whose reps fell away: "+grind+"  (this one IS fatigue)"+
     "\n  Same weight now feels harder on: "+(effReg.length?effReg.join(", "):"nothing")+
     "\n  Lifts he has not rated yet: "+(unrated.join(", ")||"none")+
     "\n  (Bracketed words like [easy] or [a grind] above are his rating for that session. Easy = add load. A grind = back off.)";
@@ -13388,12 +13411,14 @@ function restAdvice(){
   if(tr.up.length>=2){ fresh+=0.75; green.push("still climbing on "+tr.up.slice(0,2).join(" and ")); }
   /* How it FELT \u2014 the signal the raw numbers can't give me. */
   const grind=recentGrinders(7);
-  if(grind>=5){ fatigue+=2; reasons.push(grind+" sets taken to a grind this week"); }
-  else if(grind>=3){ fatigue+=1; reasons.push(grind+" grinder sets this week"); }
+  /* v191 — the wording now matches what is actually being counted: hard sets
+     in sessions whose reps came apart, not every hard set. */
+  if(grind>=5){ fatigue+=2; reasons.push(grind+" hard sets in sessions where the reps came apart"); }
+  else if(grind>=3){ fatigue+=1; reasons.push(grind+" hard sets where the reps were falling away"); }
   const effReg=effortRegressions();
   if(effReg.length>=2){ fatigue+=1.5; reasons.push("same weight feels harder on "+effReg.slice(0,3).join(" and ")); }
   else if(effReg.length===1){ fatigue+=0.75; reasons.push(effReg[0]+" felt harder at the same weight"); }
-  if(!grind && !effReg.length && st.sessions>=2) green.push("nothing has felt like a grind");
+  if(!grind && !effReg.length && st.sessions>=2) green.push("hard sets, but the reps are holding up");
 
   const stale=MGROUPS.filter(g=>{ const d=daysSince(st.last[g]); return d===null||d>=5; });
   if(stale.length>=3 && fatigue<3) green.push(stale.slice(0,3).join(", ")+" untouched for days");
@@ -14097,17 +14122,41 @@ function setEffort(i,setIdx,e){
 }
 
 /* --- fatigue: grinding is a signal the volume numbers can't see --- */
+/* ===== v191 · A HARD SET IS NOT A GRIND =================================
+   v190 found this counting an effort rating of 4, which v181 made impossible,
+   and changed it to count 3s. That was the wrong repair. On the four-level
+   scale a 4 meant "Really hard, to failure" — a genuine grind, and the level
+   he told me to delete because he never used it. On the three-level scale a 3
+   is "Hard — close to failure", which is what a working set is SUPPOSED to
+   feel like.
+
+   So the count went from a permanent 0 to 21, readiness added two points of
+   fatigue for it, his score crossed four, and the builder replaced Monday
+   with a Recovery Day. Counting every hard set as a grind means the harder he
+   trains the more insistently the app tells him to stop, which is backwards.
+
+   A grind is a hard set in a session that also came apart — rated hard AND
+   the reps fell away across it. Hard reps that held are just training. */
 function recentGrinders(days){
   const cut=dnum(today())-((days||7)-1)*864e5; let n=0;
   Object.values(DB.strength||{}).forEach(arr=>(arr||[]).forEach(s=>{
     if(!s.date||s.date==='prev'||dnum(s.date)<cut) return;
-    /* v190 \u2014 this tested for a 4, and v181 cut the scale to three levels
-       and clamps everything to 3. So it counted nothing, and the coach's
-       brief has said "Grinder sets in the last 7 days: 0" ever since,
-       however many he rated hard. */
-    (s.sets||[]).forEach(x=>{ if(effortOf(x)>=3) n++; });
+    const sets=s.sets||[];
+    if(!repsFellAway(sets.map(x=>+x.r||0))) return;
+    sets.forEach(x=>{ if(effortOf(x)>=3) n++; });
   }));
   return n;
+}
+/* Every hard set, whether or not the session held together. The coach is told
+   this separately, because "he trains hard" and "he is digging a hole" are
+   different facts and only the second one is fatigue. */
+function recentHardSets(days){
+  const cut=dnum(today())-((days||7)-1)*864e5; let n=0, total=0;
+  Object.values(DB.strength||{}).forEach(arr=>(arr||[]).forEach(s=>{
+    if(!s.date||s.date==='prev'||dnum(s.date)<cut) return;
+    (s.sets||[]).forEach(x=>{ total++; if(effortOf(x)>=3) n++; });
+  }));
+  return {hard:n, total};
 }
 /* Same weight, but it felt materially harder than last time = accumulating fatigue. */
 function effortRegressions(){
