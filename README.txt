@@ -1,3 +1,66 @@
+AMIR PT — v197 · 21/09/2026
+===========================
+
+"Somehow when I update the app I still need my timer to continue through the
+update."
+
+Updating reloads the page — that is what an update IS — and the rest timer
+lived entirely in JavaScript variables. Ninety seconds between sets, the update
+bar appears, he taps it, and the countdown is gone. So is the hold timer
+mid-plank, and so is the cool-down flow halfway through the stretches.
+
+THE RULE WAS ALREADY WRITTEN. IT JUST NEVER REACHED THIS TIMER
+--------------------------------------------------------------
+The session clock has been immune to this since v48, and its own header says
+why: time is stored as wall-clock timestamps and derived on read, so "nothing
+is lost to a reload, a locked screen, or a closed tab". That is the correct
+rule and it was sitting forty lines above a rest timer that is a ticking
+counter — and a ticking counter dies with the page. The fifth time this file
+has recorded one rule with two implementations.
+
+The rest timer, the hold timer and the cool-down queue are now written out as
+an END TIMESTAMP rather than a remaining count, so the number is right however
+long the reload took, and right if the phone slept through it as well.
+
+They go in their own localStorage key, not in DB. A ninety-second countdown is
+not training data and has no business in a cloud sync or a backup.
+
+WHAT COMES BACK, AND WHAT DELIBERATELY DOES NOT
+-----------------------------------------------
+  · Still running → it resumes, at the right number. 1:43 before the reload,
+    1:38 after, because five seconds of reload actually happened.
+  · Expired while the app was away → it comes back on "Next up — GO", rather
+    than silently vanishing and leaving him to guess whether it had gone off.
+  · More than two minutes past due, or older than ten → nothing. He is not
+    standing there waiting for it.
+  · The cool-down flow resumes mid-stretch with the rest of the queue intact.
+    Its callback cannot be serialised, so it is rebuilt from the queue itself
+    and the flow keeps stepping through the remaining stretches.
+  · A hold timer only resumes if that movement is still at the same place on
+    the sheet. If he edited the session in between, the seconds would land on
+    somebody else's exercise, so it stops instead.
+
+Written on every change, before an update, and on the way out — an update is
+not the only thing that takes the page away, iOS reclaims a backgrounded tab
+and he may simply reload.
+
+ONE FOUND WHILE TESTING
+-----------------------
+The hold timer was being saved one line before the interval it reads to decide
+there is a hold to remember, so it recorded nothing at the start and survived
+only because the on-the-way-out handler caught it. Fine for a tap on the update
+bar, no use at all if iOS kills the tab outright. Moved after.
+
+CHECKED
+-------
+A live rest timer through a real reload: 1:29 → 1:25, still counting, right
+label. A timer that expires during the reload: comes back due, on "Next up —
+GO". A stale one: correctly discarded, and the key with it. The cool-down flow
+reloaded mid-stretch: same stretch, same side, 0:40 left, queue intact. A hold
+timer and a rest timer running at once, through the exact sequence applyUpdate
+performs: both resumed, 1:25 and 0:07. verify16, journey, audit173 and the v196
+swap all clean, no page errors.
+
 AMIR PT — v196 · 21/09/2026
 ===========================
 

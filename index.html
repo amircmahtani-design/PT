@@ -6744,6 +6744,7 @@ function bumpRunningRest(delta){
     if(!restInt) restInt=setInterval(restTick,250);
     requestWake();
     try{ restTick(); }catch(e){}
+    saveTimers();
     toast("+"+delta+"s");
     return;
   }
@@ -6754,10 +6755,94 @@ function bumpRunningRest(delta){
     if(e){ const sec=Math.max(15,Math.min(600,restForEx(e)+delta)); e.restSec=sec; e.rest=fmtRest(sec); save(); }
   }
   try{ restTick(); }catch(e){}
+  saveTimers();
   toast((delta>0?"+":"")+delta+"s · remembered for next time");
 }
 let _restCtx={kind:null,idx:null};
 let restInt=null, restEnd=0, restActive=false, restBeeped=false;
+/* ===== v197 · THE TIMER SURVIVES AN UPDATE =============================
+   "Somehow when I update the app I still need my timer to continue through
+   the update."
+
+   Updating reloads the page — that is what an update IS — and the rest timer
+   lived entirely in these variables. Ninety seconds between sets, the update
+   bar appears, he taps it, and the countdown is gone. So is the hold timer
+   mid-plank, and so is the cool-down queue halfway through the flow.
+
+   The session clock has been immune to this since v48, because it is stored
+   as wall-clock timestamps and derived on read: "nothing is lost to a reload,
+   a locked screen, or a closed tab". Its own header says so. The rest timer
+   never followed the rule — it is a ticking counter, and a ticking counter
+   dies with the page.
+
+   These are written as an END TIMESTAMP, not a remaining count, so the answer
+   is right however long the reload took, and it is right if the phone slept
+   through it too. They live in their own localStorage key rather than in DB:
+   a ninety-second countdown is not training data and has no business in a
+   cloud sync or a backup. */
+const TIMER_KEY="amirpt-timers";
+function saveTimers(){
+  try{
+    const t={};
+    if(restActive && restEnd>Date.now())
+      t.rest={end:restEnd, label:(document.getElementById('restLab')||{}).textContent||"",
+              ctx:_restCtx, cool:_coolQ? {i:_coolQ.i, side:_coolQ.side, all:_coolQ.all} : null};
+    if(holdIdx>=0 && holdInt)
+      t.hold={start:holdStart, idx:holdIdx,
+              name:((DB.workout&&DB.workout.main[holdIdx])||{}).name||"",
+              pos:_holdPos? {slice:_holdPos.slice, at:_holdPos.at, total:_holdPos.total} : null};
+    if(t.rest||t.hold) localStorage.setItem(TIMER_KEY, JSON.stringify(t));
+    else localStorage.removeItem(TIMER_KEY);
+  }catch(e){}
+}
+function clearSavedTimers(){ try{ localStorage.removeItem(TIMER_KEY); }catch(e){} }
+/* Anything older than this and he is not standing there waiting for it. */
+const TIMER_STALE_MS=10*60*1000;
+function restoreTimers(){
+  let t=null;
+  try{ t=JSON.parse(localStorage.getItem(TIMER_KEY)||"null"); }catch(e){ t=null; }
+  if(!t) return;
+  clearSavedTimers();
+  try{
+    if(t.hold && t.hold.name && Date.now()-t.hold.start < TIMER_STALE_MS){
+      /* Only if that exercise is still where it was — the sheet may have been
+         edited, and resuming onto the wrong movement logs the seconds against
+         someone else's set. */
+      const i=(typeof wkIndex==="function")? wkIndex(t.hold.name) : -1;
+      if(i>=0 && i===t.hold.idx){
+        holdIdx=i; holdStart=t.hold.start;
+        const btn=document.getElementById('hbtn'+i); if(btn) btn.textContent="■ Stop & log";
+        if(t.hold.pos) _holdPos=Object.assign({list:positionsFor(t.hold.name)}, t.hold.pos);
+        requestWake();
+        if(holdInt) clearInterval(holdInt);
+        holdInt=setInterval(()=>{ const s=Math.round((Date.now()-holdStart)/1000);
+          const c=document.getElementById('hcd'+i); if(c) c.textContent=fmtTime(s); },250);
+        toast("Hold timer picked up where it was");
+      }
+    }
+  }catch(e){}
+  try{
+    if(!t.rest) return;
+    const left=Math.round((t.rest.end-Date.now())/1000);
+    if(left<-120) return;                       /* long over — leave him alone */
+    _restCtx=t.rest.ctx||{kind:null,idx:null};
+    if(t.rest.cool) _coolQ=t.rest.cool;
+    if(left>0){
+      /* v197 — the cool-down chain carries a callback, which cannot be
+         serialised. It is rebuilt from _coolQ instead, so the flow keeps
+         stepping through the rest of the stretches after the update. */
+      if(_coolQ) coolStep(left);
+      else startRest(left, t.rest.label||"Rest · next set in");
+      toast("Timer picked up where it was");
+    } else {
+      const el=document.getElementById('restTimer');
+      if(el){ el.classList.add('show'); restApplyPos(); }
+      restBeeped=true;                          /* it already went off, or should have */
+      const l=document.getElementById('restLab'); if(l) l.textContent=t.rest.label||"Rest";
+      restDue();
+    }
+  }catch(e){}
+}
 /* Keep the screen awake during a timer so mobile browsers don't suspend us. */
 let wakeLock=null;
 async function requestWake(){ try{ if('wakeLock' in navigator && !wakeLock){ wakeLock=await navigator.wakeLock.request('screen'); wakeLock.addEventListener('release',()=>{wakeLock=null;}); } }catch(e){} }
@@ -6770,12 +6855,13 @@ function startRest(sec,label,onDone){
   document.getElementById('restLab').textContent=label||"Rest · next set in";
   restTick(); if(restInt) clearInterval(restInt); restInt=setInterval(restTick,250);
   try{ sessAvoidRest(); }catch(e){}
+  saveTimers();
 }
 function restTick(){
   if(!restActive) return;
   const left=Math.max(0,Math.round((restEnd-Date.now())/1000));
   const el=document.getElementById('restCd'); if(el) el.textContent=fmtTime(left);
-  if(left<=0){ restActive=false; if(restInt){clearInterval(restInt);restInt=null;} restDue(); }
+  if(left<=0){ restActive=false; if(restInt){clearInterval(restInt);restInt=null;} clearSavedTimers(); restDue(); }
 }
 let restDoneCb=null;
 function restDue(){
@@ -6787,7 +6873,7 @@ function restDue(){
   releaseWake();
   if(cb) try{ cb(); }catch(e){ console.warn(e); }
 }
-function stopRest(){ restActive=false; restDoneCb=null; _coolQ=null; if(restInt){clearInterval(restInt);restInt=null;} const t=document.getElementById('restTimer'); if(t){t.classList.remove('show');t.classList.remove('due');} releaseWake(); markCoolRunning(-1); }
+function stopRest(){ restActive=false; restDoneCb=null; _coolQ=null; clearSavedTimers(); if(restInt){clearInterval(restInt);restInt=null;} const t=document.getElementById('restTimer'); if(t){t.classList.remove('show');t.classList.remove('due');} releaseWake(); markCoolRunning(-1); }
 /* ==========================================================================
    v48 — THE SESSION CLOCK
    Start it when you begin, pause it when life interrupts, finish it when
@@ -7176,7 +7262,9 @@ function coolSidePrompt(i,text){
   const el=document.getElementById('cside'+i);
   if(el) el.innerHTML = text? "<div class='sideprompt'>"+escapeHtml(text)+"</div>" : "";
 }
-function coolStep(){
+/* v197 — resumeSec lets the flow be picked up part-way through a stretch
+   after a reload, with the rest of the queue still to come. */
+function coolStep(resumeSec){
   const list=coolList();
   if(!_coolQ || _coolQ.i>=list.length){ _coolQ=null; markCoolRunning(-1); return; }
   const mv=enrichMove(list[_coolQ.i]);
@@ -7184,7 +7272,7 @@ function coolStep(){
   const sideTxt = c.perSide? (" · side "+_coolQ.side+" of 2") : "";
   markCoolRunning(_coolQ.i);
   if(c.perSide) coolSidePrompt(_coolQ.i, "Side "+_coolQ.side+" of 2 · "+fmtSecShort(c.sec));
-  startRest(c.sec, (mv.t||"Cool-down")+sideTxt, ()=>{
+  startRest((resumeSec>0? resumeSec : c.sec), (mv.t||"Cool-down")+sideTxt, ()=>{
     if(!_coolQ) return;
     if(c.perSide && _coolQ.side===1){
       _coolQ.side=2;
@@ -7219,6 +7307,11 @@ function resyncTimers(){
   if(wakeLock===null && (restActive||holdIdx>=0)) requestWake();
 }
 document.addEventListener('visibilitychange',function(){ if(!document.hidden) resyncTimers(); });
+/* v197 — an update is not the only thing that takes the page away: iOS
+   reclaims a backgrounded tab, and he may just reload. Written on the way out
+   as well as on every change, so the countdown survives all of them. */
+window.addEventListener('pagehide',()=>{ try{ saveTimers(); }catch(e){} });
+document.addEventListener('visibilitychange',()=>{ if(document.hidden){ try{ saveTimers(); }catch(e){} } });
 
 /* ===== v157 · THE APP HAD NO WAY TO TELL HIM A FIX EXISTED ===============
    Three times in a row he has sent me a screenshot of a bug I had already
@@ -7315,6 +7408,7 @@ async function renderVersionBox(){
 }
 function applyUpdate(){
   try{ save(); }catch(e){}
+  try{ saveTimers(); }catch(e){}   /* v197 — the countdown comes back after the reload */
   try{ if(DB.cloud&&DB.cloud.on) cloudFlush("update"); }catch(e){}
   try{
     if(navigator.serviceWorker && navigator.serviceWorker.getRegistrations)
@@ -8329,6 +8423,7 @@ function toggleHold(i){
   if(holdIdx===i && holdInt){
     const sec=Math.round((Date.now()-holdStart)/1000);
     clearInterval(holdInt); holdInt=null; holdIdx=-1; if(btn)btn.textContent="▶ Start hold"; if(cd)cd.textContent=fmtTime(sec);
+    clearSavedTimers();
     _holdPos={list:null,slice:0,at:-1,total:0};
     const pl=document.getElementById('hpos'+i); if(pl){ pl.classList.remove('show','flash'); pl.textContent=""; }
     releaseWake();
@@ -8375,6 +8470,11 @@ function toggleHold(i){
         }
       }
     },250);
+    /* v197 \u2014 after holdInt exists, not before: saveTimers() reads it to
+       decide there is a hold to remember, and the early call recorded
+       nothing. It survived only because pagehide caught it on the way out,
+       which is no help if the tab is killed outright. */
+    saveTimers();
   }
 }
 function holdReply(sec){ let v = sec>=60?"Beast — over a minute.":sec>=40?"Solid hold.":sec>=20?"Good — build on that.":"Every second counts."; return v+"<br>Logged <b>"+sec+"s</b>. Brace harder next round. 💪"; }
@@ -13548,7 +13648,7 @@ function scheduleInApp(){
    v18 ADDITIONS — draggable rest timer · weekly training memory · AI planner
    · Firestore sync
    ========================================================================== */
-const APP_VERSION="v196 · 21/09/2026";
+const APP_VERSION="v197 · 21/09/2026";
 
 /* ===== 1. REST TIMER — drag it anywhere so it never blocks the chat box ===== */
 let _rtDrag=null;
@@ -21428,6 +21528,9 @@ function boot(){
   renderWeek(); renderReadiness(); renderFirstRun(); renderTomorrow(); renderEquipFields(); renderCloudFields(); restApplyPos(); renderStorageStatus(); renderWxFields();
   try{ renderProgrammeView(); }catch(e){}
   try{ sessFloatSync(); if(sessRunning()) sessTickStart(); }catch(e){}
+  /* v197 — last, once the sheet is on the page: a resumed hold timer writes
+     into a button that has to exist first. */
+  try{ restoreTimers(); }catch(e){}
   try{ updateSyncDot(); }catch(e){}
   try{ bindHomeCards(); }catch(e){}
   { try{ setVerLine(null); }catch(e){ const v=document.getElementById('verLine'); if(v) v.textContent="Amir PT · "+APP_VERSION; } }
