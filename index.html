@@ -671,6 +671,10 @@ details.sec2[open] .secsum2:after{content:"\2212";}
 .coachline .k{font-size:10.5px;font-weight:800;letter-spacing:.5px;text-transform:uppercase;color:var(--label);}
 .coachline .v{font-size:14.5px;font-weight:700;color:var(--txt);line-height:1.45;font-variant-numeric:tabular-nums;}
 .coachline .v i{font-style:normal;font-weight:600;color:var(--dim);}
+.coachline .felt{display:inline-block;margin-left:7px;padding:2px 7px;border-radius:7px;border:1px solid var(--line);font-size:11px;font-weight:800;letter-spacing:.2px;text-transform:lowercase;vertical-align:1px;}
+.coachline .felt.e1{background:#0c2716;border-color:#1d6b3e;color:#3fe08a;}
+.coachline .felt.e2{background:#2a1f0a;border-color:#6b4c15;color:#f0b24a;}
+.coachline .felt.e3{background:#2a1512;border-color:#7d2c24;color:#ff8a7d;}
 .coachline .cl.now .v{color:var(--gold);}
 .coachline .cl.done .v{color:var(--green);}
 /* v130 — the single Edit line under the cue. It is a divider with a label,
@@ -4274,17 +4278,34 @@ function buildWorkout(){
       /* v97 — if he has said a movement is reps rather than a hold (or the
          reverse), that decision outlives the session it was made in. */
       const tmd = (typeof isTimed==="function")? isTimed(n, e.timed) : !!e.timed;
+      /* ===== v190 · THE PROGRAM DOES NOT PRESCRIBE AT THE CEILING ========
+         The program says Incline DB Press 4×10 and it is right about the
+         sets, the rest and the place in the session. It is wrong about the
+         reps for a movement he trains at the top of his dumbbell rack,
+         because there the reps ARE the load, and they move every week while
+         the printed 10 stays where it was written. So the card heading read
+         "4 sets · 10 reps" above a target of "10kg × 22 reps".
+         Everything else the program says still stands. */
+      let pReps = pEx? pEx.reps : undefined;
+      if(pEx && !tmd){
+        try{
+          const r=repRangeFor(n,{timed:tmd});
+          const s=lastStrengthSession(n), ss=(s&&s.sets)||[];
+          const w=ss.length? Math.max(...ss.map(x=>+x.w||0)) : 0;
+          if(w>0 && atKitCeiling(n,w) && r && r.text) pReps=r.text;
+        }catch(err){}
+      }
       return {name:n, muscles:e.m, cue:e.cue, wristNote: flagged[n]||null, timed:tmd,
         sets:n_sets, anchor:isAnchor,
         /* The program's own targets, so the sheet shows what he wrote rather
            than a range the app re-derived. */
-        reps: pEx? pEx.reps : undefined,
+        reps: pReps,
         restSec: pEx? programRest(n) : undefined,
         programmed: !!pEx,
         /* v138 \u2014 was a third hand-written copy of the same string, so a rep
            range he had earned or typed was thrown away by every rebuild.
            One function decides what a scheme says. */
-        scheme: pEx? (n_sets+" sets \u00b7 "+pEx.reps+(/\d/.test(pEx.reps)&&!/s$|sec|each/.test(pEx.reps)?" reps":"")) : schemeFor(n, n_sets, {timed:tmd}),
+        scheme: pEx? (n_sets+" sets \u00b7 "+pReps+(/\d/.test(pReps)&&!/s$|sec|each/.test(pReps)?" reps":"")) : schemeFor(n, n_sets, {timed:tmd}),
         rest: pEx? fmtRest(programRest(n)) : (travel? "45\u201360s":"90s"), rec: tmd?null:recommendLoad(n)};}),
     cooldown:coolFor, recovery: travel?"Hydrate between drinks \ud83d\ude04. Grab some protein when you can. You're maintaining beautifully \u2014 don't stress the holiday.":"Hydrate (aim 3L). 30\u201340g protein within the hour. Lights out by 11. Recovery builds the physique."};
   /* v115 — readiness ADJUSTS the built session rather than replacing the
@@ -4770,6 +4791,11 @@ function recommendLoadRaw(ex){
     return {w:0, up:false, loadless:true, text:"Last time: "+reps.join(", ")+" reps. Beat the lowest of those. "+bandProgressionNote(ex)};
   }
   const topW=Math.max(...sets.map(s=>s.w));
+  /* v190 — the ceiling answers first. Everything below this line is
+     machinery for earning a heavier weight, and at the top of his rack
+     there is no heavier weight to earn. */
+  const capPlan=ceilingPlan(ex,sets);
+  if(capPlan) return capPlan;
   const bump=loadStep(ex,topW);
   /* ===== v66 · MASTERY BEFORE LOAD ====================================
      The old rule bumped as soon as ONE set at the top weight hit 10+ reps
@@ -4783,7 +4809,7 @@ function recommendLoadRaw(ex){
   const atTop=sets.filter(s=>s.w===topW);
   const reps=atTop.map(s=>s.r||0);
   const lo=reps.length?Math.min(...reps):0, hi=reps.length?Math.max(...reps):0;
-  const repsHeld = reps.length>0 && (hi-lo)<=3;        /* didn't collapse set to set */
+  const repsHeld = reps.length>0 && !repsFellAway(reps);  /* v190 — forwards, so a rising session passes */
   const fullSets = atTop.length>=need;
   const eff=sessionEffort(sets);
 
@@ -4792,12 +4818,16 @@ function recommendLoadRaw(ex){
       const back=Math.max(0,Math.round((topW*0.92)/0.5)*0.5);
       return {text:back+"kg — you were grinding at "+topW+". Back off, rebuild clean reps, come back stronger.",up:false,w:back};
     }
-    if(eff>2.4) return {text:"Stay at "+topW+"kg — it was hard last time. Own it before we add load.",up:false,w:topW};
+    /* v190 — "stay at 35kg" used to leave the rep number to the printed
+       prescription, so a session he rated hard and finished on 7 reps was
+       answered with "35kg × 12". The number he is chasing comes out of the
+       log like the weight does. */
+    if(eff>2.4) return {text:"Stay at "+topW+"kg for "+hi+" reps — it was hard last time. Own it before we add load.",up:false,w:topW,reps:hi||null};
     /* about right or easier — but only a COMPLETE, consistent session earns it */
     if(!fullSets)
       return {text:"Stay at "+topW+"kg — "+atTop.length+" of "+need+" sets at that weight so far. Get all "+need+" before we add.",up:false,w:topW};
     if(!repsHeld)
-      return {text:"Stay at "+topW+"kg — reps fell away from "+hi+" to "+lo+" across the sets. Even them out first.",up:false,w:topW};
+      return {text:"Stay at "+topW+"kg — reps fell away to "+lo+" by the last set. Even them out at "+hi+" first.",up:false,w:topW,reps:hi||null};
     if(eff<=1.5) return earnedIt(ex,topW,bump*2,need,true,lo);
     return earnedIt(ex,topW,bump,need,false,lo);
   }
@@ -4862,6 +4892,87 @@ function setKitFor(loc,patch){
   save();
   return DB.rules.kit[loc];
 }
+/* ===== v190 · 12, 15, 20 IS NOT "THE REPS FELL AWAY" ====================
+   The mastery test asked whether the highest and lowest rep counts in a
+   session were within three of each other. That question is order-blind, so
+   an ASCENDING session — 12, then 15, then 20 — failed it, and the card
+   answered three of his best sets with "the reps dropped from 20 to 12"
+   about a session where they did the exact opposite.
+
+   Fatigue reads forwards. It is a fall only when a LATER set comes in
+   materially below one he had already done. */
+function repsFellAway(reps){
+  const r=(reps||[]).map(n=>+n||0).filter(n=>n>0);
+  if(r.length<2) return false;
+  let best=r[0], worst=0;
+  for(let i=1;i<r.length;i++){
+    const drop=best-r[i];
+    if(drop>worst) worst=drop;
+    if(r[i]>best) best=r[i];
+  }
+  return worst>3;
+}
+/* ===== v190 · AT THE TOP OF THE RACK, REPS ARE THE PROGRESSION ==========
+   "If my last rep last week was 10kg 20 reps the app itself should adjust
+   and not ask me for 10 reps it should build on what I have done. Since
+   10kg are the maximum dumbbell weight I have it should adjust the reps."
+
+   Ten kilos is the heaviest dumbbell he owns. Once a movement is there,
+   every rule underneath that asks him to EARN a heavier weight is asking
+   for something that does not exist — and the mastery gate was doing
+   precisely that, answering three ascending sets at his ceiling with "get
+   all 4 before we add". There is nothing to add.
+
+   This is the one place that answers "is he at the top, and if so what is
+   today's number", and recommendLoadRaw asks it BEFORE the mastery gate.
+   The rule used to live inside earnedIt(), several returns further down,
+   where the gate reached its own answer first and the ceiling case never
+   ran. One rule, one implementation, at the front.
+
+   The target is built from his best set at that weight, nudged by how the
+   session actually felt, and it stops at 25: past about twenty reps the
+   honest answer is no longer reps but tempo, a pause, or a harder version
+   of the movement. */
+function ceilingPlan(name,sets){
+  const ss=(sets||[]).filter(s=>(+s.w||0)>0);
+  if(!ss.length) return null;
+  const topW=Math.max(...ss.map(s=>+s.w||0));
+  if(!atKitCeiling(name,topW)) return null;
+  const reps=ss.filter(s=>(+s.w||0)===topW).map(s=>+s.r||0).filter(n=>n>0);
+  if(!reps.length) return null;
+  const best=Math.max(...reps), low=Math.min(...reps);
+  const eff=(typeof sessionEffort==="function")? sessionEffort(ss) : null;
+  const word=(typeof effortWord==="function")? effortWord(eff) : null;
+  const felt=word? " Last time it felt "+word+"." : "";
+  const base={w:topW, up:false, ceiling:true, best, effort:eff, effortWord:word};
+  /* Reps have done their job \u2014 which is true when EVERY set is up there,
+     not when one is. 12, 15, 20 is a session with room left in it. */
+  if(low>=20 && (eff==null || eff<=2.4))
+    return Object.assign({}, base, {harder:true, reps:best,
+      text:topW+"kg for "+best+" reps is the heaviest dumbbell you own, so reps have done their job. Make it harder instead — three seconds down, a pause at the top, or one arm at a time."+felt,
+      why:topW+"kg is the heaviest dumbbell you own and every set is past twenty reps"+(word?", and you rated it "+word:"")+". More reps stops being the answer here.",
+      next:"Three seconds down, a pause at the top, or one arm at a time — same weight, harder work. When that owns it, it is a heavier movement you need, not a heavier dumbbell."});
+  /* Ragged sets. Asked before the effort check, because "you opened on 18
+     and finished on 11" is a sharper answer than "it was hard" and it is
+     the one that says what to do about it. */
+  if(repsFellAway(reps))
+    return Object.assign({}, base, {reps:best,
+      text:"Even it out at "+topW+"kg — "+best+" reps on every set. That is your heaviest dumbbell, so the reps are the progression."+felt,
+      why:"You opened with "+best+" reps at "+topW+"kg and finished on "+low+". Level the sets up before the number goes any higher.",
+      next:best+" reps on every set at "+topW+"kg, then we add to it."});
+  /* It was a grind. Own the number before asking for more of it. */
+  if(eff!=null && eff>2.4)
+    return Object.assign({}, base, {reps:best,
+      text:"Match "+best+" reps at "+topW+"kg. That was hard last time and "+topW+"kg is your heaviest dumbbell, so own the reps before we add to them.",
+      why:"You rated "+topW+"kg hard last time, and it is the heaviest dumbbell you own — so there is no lighter-or-heavier decision to make. Own "+best+" reps first.",
+      next:best+" reps on every set at "+topW+"kg, rated about right, and the reps start climbing again."});
+  const add=(eff!=null && eff<=1.5)? 3 : 2;
+  const reps2=Math.min(25,best+add);
+  return Object.assign({}, base, {addReps:true, reps:reps2,
+    text:topW+"kg × "+reps2+" reps — you got "+best+" last time and that is your heaviest dumbbell, so the reps go up, not the weight."+felt,
+    why:"You got "+best+" reps at "+topW+"kg"+(word?" and rated it "+word:"")+", and "+topW+"kg is the heaviest dumbbell you own. So the reps go up, not the weight.",
+    next:"Hold "+reps2+" reps on every set at "+topW+"kg, then we make the movement harder rather than the dumbbell heavier."});
+}
 /* Is he already on the heaviest thing he owns for this movement? */
 function atKitCeiling(name,w){
   const e=EX(name)||{};
@@ -4883,26 +4994,16 @@ function earnedIt(name,topW,step,need,easy,loReps){
   const next=Math.round((topW+step)*2)/2;
   const jump=topW>0? (step/topW)*100 : 100;
   const repCap=25;
-  /* At the top of his rack there is no next weight. Chasing reps is not a
-     consolation prize here, it is the only honest progression available \u2014 and
-     beyond about 20 reps the answer stops being reps and becomes tempo,
-     pauses, or a harder variation. */
-  const k=kitInfo();
-  if(atKitCeiling(name,next) && atKitCeiling(name,topW)){
-    if(loReps && loReps<20){
-      const target=Math.min(25, loReps+2);
-      return {w:topW, up:false, addReps:true, ceiling:true,
-        text:"Stay at "+topW+"kg and go for "+target+" reps \u2014 that's the heaviest dumbbell you've got, so reps are the progression now."};
-    }
-    return {w:topW, up:false, addReps:false, ceiling:true, harder:true,
-      text:"You're at "+topW+"kg for "+loReps+" reps and that's your heaviest dumbbell. Reps have done their job \u2014 make it harder instead: 3 seconds down, a pause at the top, or a single-limb/deficit version."};
-  }
+  /* v190 \u2014 the top-of-the-rack case used to be decided here, which is after
+     the mastery gate above has already returned its own answer. It now lives
+     in ceilingPlan() and is asked first, so this function only ever runs for
+     a movement that HAS a next weight. */
   /* A jump over ~12% isn't progression, it's a different exercise. Hold the
      weight and chase reps instead — unless he's already at the top of the
      range, in which case take it. */
   if(jump>12 && loReps && loReps<repCap){
     const target=Math.min(repCap, loReps+2);
-    return {w:topW, up:false, addReps:true,
+    return {w:topW, up:false, addReps:true, reps:target,
       text:"Stay at "+topW+"kg and go for "+target+" reps — the next weight up is "+next+
            "kg, a "+Math.round(jump)+"% jump you'd be grinding. Earn it with reps first."};
   }
@@ -7334,6 +7435,22 @@ function prefillReps(e){
   if(!e || e.timed) return "";
   const done=todaySets(e.name);
   if(done.length) return (done[done.length-1].r)||"";
+  /* v190 \u2014 the box used to arrive holding last session's final rep count,
+     which is the number to BEAT, not the number to do. Where the progression
+     has settled on a target \u2014 and at the top of his rack that target is the
+     whole progression \u2014 the box holds the target. */
+  try{
+    const p=progressionFor(e.name);
+    if(p && p.repTarget) return p.repTarget;
+    /* And when he has just earned a heavier weight there is no rep target,
+       because the reps go back to the range — so the box takes the range,
+       not last session's reps at the lighter weight. 15 in the box under
+       "37.5kg × 12" on the card is the same contradiction one line down. */
+    if(e.rec && e.rec.up){
+      const m=String(shortTarget(e)).match(/\d+/);
+      if(m) return m[0];
+    }
+  }catch(err){}
   try{
     const s=lastSessionOf(e.name);
     if(s&&s.sets&&s.sets.length) return s.sets[s.sets.length-1].r||"";
@@ -7361,6 +7478,13 @@ function prefillNote(e){
   if(isLoadless(e.name))
     return "<div class='prefill'>Beat your lowest set from last time.</div>";
   const up=(e.rec&&e.rec.w&&e.rec.w>top);
+  /* v190 \u2014 at the top of the rack the weight is not "the same again", it is
+     the only one there is, and the reps are the thing that moved. Say so, or
+     the unchanged kilos read as no progression at all. */
+  if(e.rec&&e.rec.ceiling){
+    if(e.rec.harder) return "<div class='prefill'>"+escapeHtml(String(top))+"kg is your heaviest dumbbell and the reps have gone as far as they usefully go \u2014 make the movement harder instead.</div>";
+    return "<div class='prefill'>"+escapeHtml(String(top))+"kg is your heaviest dumbbell, so the reps are the progression \u2014 the box is filled in with today\u2019s target.</div>";
+  }
   return up
     ? "<div class='prefill'>Filled in with the jump you earned \u2014 type over it if it\u2019s wrong.</div>"
     : "<div class='prefill'>Filled in for you \u2014 type over it if it\u2019s wrong.</div>";
@@ -7465,6 +7589,23 @@ function repRangeDefault(name,ex){
   /* Bands and bodyweight have no load to add, so reps ARE the progression. */
   const loadless=(typeof isLoadless==="function") && isLoadless(name);
   if(travel || loadless) return {lo:12,hi:20,text:"12\u201320"};
+  /* ===== v190 \u00b7 THE TOP OF THE RACK IS THE SAME CASE AS A BAND ==========
+     No load to add, so reps ARE the progression \u2014 and then the range
+     printed on the card has to sit where his reps actually are. It did not,
+     so the heading read "4 sets \u00b7 10 reps" directly above a target of
+     "10kg \u00d7 22 reps" on the same card. */
+  try{
+    const s=lastStrengthSession(name);
+    const ss=(s&&s.sets)||[];
+    const w=ss.length? Math.max(...ss.map(x=>+x.w||0)) : 0;
+    if(w>0 && atKitCeiling(name,w)){
+      const best=Math.max(0,...ss.filter(x=>(+x.w||0)===w).map(x=>+x.r||0));
+      if(best>0){
+        const lo=Math.max(6,best-2), hi=Math.min(25,best+4);
+        return {lo, hi, text:lo+"\u2013"+hi};
+      }
+    }
+  }catch(err){}
   const pat=(typeof patternOf==="function")? patternOf(name) : "";
   const heavy=["squat","hinge","hpush","vpush","hpull","vpull"].indexOf(pat)>=0;
   const compound = heavy || e.mech==="compound" || (typeof isCompound==="function" && isCompound(name));
@@ -7523,7 +7664,11 @@ function learnRepRange(name){
     const def=repRangeDefault(name,ex); if(!def) return;
     const refresh=()=>{ if(ex && !ex.reps){ try{ ex.scheme=schemeFor(name,exSets(ex),ex); }catch(e){} } save(); };
     /* Overshooting the top is "add weight" \u2014 that is what progression IS.
-       Only a long way out is a different rep range. */
+       Only a long way out is a different rep range.
+
+       v190 \u2014 at the top of the rack repRangeDefault() already tracks his
+       log, for the reason given there, so the reference this is judged
+       against moves with him and nothing needs storing. */
     if(med<=def.hi+4 && med>=def.lo-4){
       if(stored){ setRepRange(name,"",null); refresh(); toast(name+" \u2192 back to "+def.text+" reps"); }
       return;
@@ -7759,7 +7904,10 @@ function coachLineHTML(e){
      drops the date — "Last · today" reads like a contradiction. */
   const onToday=!!(p && p.lastDate===today());
   if(p && p.last){
-    rows.push("<div class='cl'><span class='k'>"+(onToday? "So far" : "Last")+"</span><span class='v'>"+escapeHtml(p.last)+
+    /* v190 \u2014 and how it felt, in his own words, coloured the same as the
+       pills it came from. */
+    const felt=p.lastEffort? "<span class='felt e"+p.lastEffort.level+"'>"+escapeHtml(p.lastEffort.word)+"</span>" : "";
+    rows.push("<div class='cl'><span class='k'>"+(onToday? "So far" : "Last")+"</span><span class='v'>"+escapeHtml(p.last)+felt+
       ((!onToday && p.lastDate)? " <i>"+ukDate(p.lastDate)+"</i>" : "")+"</span></div>");
   }
   /* A number beats a paragraph. Where the coach has actually settled on a
@@ -7767,8 +7915,16 @@ function coachLineHTML(e){
      reasoning is a tap away under Edit, which is what Edit is for. Bands and
      bodyweight have no kilos, so those fall back to the first sentence. */
   let todayTxt="";
-  if(p && p.recommended!=null){
-    todayTxt=fmtNum(p.recommended)+"kg \u00d7 "+shortTarget(e);
+  if(p && p.harder){
+    /* v190 \u2014 past twenty reps at the top of the rack there is no number to
+       print, so print the instruction instead. */
+    todayTxt=firstSentence(p.target||"");
+  } else if(p && p.recommended!=null){
+    /* v190 \u2014 the reps come from his log where the progression has produced
+       a number, and only fall back to the printed prescription when it
+       hasn't. "10kg \u00d7 10" under "10kg \u00d7 12, 15, 20" was the sheet talking
+       over the training. */
+    todayTxt=fmtNum(p.recommended)+"kg \u00d7 "+(p.repTarget? (p.repTarget+" reps") : shortTarget(e));
   } else {
     todayTxt=firstSentence((p&&p.target) || (e.rec&&e.rec.text) || "");
   }
@@ -12943,7 +13099,7 @@ function scheduleInApp(){
    v18 ADDITIONS — draggable rest timer · weekly training memory · AI planner
    · Firestore sync
    ========================================================================== */
-const APP_VERSION="v189 · 20/09/2026";
+const APP_VERSION="v190 · 21/09/2026";
 
 /* ===== 1. REST TIMER — drag it anywhere so it never blocks the chat box ===== */
 let _rtDrag=null;
@@ -13080,6 +13236,23 @@ function trainingContext(){
     }).filter(Boolean).join("  \u2192  ");
     return recent? "  "+k+": "+recent : null;
   }).filter(Boolean).join("\n")||"  (nothing logged yet)";
+  /* ===== v190 \u00b7 TELL THE COACH WHERE THE RACK RUNS OUT ================
+     The brief listed every lift's load history and left the coach to work
+     out on its own that 10kg is the last dumbbell in the building. It
+     couldn't, so it kept writing "let's go to 12kg next week" about weight
+     he does not own. Named explicitly, with the rep target the app is
+     already showing him on the card, so the two never contradict. */
+  const ceilLines=Object.entries(DB.strength||{}).map(([k,v])=>{
+    const last=(v||[]).filter(s=>(s.sets||[]).length).slice(-1)[0];
+    if(!last) return null;
+    let c=null; try{ c=ceilingPlan(k,last.sets); }catch(e){ c=null; }
+    if(!c) return null;
+    return "  "+k+": at "+c.w+"kg, the heaviest he owns \u2014 "+
+      (c.harder? "reps are exhausted, progress it with tempo, pauses or a single-arm version"
+               : "today's target is "+c.reps+" reps (best last time "+c.best+")");
+  }).filter(Boolean).join("\n");
+  const ceilLine=ceilLines? ("\n\nAT THE TOP OF THE RACK \u2014 THERE IS NO HEAVIER DUMBBELL FOR THESE. "+
+    "Never ask him to add kilos to one; the progression is reps, then tempo, then a harder movement, and the app is already showing him these exact numbers:\n"+ceilLines) : "";
   const grind=recentGrinders(7), effReg=effortRegressions();
   const unrated=Object.keys(DB.strength||{}).filter(k=>{const a=DB.strength[k]||[];const l=a[a.length-1];return l&&sessionEffort(l.sets)===null;});
   const effLine="\n\nHOW IT HAS FELT (his own effort taps \u2014 trust these over rep counts):"+
@@ -13092,7 +13265,7 @@ function trainingContext(){
     "\nDAYS SINCE EACH GROUP WAS TRAINED: "+staleLine+
     "\nMOST NEGLECTED RIGHT NOW (hit these first): "+priority+
     "\nSESSIONS IN LAST 7 DAYS: "+st.sessions+
-    "\n\nLOAD PROGRESSION PER LIFT (last 3 sessions each):\n"+prog+effLine;
+    "\n\nLOAD PROGRESSION PER LIFT (last 3 sessions each):\n"+prog+ceilLine+effLine;
 }
 
 /* ===== v174 · THE COACH DOES NOT BUILD SESSIONS =========================
@@ -13928,7 +14101,11 @@ function recentGrinders(days){
   const cut=dnum(today())-((days||7)-1)*864e5; let n=0;
   Object.values(DB.strength||{}).forEach(arr=>(arr||[]).forEach(s=>{
     if(!s.date||s.date==='prev'||dnum(s.date)<cut) return;
-    (s.sets||[]).forEach(x=>{ if(effortOf(x)===4) n++; });
+    /* v190 \u2014 this tested for a 4, and v181 cut the scale to three levels
+       and clamps everything to 3. So it counted nothing, and the coach's
+       brief has said "Grinder sets in the last 7 days: 0" ever since,
+       however many he rated hard. */
+    (s.sets||[]).forEach(x=>{ if(effortOf(x)>=3) n++; });
   }));
   return n;
 }
@@ -19688,6 +19865,18 @@ function progressionFor(name){
         : sets.map(x=>fmtNum(x.w)+"×"+x.r).join(", ");
     }
     out.lastDate=shown.date;
+    /* ===== v190 \u00b7 HOW IT FELT, ON THE CARD ==============================
+       "Should also tell me somehow if I found this easy last time, about
+       right or hard so I know."
+
+       He taps an effort on every set and the app has been keeping it to
+       itself: it fed the progression maths and the coach's brief, and the
+       one place he actually looks \u2014 the card, mid-set \u2014 never showed it
+       back to him. It tags the row it belongs to, so once today is on the
+       board it describes today. */
+    const shownEff=(typeof sessionEffort==="function")? sessionEffort(shown.sets) : null;
+    const shownWord=(typeof effortWord==="function")? effortWord(shownEff) : null;
+    if(shownWord) out.lastEffort={word:shownWord, level:(shownEff<=1.5?1:(shownEff<=2.4?2:3)), avg:shownEff};
   }
   if(!meta.weight){
     /* Bands and bodyweight have no kilos, so progression is reps, then tempo,
@@ -19695,6 +19884,9 @@ function progressionFor(name){
        produced "aim for 15kg" on a band curl. */
     const topReps=prev? Math.max(...(prev.sets||[]).map(s=>+s.r||0)) : null;
     out.target = topReps? ("beat "+topReps+(meta.unit==="time"?"s":" reps")+" on your best set") : "find a working number today";
+    /* v190 \u2014 the same number the line is talking about, as a number, so the
+       card and the boxes can show it instead of the library's prescription. */
+    if(topReps && meta.unit==="reps") out.repTarget=topReps+1;
     out.why = topReps? "No load to add, so reps are the progression." : "Nothing logged yet — today sets the baseline.";
     out.next = "Add reps until the top set is comfortably over "+((topReps||10)+3)+
                (meta.unit==="time"?"s":"")+", then slow the negative, then a harder variation or a heavier band.";
@@ -19705,6 +19897,16 @@ function progressionFor(name){
   const top=lastTopWeight(name);
   out.target = rec? rec.text : null;
   out.recommended = rec? rec.w : null;
+  /* ===== v190 \u00b7 THE TARGET IS WHAT HE DID, NOT WHAT THE SHEET SAYS =====
+     The card read "TODAY 10kg \u00d7 10" directly underneath "LAST 10kg \u00d7 12,
+     15, 20". The weight came from the recommender and the reps came from
+     the printed prescription, and nothing joined them up \u2014 so the one
+     number he is meant to chase was the only one that had never looked at
+     his log. Where the recommender has settled on a rep target, that is the
+     number, everywhere. */
+  if(rec && rec.reps) out.repTarget=rec.reps;
+  if(rec && rec.ceiling) out.ceiling=true;
+  if(rec && rec.harder)  out.harder=true;
   if(!prev){
     const todays=todaySets(name)||[];
     if(todays.length){
@@ -19724,12 +19926,22 @@ function progressionFor(name){
   const lo=Math.min(...reps), hi=Math.max(...reps);
   const eff=sessionEffort? sessionEffort(sets) : null;
   const finished=sets.length>=target;
-  const held=lo>=hi-1;
+  /* v190 \u2014 was lo>=hi-1, which is order-blind: 12, 15, 20 was reported as
+     "the reps dropped from 20 to 12". */
+  const held=!repsFellAway(reps);
   const L=layoffInfo();
 
   if(L.tier){
     out.why=L.label;
     out.next="Get back to "+(top||"your old")+"kg for all "+target+" sets, then we carry on where you left off.";
+  } else if(out.ceiling){
+    /* v190 \u2014 at the top of the rack the "earn the jump" story is the wrong
+       story: there is no jump to earn. The reasoning comes out of the same
+       object that chose the target, so the two cannot disagree \u2014 which they
+       did on the first pass of this: "the reps go up, not the weight"
+       printed directly underneath a target of "match what you did". */
+    out.why  = rec.why  || firstSentence(rec.text||"");
+    out.next = rec.next || out.next;
   } else if(rec && top!=null && rec.w>top){
     out.why="You completed "+sets.length+" sets at "+top+"kg with the reps holding up"+(eff!=null&&eff<=2?" and it didn't feel like a fight":"")+", so you've earned the jump.";
     out.next="Same rule again: all "+target+" sets at "+rec.w+"kg with clean form and it goes up.";
@@ -19739,12 +19951,18 @@ function progressionFor(name){
   } else {
     const missing=[];
     if(!finished) missing.push("you got "+sets.length+" of "+target+" sets");
-    if(!held)     missing.push("the reps dropped from "+hi+" to "+lo);
+    if(!held)     missing.push("the reps fell away to "+lo+" by the last set");
     if(eff!=null&&eff>=3) missing.push("it was heavy work");
     out.why = missing.length
       ? "Repeat "+top+"kg — "+missing.join(", ")+". That's a good session, not a failure."
       : "Repeat "+top+"kg. \"About right\" is the weight to own, not the weight to jump from.";
-    out.next="All "+target+" sets at "+top+"kg with clean form and the reps holding, then it goes up.";
+    /* v190 — and say what the number on the card means, which it never did:
+       "Repeat 8kg" printed over a target of "8kg × 12 reps" explains the
+       weight and leaves the reps looking like they came from nowhere. */
+    if(out.repTarget) out.why += " Today that is "+out.repTarget+" reps at "+top+"kg.";
+    out.next = out.repTarget
+      ? "All "+target+" sets at "+top+"kg for "+out.repTarget+" reps, form holding, then it goes up."
+      : "All "+target+" sets at "+top+"kg with clean form and the reps holding, then it goes up.";
   }
   return out;
 }
@@ -20123,6 +20341,7 @@ function progressionHTML(e){
   if(!p) return "";
   return "<div class='progbox'>"+
     (p.last? "<div class='pr'><span class='k'>Last</span><span class='v'>"+escapeHtml(p.last)+
+             (p.lastEffort? " \u2014 felt "+escapeHtml(p.lastEffort.word) : "")+
              (p.lastDate? " <i>"+ukDate(p.lastDate)+"</i>":"")+"</span></div>" : "")+
     (p.target? "<div class='pr'><span class='k'>Today</span><span class='v'>"+escapeHtml(p.target)+"</span></div>":"")+
     (p.why? "<div class='pr why'><span class='k'>Why</span><span class='v'>"+escapeHtml(p.why)+"</span></div>":"")+

@@ -1,3 +1,118 @@
+AMIR PT — v190 · 21/09/2026
+===========================
+
+"If my last rep last week was 10kg 20 reps the app itself should adjust and not
+ask me for 10 reps it should build on what I have done. Since 10kg are the
+maximum dumbbell weight I have it should adjust the reps. Should also tell me
+somehow if I found this easy last time, about right or hard so I know. This
+logic should be carried everywhere."
+
+The card he was looking at:
+
+  Incline DB Press
+  4 sets · 10 reps · rest 1m 45s
+  [ 10 ] [ 20 ]  Log
+  LAST   10kg × 12, 15, 20   18/09/2026
+  TODAY  10kg × 10
+
+Three numbers on one card, and the only one derived from his training was the
+one in the LAST row. Reproduced it exactly before changing anything.
+
+WHY IT SAID TEN
+---------------
+The weight on the TODAY line came from the progression. The reps came from the
+printed prescription, and nothing joined them up — so the one number he is
+meant to chase was the only thing on the card that had never looked at his log.
+
+Underneath that were two rules that were wrong for him:
+
+1. THE MASTERY TEST COULD NOT READ AN IMPROVING SESSION. It asked whether the
+   highest and lowest rep counts were within three of each other, which is
+   order-blind, so 12 then 15 then 20 failed it and the coach line reported
+   "the reps dropped from 20 to 12" about a session where they did the
+   opposite. It now reads forwards: a fall is a LATER set materially below
+   one he had already done.
+
+2. IT KEPT ASKING HIM TO EARN A DUMBBELL THAT DOES NOT EXIST. Ten kilos is the
+   heaviest one he owns. The rule for that case was written — in earnedIt(),
+   several returns past the mastery gate, which reached its own answer first
+   and returned it. So three ascending sets at his ceiling were answered with
+   "3 of 4 sets at that weight so far. Get all 4 before we add." There is
+   nothing to add.
+
+   That rule is now ceilingPlan(), asked BEFORE the gate, and it is the only
+   copy. Same shape of bug as the float clamps in v156 and the gear upgrade in
+   v173: one rule, two implementations, and the fix went into the one nobody
+   was calling.
+
+WHAT THE CARD SAYS NOW
+----------------------
+  Incline DB Press
+  4 sets · 18–24 reps · rest 1m 45s
+  [ 10 ] [ 22 ]  Log
+  10kg is your heaviest dumbbell, so the reps are the progression — the box
+  is filled in with today's target.
+  LAST   10kg × 12, 15, 20  (about right)  18/09/2026
+  TODAY  10kg × 22 reps
+
+Every number on it now comes from the same place. The target is built from his
+best set, nudged by how the session actually felt — +3 off an easy one, +2 off
+about right, match it if it was hard or if the sets came apart — and it stops
+at 25, because past about twenty reps the honest answer is no longer reps but
+tempo, a pause, or a harder version of the movement. It says that when it gets
+there rather than counting to thirty.
+
+The heading moved too. The program says Incline DB Press 4×10 and it is right
+about the sets, the rest and its place in the session; it is wrong about the
+reps for a movement he trains at the top of the rack, because there the reps
+ARE the load and they move every week while the printed 10 stays put. The
+program's rep number is overridden for exactly those movements and nothing
+else.
+
+HOW IT FELT, GIVEN BACK TO HIM
+------------------------------
+He has been tapping easy / about right / hard after every set since v181, and
+the app kept it to itself — it fed the progression maths and the coach's brief,
+and the one place he actually looks never showed it back. The LAST row now
+carries the word, coloured the same as the pills it came from, and it tags
+whichever session the row is showing, so once today is on the board it
+describes today.
+
+AND A COUNTER THAT HAS BEEN READING ZERO SINCE v181
+---------------------------------------------------
+recentGrinders() tested for an effort rating of 4. v181 cut the scale to three
+levels and clamps everything to 3, so it counted nothing, and the coach's brief
+has said "Grinder sets in the last 7 days: 0" ever since — however many he
+rated hard. It now reads 3 where it used to read 0.
+
+CARRIED EVERYWHERE, AS HE ASKED
+-------------------------------
+  · the TODAY line on the card
+  · the reps box, and the note under it saying why the kilos did not move
+  · the card heading's rep range
+  · the Edit → coach panel (Last / Today / Why / Next)
+  · the rest timer's "next up" line and the coach's reply after a log — both
+    read the same recommender
+  · the coach's brief, which now names every movement that is at the ceiling
+    and the exact rep target the app is showing him, so it can no longer
+    suggest 12kg
+
+Off the ceiling the same principle applies: wherever the recommender says
+"stay at this weight", the rep number now comes out of his log rather than the
+prescription. "35kg × 12" over a session he finished on 7 is the same fault in
+a different place.
+
+CHECKED
+-------
+His exact card reproduced before and after. Nine progression cases run end to
+end — rising into the ceiling, every set past twenty, rated hard, sets falling
+apart, all easy, one dumbbell below the ceiling, and three cable cases nowhere
+near it — confirming the reasoning and the target never contradict each other,
+which they did on my first pass. Bands and bodyweight untouched. All four
+branches on one sheet at 390px and 360px: no overflow. verify16 (16 programmed
+sessions match the program), dupes2, shape, journey (17 actions), audit173,
+rest187, core189, mob: all clean, no page errors.
+
 AMIR PT — v189 · 20/09/2026
 ===========================
 
