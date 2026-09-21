@@ -1,3 +1,74 @@
+AMIR PT — v198 · 21/09/2026
+===========================
+
+"I need an Abs finisher after every workout. Every day hit a different part of
+my abs."
+
+Core was on four days and the finisher slot ALTERNATED with an arm movement,
+so two sessions a week ended on abs and two did not. Every lifting session now
+ends on abs, and the region is fixed to the day so he learns it without reading
+anything:
+
+  Monday    Upper Body   →  LOWER ABS        hip flexion, below the navel
+  Tuesday   Legs & Core  →  UPPER ABS        trunk flexion, ribs to hips
+  Thursday  Pull Day     →  OBLIQUES         rotation and side bend
+  Friday    Push Day     →  ANTI-EXTENSION   bracing against the spine opening
+
+Four training days, four regions, nothing hit twice in a week. Wednesday is the
+mobility/Pilates day and gets no finisher: a flow has no finisher slot, and the
+Pilates half of it is already core work.
+
+  wk1  Leg Raise 2×15      Cable Crunch 3×12  Plank Hip Dips 2×12/side  Band Dead Bug 2×10/side
+  wk2  Hanging Knee 2×12   V-Up 3×12         Side Plank 2×40s/side     Hollow Hold 3×30s
+  wk3  Flutter Kick 2×30s  Cable Crunch 3×15  Bicycle Crunch 2×20/side  Dead Bug 2×12/side
+  wk4  Leg Raise 2×12      V-Up 2×12         Side Plank 2×30s/side     Plank 2×45s
+
+THE ARM MOVEMENT MOVED, IT DID NOT DIE
+--------------------------------------
+Taking the Monday and Friday finishers for abs is the obvious way to do this
+and it would have cut arms from five sets a week to three, against a target of
+ten. v189 already spent one arm slot to buy the fourth core day and said so at
+the time; spending the rest silently would have been worse.
+
+Tuesday was carrying TWO core movements, which is one region too many now. The
+freed slot takes the arm movement. Arms stay at 4.8 sets a week — the same
+figure as before this change, checked — legs lose nothing, and every session
+ends on abs.
+
+CHECKED RATHER THAN REMEMBERED
+------------------------------
+auditAbs() runs at boot beside auditProgram() and fails loudly on any of:
+a session with no abs movement, a session with two, an abs movement that is
+not LAST on the sheet, a movement in the wrong region for its day, a region
+used twice in one week, or a region missing from a week. v163 exists because a
+duplicate movement was typed in by hand and went unnoticed for a week. The
+answer then was an audit and it is the answer here.
+
+The coach is told as well: every session ends on abs, which region belongs to
+which day, never two in a session, never the same region twice in a week, and
+if time is short cut a set off something else rather than dropping the last
+movement.
+
+PHOTOGRAPHS
+-----------
+Two of the movements I first picked — Reverse Crunch and Crunch — have no
+photograph of him, and the rule is no image rather than an approximate one. Leg
+Raise and V-Up do the same job and are already shot, so they went in instead.
+Eleven of the twelve finishers now carry his own photos. The twelfth is Plank
+Hip Dips, which was already on the shoot list from v188. Nothing new was added
+to it.
+
+CHECKED
+-------
+Both audits clean. All four weeks cover all four regions with no repeat, and
+every one of the sixteen sessions ends on its abs movement. No session repeats
+a movement family. All sixteen sessions still inside the 65-minute budget
+(51-65 min; none over). Weekly volume unchanged where it should be: arms 4.8,
+legs 11.8, chest 16, back 17.3, shoulders 11.8, core 9 — identical to v197.
+Logging follows his rules on every finisher: Cable Crunch as kg and reps, the
+rep-dosed bodyweight ones as reps, the held ones as time. verify16, dupes2,
+journey, audit173 and core189 clean, no page errors.
+
 AMIR PT — v197 · 21/09/2026
 ===========================
 

@@ -4053,17 +4053,85 @@ function auditProgram(){
     if(c.length) bad.push("week "+wk+" "+sp+": "+c.join("; "));
   }));
   if(bad.length) console.error("PROGRAM REPEATS A MOVEMENT:\n"+bad.join("\n"));
+  try{ bad.push.apply(bad, auditAbs()); }catch(e){}
+  return bad;
+}
+/* ===== v198 \u00b7 THE RULE, CHECKED RATHER THAN REMEMBERED ================
+   "An abs finisher after every workout. Every day hit a different part."
+   Both halves of that are testable, so they are tested. v163 exists because a
+   duplicate movement was typed in by hand and nobody noticed for a week;
+   auditProgram() was the answer then and this is the same answer for abs. */
+function auditAbs(){
+  const bad=[];
+  Object.keys(PROGRAM).forEach(wk=>{
+    const seen={};
+    Object.keys(PROGRAM[wk]).forEach(sp=>{
+      const list=PROGRAM[wk][sp];
+      const abs=list.map(x=>x[0]).filter(n=>absRegion(n));
+      if(!abs.length){ bad.push("week "+wk+" "+sp+": no abs finisher"); return; }
+      if(abs.length>1) bad.push("week "+wk+" "+sp+": "+abs.length+" abs movements ("+abs.join(", ")+") \u2014 one a day");
+      /* The finisher finishes: it is the last thing on the sheet. */
+      if(!absRegion(list[list.length-1][0]))
+        bad.push("week "+wk+" "+sp+": the abs movement is not last");
+      const r=absRegion(abs[0]);
+      const want=ABS_DAY[sp];
+      if(want && r!==want) bad.push("week "+wk+" "+sp+": "+abs[0]+" is "+r+", that day is "+want);
+      if(seen[r]) bad.push("week "+wk+": "+r+" twice \u2014 "+seen[r]+" and "+sp);
+      seen[r]=sp;
+    });
+    Object.keys(ABS_REGION).forEach(r=>{ if(!seen[r]) bad.push("week "+wk+": nothing for "+r); });
+  });
+  if(bad.length) console.error("ABS PLAN:\n"+bad.join("\n"));
   return bad;
 }
 const PROGRAM_WEEKS=4;
+/* ===== v198 \u00b7 AN ABS FINISHER ON EVERY SESSION ========================
+   "I need an Abs finisher after every workout. Every day hit a different part
+   of my abs."
+
+   Core was on four days before this and the finisher slot alternated with an
+   arm movement, so two sessions a week ended on abs and two did not. Now
+   every lifting day ends on abs, and the region is fixed to the day so he
+   learns it without reading anything:
+
+     Monday    lower abs    \u2014 hip flexion: the bit below the navel
+     Tuesday   upper abs    \u2014 trunk flexion: ribs towards hips
+     Thursday  obliques     \u2014 rotation and side bend
+     Friday    anti-extension \u2014 bracing against the spine being pulled open
+
+   Four training days, four regions, nothing hit twice in a week. Wednesday is
+   the mobility/Pilates day and gets no finisher: a flow has no finisher slot,
+   and the Pilates half of it is already core work.
+
+   THE ARM MOVEMENT MOVED, IT DID NOT DIE. Taking the Monday and Friday
+   finishers for abs would have cut arms from five sets a week to three,
+   against a target of ten \u2014 v189 already spent one arm slot to buy the fourth
+   core day and said so. Tuesday was carrying TWO core movements, which is one
+   region too many now, so the freed slot takes the arm movement. Arms stay at
+   five sets, legs lose nothing, and every session ends on abs. */
+const ABS_REGION={
+  "lower":   ["Leg Raise","Hanging Knee Raise","Flutter Kick","Reverse Crunch","Scissors"],
+  "upper":   ["Cable Crunch","Crunch","Sit-up","V-Up"],
+  "oblique": ["Side Plank","Plank Hip Dips","Bicycle Crunch","Band Pallof Press","Woodchop"],
+  "brace":   ["Dead Bug","Band Dead Bug","Hollow Hold","Plank","Ab Wheel","Bird Dog"]
+};
+const ABS_REGION_LABEL={lower:"lower abs",upper:"upper abs",oblique:"obliques",brace:"deep core \u00b7 anti-extension"};
+function absRegion(name){
+  const n=String(name||"");
+  for(const k of Object.keys(ABS_REGION)) if(ABS_REGION[k].some(x=>nameEq(x,n))) return k;
+  return null;
+}
+/* Which region each day owns. The program is written to match, and
+   auditAbs() below is what stops it drifting. */
+const ABS_DAY={"Upper Body":"lower","Legs & Core":"upper","Pull Day":"oblique","Push Day":"brace"};
 const PROGRAM={
   1:{
     "Upper Body":[["Incline DB Press",4,"10"],["Lat Pulldown",4,"10"],
                   ["Seated Cable Row",3,"12"],["Lateral Raise",3,"15"],["Cable Fly",3,"12"],
-                  ["DB Curl",2,"12"]],
+                  ["Leg Raise",2,"15"]],
     "Legs & Core":[["Romanian Deadlift",4,"10"],["Goblet Squat",3,"12"],
-                  ["Reverse Lunge",3,"10 each leg"],["Calf Raise",3,"15"],["Cable Crunch",3,"12"],
-                  ["Side Plank",2,"40s each side"]],
+                  ["Reverse Lunge",3,"10 each leg"],["Calf Raise",3,"15"],["DB Curl",2,"12"],
+                  ["Cable Crunch",3,"12"]],
     "Pull Day":[["Lat Pulldown",4,"10"],["Seated Cable Row",4,"10"],
                   ["DB Reverse Fly",3,"15"],["Face Pull",3,"15"],["Hammer Curl",3,"10"],
                   ["Plank Hip Dips",2,"12 each side"]],
@@ -4074,48 +4142,46 @@ const PROGRAM={
   2:{
     "Upper Body":[["Incline DB Press",4,"8\u201310"],["Lat Pulldown",4,"8\u201310"],
                   ["DB Single-arm Row",3,"10 each side"],["Lateral Raise",3,"12\u201315"],["Cable Fly",3,"12"],
-                  ["Dead Bug",2,"12 each side"]],
+                  ["Hanging Knee Raise",2,"12"]],
     "Legs & Core":[["Romanian Deadlift",4,"8"],["Bulgarian Split Squat",4,"8 each leg"],
-                  ["Calf Raise",3,"15"],["Band Pallof Press",3,"12 each side"],
-                  ["Hollow Hold",3,"30s"]],
+                  ["Calf Raise",3,"15"],["Triceps Pushdown",2,"10"],
+                  ["V-Up",3,"12"]],
     "Pull Day":[["Lat Pulldown",4,"8\u201310"],["Chest-supported Row",4,"10"],
                   ["DB Reverse Fly",3,"15"],["Face Pull",3,"12"],["DB Curl",3,"10"],
                   ["Side Plank",2,"40s each side"]],
     "Push Day":[["Incline DB Press",4,"8"],["Close-grip Bench Press",3,"8\u201310"],
                   ["DB Shoulder Press",3,"10"],["Cable Lateral Raise",3,"15"],["Cable Fly",3,"15"],
-                  ["Triceps Pushdown",2,"10"]]
+                  ["Hollow Hold",3,"30s"]]
   },
   3:{
     "Upper Body":[["Incline DB Press",4,"8"],["Lat Pulldown",4,"10"],
                   ["Chest-supported Row",3,"10"],["Cable Lateral Raise",3,"15"],["Cable Fly",3,"15"],
-                  ["Incline DB Curl",2,"10"]],
+                  ["Flutter Kick",2,"30s"]],
     "Legs & Core":[["Romanian Deadlift",4,"8\u201310"],["Goblet Squat",4,"10"],
-                  ["Reverse Lunge",3,"12 each leg"],["Calf Raise",3,"20"],["Cable Crunch",3,"15"],
-                  ["Plank Hip Dips",2,"15 each side"]],
+                  ["Reverse Lunge",3,"12 each leg"],["Calf Raise",3,"20"],["Hammer Curl",2,"12"],
+                  ["Cable Crunch",3,"15"]],
     "Pull Day":[["Single-arm Lat Pulldown",4,"10 each side"],["Chest-supported Row",4,"10"],
                   ["DB Reverse Fly",3,"15"],["Face Pull",3,"15"],["Incline DB Curl",3,"10"],
-                  ["Side Plank",2,"45s each side"]],
+                  ["Bicycle Crunch",2,"20 each side"]],
     "Push Day":[["Incline DB Press",4,"8"],["Bench Press",3,"10"],
                   ["DB Shoulder Press",3,"8\u201310"],["Lateral Raise",3,"12\u201315"],["Cable Fly",3,"12"],
-                  ["Band Dead Bug",2,"12 each side"]]
+                  ["Dead Bug",2,"12 each side"]]
   },
   4:{
     "Upper Body":[["Incline DB Press",3,"10"],["Lat Pulldown",3,"10"],
                   ["Seated Cable Row",3,"12"],["Lateral Raise",3,"15"],["Cable Fly",2,"12"],
-                  ["Dead Bug",2,"10 each side"]],
+                  ["Leg Raise",2,"12"]],
     "Legs & Core":[["Romanian Deadlift",3,"10"],["Bulgarian Split Squat",3,"8 each leg"],
-                  ["Calf Raise",3,"15"],["Band Pallof Press",2,"12 each side"],
-                  ["Hollow Hold",2,"30s"]],
+                  ["Calf Raise",3,"15"],["Triceps Pushdown",2,"12"],
+                  ["V-Up",2,"12"]],
     "Pull Day":[["Lat Pulldown",3,"10"],["Seated Cable Row",3,"10"],
                   ["DB Reverse Fly",3,"15"],["Face Pull",2,"15"],["Hammer Curl",2,"12"],
                   ["Side Plank",2,"30s each side"]],
     "Push Day":[["Incline DB Press",3,"10"],["Bench Press",3,"10"],
                   ["DB Shoulder Press",3,"10"],["Lateral Raise",3,"15"],["Cable Fly",2,"15"],
-                  ["Triceps Pushdown",2,"12"]]
+                  ["Plank",2,"45s"]]
   }
 };
-/* Which week of the block we are in, 1-4, wrapping so the block repeats until
-   the coach writes the next one. */
 function programWeek(){
   let w=1;
   try{
@@ -9625,6 +9691,7 @@ coachingDoctrine()+
 "HIS WEEK STARTS ON MONDAY \u2014 always list and think Mon-first, never Sunday-first.\n"+
 "THE WEEK HE HAS SETTLED ON: Monday UPPER BODY, Tuesday legs and core, Wednesday MOBILITY OR PILATES (it alternates — odd block weeks mobility, even weeks Pilates, by his own instruction), Thursday pull, Friday push, Saturday and Sunday rest. Monday was a cardio day until he asked whether upper would serve the physique better; it does, because it takes chest, back and shoulders from once a week to twice, and twice beats once for building shape. === THE MASTER PROGRAM — READ THIS BEFORE CHANGING ANY SESSION ===\n"+
 "He has written a 4-week block and it is now what the app builds. Monday Upper Body, Tuesday Legs & Core, Wednesday Mobility (weeks 1 and 3) or Pilates (weeks 2 and 4), Thursday Pull, Friday Push. Week 4 is the deload and is already written as one. The block repeats until he asks for a new one.\n"+
+"ABS FINISH EVERY SESSION — HIS INSTRUCTION, NOT A SUGGESTION: every lifting day ENDS on one abs movement, and each day owns a different region so the week covers all four. Monday LOWER abs (hip flexion), Tuesday UPPER abs (trunk flexion), Thursday OBLIQUES (rotation and side bend), Friday ANTI-EXTENSION (bracing). Never drop the last movement of a session to save time — cut a set off something else. Never put two abs movements in one session, and never give two days the same region in the same week. Wednesday is the mobility/Pilates day and has no finisher; the Pilates weeks are already core work.\n"+
 "YOUR JOB IS TO COACH THIS PROGRAM, NOT TO REINVENT IT. He said it plainly: \"The app should STOP randomly generating completely different workouts every week. The AI Coach's job is to COACH the program, not constantly reinvent it.\" Variety is not a training stimulus. Progressive overload is, and he cannot overload a movement you keep swapping out.\n"+
 "WHAT YOU MAY CHANGE FREELY: the weight, the rep target, the rest, the order of the exercises, and a like-for-like substitution when the kit is genuinely unavailable (travelling, a machine occupied). Coach every set: what he lifted last time, what to aim for today, when to add load and when to hold.\n"+
 "WHAT YOU MAY NOT DO: replace a core movement because it would be more interesting, add exercises to pad the session, or rebuild the day. Incline Press, Lat Pulldown, a row, Lateral Raise, Romanian Deadlift and Bulgarian Split Squat stay unless there is a real reason. If he asks you to redo or rebuild a day, give him the PROGRAMMED session for that day and week and coach the loads — do not generate a different one.\n"+
@@ -13648,7 +13715,7 @@ function scheduleInApp(){
    v18 ADDITIONS — draggable rest timer · weekly training memory · AI planner
    · Firestore sync
    ========================================================================== */
-const APP_VERSION="v197 · 21/09/2026";
+const APP_VERSION="v198 · 21/09/2026";
 
 /* ===== 1. REST TIMER — drag it anywhere so it never blocks the chat box ===== */
 let _rtDrag=null;
