@@ -4064,22 +4064,31 @@ function auditProgram(){
 function auditAbs(){
   const bad=[];
   Object.keys(PROGRAM).forEach(wk=>{
-    const seen={};
+    const count={};
+    Object.keys(ABS_REGION).forEach(r=>count[r]=0);
     Object.keys(PROGRAM[wk]).forEach(sp=>{
       const list=PROGRAM[wk][sp];
+      const want=ABS_DAY[sp]; if(!want) return;
       const abs=list.map(x=>x[0]).filter(n=>absRegion(n));
-      if(!abs.length){ bad.push("week "+wk+" "+sp+": no abs finisher"); return; }
-      if(abs.length>1) bad.push("week "+wk+" "+sp+": "+abs.length+" abs movements ("+abs.join(", ")+") \u2014 one a day");
-      /* The finisher finishes: it is the last thing on the sheet. */
-      if(!absRegion(list[list.length-1][0]))
-        bad.push("week "+wk+" "+sp+": the abs movement is not last");
-      const r=absRegion(abs[0]);
-      const want=ABS_DAY[sp];
-      if(want && r!==want) bad.push("week "+wk+" "+sp+": "+abs[0]+" is "+r+", that day is "+want);
-      if(seen[r]) bad.push("week "+wk+": "+r+" twice \u2014 "+seen[r]+" and "+sp);
-      seen[r]=sp;
+      if(abs.length!==ABS_PER_DAY){
+        bad.push("week "+wk+" "+sp+": "+abs.length+" abs movements, wanted "+ABS_PER_DAY+
+                 (abs.length? " ("+abs.join(", ")+")":""));
+        return;
+      }
+      /* They finish the session, so they are the last things on it. */
+      const tail=list.slice(-ABS_PER_DAY).map(x=>x[0]);
+      if(tail.some(n=>!absRegion(n)))
+        bad.push("week "+wk+" "+sp+": the abs movements are not the last "+ABS_PER_DAY);
+      const got=abs.map(absRegion);
+      if(got[0]===got[1])
+        bad.push("week "+wk+" "+sp+": both abs movements are "+got[0]);
+      want.forEach(r=>{ if(got.indexOf(r)<0) bad.push("week "+wk+" "+sp+": missing "+r+" (has "+got.join(", ")+")"); });
+      got.forEach(r=>count[r]++);
     });
-    Object.keys(ABS_REGION).forEach(r=>{ if(!seen[r]) bad.push("week "+wk+": nothing for "+r); });
+    /* Four regions, two days each, so every region should come out at two. */
+    Object.keys(count).forEach(r=>{
+      if(count[r]!==2) bad.push("week "+wk+": "+r+" appears "+count[r]+" times, wanted 2");
+    });
   });
   if(bad.length) console.error("ABS PLAN:\n"+bad.join("\n"));
   return bad;
@@ -4121,65 +4130,82 @@ function absRegion(name){
   for(const k of Object.keys(ABS_REGION)) if(ABS_REGION[k].some(x=>nameEq(x,n))) return k;
   return null;
 }
-/* Which region each day owns. The program is written to match, and
-   auditAbs() below is what stops it drifting. */
-const ABS_DAY={"Upper Body":"lower","Legs & Core":"upper","Pull Day":"oblique","Push Day":"brace"};
+/* ===== v200 \u00b7 TWO ABS MOVEMENTS AFTER EVERY SESSION ==================
+   "Ok make it two ab exercises after each workout then better."
+
+   v198 gave each day one finisher and one region. Two a day is eight slots a
+   week against four regions, so each day takes a PAIR and every region gets
+   hit twice a week instead of once:
+
+     Monday    lower + brace       Thursday  oblique + lower
+     Tuesday   upper + oblique     Friday    brace + upper
+
+   Paired so no day carries the same region twice and the four come out even
+   across the week. The pairs also have to clear familyClashes(), which is
+   coarser than the regions are \u2014 it files Cable Crunch and Hollow Hold both
+   as trunk flexion, and Plank and Dead Bug both as trunk bracing \u2014 so a pair
+   can be two different regions and still be the same movement family. Week 2
+   Friday was Hollow Hold plus Cable Crunch on the first pass and the audit
+   caught it. That is what the audit is for. */
+const ABS_DAY={"Upper Body":["lower","brace"], "Legs & Core":["upper","oblique"],
+               "Pull Day":["oblique","lower"], "Push Day":["brace","upper"]};
+const ABS_PER_DAY=2;
 const PROGRAM={
   1:{
     "Upper Body":[["Incline DB Press",4,"10"],["Lat Pulldown",4,"10"],
-                  ["Seated Cable Row",3,"12"],["Lateral Raise",3,"15"],["Cable Fly",3,"12"],
-                  ["Leg Raise",2,"15"]],
+                  ["Seated Cable Row",3,"12"],["Lateral Raise",3,"15"],["Cable Fly",2,"12"],
+                  ["Leg Raise",2,"15"],["Plank",2,"45s"]],
     "Legs & Core":[["Romanian Deadlift",4,"10"],["Goblet Squat",3,"12"],
                   ["Reverse Lunge",3,"10 each leg"],["Calf Raise",3,"15"],["DB Curl",2,"12"],
-                  ["Cable Crunch",3,"12"]],
+                  ["Cable Crunch",2,"12"],["Plank Hip Dips",2,"12 each side"]],
     "Pull Day":[["Lat Pulldown",4,"10"],["Seated Cable Row",4,"10"],
                   ["DB Reverse Fly",3,"15"],["Face Pull",3,"15"],["Hammer Curl",3,"10"],
-                  ["Plank Hip Dips",2,"12 each side"]],
+                  ["Side Plank",2,"40s each side"],["Hanging Knee Raise",2,"12"]],
     "Push Day":[["Incline DB Press",4,"8\u201310"],["Bench Press",3,"10"],
                   ["DB Shoulder Press",3,"10"],["Lateral Raise",3,"15"],["Cable Fly",3,"12"],
-                  ["Band Dead Bug",2,"10 each side"]]
+                  ["Band Dead Bug",2,"10 each side"],["V-Up",2,"12"]]
   },
   2:{
     "Upper Body":[["Incline DB Press",4,"8\u201310"],["Lat Pulldown",4,"8\u201310"],
                   ["DB Single-arm Row",3,"10 each side"],["Lateral Raise",3,"12\u201315"],["Cable Fly",3,"12"],
-                  ["Hanging Knee Raise",2,"12"]],
+                  ["Hanging Knee Raise",2,"12"],["Band Dead Bug",2,"12 each side"]],
     "Legs & Core":[["Romanian Deadlift",4,"8"],["Bulgarian Split Squat",4,"8 each leg"],
                   ["Calf Raise",3,"15"],["Triceps Pushdown",2,"10"],
-                  ["V-Up",3,"12"]],
+                  ["V-Up",2,"12"],["Band Pallof Press",2,"12 each side"]],
     "Pull Day":[["Lat Pulldown",4,"8\u201310"],["Chest-supported Row",4,"10"],
                   ["DB Reverse Fly",3,"15"],["Face Pull",3,"12"],["DB Curl",3,"10"],
-                  ["Side Plank",2,"40s each side"]],
+                  ["Bicycle Crunch",2,"20 each side"],["Flutter Kick",2,"30s"]],
     "Push Day":[["Incline DB Press",4,"8"],["Close-grip Bench Press",3,"8\u201310"],
                   ["DB Shoulder Press",3,"10"],["Cable Lateral Raise",3,"15"],["Cable Fly",3,"15"],
-                  ["Hollow Hold",3,"30s"]]
+                  ["Plank",2,"45s"],["Cable Crunch",2,"15"]]
   },
   3:{
     "Upper Body":[["Incline DB Press",4,"8"],["Lat Pulldown",4,"10"],
-                  ["Chest-supported Row",3,"10"],["Cable Lateral Raise",3,"15"],["Cable Fly",3,"15"],
-                  ["Flutter Kick",2,"30s"]],
+                  ["Chest-supported Row",3,"10"],["Cable Lateral Raise",3,"15"],["Cable Fly",2,"15"],
+                  ["Flutter Kick",2,"30s"],["Dead Bug",2,"12 each side"]],
     "Legs & Core":[["Romanian Deadlift",4,"8\u201310"],["Goblet Squat",4,"10"],
                   ["Reverse Lunge",3,"12 each leg"],["Calf Raise",3,"20"],["Hammer Curl",2,"12"],
-                  ["Cable Crunch",3,"15"]],
+                  ["Cable Crunch",2,"15"],["Side Plank",2,"45s each side"]],
     "Pull Day":[["Single-arm Lat Pulldown",4,"10 each side"],["Chest-supported Row",4,"10"],
                   ["DB Reverse Fly",3,"15"],["Face Pull",3,"15"],["Incline DB Curl",3,"10"],
-                  ["Bicycle Crunch",2,"20 each side"]],
+                  ["Plank Hip Dips",2,"15 each side"],["Leg Raise",2,"15"]],
     "Push Day":[["Incline DB Press",4,"8"],["Bench Press",3,"10"],
                   ["DB Shoulder Press",3,"8\u201310"],["Lateral Raise",3,"12\u201315"],["Cable Fly",3,"12"],
-                  ["Dead Bug",2,"12 each side"]]
+                  ["Hollow Hold",2,"30s"],["V-Up",2,"15"]]
   },
   4:{
     "Upper Body":[["Incline DB Press",3,"10"],["Lat Pulldown",3,"10"],
                   ["Seated Cable Row",3,"12"],["Lateral Raise",3,"15"],["Cable Fly",2,"12"],
-                  ["Leg Raise",2,"12"]],
+                  ["Leg Raise",2,"12"],["Plank",2,"30s"]],
     "Legs & Core":[["Romanian Deadlift",3,"10"],["Bulgarian Split Squat",3,"8 each leg"],
                   ["Calf Raise",3,"15"],["Triceps Pushdown",2,"12"],
-                  ["V-Up",2,"12"]],
+                  ["V-Up",2,"12"],["Band Pallof Press",2,"12 each side"]],
     "Pull Day":[["Lat Pulldown",3,"10"],["Seated Cable Row",3,"10"],
                   ["DB Reverse Fly",3,"15"],["Face Pull",2,"15"],["Hammer Curl",2,"12"],
-                  ["Side Plank",2,"30s each side"]],
+                  ["Side Plank",2,"30s each side"],["Hanging Knee Raise",2,"10"]],
     "Push Day":[["Incline DB Press",3,"10"],["Bench Press",3,"10"],
                   ["DB Shoulder Press",3,"10"],["Lateral Raise",3,"15"],["Cable Fly",2,"15"],
-                  ["Plank",2,"45s"]]
+                  ["Dead Bug",2,"10 each side"],["Cable Crunch",2,"12"]]
   }
 };
 function programWeek(){
@@ -4215,7 +4241,15 @@ function programIsDeloadWeek(){ return programWeek()===PROGRAM_WEEKS; }
 const PROGRAM_COMPOUND=new Set(["Incline DB Press","Incline Bench Press","Bench Press","DB Bench Press",
   "DB Shoulder Press","Lat Pulldown","Single-arm Lat Pulldown","Seated Cable Row","Chest-supported Row",
   "DB Single-arm Row","Romanian Deadlift","Bulgarian Split Squat","Goblet Squat","Reverse Lunge"]);
-function programRest(name){ return PROGRAM_COMPOUND.has(name)? 105 : 60; }
+/* v200 — two abs movements at the end of a session are a FINISHER, and a
+   finisher is not two more exercises. Sixty seconds between sets of a plank
+   is how four sessions went over his hour-ten. Thirty is what a core finisher
+   actually wants, and it is what makes room for the second movement. */
+function programRest(name){
+  if(PROGRAM_COMPOUND.has(name)) return 105;
+  try{ if(absRegion(name)) return 30; }catch(e){}
+  return 60;
+}
 function buildWorkout(){
   const ci=latestCheckin(), key=locKey(), L=LOC();
   /* Unknown reads as neutral, exactly as it did before any check-in existed —
@@ -6042,43 +6076,49 @@ function exImgHTML(name,muscles){ return demoTileHTML(name); }
 function ensureAbsFinisher(w){
   w=w||DB.workout;
   if(!w || !Array.isArray(w.main) || !w.main.length) return null;
-  if(w.absChecked) return null;                 /* once per session */
+  if(w.absChecked===ABS_PER_DAY) return null;          /* already topped up */
   if(typeof splitIsFlow==="function" && splitIsFlow(w.title)) return null;
   const split=w.title;
   const want=(typeof ABS_DAY!=="undefined")? ABS_DAY[split] : null;
-  if(!want) return null;                        /* not one of the four lifting days */
-  w.absChecked=true;
-  if(w.main.some(e=>absRegion(e.name))) return null;   /* already has one */
-  /* Prefer the exact movement the program names for this day and week. */
-  let pick=null, sets=2, reps="15";
-  try{
-    const prog=PROGRAM[programWeek()] && PROGRAM[programWeek()][split];
-    if(prog){ const last=prog[prog.length-1];
-      if(absRegion(last[0])){ pick=last[0]; sets=last[1]; reps=last[2]; } }
-  }catch(e){}
-  /* If that one cannot be done here, take another from the same region. */
-  const ok=n=>{ try{ return canDoHere(n,locKey()) && !exBanned(n) && !wkFind(n); }catch(e){ return false; } };
-  if(!pick || !ok(pick)){
-    const alt=(ABS_REGION[want]||[]).find(ok);
-    if(!alt) return null;
-    if(pick!==alt){ pick=alt; sets=2; reps=(EX(alt)||{}).timed? "40s" : "15"; }
-  }
-  const e=EX(pick)||{};
-  const item={name:pick, muscles:e.m, cue:e.cue, sets:sets, reps:reps,
-              rest:"1m", restSec:60, absAdded:true};
-  /* v199 — the timed flag and the scheme come from applyLogTypeToEx(), which
-     is the one place that decides them and the only one that reads the DOSE.
-     Deriving them here gave a 15-rep Leg Raise a hold timer, because the
-     core-is-time rule is right until the movement carries a rep count —
-     which is exactly what v184 settled. */
-  try{ applyLogTypeToEx(item); }catch(err){
-    item.timed=false;
-    item.scheme=sets+" sets \u00b7 "+reps+(/\d/.test(reps)&&!/s$|sec|each/.test(reps)?" reps":"");
-  }
-  w.main.push(item);
+  if(!want || !want.length) return null;               /* not one of the four lifting days */
+  w.absChecked=ABS_PER_DAY;
+  const have=w.main.filter(e=>absRegion(e.name)).map(e=>absRegion(e.name));
+  if(have.length>=ABS_PER_DAY) return null;
+  /* Only the regions the day is short of, so a sheet that already has one
+     gains the OTHER one rather than a second of the same. */
+  const missing=want.filter(r=>have.indexOf(r)<0);
+  if(!missing.length) return null;
+  const prog=(function(){ try{ return PROGRAM[programWeek()] && PROGRAM[programWeek()][split]; }catch(e){ return null; } })();
+  const ok=n=>{ try{ return canDoHere(n,locKey()) && !exBanned(n) && !wkFind(n) &&
+                     !familyClashes(w.main.map(x=>x.name).concat([n])).length; }catch(e){ return false; } };
+  const added=[];
+  missing.forEach(r=>{
+    let pick=null, sets=2, reps=(EX(pick)||{}).timed? "40s" : "15";
+    /* The exact movement the program names for this day, week and region. */
+    if(prog){ const row=prog.find(x=>absRegion(x[0])===r && ok(x[0]));
+              if(row){ pick=row[0]; sets=row[1]; reps=row[2]; } }
+    if(!pick){ const alt=(ABS_REGION[r]||[]).find(ok);
+               if(alt){ pick=alt; sets=2; reps=(EX(alt)||{}).timed? "40s" : "15"; } }
+    if(!pick) return;
+    const e=EX(pick)||{};
+    const item={name:pick, muscles:e.m, cue:e.cue, sets:sets, reps:reps,
+                rest:"1m", restSec:60, absAdded:true};
+    /* v199 \u2014 the timed flag and the scheme come from applyLogTypeToEx(), which
+       is the one place that decides them and the only one that reads the DOSE.
+       Deriving them here gave a 15-rep Leg Raise a hold timer, because the
+       core-is-time rule is right until the movement carries a rep count \u2014
+       which is exactly what v184 settled. */
+    try{ applyLogTypeToEx(item); }catch(err){
+      item.timed=false;
+      item.scheme=sets+" sets \u00b7 "+reps+(/\d/.test(reps)&&!/s$|sec|each/.test(reps)?" reps":"");
+    }
+    w.main.push(item);
+    added.push(pick);
+  });
+  if(!added.length) return null;
   try{ stampWorkout(); }catch(err){}
   try{ save(); }catch(err){}
-  return {name:pick, region:want};
+  return {names:added, regions:missing};
 }
 function upgradeTodayToProgram(){
   const w=DB.workout;
@@ -13774,7 +13814,7 @@ function scheduleInApp(){
    v18 ADDITIONS — draggable rest timer · weekly training memory · AI planner
    · Firestore sync
    ========================================================================== */
-const APP_VERSION="v199 · 21/09/2026";
+const APP_VERSION="v200 · 21/09/2026";
 
 /* ===== 1. REST TIMER — drag it anywhere so it never blocks the chat box ===== */
 let _rtDrag=null;
@@ -15315,10 +15355,24 @@ function setTimeBudget(mins,row){
   try{ ensureWorkout(); }catch(e){}
   return DB.timeBudget;
 }
+/* ===== v200 · THE CLOCK WAS COSTING A REST THE SESSION DOES NOT TAKE ===
+   This was a second, independent copy of the rest rule: 105 seconds for
+   anything that looked like a compound, 70 for everything else. The session
+   itself prescribes rest through programRest() and through each entry's own
+   restSec, and the two had drifted — an abs finisher rests 30 seconds and
+   this billed it 70. With two abs movements a day that is 80 seconds a
+   session of rest that never happens, which is what pushed four sessions
+   "over budget" that are not over anything. One rule, asked once: what the
+   sheet actually says. */
 function restSecsFor(ex,sets){
-  const e=EX(ex&&ex.name||ex)||{};
+  const name=(ex&&ex.name)||ex||"";
+  /* What this exact entry is set to — his own adjustments included. */
+  if(ex && typeof ex==="object" && +ex.restSec>=10) return +ex.restSec;
+  try{ if(typeof absRegion==="function" && absRegion(name)) return programRest(name); }catch(e){}
+  try{ if(typeof PROGRAM_COMPOUND!=="undefined" && PROGRAM_COMPOUND.has(name)) return programRest(name); }catch(e){}
+  const e=EX(name)||{};
   if((e.m||[]).indexOf("core")>=0 && e.timed) return 45;
-  const compound = e.mech==="compound" || /squat|deadlift|bench|press|row|pull-?up|chin/i.test(ex&&ex.name||ex||"");
+  const compound = e.mech==="compound" || /squat|deadlift|bench|press|row|pull-?up|chin/i.test(name);
   return compound? 105 : 70;
 }
 function workSecsFor(ex){
@@ -21647,7 +21701,8 @@ function boot(){
   try{ upgradeTodayToProgram(); }catch(e){}
   /* v199 — and if it could not be rebuilt because he is mid-session, at
      least give the day the abs finisher it is supposed to end on. */
-  try{ const a=ensureAbsFinisher(); if(a) setTimeout(()=>toast("Added "+a.name+" — today's abs finisher"),900); }catch(e){}
+  try{ const a=ensureAbsFinisher();
+        if(a) setTimeout(()=>toast("Added "+a.names.join(" and ")+" — today's abs finishers"),900); }catch(e){}
   if(todayCleared()){ renderWorkoutSheet(null); try{ renderHeroCard(); }catch(e){} }
   else if(DB.workout){ renderWorkoutSheet(DB.workout); try{ renderHeroCard(); }catch(e){} }
   /* v133 — the hero card left Home, and this was the one place that wrote to

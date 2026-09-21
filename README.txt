@@ -1,3 +1,77 @@
+AMIR PT — v200 · 21/09/2026
+===========================
+
+"Ok make it two ab exercises after each workout then better."
+
+Two a day is eight slots a week against four regions, so each day takes a PAIR
+and every region now gets hit twice a week instead of once:
+
+  Monday    lower + brace        Thursday  oblique + lower
+  Tuesday   upper + oblique      Friday    brace + upper
+
+  wk1  Mon Leg Raise + Plank            Tue Cable Crunch + Plank Hip Dips
+       Thu Side Plank + Hanging Knee    Fri Band Dead Bug + V-Up
+  wk2  Mon Hanging Knee + Band Dead Bug Tue V-Up + Band Pallof Press
+       Thu Bicycle Crunch + Flutter     Fri Plank + Cable Crunch
+  wk3  Mon Flutter Kick + Dead Bug      Tue Cable Crunch + Side Plank
+       Thu Plank Hip Dips + Leg Raise   Fri Hollow Hold + V-Up
+  wk4  Mon Leg Raise + Plank            Tue V-Up + Band Pallof Press
+       Thu Side Plank + Hanging Knee    Fri Dead Bug + Cable Crunch
+
+The pairs have to clear familyClashes() as well as the regions, and that is
+coarser than the regions are: it files Cable Crunch and Hollow Hold both as
+trunk flexion, and Plank and Dead Bug both as trunk bracing. So a pair can be
+two different regions and still be the same movement family. Week 2 Friday was
+Hollow Hold plus Cable Crunch on the first pass and the audit caught it, which
+is what the audit is for.
+
+THE CLOCK, WHICH IS THE PART THAT ACTUALLY COST SOMETHING
+----------------------------------------------------------
+A seventh movement on every day put four sessions over his hour-ten. Three
+things fixed that, and only one of them was a trim:
+
+1. TWO ABS MOVEMENTS ARE A FINISHER, NOT TWO MORE EXERCISES. They rested sixty
+   seconds a set, the same as a lateral raise. Thirty is what a core finisher
+   wants and it is what makes room for the second movement.
+
+2. THE CLOCK WAS BILLING A REST THE SESSION DOES NOT TAKE. restSecsFor() —
+   which is what decides whether a session fits — was a second, independent
+   copy of the rest rule: 105 seconds for anything that looked like a
+   compound, 70 for everything else. The session prescribes rest through
+   programRest() and through each entry's own restSec, and the two had
+   drifted. It billed an abs movement 70 seconds when the sheet says 30, so
+   with two a day it was inventing eighty seconds a session. It asks the sheet
+   now. Sixth time this file has recorded one rule with two implementations.
+
+3. Every abs movement is capped at two sets, and the Upper Body fly drops from
+   three sets to two in weeks 1 and 3. That is the only real cut, and chest
+   runs at 15.5 sets a week against a target of 11, so it was the cheapest set
+   in the session.
+
+Result: 53 to 68 minutes across all sixteen sessions, none over. Core goes from
+9 sets a week to 16 against a target of 10 — which is what asking for two a day
+means, and it is his call to make. Arms, legs, back and shoulders are all
+untouched.
+
+THE SESSION ALREADY ON THE BOARD
+--------------------------------
+v199's repair tops up to two rather than one, and only adds the region the day
+is SHORT of — so a sheet that already has Leg Raise gains the brace movement
+rather than a second lower-abs one. It still only adds: never removes, never
+reorders, never touches a logged set, and a finisher he deletes stays deleted.
+
+CHECKED
+-------
+Both audits clean. Every week comes out at exactly two of each region, no
+session repeats a movement family, and every session ends on its two abs
+movements. All sixteen inside the budget. The live repair tested in three
+states: a sheet with no abs gains both, a sheet with one gains only the other
+one, a sheet with both gains nothing. Leg Raise comes in as "2 sets · 15 reps"
+with a reps box and Plank as "2 sets · 45s" with a hold — each following his
+own logging rules. Eleven of the thirteen movements carry his photographs; the
+twelfth is Plank Hip Dips, already on the shoot list from v188. verify16,
+journey, audit173 clean, no page errors.
+
 AMIR PT — v199 · 21/09/2026
 ===========================
 
