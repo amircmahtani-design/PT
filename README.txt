@@ -1,3 +1,62 @@
+AMIR PT — v199 · 21/09/2026
+===========================
+
+"I am adding the abs workout today but again no abs."
+
+He was an hour into Monday's session when v198 shipped. The abs finisher was
+in the program, and his sheet did not have one.
+
+THE RULE WENT INTO THE PROGRAM AND NEVER REACHED THE SHEET
+-----------------------------------------------------------
+upgradeTodayToProgram() replaces a session an older build left behind, and it
+bails the moment anything has been logged:
+
+    let logged=0; ... if(logged) return false;
+
+That guard is right. Rebuilding a session mid-workout throws his sets away,
+and he has lost logged work to a rebuild before — v183 exists because of it.
+But it means a new rule can never reach the one session he is actually doing,
+which is the only session that matters at the time. v198 wrote the rule down
+and nothing applied it to the live sheet. Same shape as v190, which wrote a
+rep cap that nothing acted on.
+
+ensureAbsFinisher() ADDS, and only adds. It never removes a movement, never
+reorders the ones already there, and never touches a logged set. If the day
+should end on abs and nothing on the sheet is an abs movement, the day's
+finisher goes on the end — the exact movement the program names for that day
+and week, or another from the same region if that one cannot be done where he
+is standing.
+
+It runs once per session and stamps the session when it has. If he takes the
+finisher off deliberately, it stays off; it is not re-added on the next render.
+
+ONE I INTRODUCED AND CAUGHT
+---------------------------
+The first version worked out the timed flag itself and gave a 15-rep Leg Raise
+a hold timer and a "30–60s hold" heading. The core-is-time rule (v179) is
+right until the movement carries a rep count, which is what v184 settled — and
+the function that knows this is applyLogTypeToEx(), the one place that reads
+the dose. The built-from-program path was already correct because it goes
+through that function; my inserted item did not. It does now.
+
+TODAY SPECIFICALLY
+------------------
+His Monday sheet was built before v198, so it still carries the DB Curl that
+v198 moved to Tuesday. Adding the finisher makes today seven movements rather
+than six. That is the honest trade for not touching a session in progress, and
+it is one day only: tomorrow builds clean at six.
+
+CHECKED
+-------
+Reproduced his state exactly — a pre-v198 Upper Body sheet, mid-session, three
+sets logged — and confirmed upgradeTodayToProgram() declines it, as it should.
+The repair then appends Leg Raise 2×15, the logged sets are untouched, no
+movement family repeats, and the card renders with a reps box, his own
+photograph and a "2 sets · 15 reps" heading rather than a hold timer. Running
+it again adds nothing. Deleting the finisher keeps it deleted. All four
+programmed days still put the right finisher last with the right log type.
+verify16, journey, audit173 and both abs audits clean, no page errors.
+
 AMIR PT — v198 · 21/09/2026
 ===========================
 

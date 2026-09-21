@@ -6021,6 +6021,65 @@ function exImgHTML(name,muscles){ return demoTileHTML(name); }
    under a session he is in the middle of. In that case it stands, and tomorrow
    is right. His history is untouched either way — logged sets live in
    DB.strength, not on the session. */
+/* ===== v199 · THE RULE HAD TO REACH THE SESSION ALREADY ON THE BOARD ===
+   "I am adding the abs workout today but again no abs."
+
+   v198 put an abs finisher on every day of the program and he still had a
+   session without one, because the session was already built and running: an
+   hour on the clock, sets logged, and upgradeTodayToProgram() bails the
+   moment anything is logged. That guard is correct — rebuilding a session
+   mid-workout would throw his sets away — but it meant the new rule could not
+   reach the one session he was actually doing. Writing a rule into the
+   program and having nothing apply it to the live sheet is the same shape of
+   miss as v190's rep cap that nothing acted on.
+
+   So this ADDS, and only adds. It never removes a movement, never reorders
+   the ones already there, and never touches a logged set. If the day should
+   end on abs and nothing on the sheet is an abs movement, the day's finisher
+   goes on the end.
+
+   It runs once per session. If he takes it off deliberately, it stays off. */
+function ensureAbsFinisher(w){
+  w=w||DB.workout;
+  if(!w || !Array.isArray(w.main) || !w.main.length) return null;
+  if(w.absChecked) return null;                 /* once per session */
+  if(typeof splitIsFlow==="function" && splitIsFlow(w.title)) return null;
+  const split=w.title;
+  const want=(typeof ABS_DAY!=="undefined")? ABS_DAY[split] : null;
+  if(!want) return null;                        /* not one of the four lifting days */
+  w.absChecked=true;
+  if(w.main.some(e=>absRegion(e.name))) return null;   /* already has one */
+  /* Prefer the exact movement the program names for this day and week. */
+  let pick=null, sets=2, reps="15";
+  try{
+    const prog=PROGRAM[programWeek()] && PROGRAM[programWeek()][split];
+    if(prog){ const last=prog[prog.length-1];
+      if(absRegion(last[0])){ pick=last[0]; sets=last[1]; reps=last[2]; } }
+  }catch(e){}
+  /* If that one cannot be done here, take another from the same region. */
+  const ok=n=>{ try{ return canDoHere(n,locKey()) && !exBanned(n) && !wkFind(n); }catch(e){ return false; } };
+  if(!pick || !ok(pick)){
+    const alt=(ABS_REGION[want]||[]).find(ok);
+    if(!alt) return null;
+    if(pick!==alt){ pick=alt; sets=2; reps=(EX(alt)||{}).timed? "40s" : "15"; }
+  }
+  const e=EX(pick)||{};
+  const item={name:pick, muscles:e.m, cue:e.cue, sets:sets, reps:reps,
+              rest:"1m", restSec:60, absAdded:true};
+  /* v199 — the timed flag and the scheme come from applyLogTypeToEx(), which
+     is the one place that decides them and the only one that reads the DOSE.
+     Deriving them here gave a 15-rep Leg Raise a hold timer, because the
+     core-is-time rule is right until the movement carries a rep count —
+     which is exactly what v184 settled. */
+  try{ applyLogTypeToEx(item); }catch(err){
+    item.timed=false;
+    item.scheme=sets+" sets \u00b7 "+reps+(/\d/.test(reps)&&!/s$|sec|each/.test(reps)?" reps":"");
+  }
+  w.main.push(item);
+  try{ stampWorkout(); }catch(err){}
+  try{ save(); }catch(err){}
+  return {name:pick, region:want};
+}
 function upgradeTodayToProgram(){
   const w=DB.workout;
   if(!w) return false;
@@ -13715,7 +13774,7 @@ function scheduleInApp(){
    v18 ADDITIONS — draggable rest timer · weekly training memory · AI planner
    · Firestore sync
    ========================================================================== */
-const APP_VERSION="v198 · 21/09/2026";
+const APP_VERSION="v199 · 21/09/2026";
 
 /* ===== 1. REST TIMER — drag it anywhere so it never blocks the chat box ===== */
 let _rtDrag=null;
@@ -21586,6 +21645,9 @@ function boot(){
   try{ if(DB.workout && repairFlowDay(DB.workout)){ save(); } }catch(e){}
   /* v166 — and replace a session an OLDER BUILD left behind. */
   try{ upgradeTodayToProgram(); }catch(e){}
+  /* v199 — and if it could not be rebuilt because he is mid-session, at
+     least give the day the abs finisher it is supposed to end on. */
+  try{ const a=ensureAbsFinisher(); if(a) setTimeout(()=>toast("Added "+a.name+" — today's abs finisher"),900); }catch(e){}
   if(todayCleared()){ renderWorkoutSheet(null); try{ renderHeroCard(); }catch(e){} }
   else if(DB.workout){ renderWorkoutSheet(DB.workout); try{ renderHeroCard(); }catch(e){} }
   /* v133 — the hero card left Home, and this was the one place that wrote to
