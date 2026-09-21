@@ -1,3 +1,63 @@
+AMIR PT — v194 · 21/09/2026
+===========================
+
+"Not that it is of any serious consequence but why does it say 0 days, weekend
+I rest so it shouldn't reset my streak because I had my planned rest."
+
+He is right, and it was not only the streak.
+
+THE TOLERANCE WAS EXACTLY THE LENGTH OF HIS WEEKEND
+---------------------------------------------------
+The streak allowed a fixed two days of slack. Saturday and Sunday are two
+days, so it looked like it worked — but the allowance is SPENT by the
+weekend. Friday then has to be a training day or the run is already broken by
+Monday morning. Train Monday to Thursday, rest Friday too, and the counter
+reads 0 having never missed a session he was supposed to do.
+
+The app knows which days are rest days. Saturday and Sunday are in his
+schedule, and a day he deliberately rested is stamped in DB.dayState. It
+already reasoned about this correctly in missedSessions(), which has said
+since v183 that "a deliberate choice is not a miss". The streak never asked.
+One rule, two implementations, and this was the one that was wrong — the
+fourth time this file has recorded that shape.
+
+A planned rest day is now stepped over: it does not count as a training day
+and it does not break the run. The two-day tolerance stays, for days he was
+meant to train and didn't. His week, Mon-Fri trained with the weekend off,
+now reads 5 instead of 0.
+
+AND TWO MORE, FOUND IN THE FUNCTION THE STREAK SHOULD HAVE BEEN SHARING
+-----------------------------------------------------------------------
+Both of these were telling the coach he had missed sessions he had not.
+
+1. missedSessions() asked sessionsByDate(), which reads logged SETS. A
+   mobility or Pilates day logs nothing by design — that is the point of it —
+   so every completed flow came back as a missed session. His Wednesday IS a
+   flow day, so this fired most weeks. It is the same fault v152 fixed for
+   the streak, sitting in a function v152 never touched. It reads
+   showedUpDates() now, which counts a session he finished whether it was
+   barbells or breathing.
+
+2. The two windows were off by one. plannedDaysBack(7) walks yesterday back
+   to seven days ago; sessionsByDate(7) covers today back to six days ago. So
+   the seventh day was always in the planned list and could never be in the
+   trained one — the oldest day of every week was reported missed whatever he
+   had done on it.
+
+Together those two put phantom missed sessions into the coach's brief and into
+readiness, which is the same brief that talked itself into replacing his
+Monday three versions ago.
+
+CHECKED
+-------
+Six streak scenarios against his real schedule: Mon-Fri with the weekend off
+reads 5; Mon-Thu with Friday rested as well reads 4; two full weeks with both
+weekends off reads 10; a Saturday he actually trained reads 6; a Friday he
+deliberately marked as rest keeps the run and is not reported missed; and
+genuinely stopping five days ago still decays. A completed Wednesday flow no
+longer reads as missed, and the seven-day-old session no longer does either.
+verify16, journey, audit173 and rest187 clean, no page errors.
+
 AMIR PT — v193 · 21/09/2026
 ===========================
 

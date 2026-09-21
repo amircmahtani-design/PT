@@ -13361,7 +13361,7 @@ function scheduleInApp(){
    v18 ADDITIONS — draggable rest timer · weekly training memory · AI planner
    · Firestore sync
    ========================================================================== */
-const APP_VERSION="v193 · 21/09/2026";
+const APP_VERSION="v194 · 21/09/2026";
 
 /* ===== 1. REST TIMER — drag it anywhere so it never blocks the chat box ===== */
 let _rtDrag=null;
@@ -13986,13 +13986,43 @@ async function purgePhotos(){
    It used to increment on any new date, so a three-week gap then one session
    read as "47". Now it's your current run of training days, and a coach-called
    rest day (or two) doesn't break it. */
+/* ===== v194 · A PLANNED REST DAY IS NOT A GAP IN THE STREAK ===========
+   "Why does it say 0 days, weekend I rest so it shouldn't reset my streak
+   because I had my planned rest."
+
+   The streak allowed a fixed two days of slack — which happens to be exactly
+   Saturday and Sunday, so it looked like it worked. It doesn't: the tolerance
+   is spent by the weekend, so the Friday before it has to be a training day
+   or the run is already broken by Monday. Train Mon to Thu, rest Friday as
+   well, and the counter reads 0 on Monday having never missed a session he
+   was supposed to do.
+
+   The app knows which days are rest days — his Saturday and Sunday are in the
+   schedule, and a day he deliberately rested is stamped in DB.dayState. It
+   already reasons about this correctly in missedSessions(), which has said
+   since v183 that "a deliberate choice is not a miss". The streak just never
+   asked. One rule, two implementations, and this is the one that was wrong.
+
+   A planned rest day is now skipped entirely: it neither counts as a training
+   day nor breaks the run. The two-day tolerance stays, for days he was meant
+   to train and didn't. */
+function plannedRestOn(iso,dow){
+  const st=(DB.dayState||{})[iso];
+  if(st && (st.restDay || st.cleared)) return true;      /* he decided it */
+  try{
+    const d=(dow!=null)? dow : new Date(iso+"T12:00:00").getDay();
+    return isRestDay((DB.schedule||{})[d]);              /* it is in his week */
+  }catch(e){ return false; }
+}
 function computeStreak(){
   const dates=showedUpDates(); if(!dates.size) return 0;
   let t=dnum(today()), streak=0, gap=0;
   if(!dates.has(isoDay(t))) t-=864e5;          // today hasn't happened yet — that's fine
   for(let i=0;i<400;i++){
-    if(dates.has(isoDay(t))){ streak++; gap=0; }
-    else { gap++; if(gap>2) break; }           // up to 2 rest days is still the same run
+    const iso=isoDay(t);
+    if(dates.has(iso)){ streak++; gap=0; }
+    else if(plannedRestOn(iso)){ /* a rest day he planned — step over it */ }
+    else { gap++; if(gap>2) break; }           // up to 2 unplanned misses is still the same run
     t-=864e5;
   }
   return streak;
@@ -19795,15 +19825,32 @@ function trainingStartDate(){
   return first;
 }
 function missedSessions(days){
-  const trained=sessionsByDate(days||10)||{};
+  const n=days||7;
+  /* ===== v194 · TWO WAYS TO BE TOLD HE MISSED A DAY HE DIDN'T =========
+     Found while fixing the streak, in the function the streak should have
+     been sharing all along.
+
+     1. It asked sessionsByDate(), which reads logged SETS. A mobility or
+        Pilates day logs nothing by design, so every completed flow came
+        back as a missed session — and his Wednesday IS a flow day. That is
+        the fault v152 fixed for the streak, in a function v152 never
+        touched. It asks showedUpDates() now, which counts a session he
+        finished whether it was barbells or breathing.
+
+     2. The windows were off by one. plannedDaysBack(7) walks yesterday back
+        to seven days ago; sessionsByDate(7) covers today back to six days
+        ago. The seventh day was in the planned list and could never be in
+        the trained one, so the oldest day of the week was reported missed
+        every single week, whatever he did on it. */
+  const showed=(typeof showedUpDates==="function")? showedUpDates()
+             : new Set(Object.keys(sessionsByDate(n+2)||{}));
   const start=trainingStartDate();
   if(!start) return [];                    /* nothing to have missed yet */
-  return plannedDaysBack(days||7).filter(d=>{
+  return plannedDaysBack(n).filter(d=>{
     if(d.iso<start) return false;          /* before he started is not a miss */
-    if(d.split==="Rest") return false;
-    if(trained[d.iso]) return false;
-    const st=(DB.dayState||{})[d.iso];
-    if(st&&(st.cleared||st.restDay)) return false;    /* a deliberate choice is not a miss */
+    if(isRestDay(d.split)) return false;              /* the split planned for that date wins */
+    if(showed.has(d.iso)) return false;               /* he showed up, in whatever form */
+    if(plannedRestOn(d.iso, d.dow)) return false;     /* scheduled rest, or a deliberate choice */
     return true;
   });
 }
