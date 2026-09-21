@@ -1,3 +1,68 @@
+AMIR PT — v195 · 21/09/2026
+===========================
+
+"I want Wednesday to alternate one week mobility one week Pilates, or do you
+suggest mobility followed by Pilates?"
+
+ALTERNATE. Not both in one session.
+-----------------------------------
+Three reasons, and the third is the one that decides it.
+
+Sixty to seventy minutes is his rule. Split a Wednesday down the middle and
+Pilates gets twenty-five minutes, which is not a Pilates session — it is a
+warm-up with a nice name.
+
+They also ask for opposite states. Mobility is long holds at end of range,
+slow breathing, deliberately parasympathetic. Pilates is continuous tension,
+breath-led control, no rest between movements. Run them back to back and the
+second one inherits the wrong nervous system.
+
+And the app has already built Pilates as a PRACTICE, not a segment: v126 gave
+it a progression with levels that unlock at five and eleven completed
+sessions. Half a session every week takes twice as long to reach the same
+place as a full session every other week, and it never gets the continuous
+flow the method is actually made of.
+
+Weekly alternation also lands cleanly on his four-week block: two of each, and
+the deload week gets the Pilates, which is the right one to have on the light
+week. Odd block weeks Mobility, even weeks Pilates.
+
+The one thing it costs is that each gets touched only every fourteen days,
+which would be thin for a flexibility goal he has said is real. It isn't,
+because every lifting session already ends with a cool-down of held stretches.
+Wednesday is the concentrated dose, not the only one.
+
+HOW IT IS BUILT
+---------------
+The schedule was one split per weekday, forever, so this could not be said at
+all. DB.alt now holds a PAIR for a weekday and the block week picks which one.
+
+It resolves per DATE, not per weekday, and that is the part worth getting
+right: the app asks what last Wednesday was every time it works out whether he
+missed a session, and the honest answer there is the split that Wednesday
+actually was, not the one this week happens to be. splitForDate() is the one
+resolver — pickSplit(), plannedDaysBack() and plannedRestOn() all go through
+it. Given what v194 found three hours ago, adding a second way to answer "what
+was that day" was not an option.
+
+Choosing a day type by hand still wins: pick something else for Wednesday and
+the alternation ends rather than silently overwriting him next week.
+
+The coach is told it alternates, and told not to collapse it to one of them —
+its brief carried two hard-coded lines saying "Wednesday mobility", which would
+have had it quietly correcting the schedule back every time it was asked to
+look at the week.
+
+CHECKED
+-------
+Six consecutive Wednesdays from the block start: Mobility, Pilates, Mobility,
+Pilates, Mobility, Pilates, with the block week and the split agreeing on every
+one. Each of the four block weeks built its real session — Mobility a 15-move
+flow, Pilates a 10-move plan with the level progression attached. Monday is
+untouched. An existing profile migrates and a fresh install has it by default.
+Picking Legs & Core for Wednesday by hand ends the alternation. verify16,
+journey, audit173, streak194 and mob all clean, no page errors.
+
 AMIR PT — v194 · 21/09/2026
 ===========================
 

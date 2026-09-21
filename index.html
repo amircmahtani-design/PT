@@ -572,6 +572,7 @@ details.sec2[open] .secsum2:after{content:"\2212";}
 .cmpside{flex:1 1 0;min-width:0;}
 .cmpside .lab{font-size:11px;font-weight:800;text-transform:uppercase;letter-spacing:.5px;color:var(--label);margin-bottom:5px;}
 .cmpside img{width:100%;border-radius:12px;border:1px solid var(--line);display:block;background:#0d0a07;}
+.itin-alt{display:block;margin-top:3px;font-size:11px;font-weight:700;color:var(--gold);opacity:.85;}
 .cmpkg{margin-top:6px;font-size:15px;font-weight:800;color:var(--gold);font-variant-numeric:tabular-nums;line-height:1.2;}
 .cmpside .when{margin-top:3px;font-size:12px;font-weight:700;color:var(--txt);}
 .cmpside .when span{color:var(--muted);font-weight:600;}
@@ -1606,6 +1607,9 @@ const DEFAULTS = {
      default was six lifting days with one rest and no cardio or mobility in
      it anywhere, which is not a week he has ever actually trained. */
   schedule:{0:"Rest",1:"Upper Body",2:"Legs & Core",3:"Mobility",4:"Pull Day",5:"Push Day",6:"Rest"},
+  /* v195 — Wednesday alternates: odd block weeks Mobility, even Pilates. */
+  alt:{3:["Mobility","Pilates"]},
+  v195alt:1,
   dayOverride:{date:null,split:null},
   /* v117 — the two stages, the look he is aiming at and the date he wants it
      by. DB.plan used to be created on the fly the first time the phase was
@@ -1966,6 +1970,20 @@ function mergeDefaults(parsed){ let d={...structuredClone(DEFAULTS),...parsed};
      had a YYYY-MM-DD, so they're back-filled from that date at midday (so a
      day's photos still sort in the order they were added) and left unlabelled
      until he tells us what they are. */
+  /* ===== v195 · WEDNESDAY ALTERNATES ===================================
+     "I want Wednesday to alternate one week mobility one week Pilates."
+     Set once, for a Wednesday that is currently one of the two. If he has
+     since made it something else, that decision stands and this leaves it
+     alone. Odd block weeks Mobility, even Pilates — so a four-week block is
+     two of each and the deload week gets the Pilates. */
+  if(!d.v195alt){
+    d.v195alt=1;
+    const w=String((d.schedule||{})[3]||"");
+    if(/^(mobility|pilates)$/i.test(w)){
+      d.alt=d.alt||{}; d.alt[3]=["Mobility","Pilates"];
+    }
+  }
+  if(!d.alt || typeof d.alt!=="object") d.alt={};
   if(!Array.isArray(d.measures)) d.measures=[];
   if(Array.isArray(d.photos)) d.photos.forEach((p,i)=>{
     if(!p) return;
@@ -3519,7 +3537,39 @@ function isRestDay(split){
   const s=String(split===undefined? pickSplit() : split).trim();
   return !s || /^rest$/i.test(s);
 }
-function pickSplit(){ if(DB.dayOverride && DB.dayOverride.date===today() && DB.dayOverride.split) return DB.dayOverride.split; return DB.schedule[new Date().getDay()] || "Full Body"; }
+/* ===== v195 · A DAY THAT ALTERNATES WEEK BY WEEK ======================
+   "I want Wednesday to alternate one week mobility one week Pilates."
+
+   The schedule was one split per weekday, forever, so this could not be
+   expressed at all. DB.alt holds a pair for a weekday and the block week
+   decides which of the two it is — odd weeks the first, even weeks the
+   second. Over his four-week block that is two of each, and the deload week
+   lands on the second one.
+
+   It resolves per DATE rather than per weekday, because the same question
+   gets asked about last Wednesday when the app works out whether he missed a
+   session, and the answer there has to be the split that Wednesday actually
+   was, not the one this week happens to be. */
+function altPairFor(dow){
+  const a=(DB.alt||{})[dow];
+  return (Array.isArray(a) && a.length===2 && a[0] && a[1])? a : null;
+}
+function splitForDate(iso){
+  iso=iso||today();
+  if(DB.dayOverride && DB.dayOverride.date===iso && DB.dayOverride.split) return DB.dayOverride.split;
+  const dow=new Date(iso+"T12:00:00").getDay();
+  const pair=altPairFor(dow);
+  if(pair) return pair[(blockWeekOn(iso)%2===1)? 0 : 1];
+  return DB.schedule[dow] || "Full Body";
+}
+/* What the OTHER one is, for the line that says so on the planner. */
+function altOtherFor(iso){
+  iso=iso||today();
+  const dow=new Date(iso+"T12:00:00").getDay();
+  const pair=altPairFor(dow); if(!pair) return null;
+  return pair[(blockWeekOn(iso)%2===1)? 1 : 0];
+}
+function pickSplit(){ return splitForDate(today()); }
 function todaySets(ex){ const a=DB.strength[ex]; if(!a) return []; const x=a.find(o=>o.date===today()); return x?x.sets:[]; }
 function markSession(){ if(DB.lastSessionDate!==today()){ DB.lastSessionDate=today(); save(); updateStreak(); toast("Session started · "+(DB.streak||1)+" day run "); } }
 
@@ -3616,11 +3666,12 @@ const PREHAB = [
    deload. Five weeks meant the block and the program drifted apart by one. */
 function blockWeeks(){ return 4; }          /* 3 working weeks + a written deload */
 function currentBlock(){ return DB.block||null; }
-function blockWeek(){
+function blockWeekOn(iso){
   const b=currentBlock(); if(!b||!b.start) return 1;
-  const d=Math.floor((dnum(today())-dnum(b.start))/(7*864e5));
+  const d=Math.floor((dnum(iso||today())-dnum(b.start))/(7*864e5));
   return Math.max(1, d+1);
 }
+function blockWeek(){ return blockWeekOn(today()); }
 function blockIsDeload(){ return blockWeek()>=blockWeeks(); }
 function blockExpired(){ return blockWeek()>blockWeeks(); }
 /* Anchors are chosen once per block per day type and then left alone. */
@@ -9251,7 +9302,14 @@ function coachSystem(){
   void strength;
   const rowing=DB.rowing.slice(-6).map(r=>"  "+(r.name?r.name+" ":"")+(r.dist||"")+": "+r.time).join("\n")||"  (none)";
   const mem=DB.memory? "\n\nWHO AMIR IS (his own words / ChatGPT memory — high-priority truth):\n"+DB.memory+"\n":"";
-  const sched=Object.keys(DB.schedule).map(k=>"  "+DOW[k]+": "+DB.schedule[k]).join("\n");
+  /* v195 — an alternating day was reported as whichever half happened to be
+     stored, so the coach believed Wednesday was Mobility every week. */
+  const sched=Object.keys(DB.schedule).map(k=>{
+    const pr=altPairFor(+k);
+    if(!pr) return "  "+DOW[k]+": "+DB.schedule[k];
+    return "  "+DOW[k]+": "+pr[0]+" / "+pr[1]+" — alternating week by week (odd block weeks "+
+           pr[0]+", even "+pr[1]+"). This is deliberate; do not collapse it to one of them.";
+  }).join("\n");
   const libNames=allExNames().join(", ");
   const dayTypes=Object.keys(DB.dayTypes||{}); const dayTypesStr=dayTypes.length?dayTypes.join(", "):"(none custom yet)";
   const curW = DB.workout&&Array.isArray(DB.workout.main)&&DB.workout.main.length ? DB.workout.main.map((e,i)=>(i+1)+". "+e.name).join("  ") : (DB.workout&&DB.workout.kind==='cardio'?"(cardio day)":(DB.workout&&DB.workout.sets===0?"(rest/mobility day)":"(none yet — SET_WORKOUT to build one)"));
@@ -9346,8 +9404,8 @@ coachingDoctrine()+
 "The emoji in these directives is only a fallback for when there is no photograph of that movement. Do not spend effort choosing them.\n\n"+
 "WEEKLY SCHEDULE & DAY TYPES:\n"+
 "HIS WEEK STARTS ON MONDAY \u2014 always list and think Mon-first, never Sunday-first.\n"+
-"THE WEEK HE HAS SETTLED ON: Monday UPPER BODY, Tuesday legs and core, Wednesday mobility, Thursday pull, Friday push, Saturday and Sunday rest. Monday was a cardio day until he asked whether upper would serve the physique better; it does, because it takes chest, back and shoulders from once a week to twice, and twice beats once for building shape. === THE MASTER PROGRAM — READ THIS BEFORE CHANGING ANY SESSION ===\n"+
-"He has written a 4-week block and it is now what the app builds. Monday Upper Body, Tuesday Legs & Core, Wednesday Mobility, Thursday Pull, Friday Push. Week 4 is the deload and is already written as one. The block repeats until he asks for a new one.\n"+
+"THE WEEK HE HAS SETTLED ON: Monday UPPER BODY, Tuesday legs and core, Wednesday MOBILITY OR PILATES (it alternates — odd block weeks mobility, even weeks Pilates, by his own instruction), Thursday pull, Friday push, Saturday and Sunday rest. Monday was a cardio day until he asked whether upper would serve the physique better; it does, because it takes chest, back and shoulders from once a week to twice, and twice beats once for building shape. === THE MASTER PROGRAM — READ THIS BEFORE CHANGING ANY SESSION ===\n"+
+"He has written a 4-week block and it is now what the app builds. Monday Upper Body, Tuesday Legs & Core, Wednesday Mobility (weeks 1 and 3) or Pilates (weeks 2 and 4), Thursday Pull, Friday Push. Week 4 is the deload and is already written as one. The block repeats until he asks for a new one.\n"+
 "YOUR JOB IS TO COACH THIS PROGRAM, NOT TO REINVENT IT. He said it plainly: \"The app should STOP randomly generating completely different workouts every week. The AI Coach's job is to COACH the program, not constantly reinvent it.\" Variety is not a training stimulus. Progressive overload is, and he cannot overload a movement you keep swapping out.\n"+
 "WHAT YOU MAY CHANGE FREELY: the weight, the rep target, the rest, the order of the exercises, and a like-for-like substitution when the kit is genuinely unavailable (travelling, a machine occupied). Coach every set: what he lifted last time, what to aim for today, when to add load and when to hold.\n"+
 "WHAT YOU MAY NOT DO: replace a core movement because it would be more interesting, add exercises to pad the session, or rebuild the day. Incline Press, Lat Pulldown, a row, Lateral Raise, Romanian Deadlift and Bulgarian Split Squat stay unless there is a real reason. If he asks you to redo or rebuild a day, give him the PROGRAMMED session for that day and week and coach the loads — do not generate a different one.\n"+
@@ -12045,16 +12103,23 @@ function updateStreak(){
 function renderItin(){
   const el=document.getElementById('itinList'); if(!el) return;
   const todayDow=new Date().getDay(); let html=""; const order=[1,2,3,4,5,6,0];
-  order.forEach(dow=>{ const isToday=dow===todayDow; let split=DB.schedule[dow];
+  order.forEach(dow=>{ const isToday=dow===todayDow;
+    /* v195 — an alternating day shows the one it actually is this week. */
+    const pair=altPairFor(dow);
+    /* the next time that weekday comes round, today included */
+    const iso=isoDay(dnum(today())+(((dow-todayDow)+7)%7)*864e5);
+    let split = pair? splitForDate(iso) : DB.schedule[dow];
     if(isToday && DB.dayOverride && DB.dayOverride.date===today() && DB.dayOverride.split) split=DB.dayOverride.split;
     const pill= splitPill(split);
     const col=splitColour(split);
     const last=lastDoneOf(split);
+    const other=pair? pair.find(x=>x!==split)||pair[1] : null;
     html+="<div class='itin-row "+(isToday?'today':'')+"' style='border-left:3px solid "+col+"'>"+
       "<div class='itin-day'>"+DOW[dow]+(isToday?"<span class='istoday'>today</span>":"")+"</div>"+
       /* v120 - the coloured left border, the chip and the dropdown all said
          the same word. The dropdown carries the colour now and says it once. */
       "<div class='itin-split'>"+splitSelectHTML(dow,"sel"+dow,split,col)+
+        (other? "<span class='itin-alt'>alternating · "+escapeHtml(other)+" next week</span>" : "")+
         (last? "<span class='itin-last'>"+last+"</span>" : "")+"</div>"+
       "</div>"; });
   /* v125 — the planner drew seven dropdowns and never said whether the
@@ -12168,6 +12233,9 @@ function setTodaySplit(split){
 function setDaySplit(dow,split){
   if(!split) return;
   const known=allSplits().includes(split);
+  /* v195 — picking a day type by hand is a decision, and it outranks the
+     alternation rather than being silently overwritten by it next week. */
+  if(altPairFor(dow) && split!=="__alt__"){ DB.alt=DB.alt||{}; delete DB.alt[dow]; }
   DB.schedule[dow]=split;
   if(!known){ DB.dayTypes=DB.dayTypes||{}; DB.dayTypes[split]={main:[],note:""}; }
   /* Changing TODAY has to rebuild the session, not just relabel the row. */
@@ -13361,7 +13429,7 @@ function scheduleInApp(){
    v18 ADDITIONS — draggable rest timer · weekly training memory · AI planner
    · Firestore sync
    ========================================================================== */
-const APP_VERSION="v194 · 21/09/2026";
+const APP_VERSION="v195 · 21/09/2026";
 
 /* ===== 1. REST TIMER — drag it anywhere so it never blocks the chat box ===== */
 let _rtDrag=null;
@@ -14010,9 +14078,13 @@ function plannedRestOn(iso,dow){
   const st=(DB.dayState||{})[iso];
   if(st && (st.restDay || st.cleared)) return true;      /* he decided it */
   try{
-    const d=(dow!=null)? dow : new Date(iso+"T12:00:00").getDay();
-    return isRestDay((DB.schedule||{})[d]);              /* it is in his week */
-  }catch(e){ return false; }
+    /* v195 — through splitForDate, so an alternating day is judged on what
+       it was that week. */
+    return isRestDay(splitForDate(iso));                 /* it is in his week */
+  }catch(e){
+    try{ const d=(dow!=null)? dow : new Date(iso+"T12:00:00").getDay();
+         return isRestDay((DB.schedule||{})[d]); }catch(e2){ return false; }
+  }
 }
 function computeStreak(){
   const dates=showedUpDates(); if(!dates.size) return 0;
@@ -19808,7 +19880,9 @@ function plannedDaysBack(n){
   for(let i=1;i<=n;i++){
     const d=new Date(Date.now()-i*864e5);
     const iso=d.toISOString().slice(0,10);
-    const split=DB.schedule[d.getDay()]||"Rest";
+    /* v195 — was DB.schedule[dow], which on an alternating day answers with
+       THIS week's split for a date in another week. */
+    const split=splitForDate(iso)||DB.schedule[d.getDay()]||"Rest";
     out.push({iso, dow:d.getDay(), split});
   }
   return out;
