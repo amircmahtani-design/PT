@@ -1,3 +1,69 @@
+AMIR PT — v192 · 21/09/2026
+===========================
+
+"When I zoom the foto and click next it should go to the foto I've selected
+next to it not scroll through all the fotos so I can compare myself. It should
+also match the kgs I weigh in each foto to see weight also reflected."
+
+THE VIEWER IGNORED WHICH CARD HAD OPENED IT
+-------------------------------------------
+It read photosFiltered() — the whole library — whichever card opened it. So
+zooming into the Then shot and tapping next walked him into an unrelated
+photo from some other week, and the comparison he had set up was gone.
+
+The viewer now carries a SCOPE. From the photo grid it is the library, as
+before. From Then & now it is exactly those two, so next and previous flip
+between them and nothing else can get in. One accessor decides what the
+viewer is looking at — the paint, the nav, the pose edit, the delete and both
+"set as" buttons were each calling photosFiltered() for themselves, which is
+five places that had to agree and now do not have to.
+
+AND THE THING THAT MADE IT IMPOSSIBLE
+-------------------------------------
+Two lines of CSS, from whenever pinch-zoom went in:
+
+  .lbox.zoomed .lbnav{opacity:0;pointer-events:none;}
+
+Once he zoomed, the next arrow was invisible AND unclickable. What he
+described — zoom the photo, click next — could not be done at all, at any
+zoom, on any photo. The arrow was hidden because it sat over the thing he was
+looking at, which is right when next means "some other photo" and exactly
+wrong when next means "the same zoom on the other shot". On a pair it now
+stays live, dimmed back so it covers as little of him as possible.
+
+The zoom itself survives the flip too. It was reset on every image change, so
+holding a shoulder at ×3 and flicking between June and today undid itself the
+instant he flicked. Inside a pair the scale AND the pan are held, so the same
+patch of him stays under his thumb across both shots. Stepping through the
+library still fits each photo, which is what he wants there.
+
+THE KILOS, ON THE PHOTO THEY BELONG TO
+--------------------------------------
+The pair carried one line underneath both pictures — "83.3 kg → 84.8 kg" —
+which is the right pair of numbers attached to nothing. Looking at the left
+photo he could not see which of them was his.
+
+The number now sits on the photo it belongs to: under each thumbnail on the
+card, and on the date line in the viewer, so it flips with the picture. The
+summary line underneath still does the arithmetic.
+
+One lookup for all of it, built on weightEntries(), which is the app's dated
+weight list. weightBetween() had its own private scan of DB.checkins — a
+second implementation of the same question and the one that would have gone
+stale. And where the nearest weigh-in is not the same day as the photo it says
+so ("84.8 kg (3d before)"), because a number from a different week presented as
+that morning's is a lie he would act on.
+
+CHECKED
+-------
+Six photos over three months with weigh-ins against each. From the compare
+card, four taps of next cycle Then/Now/Then/Now and never leave the pair, each
+showing its own weight. From the grid, next still walks all six. A real tap —
+not a function call — on the next arrow at ×2.4 flips the photo and keeps the
+scale and the pan exactly; in the library the arrow is still hidden when
+zoomed. No overflow on the Progress screen at 390px or 360px, including with a
+three-digit weight. verify16, journey and audit173 clean, no page errors.
+
 AMIR PT — v191 · 21/09/2026
 ===========================
 

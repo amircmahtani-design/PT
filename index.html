@@ -552,6 +552,15 @@ details.sec2[open] .secsum2:after{content:"\2212";}
 /* Once he's zoomed in, the nav arrows are in the way of the thing he's
    looking at — and a stray tap would jump to another photo. */
 .lbox.zoomed .lbnav{opacity:0;pointer-events:none;}
+/* v192 — except when the viewer is on a PAIR, where the arrow is not a way
+   out of what he is looking at, it IS what he is looking at: the same zoom on
+   the other shot. This rule is why "zoom the foto and click next" could not
+   be done at all — the arrow was invisible AND unclickable at any zoom. It
+   stays live on a pair, dimmed back so it covers as little of him as
+   possible, and pinned to the very edge clear of the drag. */
+.lbox.paired.zoomed .lbnav{opacity:.42;pointer-events:auto;}
+.lbox.paired.zoomed .lbnav:active{opacity:1;}
+.lbox.paired .lbnav{font-size:26px;}
 .lbzoomhint{text-align:center;font-size:11.5px;font-weight:700;color:var(--gold);min-height:15px;margin-top:6px;}
 .lbox .lbnav{position:absolute;top:50%;transform:translateY(-50%);background:#15110dcc;border:1px solid var(--line);
   color:var(--txt);width:44px;height:44px;border-radius:50%;font-size:20px;font-weight:800;}
@@ -563,7 +572,8 @@ details.sec2[open] .secsum2:after{content:"\2212";}
 .cmpside{flex:1 1 0;min-width:0;}
 .cmpside .lab{font-size:11px;font-weight:800;text-transform:uppercase;letter-spacing:.5px;color:var(--label);margin-bottom:5px;}
 .cmpside img{width:100%;border-radius:12px;border:1px solid var(--line);display:block;background:#0d0a07;}
-.cmpside .when{margin-top:5px;font-size:12px;font-weight:700;color:var(--txt);}
+.cmpkg{margin-top:6px;font-size:15px;font-weight:800;color:var(--gold);font-variant-numeric:tabular-nums;line-height:1.2;}
+.cmpside .when{margin-top:3px;font-size:12px;font-weight:700;color:var(--txt);}
 .cmpside .when span{color:var(--muted);font-weight:600;}
 .cmpgap{text-align:center;font-size:13px;font-weight:800;color:var(--orange);margin-top:10px;}
 .quickcmp{display:flex;gap:6px;overflow-x:auto;padding:2px 0 0;}
@@ -12508,8 +12518,47 @@ function renderPhotos(){
   renderCompareControls();
 }
 
+/* ===== v192 · THE VIEWER STAYS INSIDE WHAT HE IS COMPARING ============
+   "When I zoom the foto and click next it should go to the foto I've selected
+   next to it not scroll through all the fotos so I can compare myself."
+
+   The viewer read photosFiltered() — the whole library — whichever card had
+   opened it. So zooming into the Then shot and tapping next walked him into
+   an unrelated photo from some other week, and the comparison he had set up
+   was gone. Two photos, six weeks apart, at the same zoom, flicked back and
+   forth: that IS the comparison, and it was two taps from working.
+
+   The viewer now carries a SCOPE. Opened from the grid it is the library, as
+   before. Opened from Then & now it is exactly those two, so next and
+   previous flip between them and nothing else can get in. One accessor, so
+   every caller reads the same list — the paint, the nav, the pose edit, the
+   delete and the two "set as" buttons were each calling photosFiltered()
+   themselves. */
+let _lbScope=null;              /* null = the whole filtered library */
+function lbList(){
+  if(_lbScope && _lbScope.length){
+    const out=_lbScope.map(k=>photoByKey(k)).filter(Boolean);
+    if(out.length) return out;
+    _lbScope=null;              /* a scoped photo was deleted — fall back */
+  }
+  return photosFiltered();
+}
+function lbCur(){ return lbList()[_lbIdx]||null; }
+function lbPaired(){ return !!(_lbScope && _lbScope.length===2); }
 /* ----- Lightbox: tap a photo, actually see it ----- */
-function openPhoto(key){
+function openPhoto(key,scope){
+  _lbScope = (scope && scope.length)? scope.map(String) : null;
+  if(_lbScope){
+    const i=_lbScope.findIndex(k=>k===String(key));
+    if(i>=0 && lbList().length===_lbScope.length){
+      _lbIdx=i; paintLightbox();
+      const bx=document.getElementById('lbox'); if(bx) bx.classList.add('show');
+      document.body.style.overflow="hidden";
+      try{ initLbZoom(); lbZoomReset(); }catch(e){}
+      return;
+    }
+    _lbScope=null;
+  }
   const list=photosFiltered();
   let i=list.findIndex(p=>pkey(p)===String(key));
   /* Opened from a compare thumbnail while a pose filter hides it? Drop the
@@ -12526,15 +12575,29 @@ function openPhoto(key){
   document.body.style.overflow="hidden";
   try{ initLbZoom(); lbZoomReset(); }catch(e){}
 }
-function paintLightbox(){
-  const list=photosFiltered();
+function paintLightbox(keepZoom){
+  const list=lbList();
   const p=list[_lbIdx]; if(!p){ closePhoto(); return; }
   const img=document.getElementById('lbImg');
-  if(img){ img.src=photoSrc(p); lbZoomReset(); }
+  /* ===== v192 · THE ZOOM SURVIVES THE FLIP ==============================
+     "When I zoom the foto and click next..." — the zoom was thrown away on
+     every image change, so the one thing he was doing, holding a shoulder at
+     ×3 and flicking between June and today, reset itself the instant he
+     flicked. Inside a pair the zoom and the pan are held, so the same patch
+     of him stays under his thumb across both shots. Stepping through the
+     whole library still fits each photo, which is what he wants there. */
+  if(img){ img.src=photoSrc(p); if(keepZoom) lbApply(); else lbZoomReset(); }
   const d=document.getElementById('lbDate'); if(d) d.textContent=photoWhenLong(p);
-  const a=document.getElementById('lbAgo'); if(a) a.textContent=photoAgo(p)+(p.pose?" · "+p.pose:" · not labelled yet");
+  const a=document.getElementById('lbAgo'); if(a) a.textContent=photoAgo(p)+(p.pose?" · "+p.pose:" · not labelled yet")+photoWeightTag(p);
   const s=document.getElementById('lbPose'); if(s) s.value=p.pose||"Other";
-  const c=document.getElementById('lbCount'); if(c) c.textContent=(_lbIdx+1)+" of "+list.length+(_poseFilter==="all"?"":" · "+_poseFilter);
+  /* v192 — say which of the two he is on, so the next arrow is obviously a
+     toggle between them rather than a way out of the comparison. */
+  const bx=document.getElementById('lbox');
+  if(bx) bx.classList.toggle('paired', lbPaired());
+  const c=document.getElementById('lbCount');
+  if(c) c.textContent = lbPaired()
+    ? ((_lbIdx===0? "Then" : "Now")+" · "+(_lbIdx+1)+" of 2 · tap › to compare")
+    : ((_lbIdx+1)+" of "+list.length+(_poseFilter==="all"?"":" · "+_poseFilter));
 }
 /* ===== v83 · PINCH TO ZOOM ON A PHYSIQUE PHOTO ==========================
    Comparing two shots six weeks apart is the whole point of that section, and
@@ -12552,9 +12615,12 @@ function lbApply(){
   img.style.transform="translate("+_lbZ.x+"px,"+_lbZ.y+"px) scale("+_lbZ.scale+")";
   img.style.cursor=_lbZ.scale>1?"grab":"";
   const box=document.getElementById('lbox');
-  if(box) box.classList.toggle('zoomed', _lbZ.scale>1.01);
+  if(box){ box.classList.toggle('zoomed', _lbZ.scale>1.01);
+           box.classList.toggle('paired', lbPaired()); }
   const hint=document.getElementById('lbZoomHint');
-  if(hint) hint.textContent = _lbZ.scale>1.01 ? ("\u00d7"+_lbZ.scale.toFixed(1)+" \u00b7 drag to move \u00b7 double-tap to fit") : "";
+  if(hint) hint.textContent = _lbZ.scale>1.01
+    ? ("\u00d7"+_lbZ.scale.toFixed(1)+" \u00b7 "+(lbPaired()? "\u203a holds this zoom on the other shot" : "drag to move \u00b7 double-tap to fit"))
+    : "";
 }
 function lbZoomReset(){
   _lbZ.scale=1; _lbZ.x=0; _lbZ.y=0; _lbZ.panning=false;
@@ -12633,34 +12699,37 @@ function initLbZoom(){
   },{passive:false});
 }
 function photoNav(dir){
-  const list=photosFiltered();
+  const list=lbList();
   if(!list.length) return;
   _lbIdx=(_lbIdx+dir+list.length)%list.length;
-  paintLightbox();
+  paintLightbox(lbPaired());
 }
 function closePhoto(){
   const b=document.getElementById('lbox'); if(b) b.classList.remove('show');
   document.body.style.overflow="";
+  _lbScope=null;                /* the next open decides its own scope */
 }
 function setPhotoPose(v){
-  const list=photosFiltered(); const p=list[_lbIdx]; if(!p) return;
+  const p=lbCur(); if(!p) return;
   p.pose=v; save();
   /* Relabelling can move the photo out of the angle he's filtered to — if it
      does, the lightbox is now pointing at somebody else's photo. Close it
      rather than silently swapping what's on screen. */
-  const stillHere=photosFiltered().findIndex(x=>pkey(x)===pkey(p));
   renderPhotos();
+  /* A pair is a pair whatever he labels it, so only the library view can lose
+     the photo out from under him. */
+  const stillHere=lbPaired()? _lbIdx : photosFiltered().findIndex(x=>pkey(x)===pkey(p));
   if(stillHere<0){ closePhoto(); toast("Labelled "+v+" — now filed under "+v); return; }
   _lbIdx=stillHere; paintLightbox();
   toast("Labelled "+v);
 }
 function delPhotoFromBox(){
-  const list=photosFiltered(); const p=list[_lbIdx]; if(!p) return;
+  const p=lbCur(); if(!p) return;
   if(!confirm("Delete this photo from "+photoWhen(p)+"?")) return;
   const gi=photoIdx(p); closePhoto(); delPhoto(gi);
 }
-function lbSetThen(){ const p=photosFiltered()[_lbIdx]; if(!p) return; _cmpA=pkey(p); closePhoto(); renderCompareControls(); toast("Set as Then · "+photoWhen(p)); }
-function lbSetNow(){ const p=photosFiltered()[_lbIdx]; if(!p) return; _cmpB=pkey(p); closePhoto(); renderCompareControls(); toast("Set as Now · "+photoWhen(p)); }
+function lbSetThen(){ const p=lbCur(); if(!p) return; _cmpA=pkey(p); closePhoto(); renderCompareControls(); toast("Set as Then · "+photoWhen(p)); }
+function lbSetNow(){ const p=lbCur(); if(!p) return; _cmpB=pkey(p); closePhoto(); renderCompareControls(); toast("Set as Now · "+photoWhen(p)); }
 
 /* ----- Then & now ----- */
 function optListFor(sel,cur){
@@ -12732,44 +12801,83 @@ function quickCompare(daysBack){
   const off=Math.round(Math.abs((best.now.t-best.then.t)/864e5));
   if(daysBack && Math.abs(off-daysBack)>10) toast("Nearest I have is "+off+" days back");
 }
+/* v192 — tapping either picture opens the viewer on the PAIR. */
+function openComparePhoto(which){
+  const a=_cmpA, b=_cmpB;
+  if(!photoByKey(a)||!photoByKey(b)) return;
+  openPhoto(which==='b'? b : a, [a,b]);
+}
 function renderCompare(){
   const out=document.getElementById('compareOut'); if(!out) return;
   const A=photoByKey(_cmpA), B=photoByKey(_cmpB);
   if(!A||!B){ out.innerHTML=""; return; }
   const mismatch=(A.pose||"")!==(B.pose||"");
-  out.innerHTML="<div class='cmpwrap'>"+
-    "<div class='cmpside'><div class='lab'>Then</div>"+
-      "<img src='"+photoSrc(A)+"' onclick='openPhoto(\""+pkey(A)+"\")'/>"+
-      "<div class='when'>"+photoWhen(A)+"<span> · "+photoAgo(A)+(A.pose?" · "+escapeHtml(A.pose):"")+"</span></div></div>"+
-    "<div class='cmpside'><div class='lab'>Now</div>"+
-      "<img src='"+photoSrc(B)+"' onclick='openPhoto(\""+pkey(B)+"\")'/>"+
-      "<div class='when'>"+photoWhen(B)+"<span> · "+photoAgo(B)+(B.pose?" · "+escapeHtml(B.pose):"")+"</span></div></div></div>"+
+  /* v192 — the viewer opens on the PAIR, so next flips to the other one. */
+  /* The pair is already module state in _cmpA/_cmpB, so the handler names
+     which side it is rather than carrying a serialised array through an HTML
+     attribute and back out through JSON.parse. */
+  const side=(P,lab,which)=>{
+    const kg=photoWeight(P);
+    return "<div class='cmpside'><div class='lab'>"+lab+"</div>"+
+      "<img src='"+photoSrc(P)+"' onclick=\"openComparePhoto('"+which+"')\"/>"+
+      (kg? "<div class='cmpkg'>"+escapeHtml(kg.text)+"</div>" : "")+
+      "<div class='when'>"+photoWhen(P)+"<span> · "+photoAgo(P)+(P.pose?" · "+escapeHtml(P.pose):"")+"</span></div></div>";
+  };
+  out.innerHTML="<div class='cmpwrap'>"+side(A,"Then","a")+side(B,"Now","b")+"</div>"+
     "<div class='cmpgap'>"+gapWords(B.t-A.t)+"</div>"+
     (mismatch? "<div class='hint mt' style='text-align:center'>These are different angles — comparing the same pose reads far more honestly.</div>":"")+
     weightBetween(A.t,B.t);
 }
+/* ===== v192 · WHAT HE WEIGHED IN THAT PHOTO ============================
+   "It should also match the kgs I weigh in each foto to see weight also
+   reflected."
+
+   The pair carried one line underneath both pictures — "83.3 kg → 84.8 kg" —
+   which is the right pair of numbers attached to nothing. Looking at the left
+   photo he could not see which of them was his. The number now sits on the
+   photo it belongs to, under the thumbnail and in the viewer, and the summary
+   line underneath still does the arithmetic.
+
+   One lookup for all of it, built on weightEntries(), which is the app's
+   dated weight list. weightBetween() had its own private scan of DB.checkins
+   — a second implementation of the same question, and the one that would
+   have gone stale. */
+function weightNear(t){
+  if(!t) return null;
+  let best=null, gap=1e15;
+  (typeof weightEntries==="function"? weightEntries() : []).forEach(e=>{
+    const wt=new Date(e.date+"T12:00:00").getTime();
+    if(isNaN(wt)) return;
+    const g=Math.abs(wt-t);
+    if(g<gap && g<10*864e5){ gap=g; best={w:e.w, date:e.date, gap:Math.round(g/864e5)}; }
+  });
+  return best;
+}
+/* The weight beside a photo, and how near the weigh-in actually was — "84.8
+   kg" on the day, "84.8 kg (3 days later)" when it was not, because a number
+   from a different week presented as today's is a lie he would act on. */
+function photoWeight(p){
+  if(!p) return null;
+  const w=weightNear(p.t);
+  if(!w) return null;
+  const pd=(p.d||"").slice(0,10);
+  const exact=(pd && pd===w.date);
+  return {w:w.w, date:w.date, gap:w.gap, exact,
+          text:w.w.toFixed(1)+" kg"+(exact||!w.gap? "" : " ("+w.gap+"d "+(new Date(w.date+"T12:00:00").getTime()<p.t? "before":"after")+")")};
+}
+function photoWeightTag(p){
+  const x=photoWeight(p);
+  return x? " · "+x.text : "";
+}
 /* If he weighed in around both shots, that's the one hard number that belongs
    next to the pictures. */
 function weightBetween(ta,tb){
-  /* DB.weights is a bare list of numbers with no dates on it — the check-ins
-     are what carry both, so read from there. */
-  const near=t=>{
-    let best=null,gap=1e15;
-    (DB.checkins||[]).forEach(c=>{
-      if(!c||!c.weight||!c.date) return;
-      const wt=new Date(c.date+"T12:00:00").getTime();
-      if(isNaN(wt)) return;
-      const g=Math.abs(wt-t);
-      if(g<gap && g<10*864e5){ gap=g; best=c; }
-    });
-    return best;
-  };
-  const a=near(ta), b=near(tb);
-  if(!a||!b||a===b) return "";
-  const diff=b.weight-a.weight;
+  const a=weightNear(ta), b=weightNear(tb);
+  if(!a||!b||a.date===b.date) return "";
+  const diff=b.w-a.w;
   const sign=diff>0?"+":"";
   return "<div class='hint mt' style='text-align:center'>Bodyweight around those dates: "+
-    a.weight.toFixed(1)+" kg → "+b.weight.toFixed(1)+" kg ("+sign+diff.toFixed(1)+" kg)</div>";
+    a.w.toFixed(1)+" kg → "+b.w.toFixed(1)+" kg ("+sign+diff.toFixed(1)+" kg)</div>";
 }
 /* ===== v61 · MEASUREMENTS =====
    Two sources, never blended: anything Amir measured himself is the truth, and
@@ -13119,7 +13227,7 @@ function scheduleInApp(){
    v18 ADDITIONS — draggable rest timer · weekly training memory · AI planner
    · Firestore sync
    ========================================================================== */
-const APP_VERSION="v191 · 21/09/2026";
+const APP_VERSION="v192 · 21/09/2026";
 
 /* ===== 1. REST TIMER — drag it anywhere so it never blocks the chat box ===== */
 let _rtDrag=null;
@@ -13734,7 +13842,7 @@ async function purgePhotos(){
   if(!DB.photos||!DB.photos.length){ toast("No photos to clear"); return; }
   if(!confirm("Remove all "+DB.photos.length+" physique photos from this device? Everything else (lifts, check-ins, history) stays.")) return;
   DB.photos=[]; PHOTOS={}; await savePhotos();
-  _cmpA=null; _cmpB=null; _lbIdx=-1;
+  _cmpA=null; _cmpB=null; _lbIdx=-1; _lbScope=null;
   try{ closePhoto(); }catch(e){}
   if(save()) clearSaveFailure();
   renderPhotos(); renderStorageStatus(); toast("Photos cleared");
