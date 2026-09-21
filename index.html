@@ -682,6 +682,11 @@ details.sec2[open] .secsum2:after{content:"\2212";}
 .coachline .k{font-size:10.5px;font-weight:800;letter-spacing:.5px;text-transform:uppercase;color:var(--label);}
 .coachline .v{font-size:14.5px;font-weight:700;color:var(--txt);line-height:1.45;font-variant-numeric:tabular-nums;}
 .coachline .v i{font-style:normal;font-weight:600;color:var(--dim);}
+.coachline .cl.grow .v{color:var(--txt);}
+.growbtn{display:inline-block;background:#2a1f0a;border:1px solid #6b4c15;color:#f0b24a;border-radius:9px;
+  padding:7px 11px;font-size:13.5px;font-weight:800;font-family:inherit;cursor:pointer;}
+.growbtn:active{background:#3a2b0e;}
+.coachline .cl.grow i{display:block;margin-top:4px;font-style:normal;font-weight:600;font-size:11.5px;color:var(--dim);line-height:1.4;}
 .coachline .felt{display:inline-block;margin-left:7px;padding:2px 7px;border-radius:7px;border:1px solid var(--line);font-size:11px;font-weight:800;letter-spacing:.2px;text-transform:lowercase;vertical-align:1px;}
 .coachline .felt.e1{background:#0c2716;border-color:#1d6b3e;color:#3fe08a;}
 .coachline .felt.e2{background:#2a1f0a;border-color:#6b4c15;color:#f0b24a;}
@@ -5014,6 +5019,78 @@ function repsFellAway(reps){
    session actually felt, and it stops at 25: past about twenty reps the
    honest answer is no longer reps but tempo, a pause, or a harder version
    of the movement. */
+/* ===== v196 · PAST 24 REPS THE MOVEMENT CHANGES, NOT THE NUMBER =======
+   "If an exercise like Incline DB Press is maximum weight and I'm doing 20
+   reps I can't simply keep adding more reps. The way it's going I'll end up
+   with 50 reps. The exercise needs to change after the suggestion is more
+   reps than 24 reps in one set for dumbbells."
+
+   v190 knew this and did nothing about it. It capped the target at 25 and
+   then told him to "make it harder instead — three seconds down, a pause at
+   the top, or one arm at a time". That is advice, not a change: the sheet
+   still said Incline DB Press, the reps still said 24, and next week it said
+   24 again. A progression that terminates in a note is not a progression.
+
+   The exercise changes now. At his ceiling, past 24 reps, a 10kg dumbbell
+   press is no longer a pressing stimulus — it is muscular endurance wearing
+   the name of a chest exercise. What it wants is the same movement on kit
+   that can actually be loaded, which in Dubai means the barbell, the Smith or
+   the cables. He owns all three.
+
+   This finds that movement: same family, available where he is, not banned,
+   not already on today's sheet, and on kit with load to add. Ranked by what
+   he would reach for at that location. It does NOT swap on its own — it
+   offers, and he taps. v174 was explicit that nothing rewrites a session
+   behind him, and a movement disappearing off his sheet without being asked
+   is exactly that. */
+const CEILING_REP_CAP=24;
+function loadableEq(eq){ return eq==="bb" || eq==="bar" || eq==="mach" || eq==="plate"; }
+function harderForCeiling(name){
+  const fam=(typeof moveFamily==="function")? moveFamily(name) : null;
+  if(!fam) return null;
+  const key=locKey();
+  const here=wkMain? wkMain().map(e=>String(e.name||"").toLowerCase()) : [];
+  const pool=[...new Set([].concat(
+    (typeof coreExNames==="function")? coreExNames() : [],
+    (typeof allExNames==="function")? allExNames() : []))];
+  const cands=pool.filter(n=>{
+    if(!n || nameEq(n,name)) return false;
+    if(moveFamily(n)!==fam) return false;
+    if(!loadableEq(eqOf(n))) return false;          /* it must have load to add */
+    if(!canDoHere(n,key)) return false;
+    if(typeof exBanned==="function" && exBanned(n)) return false;
+    if(here.indexOf(String(n).toLowerCase())>=0) return false;
+    return true;
+  });
+  if(!cands.length) return null;
+  /* v196 — the wrist gets a vote, and it outranks what he would normally
+     reach for. GEAR_PRIORITY puts the barbell first in Dubai, which is right
+     for loading and wrong for a TFCC wrist: a cable or the Smith loads the
+     same movement without the straight-bar wrist position. Every barbell
+     entry in the library says as much in its own wristAlt field — and what
+     they all recommend instead is dumbbells, which is the thing he has just
+     outgrown. So machine and cable go first while the injury is on record. */
+  const wrist=(typeof wristInjury==="function") && !!wristInjury();
+  const rank=n=>{
+    const eq=eqOf(n);
+    if(wrist) return (eq==="mach")? 0 : (eq==="bb"||eq==="bar")? 1 : 2;
+    return gearRank(n,key);
+  };
+  cands.sort((a,b)=> (rank(a)-rank(b)) ||
+                     (gearRank(a,key)-gearRank(b,key)) ||
+                     (((EX(a)||{}).pop||500)-((EX(b)||{}).pop||500)) ||
+                     String(a).length-String(b).length);
+  return cands[0];
+}
+/* If the movement he is being sent to carries a wrist caveat, he reads it on
+   the card rather than discovering it under a loaded bar. */
+function ceilingWristNote(to){
+  if(!(typeof wristInjury==="function" && wristInjury())) return "";
+  const eq=eqOf(to);
+  if(eq!=="bb" && eq!=="bar") return "";
+  const side=(typeof wristSide==="function")? wristSide() : "left";
+  return " Straight bar, so mind the "+side+" wrist — take it on the Smith or with a neutral grip if it complains.";
+}
 function ceilingPlan(name,sets){
   const ss=(sets||[]).filter(s=>(+s.w||0)>0);
   if(!ss.length) return null;
@@ -5026,13 +5103,24 @@ function ceilingPlan(name,sets){
   const word=(typeof effortWord==="function")? effortWord(eff) : null;
   const felt=word? " Last time it felt "+word+"." : "";
   const base={w:topW, up:false, ceiling:true, best, effort:eff, effortWord:word};
-  /* Reps have done their job \u2014 which is true when EVERY set is up there,
-     not when one is. 12, 15, 20 is a session with room left in it. */
-  if(low>=20 && (eff==null || eff<=2.4))
-    return Object.assign({}, base, {harder:true, reps:best,
-      text:topW+"kg for "+best+" reps is the heaviest dumbbell you own, so reps have done their job. Make it harder instead — three seconds down, a pause at the top, or one arm at a time."+felt,
-      why:topW+"kg is the heaviest dumbbell you own and every set is past twenty reps"+(word?", and you rated it "+word:"")+". More reps stops being the answer here.",
-      next:"Three seconds down, a pause at the top, or one arm at a time — same weight, harder work. When that owns it, it is a heavier movement you need, not a heavier dumbbell."});
+  /* v196 \u2014 the rep cap is a real boundary now, not a number the target
+     leans against. Once the next target would clear it, the MOVEMENT is
+     what changes. */
+  const addNow=(eff!=null && eff<=1.5)? 3 : 2;
+  if(best+addNow>CEILING_REP_CAP || low>=CEILING_REP_CAP){
+    const up=harderForCeiling(name);
+    if(up) return Object.assign({}, base, {outgrown:true, harder:true, reps:best, swapTo:up,
+      wristNote:ceilingWristNote(up),
+      text:"You have outgrown this one. "+best+" reps at "+topW+"kg is your heaviest dumbbell and past the point where more reps build anything — swap it for "+up+", which you can actually load."+felt,
+      why:"At "+best+" reps a "+topW+"kg dumbbell is endurance work, not a pressing stimulus. "+up+" is the same movement on kit that has weight left in it, so progression starts again from a load you can add to.",
+      next:"Take "+up+" at a weight you can own for 8\u201310 clean reps, and the normal rule applies from there: every set at that weight and it goes up."+ceilingWristNote(up)});
+    /* Nothing loadable here — the kit is the limit, and saying so is more
+       use than pretending reps are still the answer. */
+    return Object.assign({}, base, {harder:true, ceilingStuck:true, reps:Math.min(CEILING_REP_CAP,best),
+      text:best+" reps at "+topW+"kg is as far as this goes with the kit in "+LOC().label+". Same weight, harder work: three seconds down, a pause at the top, or one arm at a time."+felt,
+      why:topW+"kg is the heaviest dumbbell you own and there is nothing here in this movement you can load instead, so reps have run out as a lever.",
+      next:"Tempo and single-arm work hold it here. Back somewhere with a bar or a cable, this one moves to it and starts loading again."});
+  }
   /* Ragged sets. Asked before the effort check, because "you opened on 18
      and finished on 11" is a sharper answer than "it was hard" and it is
      the one that says what to do about it. */
@@ -5047,8 +5135,7 @@ function ceilingPlan(name,sets){
       text:"Match "+best+" reps at "+topW+"kg. That was hard last time and "+topW+"kg is your heaviest dumbbell, so own the reps before we add to them.",
       why:"You rated "+topW+"kg hard last time, and it is the heaviest dumbbell you own — so there is no lighter-or-heavier decision to make. Own "+best+" reps first.",
       next:best+" reps on every set at "+topW+"kg, rated about right, and the reps start climbing again."});
-  const add=(eff!=null && eff<=1.5)? 3 : 2;
-  const reps2=Math.min(25,best+add);
+  const reps2=Math.min(CEILING_REP_CAP,best+addNow);
   return Object.assign({}, base, {addReps:true, reps:reps2,
     text:topW+"kg × "+reps2+" reps — you got "+best+" last time and that is your heaviest dumbbell, so the reps go up, not the weight."+felt,
     why:"You got "+best+" reps at "+topW+"kg"+(word?" and rated it "+word:"")+", and "+topW+"kg is the heaviest dumbbell you own. So the reps go up, not the weight.",
@@ -7563,7 +7650,10 @@ function prefillNote(e){
      the only one there is, and the reps are the thing that moved. Say so, or
      the unchanged kilos read as no progression at all. */
   if(e.rec&&e.rec.ceiling){
-    if(e.rec.harder) return "<div class='prefill'>"+escapeHtml(String(top))+"kg is your heaviest dumbbell and the reps have gone as far as they usefully go \u2014 make the movement harder instead.</div>";
+    if(e.rec.outgrown && e.rec.swapTo)
+      return "<div class='prefill'>Filled in with last time\u2019s numbers. "+escapeHtml(String(top))+
+             "kg has nothing left to give at these reps \u2014 "+escapeHtml(e.rec.swapTo)+" is the next movement, and the button below does the swap.</div>";
+    if(e.rec.harder) return "<div class='prefill'>"+escapeHtml(String(top))+"kg is your heaviest dumbbell and the reps have gone as far as they usefully go \u2014 same weight, harder work: three seconds down, a pause at the top, or one arm at a time.</div>";
     return "<div class='prefill'>"+escapeHtml(String(top))+"kg is your heaviest dumbbell, so the reps are the progression \u2014 the box is filled in with today\u2019s target.</div>";
   }
   return up
@@ -7996,7 +8086,12 @@ function coachLineHTML(e){
      reasoning is a tap away under Edit, which is what Edit is for. Bands and
      bodyweight have no kilos, so those fall back to the first sentence. */
   let todayTxt="";
-  if(p && p.harder){
+  if(p && p.outgrown){
+    /* v196 — the reasoning is on the Outgrown row underneath, so this line
+       goes back to being what it is for: what to do if he trains it today.
+       It was spilling the whole paragraph in here and truncating it. */
+    todayTxt=fmtNum(p.recommended)+"kg × "+(p.repTarget||24)+" reps · last time at this one";
+  } else if(p && p.harder){
     /* v190 \u2014 past twenty reps at the top of the rack there is no number to
        print, so print the instruction instead. */
     todayTxt=firstSentence(p.target||"");
@@ -8019,8 +8114,32 @@ function coachLineHTML(e){
     const left=(target && nDone)? (" · "+(target-nDone)+" to go") : "";
     rows.push("<div class='cl now'><span class='k'>Today</span><span class='v'>"+escapeHtml(todayTxt+left)+"</span></div>");
   }
+  /* ===== v196 · THE OFFER, NOT JUST THE OBSERVATION ====================
+     "The exercise needs to change." It does, and a sentence telling him so
+     while the card still says Incline DB Press is not a change. The swap is
+     one tap, and it is a tap rather than automatic because nothing rewrites
+     his session behind him (v174). */
+  if(p && p.outgrown && p.swapTo){
+    const i=(typeof wkIndex==="function")? wkIndex(e.name) : -1;
+    if(i>=0) rows.push("<div class='cl grow'><span class='k'>Outgrown</span><span class='v'>"+
+      "<button class='growbtn' onclick='event.stopPropagation();upgradeOutgrown("+i+")'>Swap to "+escapeHtml(p.swapTo)+" →</button>"+
+      "<i>"+escapeHtml(fmtNum(p.recommended)+"kg is your heaviest dumbbell and "+(p.repTarget||24)+" reps is past the point it builds anything")+"</i>"+
+      "</span></div>");
+  }
   if(!rows.length) return "";
   return "<div class='coachline'>"+rows.join("")+"</div>";
+}
+/* v196 — the swap goes through the normal verified action, so it gets the
+   kit check, the ban check, the duplicate-family check, the receipt and the
+   undo that every other change to his sheet gets. */
+function upgradeOutgrown(i){
+  const e=wkMain()[i]; if(!e) return;
+  let p=null; try{ p=progressionFor(e.name); }catch(err){}
+  if(!p || !p.swapTo){ toast("Nothing to swap to here"); return; }
+  const res=runAction("replace_exercise",{from:e.name, to:p.swapTo});
+  if(!res.ok){ toast(res.error||"Couldn't swap that"); return; }
+  announceChange(res);
+  toast(res.receipt.lines[0]||("Swapped to "+p.swapTo));
 }
 /* One line under the cue. Everything that was three headers on the face of the
    card is behind it, and it remembers whether you left it open exactly the way
@@ -13429,7 +13548,7 @@ function scheduleInApp(){
    v18 ADDITIONS — draggable rest timer · weekly training memory · AI planner
    · Firestore sync
    ========================================================================== */
-const APP_VERSION="v195 · 21/09/2026";
+const APP_VERSION="v196 · 21/09/2026";
 
 /* ===== 1. REST TIMER — drag it anywhere so it never blocks the chat box ===== */
 let _rtDrag=null;
@@ -13577,9 +13696,12 @@ function trainingContext(){
     if(!last) return null;
     let c=null; try{ c=ceilingPlan(k,last.sets); }catch(e){ c=null; }
     if(!c) return null;
+    if(c.outgrown && c.swapTo)
+      return "  "+k+": OUTGROWN at "+c.w+"kg \u00d7 "+c.best+" reps. Past 24 reps a dumbbell he cannot load is endurance work. "+
+             "The app is offering him "+c.swapTo+" instead and he has a button for it \u2014 back that, do not talk him into more reps.";
     return "  "+k+": at "+c.w+"kg, the heaviest he owns \u2014 "+
-      (c.harder? "reps are exhausted, progress it with tempo, pauses or a single-arm version"
-               : "today's target is "+c.reps+" reps (best last time "+c.best+")");
+      (c.harder? "reps are exhausted and there is nothing loadable here in that movement; tempo, pauses or single-arm"
+               : "today's target is "+c.reps+" reps (best last time "+c.best+"), and it never goes past 24 \u2014 at that point the MOVEMENT changes");
   }).filter(Boolean).join("\n");
   const ceilLine=ceilLines? ("\n\nAT THE TOP OF THE RACK \u2014 THERE IS NO HEAVIER DUMBBELL FOR THESE. "+
     "Never ask him to add kilos to one; the progression is reps, then tempo, then a harder movement, and the app is already showing him these exact numbers:\n"+ceilLines) : "";
@@ -20319,6 +20441,8 @@ function progressionFor(name){
   if(rec && rec.reps) out.repTarget=rec.reps;
   if(rec && rec.ceiling) out.ceiling=true;
   if(rec && rec.harder)  out.harder=true;
+  /* v196 — the movement he has outgrown, and the one that replaces it. */
+  if(rec && rec.outgrown){ out.outgrown=true; out.swapTo=rec.swapTo; }
   if(!prev){
     const todays=todaySets(name)||[];
     if(todays.length){

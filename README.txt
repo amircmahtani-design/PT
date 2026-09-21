@@ -1,3 +1,81 @@
+AMIR PT — v196 · 21/09/2026
+===========================
+
+"If an exercise like Incline DB Press is maximum weight and I'm doing 20 reps
+I can't simply keep adding more reps. The way it's going I'll end up with 50
+reps. The exercise needs to change after the suggestion is more reps than 24
+reps in one set for dumbbells."
+
+He is right and v196 is the half of v190 I did not build.
+
+A PROGRESSION THAT ENDS IN A NOTE IS NOT A PROGRESSION
+------------------------------------------------------
+v190 knew about this. It capped the target at 25 and then told him to "make it
+harder instead — three seconds down, a pause at the top, or one arm at a
+time". That is advice, not a change. The sheet still said Incline DB Press,
+the number still said 24, and next week it would say 24 again, forever. I
+wrote the boundary and then had nothing happen at it.
+
+The movement changes now. Past 24 reps a 10kg dumbbell press is not a pressing
+stimulus, it is muscular endurance wearing the name of a chest exercise. What
+it wants is the same movement on kit that can actually be loaded — and in
+Dubai he owns a barbell, a Smith and two cable stacks.
+
+  20 reps  →  10kg × 22 reps
+  22 reps  →  10kg × 24 reps
+  24 reps  →  "You have outgrown this one."  [ Swap to Incline Bench Press → ]
+
+WHAT IT PICKS, AND WHY THE WRIST GETS A VOTE
+--------------------------------------------
+Same movement family, available where he is, not banned, not already on
+today's sheet, and on kit with load left in it. Ranked by what he would reach
+for there.
+
+Except the wrist outranks that. GEAR_PRIORITY puts the barbell first in Dubai,
+which is right for loading and wrong for a TFCC wrist — and every barbell entry
+in the library says so in its own wristAlt field. What they all recommend
+instead is dumbbells, which is precisely the thing he has just outgrown. So
+while the injury is on record, machine and cable rank first:
+
+  Incline DB Press   →  Incline Bench Press   (no machine incline exists, so
+                          the bar, with the wrist caveat said out loud)
+  DB Curl            →  Cable Curl            (not Barbell Curl — whose own
+                          note reads "straight bar loads the wrist")
+  DB Row             →  Chest-supported Row
+  Lateral Raise      →  Cable Lateral Raise
+  DB Shoulder Press  →  Overhead Press
+  Hammer Curl        →  nothing. There is no loadable neutral-grip curl in
+                          the library, and sending a neutral-grip movement to
+                          a supinated bar would be the wrong call for his
+                          wrist. It says so rather than inventing one.
+
+In Madrid — dumbbells and bands, no bar, no cables — there is nothing to move
+to, and it says that too: the kit is the limit, tempo and single-arm work hold
+it there, and it starts loading again when he is somewhere with a bar.
+
+IT OFFERS, IT DOES NOT SWAP
+---------------------------
+One tap on the card. Not automatic, because v174 was explicit that nothing
+rewrites his session behind him, and a movement vanishing off his sheet
+unasked is exactly that. The tap goes through the normal verified action, so
+it gets the kit check, the ban check, the duplicate-family check, the receipt
+and the undo that every other change gets.
+
+The coach is told as well — that he has outgrown it, that the app is offering
+the swap, and not to talk him into more reps.
+
+CHECKED
+-------
+The full ladder driven one rung at a time: 20 across → 22, 22 → 24, 23 →
+outgrown, 24 → outgrown, already past 24 → outgrown, and 22 rated easy →
+outgrown, because easy would have asked for 25. Six movements at the ceiling
+in Dubai and three in Madrid, each picking the right target or correctly
+picking none. The button tapped for real: Incline DB Press leaves the sheet,
+Incline Bench Press takes its place at the same position, no family clash, and
+"replace Incline DB Press" is on the undo stack. Every v190 case below the cap
+still reads exactly as it did. verify16, journey, audit173 and alt195 clean,
+no page errors.
+
 AMIR PT — v195 · 21/09/2026
 ===========================
 
