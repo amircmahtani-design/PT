@@ -6924,7 +6924,7 @@ function bumpRunningRest(delta){
   toast((delta>0?"+":"")+delta+"s · remembered for next time");
 }
 let _restCtx={kind:null,idx:null};
-let restInt=null, restEnd=0, restActive=false, restBeeped=false;
+let restInt=null, restEnd=0, restActive=false, restBeeped=false, restStartedAt=0;
 /* ===== v197 · THE TIMER SURVIVES AN UPDATE =============================
    "Somehow when I update the app I still need my timer to continue through
    the update."
@@ -7013,7 +7013,7 @@ let wakeLock=null;
 async function requestWake(){ try{ if('wakeLock' in navigator && !wakeLock){ wakeLock=await navigator.wakeLock.request('screen'); wakeLock.addEventListener('release',()=>{wakeLock=null;}); } }catch(e){} }
 function releaseWake(){ try{ if(wakeLock && !restActive && holdIdx<0){ wakeLock.release(); wakeLock=null; } }catch(e){} }
 function startRest(sec,label,onDone){
-  unlockAudio(); requestWake(); restEnd=Date.now()+sec*1000; restActive=true; restBeeped=false;
+  unlockAudio(); requestWake(); restStartedAt=Date.now(); restEnd=Date.now()+sec*1000; restActive=true; restBeeped=false;
   restDoneCb = (typeof onDone==="function") ? onDone : null;
   const t=document.getElementById('restTimer'); t.classList.add('show'); t.classList.remove('due');
   restApplyPos();
@@ -8693,6 +8693,8 @@ async function logSet(i){
     };
   }
   const exObj={name:ex.name, cue:ex.cue, rec:ex.rec, target, sets:todaySets(ex.name),
+               restSec:(function(){ try{ return restForEx(ex); }catch(e){ return null; } })(),
+               absFinisher:(function(){ try{ return !!absRegion(ex.name); }catch(e){ return false; } })(),
                finished:done>=target, nextName:(nextEx&&nextEx.name)||null,
                next: nextInfo,
                loadless: (function(){ try{ return isLoadless(ex.name); }catch(e){ return false; } })(),
@@ -8704,6 +8706,13 @@ async function logSet(i){
      that were wrong. */
   let shown=reply, notes=[];
   try{ const res=applyCoachDirectives(reply); shown=res.cleaned; notes=res.notes||[]; }catch(e){}
+  /* v201 — and the rest it named in plain words, which was the one
+     instruction in the reply that nothing acted on. */
+  try{
+    const rs=coachRestSeconds(shown);
+    const ch=rs? applyCoachRest(i,rs) : null;
+    if(ch) notes.push("Rest set to "+fmtRest(ch.to)+" for "+ex.name+" — the coach's call");
+  }catch(e){}
   const cb2=document.getElementById('cb'+i);
   if(cb2) cb2.innerHTML="<div class='coachbubble'><div class='who'>◆ Coach</div>"+
     (shown||"")+
@@ -8715,6 +8724,80 @@ function saveSet(ex,set){
   let sess=DB.strength[ex].find(s=>s.date===today());
   if(!sess){ sess={date:today(),sets:[]}; DB.strength[ex].push(sess); }
   sess.sets.push(set); save(); renderStrengthPBs();
+}
+/* ===== v201 · WHAT THE COACH SAYS IS WHAT THE TIMER DOES ===============
+   "The coach says how much rest between but then the app does what it wants.
+   What the coach says should push through since that is the AI making the
+   workout."
+
+   Three separate faults, and all three had to go:
+
+   1. THE TIMER STARTS BEFORE THE COACH HAS SPOKEN. afterLog() fires the
+      countdown the instant a set is logged; coachSetReply() is an await that
+      lands a second or two later. So the number on the timer was always
+      decided before the sentence he reads was written.
+
+   2. THE COACH WAS NEVER TOLD WHAT THE SHEET SAYS. Its prompt asks it for
+      "the rest time" and hands it the load, the history, the cue and the next
+      exercise — and not one word about rest. It was inventing a number in a
+      vacuum, which is how "Rest 60 seconds" landed on a movement the program
+      rests 30. Neither number was wrong on purpose; they had never met.
+
+   3. NOTHING APPLIED IT. The reply goes through the directive parser, which
+      knows set_rest perfectly well — but the coach writes "Rest 60 seconds"
+      in prose, not an envelope, so the parser saw nothing and the sentence
+      was decoration.
+
+   It now reads the number out of the coach's own words and retargets the
+   running timer to it, measured from when the set was logged rather than from
+   when the reply arrived, so the seconds he was told are the seconds he gets.
+   It sticks to the exercise too, the same way the ±15 buttons stick. */
+function coachRestSeconds(text){
+  const t=String(text||"").replace(/<[^>]*>/g," ");
+  /* Everything after the word "rest", up to the end of that sentence. The
+     word has to come FIRST: "take 2 minutes rest before the next one" is
+     about the gap to the next exercise, not this one's between-set rest. */
+  const seg=t.match(/\brest(?:ing)?(?:\s+for)?\b([^.!?\n]{0,40})/i);
+  if(!seg) return null;
+  const s=seg[1];
+  const clamp=n=>(n>=5 && n<=600)? Math.round(n) : null;
+  let m;
+  /* 1m30, 1 min 30, 1m 30s, 1:30 \u2014 minutes AND seconds together. */
+  if((m=s.match(/(\d+)\s*(?:m(?:in(?:ute)?s?)?\s*|:\s*)(\d+)\s*(?:s(?:ec(?:ond)?s?)?)?/i)))
+    return clamp(parseInt(m[1],10)*60+parseInt(m[2],10));
+  /* A number with a unit on it. */
+  if((m=s.match(/(\d+)\s*m(?:in(?:ute)?s?)?\b/i))) return clamp(parseInt(m[1],10)*60);
+  if((m=s.match(/(\d+)\s*s(?:ec(?:ond)?s?)?\b/i))) return clamp(parseInt(m[1],10));
+  /* Minutes written as a word. */
+  const words={one:60,two:120,three:180,half:30,"a":60};
+  if((m=s.match(/\b(one|two|three|half|a)\s+(?:a\s+)?min(?:ute)?s?\b/i)))
+    return clamp(words[m[1].toLowerCase()]);
+  /* A bare number: small enough to be minutes, otherwise seconds. */
+  if((m=s.match(/(\d+)/))){
+    const n=parseInt(m[1],10);
+    return clamp(n<=10? n*60 : n);
+  }
+  return null;
+}
+/* Apply it: the running countdown, and the exercise from here on. */
+function applyCoachRest(i,sec){
+  if(!(sec>0)) return null;
+  const ex=DB.workout&&DB.workout.main[i]; if(!ex) return null;
+  const before=restForEx(ex);
+  if(Math.abs(before-sec)<3) return null;          /* already agrees */
+  ex.restSec=sec; ex.rest=fmtRest(sec);
+  try{ stampWorkout(); }catch(e){}
+  save();
+  /* Only touch the countdown if it is still the one this set started, and it
+     is a between-SETS rest rather than the longer move to the next exercise. */
+  if(restActive && _restCtx && _restCtx.idx===i && _restCtx.kind==="set" && restStartedAt){
+    restEnd=restStartedAt+sec*1000;
+    if(restEnd<=Date.now()){ restActive=false; if(restInt){clearInterval(restInt);restInt=null;} restDue(); }
+    else { try{ restTick(); }catch(e){} }
+    try{ saveTimers(); }catch(e){}
+  }
+  try{ const el=document.getElementById('exb'+i); if(el){ el.outerHTML=exBlockHTML(ex,i); paintDemos(); } }catch(e){}
+  return {from:before,to:sec};
 }
 async function coachSetReply(ex,set){
   const setNo=ex.sets.length,target=ex.target;
@@ -8736,7 +8819,13 @@ async function coachSetReply(ex,set){
       (word? " Sets so far have felt "+word+" (avg RPE ~"+effortRPE(eff)+")." : " He hasn't rated effort yet.")+
       (ex.loadless? "\nTHIS MOVEMENT HAS NO WEIGHT \u2014 it is a band or bodyweight. Do NOT mention kilos at all. The call is a REP target, or a slower negative, or more band tension. Quoting a weight here is meaningless and he cannot enter one." : "")+
       (ex.ceiling? "\nHE IS ON HIS HEAVIEST DUMBBELL ("+((ex.kit&&ex.kit.dbMax)||set.w)+"kg) \u2014 there is no heavier one. If that felt easy the progression is MORE REPS, so name a rep target. Past about 20 reps switch to tempo, a pause, or a harder single-limb version. Never tell him to add weight he does not own." : "")+
-      " History start: "+(ex.rec?ex.rec.text:'n/a')+". Cue: "+ex.cue+".";
+      " History start: "+(ex.rec?ex.rec.text:'n/a')+". Cue: "+ex.cue+"."+
+      /* v201 — it was asked for "the rest time" and told nothing about rest,
+         so it invented one. It knows what the sheet says now, and it knows
+         the number it gives is the number the timer runs. */
+      "\nREST: the sheet has "+fmtRest(ex.restSec||90)+" for this one"+
+      (ex.absFinisher? " (it is an abs finisher, which is deliberately short — 30s keeps it a finisher rather than two more exercises)" : "")+
+      ". Whatever rest you name IS what the timer runs and what it keeps for the rest of this exercise, so say the number you actually want him to take. If "+fmtRest(ex.restSec||90)+" is right, say that number — do not round it to something tidier.";
     const out=await callAI([{role:"system",content:sys},{role:"user",content:usr}],120);
     if(out) return fmt(out);
   }
@@ -8747,7 +8836,9 @@ async function coachSetReply(ex,set){
   else if(set.r>=13){ call="Stay at "+set.w+"kg — another clean 12+ and we earn a bump soon."; }
   else if(set.r<6){ call="Drop to "+(set.w-2.5>0?set.w-2.5:set.w)+"kg next set — quality, not a grind."; }
   else { call="Stay at "+set.w+"kg. "+cue+"."; }
-  return verdict+"<br>"+call+"<br><b>Rest 90s.</b> 💪";
+  /* v201 — was a hard-coded 90s that disagreed with the sheet for every
+     movement that is not a 90-second exercise. */
+  return verdict+"<br>"+call+"<br><b>Rest "+fmtRest(ex.restSec||90)+".</b> 💪";
 }
 
 let planPick="Yes";
@@ -13814,7 +13905,7 @@ function scheduleInApp(){
    v18 ADDITIONS — draggable rest timer · weekly training memory · AI planner
    · Firestore sync
    ========================================================================== */
-const APP_VERSION="v200 · 21/09/2026";
+const APP_VERSION="v201 · 22/09/2026";
 
 /* ===== 1. REST TIMER — drag it anywhere so it never blocks the chat box ===== */
 let _rtDrag=null;

@@ -1,3 +1,76 @@
+AMIR PT — v201 · 22/09/2026
+===========================
+
+"The coach says how much rest between but then the app does what it wants.
+What the coach says should push through since that is the AI making the
+workout."
+
+Three separate faults, and all three had to go.
+
+1. THE TIMER STARTS BEFORE THE COACH HAS SPOKEN
+-----------------------------------------------
+afterLog() fires the countdown the instant a set is logged. coachSetReply() is
+an await that lands a second or two later. So the number on the timer was
+always decided before the sentence he reads was written — they were never even
+in the same moment, let alone the same conversation.
+
+2. THE COACH WAS NEVER TOLD WHAT THE SHEET SAYS
+------------------------------------------------
+Its prompt asks it, in as many words, for "the rest time". It is handed the
+load, the history, the cue, the next exercise and that exercise's own load
+call. Not one word about rest. It was inventing a number in a vacuum, which is
+how "Rest 60 seconds" landed on a movement the program rests 30. Neither
+number was wrong on purpose. They had never met.
+
+It is told now — what the sheet has, why an abs finisher is deliberately
+short, and that whatever number it names is the number the timer will run. So
+when it overrides the sheet it is a decision rather than a guess.
+
+3. NOTHING APPLIED IT
+---------------------
+The reply already goes through the directive parser, which knows set_rest
+perfectly well. But the coach writes "Rest 60 seconds" in prose, not an
+envelope, so the parser saw nothing and the sentence was decoration.
+
+coachRestSeconds() reads the number out of its own words — "Rest 90s", "rest
+for 2 minutes", "Rest 1m30", "Rest a minute", "1:30" — and applyCoachRest()
+retargets the running countdown to it, measured from WHEN THE SET WAS LOGGED
+rather than from when the reply arrived, so the seconds he was told are the
+seconds he gets. It sticks to the exercise for the rest of the session too,
+the same way the ±15 buttons stick.
+
+WHAT IT DELIBERATELY WILL NOT DO
+--------------------------------
+  · "Take 2 minutes rest before the next one" is about the gap to the NEXT
+    exercise, so the word has to come first. It does not move the between-set
+    timer.
+  · It only touches a countdown that is still the one this set started, and
+    only a between-SETS rest. The longer move to the next exercise is left
+    alone.
+  · Under 5 seconds or over 10 minutes is not a rest instruction, it is a
+    number in a sentence.
+  · If the coach names what the sheet already says, nothing changes and
+    nothing is announced.
+
+AND THE OFFLINE REPLY
+---------------------
+The fallback used when there is no AI key ended on a hard-coded "Rest 90s" for
+every movement, which disagreed with the sheet for everything that is not a
+90-second exercise — including, now, every abs finisher. It quotes the sheet.
+
+CHECKED
+-------
+Twenty-two phrasings through the parser, including the exact reply from his
+screenshot, and every one correct: the six that should produce nothing produce
+nothing. Four apply cases driven live — the coach lengthening 30s to 60s
+mid-countdown (0:30 becomes 1:00 and keeps running); shortening 120s to 30s
+when 45 seconds have already passed (fires straight to "Next up — GO" rather
+than pretending time is left); a between-exercise rest correctly untouched at
+2:30 while the exercise's own rest still updates for next time; and no change
+at all when the two already agree. The prompt verified to carry the sheet's
+rest for both an ordinary lift and an abs finisher. verify16, journey,
+audit173, abs200, timer197 and the time budget all clean, no page errors.
+
 AMIR PT — v200 · 21/09/2026
 ===========================
 
