@@ -2,7 +2,7 @@
    Network-first for the app itself, so a redeploy is ALWAYS picked up
    (the version stamp in Settings stays a reliable check).
    Cache-first for third-party assets, so the app opens with no signal. */
-const CACHE = "amirpt-v203";
+const CACHE = "amirpt-v204";
 const SHELL = ["./", "./index.html", "./manifest.json"];
 /* v123 — his own demo photographs. Pre-cached one at a time rather than with
    addAll, because addAll is atomic: a single 404 would throw away the whole
@@ -24,7 +24,7 @@ const DEMOS = [
   "scapular-push-ups", "shadow-boxing", "shoulder-bridge", "side-kick-series",
   "side-plank-rotation", "single-leg-circles", "single-leg-stretch", "skater-jump",
   "spine-stretch-forward", "spine-twist", "sprawl", "squat-thrust", "step-up",
-  "supine-spinal-twist", "swan", "swimming", "teaser", "the-hundred", "towel-row",
+  "supine-spinal-twist", "swan", "swimming", "teaser", "towel-row",
   "wall-angel", "wall-sit", "wall-sit-march", "wall-slides"
 ];
 /* v146 — the second batch is one WebP per movement rather than a pair of
@@ -64,6 +64,7 @@ const DEMOS_WEBP = [
   "single-leg-calf-raise", "single-leg-glute-bridge", "single-leg-kick", "split-squat",
   "standing-hamstring-stretch", "superman-hold", "triceps-pushdown", "tuck-jump",
   "v-up", "walking-lunge", "wide-push-up", "world-s-greatest-stretch",
+  "the-hundred",
   "wrist-circles-and-gentle-flexor-stretch", "wrist-flexor-and-extensor-stretch"
 ];
 const DEMO_FILES = DEMOS

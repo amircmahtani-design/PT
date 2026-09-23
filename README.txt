@@ -1,3 +1,35 @@
+AMIR PT — v204 · 23/09/2026
+===========================
+
+"Stop. They are the same. Please just use the last image twice where the legs
+are straight."
+
+THE HUNDRED WAS FLICKERING BETWEEN TWO PHOTOGRAPHS OF THE SAME POSITION
+-----------------------------------------------------------------------
+The Hundred was filed as a PAIR — demos/the-hundred-1.jpg and -2.jpg — and a
+pair is a start frame and a finish frame that the tile cross-fades between
+every 800ms. That is right for a movement that travels: a Roll-Up lying down
+and a Roll-Up sitting up tell you what the movement is.
+
+The Hundred does not travel. The position is held and only the arms pump, so
+both frames are the same picture to the eye. All the toggle did was flicker.
+
+So The Hundred is a SINGLE image now, the legs-straight frame, and the card
+holds still. The app already had this exact path: a slug in LOCAL_WEBP is one
+file and no phase toggle, which is how the v146 batch works — one photograph
+containing everything you need to see. The Hundred moved from LOCAL_DEMOS to
+LOCAL_WEBP, the pair files are gone, and demos/the-hundred.webp is the frame
+where the legs are straight and the feet are still in shot.
+
+sw.js moved with it — out of DEMOS, into DEMOS_WEBP — so the offline pre-cache
+fetches the one file that now exists instead of 404ing on two that do not.
+
+Verified: the row renders the photo with no data-f0/data-f1 attributes, so
+nothing flips it; 479×600 loaded into the 116×146 portrait tile; no failed
+demo requests anywhere on the Pilates card. The regression sweep is clean —
+16 sessions match the program, no repeated movement inside a session, no
+session over budget, every screen clean at 390 and 360.
+
 AMIR PT — v203 · 23/09/2026
 ===========================
 

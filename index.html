@@ -3080,6 +3080,10 @@ const LOCAL_WEBP=new Set([
   "single-leg-calf-raise", "single-leg-glute-bridge", "single-leg-kick", "split-squat",
   "standing-hamstring-stretch", "superman-hold", "triceps-pushdown", "tuck-jump",
   "v-up", "walking-lunge", "wide-push-up", "world-s-greatest-stretch",
+  /* v204 \u2014 The Hundred moved here from the pair list. Its two frames were the
+     same picture to the eye, so the card flickered between identical photos.
+     One file, legs straight, no toggle. */
+  "the-hundred",
   "wrist-circles-and-gentle-flexor-stretch", "wrist-flexor-and-extensor-stretch"
 ]);
 /* v134 — child-s-pose is his own photograph of the movement the free pack
@@ -3101,7 +3105,7 @@ const LOCAL_DEMOS=new Set([
   "scapular-push-ups", "shadow-boxing", "shoulder-bridge", "side-kick-series",
   "side-plank-rotation", "single-leg-circles", "single-leg-stretch", "skater-jump",
   "spine-stretch-forward", "spine-twist", "sprawl", "squat-thrust", "step-up",
-  "supine-spinal-twist", "swan", "swimming", "teaser", "the-hundred", "towel-row",
+  "supine-spinal-twist", "swan", "swimming", "teaser", "towel-row",
   "wall-angel", "wall-sit", "wall-sit-march", "wall-slides"
 ]);
 /* The same slug the files were named with: lowercase, & becomes "and", and
@@ -14004,7 +14008,7 @@ function scheduleInApp(){
    v18 ADDITIONS — draggable rest timer · weekly training memory · AI planner
    · Firestore sync
    ========================================================================== */
-const APP_VERSION="v203 · 23/09/2026";
+const APP_VERSION="v204 · 23/09/2026";
 
 /* ===== 1. REST TIMER — drag it anywhere so it never blocks the chat box ===== */
 let _rtDrag=null;
