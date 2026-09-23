@@ -2082,6 +2082,19 @@ function mergeDefaults(parsed){ let d={...structuredClone(DEFAULTS),...parsed};
       }catch(e){}
     }
   }
+  /* v206 — the reformer and the chair are in the Dubai kit now. The gear keys
+     live in LOCS and need no migration; this is only for the case where he has
+     typed his OWN equipment list for Dubai, which overrides the built-in one.
+     Additive, once, and only if neither is mentioned already. */
+  if(!d.v206kit){
+    d.v206kit=1;
+    try{
+      const e=(d.profile&&d.profile.equip)||null;
+      const cur=e? String(e.dubai||"") : "";
+      if(cur.trim() && !/reformer|wunda|pilates chair/i.test(cur))
+        e.dubai=cur.replace(/\s*$/,"")+"; Pilates reformer; Pilates (Wunda) chair";
+    }catch(err){}
+  }
   if(!d.alt || typeof d.alt!=="object") d.alt={};
   if(!Array.isArray(d.measures)) d.measures=[];
   if(Array.isArray(d.photos)) d.photos.forEach((p,i)=>{
@@ -2470,8 +2483,11 @@ const EXDB = {
    they cannot, so the loading has to come from the barbell, the Smith and the
    cables, with dumbbells doing accessory and isolation work. */
 const LOCS={
-  dubai :{key:"dubai", label:"Dubai",  emoji:"\uD83C\uDFE0", tag:"Dubai \u00b7 Home Gym", gear:["bw","db","bb","mach","band","bar","kb","other"], rower:true,  short:false,
-          equipment:"Home garage gym: all-in-one rack with Smith machine, dual adjustable cable stacks, multi-grip pull-up bar and landmine post; Olympic barbell + plates; fixed hex dumbbells 2.5\u201310kg ONLY; adjustable bench; Concept2 RowERG; kettlebell; TRX; resistance bands; stability ball; foam roller and mats",
+  /* v206 — "in Dubai I have a reformer and a Pilates chair as well". Two more
+     gear keys, which is what gates the apparatus repertoire to this location:
+     Madrid and Greece have neither, so a Wednesday there is mat, as it was. */
+  dubai :{key:"dubai", label:"Dubai",  emoji:"\uD83C\uDFE0", tag:"Dubai \u00b7 Home Gym", gear:["bw","db","bb","mach","band","bar","kb","ref","chair","other"], rower:true,  short:false,
+          equipment:"Home garage gym: all-in-one rack with Smith machine, dual adjustable cable stacks, multi-grip pull-up bar and landmine post; Olympic barbell + plates; fixed hex dumbbells 2.5\u201310kg ONLY; adjustable bench; Concept2 RowERG; kettlebell; TRX; resistance bands; stability ball; Pilates reformer; Pilates (Wunda) chair; foam roller and mats",
           blurb:"Full setup at home \u2014 proper session."},
   madrid:{key:"madrid",label:"Madrid", emoji:"\uD83C\uDDEA\uD83C\uDDF8", tag:"Madrid · Dumbbells Only", gear:["bw","db","band"], rower:false, short:false, noBench:true,
           equipment:"Dumbbells only, plus bodyweight. No barbell, no machines, no rower.",
@@ -2754,6 +2770,119 @@ const PILATES_LIB={
  "Leg Pull Front":{m:["core","shoulders"],eq:"bw",d:"×8",cue:"Plank position, one leg lifts without the hips shifting.",wristAlt:"Forearm plank version instead"},
  "Mermaid Stretch":{m:["core","back"],eq:"bw",d:"45s each side",cue:"Side bend over, opposite arm long overhead. Open the ribs, breathe into them.",wristAlt:"No wrist load — good"}
 };
+/* ===== v206 · THE REFORMER AND THE CHAIR ================================
+   "In Dubai I have a reformer, a Pilates chair as well. So I can do more
+   Pilates exercises."
+
+   A great deal more: the mat repertoire is twenty movements and the apparatus
+   is where classical Pilates actually lives. These are the real names and the
+   real order, gated the same way the mat is — by level, earned by sessions
+   done rather than by weeks on a calendar.
+
+   TWO THINGS TO KNOW ABOUT THIS LIST.
+
+   The first is the WRIST. A good half of the apparatus repertoire puts body
+   weight through an extended wrist: Elephant, Long Stretch, Knee Stretches,
+   Push Down, Swan on the chair. His TFCC side does not get to be an
+   afterthought, so those carry wrist:true — they are never the movement a
+   session opens on, they drop out entirely on a day he reports wrist pain,
+   and every one of them says in its own cue where the weight should go.
+
+   The second is that these movements have NO PHOTOGRAPH yet, and no remote
+   pack has an honest one. "Pull Up" in an exercise database is a bar pull-up.
+   "Elephant" is not a movement it knows at all. So demoFor() refuses to guess
+   for anything in this list: the card is the Watch-demo link until his own
+   photograph lands in demos/. A wrong picture is worse than none.          */
+const PILATES_APPARATUS_LIB={
+ /* ---- REFORMER · level 1 --------------------------------------------- */
+ "Footwork on the Reformer":{app:"ref",lvl:1,m:["legs"],eq:"ref",d:"×10 each position",
+   cue:"Toes, then arches, then heels. Push from the middle of the foot, knees tracking over the toes, pelvis level the whole way. Slow out, slower back."},
+ "The Hundred on the Reformer":{app:"ref",lvl:1,m:["core"],eq:"ref",d:"10 breaths · 100 pumps",timed:true,
+   cue:"Straps in the hands, head and chest lifted, legs long or at tabletop. Pump from the shoulders — the carriage should not move at all."},
+ "Coordination":{app:"ref",lvl:1,m:["core"],eq:"ref",d:"×6",
+   cue:"Arms press down, legs open, legs close, arms bend. Four beats on one breath. Nothing moves that you have not asked to move."},
+ "Frog and Leg Circles":{app:"ref",lvl:1,m:["legs","core"],eq:"ref",d:"×8 then ×5 each way",
+   cue:"Feet in the straps, heels together. Bend in, press out on one long line, then circle. The carriage travels; the pelvis does not."},
+ "Arms in Straps (Supine Series)":{app:"ref",lvl:1,m:["shoulders","back"],eq:"ref",d:"×8 each",
+   cue:"Long arms press past the hips and return. Shoulders stay down, ribs stay closed. Neutral wrists — the strap sits in the palm, not bent back over it."},
+ "Running":{app:"ref",lvl:1,m:["legs"],eq:"ref",d:"×10 each side",
+   cue:"Balls of the feet on the bar, press one heel down and change. Small, quick, even — the carriage barely moves."},
+ "Pelvic Lift":{app:"ref",lvl:1,m:["legs","core"],eq:"ref",d:"×8",
+   cue:"Feet on the bar, roll the hips up one bone at a time, hold, roll down. The carriage stays where it is."},
+ "Mermaid on the Reformer":{app:"ref",lvl:1,m:["core","back"],eq:"ref",d:"45s each side",
+   cue:"Side sitting, one hand on the bar, reach up and over. Open the ribs on the stretched side and breathe into them."},
+ "Elephant":{app:"ref",lvl:1,m:["core","legs"],eq:"ref",d:"×8",wrist:true,
+   cue:"Standing on the carriage, hands on the bar, flat back, heels down. Push the carriage back from the belly. Weight through the heel of the hand — not the wrist joint."},
+ /* ---- REFORMER · level 2 --------------------------------------------- */
+ "Short Spine Massage":{app:"ref",lvl:2,m:["core","back"],eq:"ref",d:"×5",
+   cue:"Feet in the straps, roll the hips over until the knees frame the ears, then lay the spine down one bone at a time. Never onto the neck."},
+ "Stomach Massage":{app:"ref",lvl:2,m:["core","legs"],eq:"ref",d:"×8 round, ×8 flat",wrist:true,
+   cue:"Sat on the carriage, hands behind on the edge. Round first, then tall. Fingers point away and the weight stays in the heels of the hands."},
+ "Long Stretch":{app:"ref",lvl:2,m:["core","shoulders"],eq:"ref",d:"×6",wrist:true,
+   cue:"Plank with the hands on the bar and the feet on the headrest. Move as one piece — nothing sags, nothing pikes. Wrists stacked under the shoulders."},
+ "Knee Stretches":{app:"ref",lvl:2,m:["core"],eq:"ref",d:"×8 round, ×8 flat",wrist:true,
+   cue:"Knees on the carriage, hands on the bar. Pull the carriage in from the abdominals, not the arms. Push the bar away to keep the weight off the wrists."},
+ "Short Box Series":{app:"ref",lvl:2,m:["core"],eq:"ref",d:"×6 each",
+   cue:"Strap over the feet: round back, flat back, side bend, twist — in that order. Lift out of the waist before you move in any direction."},
+ "Pulling Straps":{app:"ref",lvl:2,m:["back"],eq:"ref",d:"×6",
+   cue:"Face down on the long box, straps in the hands. Pull the arms to the sides of the body and lift the chest with the back."},
+ "Swan on the Long Box":{app:"ref",lvl:2,m:["back"],eq:"ref",d:"×6",
+   cue:"Face down, lift the chest with the back rather than the hands. Long neck, no cranking, no crunching the low back."},
+ /* ---- REFORMER · level 3 --------------------------------------------- */
+ "Up Stretch and Down Stretch":{app:"ref",lvl:3,m:["core","shoulders"],eq:"ref",d:"×6 each",wrist:true,
+   cue:"The two halves of the same shape: pike up and press out, then chest through and hips forward. Shoulders over the wrists, never behind them."},
+ "Rowing Series":{app:"ref",lvl:3,m:["back","shoulders"],eq:"ref",d:"×5 each",
+   cue:"Sat facing front and then back, straps in the hands. The arms finish the movement; the spine starts it."},
+ "Long Spine":{app:"ref",lvl:3,m:["core"],eq:"ref",d:"×5",
+   cue:"Feet in the straps, lift over, open the legs, roll the spine down bone by bone. Control the whole way down or do not go up."},
+ "Side Splits":{app:"ref",lvl:3,m:["legs"],eq:"ref",d:"×6 each side",
+   cue:"One foot on the platform, one on the carriage. Open from the inner thigh and close from it too — do not fall in."},
+ "Tendon Stretch on the Reformer":{app:"ref",lvl:3,m:["core","legs"],eq:"ref",d:"×6",wrist:true,
+   cue:"Feet on the bar, hands on the shoulder rests, body long. Drop the heels under the bar and lift back. Advanced — build to it."},
+ /* ---- CHAIR · level 1 ------------------------------------------------- */
+ "Footwork on the Chair":{app:"chair",lvl:1,m:["legs"],eq:"chair",d:"×10 each position",
+   cue:"Sat tall on the chair, both feet on the pedal. Toes, arches, heels. Press down slowly and let it come up slower still."},
+ "Pumping One Leg":{app:"chair",lvl:1,m:["legs"],eq:"chair",d:"×10 each side",
+   cue:"One foot on the pedal, the other planted. The hips stay square and level — the leg does the work, not the side of the body."},
+ "Spine Stretch Forward on the Chair":{app:"chair",lvl:1,m:["core","back"],eq:"chair",d:"×6",
+   cue:"Sat in front of the chair, hands on the pedal. Curl forward over an imaginary ball and press the pedal down with the exhale."},
+ "Seated Mermaid on the Chair":{app:"chair",lvl:1,m:["core","back"],eq:"chair",d:"45s each side",
+   cue:"Sat on the chair, one hand on the pedal, reach the other up and over. Lift tall out of the waist first, then bend."},
+ "Frog Front":{app:"chair",lvl:1,m:["legs","core"],eq:"chair",d:"×8",
+   cue:"Sat on the chair, feet on the pedal, heels together. Press out long and bend back in with control."},
+ "Side Stretch on the Chair":{app:"chair",lvl:1,m:["core"],eq:"chair",d:"×5 each side",
+   cue:"Standing side-on, one hand on the pedal. Press down through the side of the body, not the shoulder."},
+ /* ---- CHAIR · level 2 ------------------------------------------------- */
+ "Push Down":{app:"chair",lvl:2,m:["core","shoulders"],eq:"chair",d:"×6",wrist:true,
+   cue:"Standing behind the chair, hands on the pedal, round down through the spine and press. Weight in the heels of the hands — stop the moment the wrist has anything to say."},
+ "Swan on the Chair":{app:"chair",lvl:2,m:["back"],eq:"chair",d:"×6",wrist:true,
+   cue:"Hands on the pedal, chest lifting away from it. The back lifts you, the arms only hold the shape. Keep the wrists as straight as the position allows."},
+ "Washerwoman":{app:"chair",lvl:2,m:["arms","shoulders"],eq:"chair",d:"×8",wrist:true,
+   cue:"Kneeling, elbows in, press the pedal down from the triceps. Elbows stay pinned; the shoulders do not creep up. Neutral wrists."},
+ "Tendon Stretch on the Chair":{app:"chair",lvl:2,m:["legs","core"],eq:"chair",d:"×6",wrist:true,
+   cue:"Hands on the chair, feet on the pedal, body long. Drop the heels and lift. Shoulders directly over the hands."},
+ /* ---- CHAIR · level 3 ------------------------------------------------- */
+ "Pull Up on the Chair":{app:"chair",lvl:3,m:["core","shoulders"],eq:"chair",d:"×5",wrist:true,
+   cue:"Feet on the pedal, hands on the seat, pike the hips to the ceiling and lift the pedal with the abdominals. The hardest thing on the chair."},
+ "Going Up Front":{app:"chair",lvl:3,m:["legs"],eq:"chair",d:"×5 each side",
+   cue:"One foot on the seat, press up to standing on the chair and lower under control. Do not push off the floor — the standing leg does all of it."},
+ "Mountain Climb":{app:"chair",lvl:3,m:["legs","core"],eq:"chair",d:"×5 each side",wrist:true,
+   cue:"Standing on the pedal, the other foot on the seat, straighten up tall. Balance and control before height."},
+ "Teaser on the Chair":{app:"chair",lvl:3,m:["core"],eq:"chair",d:"×5",
+   cue:"Sat on the chair, feet on the pedal, roll back and up to the V. Everything the mat Teaser asks for, with less to hide behind."}
+};
+/* Is this one of the apparatus movements? Used by the demo gate and by the
+   flow builder, so both answer from the same list. */
+function apparatusMove(name){
+  const n=String(name||"").trim();
+  if(!n) return null;
+  if(PILATES_APPARATUS_LIB[n]) return PILATES_APPARATUS_LIB[n];
+  const hit=Object.keys(PILATES_APPARATUS_LIB).find(k=>nameEq(k,n));
+  return hit? PILATES_APPARATUS_LIB[hit] : null;
+}
+function apparatusHere(app,key){
+  try{ return (LOCS[key||locKey()].gear||[]).indexOf(app)>=0; }catch(e){ return false; }
+}
 function ensureLibEntry(name){
   if(!name) return null;
   if(EX(name)) return name;
@@ -2844,6 +2973,32 @@ function lastDoneDays(name){
   if(!latest) return 999;
   const d=daysSince(latest);
   return d==null?999:d;
+}
+/* ===== v206 · THE ROTATION THAT WAS NOT ROTATING ======================
+   "Pilates exercises can change week by week."
+
+   They were meant to already: buildPilatesFlow sorts by lastDoneDays and takes
+   whatever he has gone longest without. But a flow movement is never written
+   to DB.strength \u2014 it has no sets and no load \u2014 so lastDoneDays answered 999
+   for every single mat movement, every one tied, and the tie-break is the
+   classical order. Which is why the mat half opened the same way every week.
+
+   A flow movement leaves two kinds of trace: a held rep in DB.mobility when a
+   timer runs, and the finished session in DB.completed. Both are asked here,
+   and the most recent wins. Only the flow builders use this \u2014 lifting
+   rotation is unchanged. */
+function lastFlowDays(name){
+  let best=lastDoneDays(name);
+  const key=String(name||"").trim().toLowerCase();
+  if(!key) return best;
+  let latest=null;
+  const see=d=>{ if(d && d!=="prev" && (!latest||d>latest)) latest=d; };
+  try{ (DB.mobility||[]).forEach(m=>{ if(m&&m.t&&String(m.t).trim().toLowerCase()===key) see(m.d); }); }catch(e){}
+  try{ Object.entries(DB.completed||{}).forEach(([d,rec])=>{
+        if(rec && Array.isArray(rec.names) && rec.names.some(x=>String(x||"").trim().toLowerCase()===key)) see(d);
+      }); }catch(e){}
+  if(latest){ const d=daysSince(latest); if(d!=null && d<best) best=d; }
+  return best;
 }
 /* Rotation: longest-unused first, so the menu cycles instead of repeating.
    Ties break towards the kit you should be reaching for in this location. */
@@ -2972,12 +3127,14 @@ function latestCheckin(){ return DB.checkins[DB.checkins.length-1] || null; }
 /* ===== Accessors: built-in data + anything the AI has added at runtime ===== */
 function EX(name){
   if(!name) return null;
-  return (DB.lib&&DB.lib[name]) || EXDB[name] || BAND_LIB[name] || PILATES_LIB[name] || EXTRA_LIB[name] ||
+  return (DB.lib&&DB.lib[name]) || EXDB[name] || BAND_LIB[name] || PILATES_LIB[name] ||
+         PILATES_APPARATUS_LIB[name] || EXTRA_LIB[name] ||
          (wxEnabled() && typeof WXIDX!=="undefined" && WXIDX[name]) ||
          (typeof fedEx==="function" && fedEx(name)) || null;
 }
 function allExNames(){
-  return [...new Set([...Object.keys(EXDB), ...Object.keys(BAND_LIB), ...Object.keys(PILATES_LIB), ...Object.keys(EXTRA_LIB),
+  return [...new Set([...Object.keys(EXDB), ...Object.keys(BAND_LIB), ...Object.keys(PILATES_LIB),
+    ...Object.keys(PILATES_APPARATUS_LIB), ...Object.keys(EXTRA_LIB),
     ...Object.keys(DB.lib||{}),
     ...((wxEnabled()&&typeof WXIDX!=="undefined")?Object.keys(WXIDX):[]),
     ...(typeof fedNames==="function"? fedNames() : [])])];
@@ -3347,6 +3504,16 @@ function demoFor(name){
   /* 1b ── a photograph of this exact movement, shot for this app. */
   const own=localDemo(name);
   if(own) return own;
+
+  /* v206 — reformer and chair movements, and nothing below this line can
+     honestly show one. "Pull Up" in an exercise pack is a bar pull-up;
+     "Elephant" and "Short Box Series" are not movements it has ever heard of;
+     the fuzzy matcher will still answer, because it always answers. So it is
+     not asked. The card is the Watch-demo link until his own photograph lands
+     in demos/ — at which point localDemo above catches it first and this line
+     never runs. A wrong picture is worse than none. */
+  if(typeof apparatusMove==="function" && apparatusMove(name))
+    return {kind:"link", label:"photo to come"};
 
   /* 2 ── a genuine animated clip. A saved free-pack FRAME is not one: it's
           half a pair, and showing it alone is what made demos look frozen. */
@@ -4660,10 +4827,14 @@ function buildCustomDay(name,ctx){
   if(kind==="mobpil"){
     const flow=(dt.main&&dt.main.length)? dt.main.map(enrichMove) : buildMobPilFlow();
     const pl=(function(){ try{ return pilatesPlan(); }catch(e){ return null; } })();
-    return {title:name, tag:"Recovery \u00b7 Mobility & Pilates", phase:DB.profile.phase, kind:"mobility", loc:locKey(),
-      flowTitle:"Mobility flow + Pilates mat \u00b7 one round"+(pl? " \u00b7 mat level "+pl.level+" of 3" : ""),
-      pilates: pl,
-      note: dt.note || ("Both halves, every Wednesday. Neck to ankles first \u2014 every area gets its slot \u2014 then the classical mat order while the range is there. One round: do the movement, then move on. No sets, no weight."+
+    const focus=(function(){ try{ return mobPilFocus(); }catch(e){ return "mat"; } })();
+    const fl=FOCUS_LABEL[focus]||"Pilates mat";
+    return {title:name, tag:"Recovery \u00b7 Mobility & "+(focus==="mat"?"Pilates":fl), phase:DB.profile.phase, kind:"mobility", loc:locKey(),
+      flowTitle:"Mobility flow + "+fl+" \u00b7 one round"+(pl? " \u00b7 level "+pl.level+" of 3" : ""),
+      pilates: pl, focus:focus,
+      note: dt.note || ("Both halves, every Wednesday. Neck to ankles first \u2014 every area gets its slot \u2014 then "+
+        (focus==="mat"? "the classical mat order" : "the "+fl.toLowerCase())+" while the range is there. One round: do the movement, then move on. No sets, no weight."+
+        (focus!=="mat"? " The Pilates half changes with the week: mat, reformer, chair, mat." : "")+
         (pl? " "+pl.note : "")),
       reps:"\u2014", sets:0, warmup:[], main:[], cooldown:flow,
       recovery:"Breathe, hydrate, and notice how much taller you stand. This is the session that keeps the other four moving well."};
@@ -4791,7 +4962,7 @@ function buildPilatesFlow(total){
   const rest=pool.filter(n=>n!==opener);
   /* Rotate by what he's done least, then put the chosen ones BACK into
      classical order so the sequence still flows properly. */
-  const scored=rest.map(n=>({n,days:lastDoneDays(n)}))
+  const scored=rest.map(n=>({n,days:lastFlowDays(n)}))
                    .sort((a,b)=>(b.days-a.days)||(PILATES_ORDER.indexOf(a.n)-PILATES_ORDER.indexOf(b.n)));
   const off=_reroll%Math.max(1,scored.length);
   const rolled=off? scored.slice(off).concat(scored.slice(0,off)) : scored;
@@ -5886,16 +6057,105 @@ function buildMobilityFlow(opts){
    Roughly: twelve mobility movements at a minute or so, nine mat movements at
    two, and the close \u2014 about fifty minutes, inside his hour. */
 const MOBPIL_MAT=9;
+/* ===== v206 · WHICH PILATES, THIS WEEK =================================
+   "Pilates exercises can change week by week."
+
+   They already rotated by what he had done least, which varies the movements
+   but never the SESSION: every Wednesday was a mat class. With a reformer and
+   a chair in the garage that is leaving most of the method on the floor, so
+   the block week picks the apparatus and the rotation picks the movements
+   within it.
+
+     week 1   mat
+     week 2   reformer
+     week 3   chair
+     week 4   mat        — the deload week, and mat is the gentlest of the three
+
+   Two of each block on the mat, one on each apparatus. Away from Dubai there
+   is no apparatus, so a Wednesday in Madrid or Greece is mat, exactly as it
+   was. One line to reweight if he wants more reformer. */
+const PILATES_FOCUS_BY_WEEK={1:"mat", 2:"ref", 3:"chair", 4:"mat"};
+function pilatesFocusOn(iso){
+  let wk=1; try{ wk=blockWeekOn(iso||today()); }catch(e){}
+  const want=PILATES_FOCUS_BY_WEEK[((wk-1)%4)+1] || "mat";
+  if(want==="mat") return "mat";
+  return apparatusHere(want)? want : "mat";
+}
+const FOCUS_LABEL={mat:"Pilates mat", ref:"Reformer", chair:"Pilates chair"};
+/* The apparatus half, built the way the mat half is: only what the level has
+   unlocked, rotated by what he has gone longest without, then put back into
+   the order the method teaches them in. */
+function apparatusFlow(app,total){
+  total=total||MOBPIL_MAT;
+  if(!apparatusHere(app)) return [];
+  let lvl=1; try{ lvl=pilatesLevel(); }catch(e){}
+  const ci=(typeof latestCheckin==="function")? latestCheckin() : null;
+  const wristSore=!!(ci && ci.date===today() && /wrist|tfcc/i.test(ci.pain||""));
+  const order=Object.keys(PILATES_APPARATUS_LIB);
+  const pool=order.filter(k=>{
+    const e=PILATES_APPARATUS_LIB[k];
+    if(e.app!==app || e.lvl>lvl) return false;
+    if(e.wrist && wristSore) return false;     /* not on a day the wrist hurts */
+    return true;
+  });
+  if(!pool.length) return [];
+  /* Footwork opens an apparatus session the way The Hundred opens a mat one,
+     and the opener is never a movement that loads the wrist cold. */
+  const opener=pool.find(k=>/^footwork/i.test(k) && !PILATES_APPARATUS_LIB[k].wrist) || null;
+  const rest=pool.filter(k=>k!==opener);
+  const scored=rest.map(k=>({k,days:lastFlowDays(k)}))
+                   .sort((a,b)=>(b.days-a.days)||(order.indexOf(a.k)-order.indexOf(b.k)));
+  const off=_reroll%Math.max(1,scored.length);
+  const rolled=off? scored.slice(off).concat(scored.slice(0,off)) : scored;
+  const want=Math.max(0,total-(opener?1:0));
+  const chosen=rolled.slice(0,want).map(o=>o.k)
+                     .sort((a,b)=>order.indexOf(a)-order.indexOf(b));
+  return (opener? [opener] : []).concat(chosen).map(k=>{
+    const e=PILATES_APPARATUS_LIB[k];
+    return {t:k, d:e.d||"×8", cue:e.cue||""};
+  });
+}
+/* Whichever half this week calls for, at the length the sheet has room for.
+   An apparatus a beginner has only six movements unlocked on gives six, and
+   the mat tops the rest up rather than handing him a short session — which
+   is also how it is taught: apparatus first, mat to finish. */
+function pilatesHalf(total){
+  total=total||MOBPIL_MAT;
+  const focus=pilatesFocusOn(today());
+  if(focus==="mat") return {focus, list:buildPilatesFlow(total)};
+  const app=apparatusFlow(focus,total);
+  if(!app.length) return {focus:"mat", list:buildPilatesFlow(total)};
+  if(app.length>=total) return {focus, list:app};
+  const fill=buildPilatesFlow(total-app.length);
+  return {focus, list:app.concat(fill), mat:fill.length};
+}
 function buildMobPilFlow(){
-  /* Mat first, so the mobility half knows what to avoid \u2014 the classical
-     order is the fixed thing, the area slots are the flexible ones. */
-  const mat=buildPilatesFlow(MOBPIL_MAT);
-  const mob=buildMobilityFlow({noWalk:true, noClose:true, skip:mat.map(m=>m.t)});
+  /* The Pilates half first, so the mobility half knows what to avoid \u2014 its
+     order is the fixed thing, the area slots are the flexible ones. The twelve
+     areas are never the thing that gives ground: "mobility has to be for all
+     the body", and it still is, whichever apparatus the week has picked. */
+  const half=pilatesHalf(MOBPIL_MAT);
+  const pil=half.list;
+  const mob=buildMobilityFlow({noWalk:true, noClose:true, skip:pil.map(m=>m.t)});
   const close=applyCoolDefaults(FLOW_CLOSERS.map(pickItem));
-  if(mob.length)   mob[0].sect="Mobility \u00b7 head to toe";
-  if(mat.length)   mat[0].sect="Pilates mat \u00b7 classical order";
+  if(mob.length) mob[0].sect="Mobility \u00b7 head to toe";
+  if(pil.length) pil[0].sect=(half.focus==="mat")? "Pilates mat \u00b7 classical order"
+                           : (FOCUS_LABEL[half.focus]+" \u00b7 this week\u2019s apparatus");
+  /* An apparatus week that ran short is topped up from the mat, and the sheet
+     says where one stops and the other starts rather than letting them blur. */
+  if(half.mat && pil[pil.length-half.mat])
+    pil[pil.length-half.mat].sect="Pilates mat \u00b7 to finish";
   if(close.length) close[0].sect="Close";
-  return mob.concat(mat, close);
+  return mob.concat(pil, close);
+}
+/* The same question buildMobPilFlow answered, asked on its own so the title
+   and the note can say which apparatus today is without rebuilding the sheet
+   \u2014 and without reading a property off the saved array, which is JSON and
+   would have lost it. */
+function mobPilFocus(){
+  const f=pilatesFocusOn(today());
+  if(f==="mat") return "mat";
+  return apparatusFlow(f,MOBPIL_MAT).length? f : "mat";
 }
 /* If the coach (or an old saved workout) gives us a bare name, attach the dose and cue we know. */
 /* ===== v118 · A PICTURE OF THE MOVEMENT, OR NOTHING ======================
@@ -6211,8 +6471,16 @@ function mvHTML(item0,coolIdx){
     /* data-movewant says a demo is wanted here and the pack has not arrived.
        paintDemos() picks it up and fetches, rather than leaving him emoji. */
     const wants = libMove(name)&&libMove(name).demo? " data-movewant='1'" : "";
-    const attrs = mediaKey()? (" data-exmedia='"+nEsc+"' data-exq='"+attrEsc(name+" exercise how to")+"'") : "";
-    thumb="<div class='thumb emo'"+wants+attrs+">"+(item.icon||iconFor(name))+"</div>";
+    /* v206 — not for a reformer or chair movement: the GIF search always
+       answers, and what it answers with here is a bar pull-up. */
+    const guessOk = !((typeof apparatusMove==="function") && apparatusMove(name));
+    const attrs = (mediaKey()&&guessOk)? (" data-exmedia='"+nEsc+"' data-exq='"+attrEsc(name+" exercise how to")+"'") : "";
+    /* v206 — while these have no photograph, the tile should at least say
+       which piece of kit it is rather than showing the generic figure four
+       times in a row. */
+    let ph=item.icon||iconFor(name);
+    try{ const a=apparatusMove(name); if(a) ph=(a.app==="chair")? "\uD83E\uDE91" : "\uD83D\uDECF"; }catch(e){}
+    thumb="<div class='thumb emo'"+wants+attrs+">"+ph+"</div>";
   }
   /* v115 — the duration is a field now, so the card can show it plainly, say
      whether it is per side or total, and let him change it here. */
@@ -6258,7 +6526,17 @@ function mvHTML(item0,coolIdx){
   return mvCardHTML(item,name,thumb,dose,coolIdx,timerBtn+controls);
 }
 /* Reliable demos: a real inline clip when we have one, otherwise a one-tap "Watch demo" that always works. */
-function demoSearchURL(name){ return "https://www.google.com/search?tbm=isch&q="+encodeURIComponent(name+" exercise form"); }
+function demoSearchURL(name){
+  /* v206 — "Elephant" and "Pull Up" on their own find an animal and a pull-up
+     bar. While these have no photograph of his own, the link is the only thing
+     the card can offer, so it asks for the movement he actually means. */
+  let q=String(name||"")+" exercise form";
+  try{
+    const a=(typeof apparatusMove==="function")? apparatusMove(name) : null;
+    if(a) q=String(name||"")+(a.app==="chair"? " Pilates chair (Wunda) exercise" : " Pilates reformer exercise");
+  }catch(e){}
+  return "https://www.google.com/search?tbm=isch&q="+encodeURIComponent(q);
+}
 function jsAttr(s){ return String(s||"").replace(/\\/g,"\\\\").replace(/'/g,"\\'").replace(/"/g,"&quot;"); }
 function watchInner(name){ return "<b>▶ Watch demo</b><span>tap to see "+attrEsc(name)+"</span>"; }
 function watchTileHTML(name,dataAttrs){ return "<a class='imgwrap watch'"+(dataAttrs||"")+" href='"+demoSearchURL(name)+"' target='_blank' rel='noopener'><div class='watchlink'>"+watchInner(name)+"</div></a>"; }
@@ -10106,8 +10384,10 @@ coachingDoctrine()+
 "The emoji in these directives is only a fallback for when there is no photograph of that movement. Do not spend effort choosing them.\n\n"+
 "WEEKLY SCHEDULE & DAY TYPES:\n"+
 "HIS WEEK STARTS ON MONDAY \u2014 always list and think Mon-first, never Sunday-first.\n"+
-"THE WEEK HE HAS SETTLED ON: Monday UPPER BODY, Tuesday legs and core, Wednesday MOBILITY & PILATES (ONE session containing BOTH halves — the twelve-area mobility flow, then the classical mat order. His instruction, every week: it is not one or the other and it does not alternate), Thursday pull, Friday push, Saturday and Sunday rest. Monday was a cardio day until he asked whether upper would serve the physique better; it does, because it takes chest, back and shoulders from once a week to twice, and twice beats once for building shape. === THE MASTER PROGRAM — READ THIS BEFORE CHANGING ANY SESSION ===\n"+
-"He has written a 4-week block and it is now what the app builds. Monday Upper Body, Tuesday Legs & Core, Wednesday Mobility & Pilates (both halves, every week), Thursday Pull, Friday Push. Week 4 is the deload and is already written as one. The block repeats until he asks for a new one.\n"+
+"THE WEEK HE HAS SETTLED ON: Monday UPPER BODY, Tuesday legs and core, Wednesday MOBILITY & PILATES (ONE session containing BOTH halves — the twelve-area mobility flow, then Pilates. His instruction, every week: it is not one or the other and it does not alternate. The mobility half is ALL of the body, neck to ankles, every week, and is never the half that gets cut), Thursday pull, Friday push, Saturday and Sunday rest. Monday was a cardio day until he asked whether upper would serve the physique better; it does, because it takes chest, back and shoulders from once a week to twice, and twice beats once for building shape. === THE MASTER PROGRAM — READ THIS BEFORE CHANGING ANY SESSION ===\n"+
+"He has written a 4-week block and it is now what the app builds. Monday Upper Body, Tuesday Legs & Core, Wednesday Mobility & Pilates (both halves, every week), Thursday Pull, Friday Push.\n"+
+"PILATES APPARATUS \u2014 HE HAS A REFORMER AND A WUNDA CHAIR IN DUBAI. So the Pilates half changes with the block week: week 1 mat, week 2 REFORMER, week 3 CHAIR, week 4 mat. Away from Dubai it is mat every week, because the apparatus is not there. The app picks this; you do not need to, and you should not flatten it back to mat. The repertoire is the classical one \u2014 reformer: Footwork, The Hundred on the Reformer, Coordination, Frog and Leg Circles, Arms in Straps, Running, Pelvic Lift, Mermaid, Elephant, Short Spine Massage, Stomach Massage, Long Stretch, Knee Stretches, Short Box Series, Pulling Straps, Swan on the Long Box, Up/Down Stretch, Rowing Series, Long Spine, Side Splits, Tendon Stretch; chair: Footwork, Pumping One Leg, Spine Stretch Forward, Seated Mermaid, Frog Front, Side Stretch, Push Down, Swan on the Chair, Washerwoman, Tendon Stretch, Pull Up on the Chair, Going Up Front, Mountain Climb, Teaser on the Chair. Level-gated exactly like the mat, and the wrist-loaded ones (Elephant, Long Stretch, Knee Stretches, Stomach Massage, Push Down, Swan on the Chair, Washerwoman, Pull Up, Mountain Climb, both Tendon Stretches) drop out on any day he reports wrist pain.\n"+
+"THESE HAVE NO PHOTOGRAPHS YET. He is shooting them; until then their cards show the demo link, which is correct and not a bug. Do not offer to find pictures for them. Week 4 is the deload and is already written as one. The block repeats until he asks for a new one.\n"+
 "ABS FINISH EVERY SESSION — HIS INSTRUCTION, NOT A SUGGESTION: every lifting day ENDS on one abs movement, and each day owns a different region so the week covers all four. Monday LOWER abs (hip flexion), Tuesday UPPER abs (trunk flexion), Thursday OBLIQUES (rotation and side bend), Friday ANTI-EXTENSION (bracing). Never drop the last movement of a session to save time — cut a set off something else. Never put two abs movements in one session, and never give two days the same region in the same week. Wednesday is the Mobility & Pilates day and has no finisher; the mat half is already core work.\n"+
 "YOUR JOB IS TO COACH THIS PROGRAM, NOT TO REINVENT IT. He said it plainly: \"The app should STOP randomly generating completely different workouts every week. The AI Coach's job is to COACH the program, not constantly reinvent it.\" Variety is not a training stimulus. Progressive overload is, and he cannot overload a movement you keep swapping out.\n"+
 "WHAT YOU MAY CHANGE FREELY: the weight, the rep target, the rest, the order of the exercises, and a like-for-like substitution when the kit is genuinely unavailable (travelling, a machine occupied). Coach every set: what he lifted last time, what to aim for today, when to add load and when to hold.\n"+
@@ -10642,6 +10922,7 @@ function mobNameSet(){
   try{ MOB.forEach(i=>add(i.t)); }catch(e){}
   try{ PREP.forEach(i=>add(i.t)); }catch(e){}
   try{ Object.keys(PILATES_LIB||{}).forEach(add); }catch(e){}
+  try{ Object.keys(PILATES_APPARATUS_LIB||{}).forEach(add); }catch(e){}
   _mobNameSet=s; return s;
 }
 function isFlowMove(n){
@@ -14132,7 +14413,7 @@ function scheduleInApp(){
    v18 ADDITIONS — draggable rest timer · weekly training memory · AI planner
    · Firestore sync
    ========================================================================== */
-const APP_VERSION="v205 · 23/09/2026";
+const APP_VERSION="v206 · 23/09/2026";
 
 /* ===== 1. REST TIMER — drag it anywhere so it never blocks the chat box ===== */
 let _rtDrag=null;
@@ -15355,6 +15636,8 @@ function completeFlow(){
   DB.completed[today()]={
     at:new Date().toISOString(), title:w.title||"Mobility", loc:locKey(),
     flow:true, moves:list.length,
+    /* v206 — the names, so next week's rotation knows what last week was. */
+    names:list.map(m=>String((m&&m.t)||"")).filter(Boolean),
     exercises:list.length, planned:list.length,
     sets:0, volume:0, secs:0, skipped:[], avgEff:null, durMs:durMs||0
   };

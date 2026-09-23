@@ -1,3 +1,85 @@
+AMIR PT — v206 · 23/09/2026
+===========================
+
+"Remember mobility has to be for all the body and then Pilates exercises can
+change week by week. I forgot to mention in Dubai I have a reformer, a Pilates
+chair as well. So I can do more Pilates exercises."
+
+THREE THINGS, AND THE SECOND ONE WAS BROKEN
+--------------------------------------------
+MOBILITY STAYS WHOLE. All twelve areas, neck to ankles, every Wednesday,
+whichever apparatus the week picks. It is written into buildMobPilFlow that
+the Pilates half is the one that gives ground and the areas never are. Asserted
+so it cannot drift.
+
+THE ROTATION WAS NOT ROTATING. This is the real bug in this version, and it
+had been there since v126. buildPilatesFlow sorts the repertoire by
+lastDoneDays() and takes whatever he has gone longest without — except a flow
+movement is never written to DB.strength, because it has no sets and no load.
+So lastDoneDays answered 999 for every mat movement, all twenty tied, and the
+tie-break is the classical order. Which is exactly why the mat half opened the
+same way every single week.
+
+A flow movement leaves two traces: a held rep in DB.mobility when a timer runs,
+and the finished session in DB.completed. lastFlowDays() asks both and takes
+the most recent, and completeFlow() now records the NAMES that were on the
+sheet, not just how many. Measured: at level 2, eight of nine movements change
+from one week to the next. Before this, none did.
+
+THE REFORMER AND THE CHAIR
+---------------------------
+Two new gear keys, ref and chair, on Dubai only — which is what gates the
+apparatus to the one place it exists. Madrid and Greece get mat, as before.
+
+35 movements of the classical apparatus repertoire, level-gated exactly like
+the mat: 21 reformer, 14 chair. Level 1 is nine reformer movements and six
+chair, which is what he can do now; level 2 unlocks at 5 Pilates sessions and
+level 3 at 11, counted off sessions actually done.
+
+THE PILATES HALF NOW CHANGES WITH THE BLOCK WEEK
+
+    week 1   mat
+    week 2   REFORMER
+    week 3   CHAIR
+    week 4   mat          the deload week, and mat is the gentlest of the three
+
+Two mat weeks a block, one on each apparatus. One line to reweight.
+
+An apparatus he has only six movements unlocked on gives six, and the mat tops
+the rest up rather than handing him a short session — which is also how it is
+taught. The sheet says where one stops and the other starts.
+
+THE WRIST IS NOT AN AFTERTHOUGHT
+---------------------------------
+Half the apparatus repertoire puts body weight through an extended wrist:
+Elephant, Long Stretch, Knee Stretches, Stomach Massage, Push Down, Swan on
+the Chair, Washerwoman, Pull Up, Mountain Climb, both Tendon Stretches. Every
+one carries wrist:true, which means it is never the movement a session opens
+on, it drops out entirely on a day he reports wrist pain, and its own cue says
+where the weight should go. Verified: a wrist-sore reformer Wednesday drops
+Elephant and tops up from the mat.
+
+NO PHOTOGRAPH, AND NO GUESSING
+-------------------------------
+None of the 35 has a photograph yet, and no remote pack has an honest one.
+"Pull Up" in an exercise database is a bar pull-up. "Elephant" is not a
+movement it has heard of. The fuzzy matcher would still answer, because it
+always answers — so it is not asked. demoFor() returns the link for anything
+in this list, the GIF search is not given the name either, and the demo link
+asks for "Pilates reformer" or "Pilates (Wunda) chair" rather than the bare
+word. The moment one of his own photographs lands in demos/, localDemo catches
+it first and none of that code runs.
+
+EXERCISES.txt carries the shoot list: framing, filenames, and the order to
+shoot in — the two level 1 lists first, because that is every movement the app
+can put in front of him before his fifth Pilates session.
+
+Verified: all four block weeks build 23 rows with the right apparatus, the
+right captions and no repeats; Elephant and Pull Up on the Chair return the
+link, The Hundred still returns his photograph; the apparatus is unavailable in
+Greece and available in Dubai; the coach brief carries the apparatus repertoire
+and the weekly rotation. Sweep clean — verify16, shape, audit173, journey.
+
 AMIR PT — v205 · 23/09/2026
 ===========================
 

@@ -1,3 +1,72 @@
+=== v206 · THE SHOOT LIST FOR THE REFORMER AND THE CHAIR ===
+
+Nothing in this list has a photograph, and nothing in any remote pack shows
+these movements honestly — "Pull Up" in an exercise database is a bar pull-up,
+"Elephant" is not a movement it has heard of. So the app refuses to guess and
+these cards show the demo link instead. That is deliberate.
+
+HOW TO SHOOT THEM — the same recipe as the mat photographs you already have,
+which is why those work so well:
+
+  • PORTRAIT, roughly 4:5 (the mat ones are 480x600). Phone held upright.
+  • SIDE ON to the apparatus, camera at about the height of the carriage or
+    the chair seat. The whole of you in frame — head to feet, nothing cropped.
+  • ONE FRAME IS ENOUGH per movement if the position tells the story (as with
+    The Hundred). TWO if the movement travels: -1 the start, -2 the finish.
+  • Plain background, the apparatus clearly visible. Fitted clothing so the
+    spine and the leg line read.
+  • Filename = the movement name in lowercase with hyphens, e.g.
+    footwork-on-the-reformer.jpg. Send them however is easiest; I will name,
+    crop and wire them.
+
+Shoot in this order — the level 1 movements come up first and most often:
+
+REFORMER · level 1 (these appear on your very next reformer Wednesday)
+  footwork-on-the-reformer     sat/lying, feet on the bar. One frame, legs
+                               extended, is enough.
+  the-hundred-on-the-reformer  straps in hands, head and chest lifted.
+  coordination                 arms pressed down past the hips, legs open.
+  frog-and-leg-circles         feet in the straps, legs extended long. TWO
+                               frames: -1 bent (frog), -2 long.
+  arms-in-straps-supine-series supine, arms pressed down beside the hips.
+  running                      one heel pressed down, the other lifted.
+  pelvic-lift                  hips lifted, feet on the bar.
+  mermaid-on-the-reformer      side sitting, one arm reaching up and over.
+  elephant                     standing on the carriage, flat back, hands on
+                               the bar. Shoot from the side so the flat back
+                               and the wrist angle both read.
+
+REFORMER · level 2 (unlocks at 5 Pilates sessions)
+  short-spine-massage, stomach-massage, long-stretch, knee-stretches,
+  short-box-series (round back is the one to shoot), pulling-straps,
+  swan-on-the-long-box
+
+REFORMER · level 3 (at 11 sessions)
+  up-stretch-and-down-stretch, rowing-series, long-spine, side-splits,
+  tendon-stretch-on-the-reformer
+
+CHAIR · level 1 (these appear on your very next chair Wednesday)
+  footwork-on-the-chair        sat tall, both feet pressing the pedal down.
+  pumping-one-leg              one foot on the pedal, hips square.
+  spine-stretch-forward-on-the-chair   sat in front, hands on the pedal,
+                               spine curled forward.
+  seated-mermaid-on-the-chair  one hand on the pedal, other arm overhead.
+  frog-front                   sat on the chair, legs pressing out long.
+  side-stretch-on-the-chair    standing side on, one hand on the pedal.
+
+CHAIR · level 2
+  push-down, swan-on-the-chair, washerwoman, tendon-stretch-on-the-chair
+
+CHAIR · level 3
+  pull-up-on-the-chair, going-up-front, mountain-climb, teaser-on-the-chair
+
+If you only shoot fifteen things, shoot the two level 1 lists — that is every
+movement the app can put in front of you until your fifth Pilates session.
+
+STILL OUTSTANDING FROM BEFORE
+  single-leg-kick   (see the v202 note below)
+  plank-hip-dips, single-arm-lat-pulldown, incline-db-curl
+
 STILL NEEDED — as of v188 (20/09/2026)
 ======================================
 
