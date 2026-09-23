@@ -216,3 +216,10 @@ slug, or one WebP named for the slug, plus the slug added to LOCAL_DEMOS
 or LOCAL_WEBP in index.html and the matching list in sw.js so the
 service worker pre-caches it. Nothing else has to change — a local
 photograph outranks every remote source automatically.
+
+=== v202 · STILL NEEDED ===
+single-leg-kick  — Pilates Single Leg Kick. PRONE on the forearms, chest
+  lifted, one bent knee pulsing the heel towards the glute. NOT the quadruped
+  donkey kick: the stock photo is that movement, which is why the app shows no
+  picture for this one at all. Two frames: -1 leg extended, -2 heel pulsed in.
+  Files: demos/single-leg-kick-1.jpg and demos/single-leg-kick-2.jpg

@@ -735,6 +735,19 @@ details.sec2[open] .secsum2:after{content:"\2212";}
 .repsin{flex:0 0 auto;width:96px;background:#15110d;border:1px solid var(--line);border-radius:10px;
   color:#fff;font-size:15px;font-weight:700;padding:7px 10px;text-align:center;}
 .exb.moved{outline:2px solid var(--orange);outline-offset:3px;transition:outline-color .4s;}
+/* ===== v202 · THE FLOW'S OWN PHOTOGRAPH, BIG ENOUGH TO LEARN FROM ===== */
+.mvdemo{position:fixed;inset:0;background:#000000e8;z-index:70;display:none;align-items:center;justify-content:center;padding:18px;}
+.mvdemo.show{display:flex;}
+.mvdemo-in{width:100%;max-width:440px;background:var(--card);border:1px solid var(--line);border-radius:18px;padding:14px;max-height:92vh;overflow:auto;}
+.mvdemo-hd{display:flex;align-items:center;justify-content:space-between;gap:10px;font-size:17px;font-weight:800;color:var(--txt);margin-bottom:10px;}
+.mvdemo .imgwrap{width:100%;border-radius:14px;overflow:hidden;position:relative;background:#0d0a07;}
+.mvdemo .imgwrap img{width:100%;height:auto;display:block;}
+.mvdemo-cue{margin-top:10px;font-size:14px;font-weight:600;color:var(--dim);line-height:1.5;}
+.mvdemo-web{display:block;margin-top:12px;text-align:center;font-size:13px;font-weight:800;color:var(--gold);text-decoration:none;
+  border:1px solid var(--line);border-radius:10px;padding:10px;}
+.mvb .thumb.tapme{cursor:pointer;position:relative;}
+.mvb .thumb.tapme::after{content:"\2922";position:absolute;right:3px;bottom:2px;font-size:11px;font-weight:800;
+  color:#fff;background:#000000b3;border-radius:5px;padding:0 3px;line-height:1.35;}
 .fedphase{position:absolute;top:8px;left:8px;background:#0a0806d9;color:var(--gold);
   font-size:11px;font-weight:800;padding:3px 9px;border-radius:9px;border:1px solid var(--line);
   text-transform:uppercase;letter-spacing:.6px;pointer-events:none;}
@@ -1491,6 +1504,15 @@ a{color:var(--orange);}
   <button class="tab" data-s="progress" onclick="goTab('progress')"><svg viewBox="0 0 24 24"><path d="M4 19V5M4 19h16M8 16l3-4 3 3 5-7"/></svg>Progress</button>
   <button class="tab" data-s="settings" onclick="goTab('settings')"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M12 3v3M12 18v3M3 12h3M18 12h3M5.6 5.6l2.1 2.1M16.3 16.3l2.1 2.1M18.4 5.6l-2.1 2.1M7.7 16.3l-2.1 2.1"/></svg>Settings</button>
 </nav>
+<div class="mvdemo" id="mvDemo" onclick="closeMoveDemo(event)">
+  <div class="mvdemo-in" onclick="event.stopPropagation()">
+    <div class="mvdemo-hd"><span id="mvDemoName">Movement</span>
+      <button class="lbx" onclick="closeMoveDemo()">✕</button></div>
+    <div id="mvDemoBody"></div>
+    <div class="mvdemo-cue" id="mvDemoCue"></div>
+    <a class="mvdemo-web" id="mvDemoWeb" href="#" target="_blank" rel="noopener">▶ Watch it on the web</a>
+  </div>
+</div>
 <div class="lbox" id="lbox">
   <div class="lbtop">
     <div class="lbwhen"><span id="lbDate">—</span><small id="lbAgo"></small></div>
@@ -5958,11 +5980,68 @@ function coolBodyHTML(list){
   return head+list.map((m,i)=>mvHTML(m,i)).join('');
 }
 /* One card body, so the quiet flow and the timed cool-down cannot drift apart. */
-function mvCardHTML(item,name,thumb,dose,coolIdx){
-  return "<div class='mvb' id='mv"+coolIdx+"'>"+thumb+"<div class='txt'>"+
+/* ===== v202 · A PILATES MOVEMENT HE CANNOT SEE ==========================
+   "I seem to have no visual demos for Pilates exercises."
+
+   He has them. Nineteen of the twenty classical mat movements carry his own
+   photographs, and they were on the screen the whole time — at 74 pixels
+   square, beside the name, with no way to open them. A lifting card gives the
+   movement a full-width picture; a flow row gives it a postage stamp. For a
+   bench press he already knows that is plenty. For the Teaser, which he is
+   learning, it is not a demo, it is a thumbnail of one.
+
+   Worse, the one thing on the row that looked like a way to see the movement
+   — "▶ Watch how" — opened a WEB SEARCH in a new tab. So the honest summary
+   of a Pilates day was: his own photographs, too small to read, next to a
+   button that sent him to the internet to find somebody else's.
+
+   The thumbnail opens now. Same picture the exercise cards use, same start/end
+   flip, his cue underneath, and the web search kept as the second option
+   rather than the only one. */
+function openMoveDemo(name){
+  const n=String(name||""); if(!n) return;
+  /* No picture for this one — an empty overlay helps nobody, so go straight
+     to the web search that was the only option before. */
+  let kind=null; try{ kind=(demoFor(n)||{}).kind; }catch(e){}
+  if(kind==="link"){ try{ window.open(demoSearchURL(n),"_blank","noopener"); }catch(e){} return; }
+  const box=document.getElementById('mvDemo'); if(!box) return;
+  const t=document.getElementById('mvDemoName'); if(t) t.textContent=n;
+  const body=document.getElementById('mvDemoBody');
+  if(body){ try{ body.innerHTML=demoTileHTML(n); }catch(e){ body.innerHTML=""; } }
+  const cue=document.getElementById('mvDemoCue');
+  if(cue){
+    let c="";
+    try{ const m=enrichMove({t:n}); c=(m&&m.cue)||""; }catch(e){}
+    if(!c){ try{ c=(EX(n)||{}).cue||""; }catch(e){} }
+    cue.innerHTML=c? c : "";
+  }
+  const web=document.getElementById('mvDemoWeb');
+  if(web){ try{ web.href=demoSearchURL(n); }catch(e){} }
+  box.classList.add('show');
+  document.body.style.overflow="hidden";
+  /* The global frame flipper picks up any img[data-f0][data-f1] on the page,
+     so the start/end positions animate here without a second animator. */
+  try{ paintDemos(); }catch(e){}
+}
+function closeMoveDemo(ev){
+  if(ev && ev.target && ev.target.closest && ev.target.closest('.mvdemo-in')) return;
+  const box=document.getElementById('mvDemo'); if(box) box.classList.remove('show');
+  document.body.style.overflow="";
+}
+function mvCardHTML(item,name,thumb,dose,coolIdx,extra){
+  /* v202 — the thumbnail opens the movement. Whether there IS a picture is
+     decided when he taps, not when the row is built: most of the cool-down
+     and mobility images are fetched asynchronously by paintDemos() and land
+     AFTER the row exists, so a build-time flag marked exactly the rows that
+     already had a local photo and missed every one that was still arriving.
+     Deciding at the tap means there is no such window. */
+  const th = thumb.replace(/class='thumb/, "onclick=\"openMoveDemo('"+jsAttr(name)+"')\" class='thumb tapme");
+  const id = (coolIdx!=null)? ("mv"+coolIdx) : ("mvw"+Math.random().toString(36).slice(2,6));
+  return "<div class='mvb' id='"+id+"'>"+th+"<div class='txt'>"+
     "<div class='n'>"+name+(dose?"<span class='d'>"+escapeHtml(dose)+"</span>":"")+"</div>"+
     (item.cue?"<div class='c'>"+item.cue+"</div>":"")+
-    "<a class='demo' href='"+demoSearchURL(name)+"' target='_blank' rel='noopener'>\u25b6 Watch how</a>"+
+    "<a class='demo' href='javascript:void(0)' onclick=\"openMoveDemo('"+jsAttr(name)+"')\">\u25b6 See the movement</a>"+
+    (extra||"")+
     "</div></div>";
 }
 function mvHTML(item0,coolIdx){
@@ -6023,12 +6102,13 @@ function mvHTML(item0,coolIdx){
       "<div id='coolctl"+coolIdx+"'"+(_coolCtlOpen.has(coolIdx)?"":" hidden")+">"+coolControlsHTML(item,coolIdx)+"</div>"+
       "<div id='cside"+coolIdx+"'></div>";
   }
-  return "<div class='mvb' id='"+(coolIdx!=null? "mv"+coolIdx : "mvw"+Math.random().toString(36).slice(2,6))+"'>"+thumb+"<div class='txt'>"+
-    "<div class='n'>"+name+(dose?"<span class='d'>"+escapeHtml(dose)+"</span>":"")+"</div>"+
-    (item.cue?"<div class='c'>"+item.cue+"</div>":"")+
-    "<a class='demo' href='"+demoSearchURL(name)+"' target='_blank' rel='noopener'>▶ Watch how</a>"+
-    timerBtn+controls+
-    "</div></div>";
+  /* v202 — this was a THIRD copy of the row, and it is the one the timed
+     cool-down, the warm-up and most of a mobility day actually render
+     through. mvCardHTML's own header says "one card body, so the quiet flow
+     and the timed cool-down cannot drift apart"; they had drifted, and the
+     copy down here still sent him to a web search. Seventh time this file has
+     recorded one thing written twice. */
+  return mvCardHTML(item,name,thumb,dose,coolIdx,timerBtn+controls);
 }
 /* Reliable demos: a real inline clip when we have one, otherwise a one-tap "Watch demo" that always works. */
 function demoSearchURL(name){ return "https://www.google.com/search?tbm=isch&q="+encodeURIComponent(name+" exercise form"); }
@@ -13905,7 +13985,7 @@ function scheduleInApp(){
    v18 ADDITIONS — draggable rest timer · weekly training memory · AI planner
    · Firestore sync
    ========================================================================== */
-const APP_VERSION="v201 · 22/09/2026";
+const APP_VERSION="v202 · 23/09/2026";
 
 /* ===== 1. REST TIMER — drag it anywhere so it never blocks the chat box ===== */
 let _rtDrag=null;

@@ -1,3 +1,74 @@
+AMIR PT — v202 · 23/09/2026
+===========================
+
+"I seem to have no visual demos for Pilates exercises why is this. Did I not
+give them to you? If not tell me what you need and I'll get the visuals."
+
+He gave them to me. Nineteen of the twenty classical mat movements carry his
+own photographs and they were on the screen the whole time — at 74 pixels
+square, beside the name, with no way to open them.
+
+A lifting card gives a movement a full-width picture. A flow row gives it a
+postage stamp. For a bench press he already knows, that is plenty; for the
+Teaser, which he is learning, it is not a demo, it is a thumbnail of one.
+
+And the one thing on the row that looked like a way to see the movement —
+"▶ Watch how" — opened a GOOGLE IMAGE SEARCH in a new tab. So the honest
+summary of a Pilates day was: his own photographs, too small to read, beside a
+button that sent him to the internet to find somebody else's.
+
+WHAT HE ACTUALLY NEEDS FROM ME: ONE PHOTOGRAPH
+----------------------------------------------
+Single Leg Kick, and only that one. It is deliberately blocked, not missing:
+the stock photograph is a quadruped donkey kick — hands and knees, straight
+leg driven back — and the Pilates Single Leg Kick is prone on the forearms,
+chest lifted, bent knee pulsing the heel to the glute, which is what the
+card's own cue tells him to do. Picture and instruction describing two
+different movements is the failure that got Child's Pose blocked, so it was
+blocked too. Two frames, start and end, named single-leg-kick-1.jpg and
+single-leg-kick-2.jpg, and the block comes off.
+
+Everything else in the mat repertoire is already his.
+
+THE FIX
+-------
+The thumbnail opens. Same picture the exercise cards use, the same start/end
+flip, his cue underneath, and the web search kept as the second option rather
+than the only one.
+
+Whether there IS a picture is decided when he TAPS, not when the row is built.
+Most cool-down and mobility images are fetched asynchronously and land after
+the row exists, so a build-time flag marked exactly the rows that already had
+a local photo and missed every one still arriving — which was the first
+version of this, and it left a lifting day's cool-down with nothing tappable
+at all. Deciding at the tap closes that window. Where a movement genuinely has
+no picture, the tap goes straight to the web search rather than opening an
+empty box.
+
+AND A THIRD COPY OF THE ROW
+---------------------------
+mvCardHTML() carries a header reading "One card body, so the quiet flow and
+the timed cool-down cannot drift apart." Forty lines below it, mvHTML ended
+with its own hand-written copy of that body — and that copy is the one the
+timed cool-down, the warm-up and most of a mobility day actually render
+through. They had drifted: the copy still sent him to a web search. It calls
+mvCardHTML now and passes its timer controls in.
+
+Seventh time this file has recorded one rule written twice.
+
+CHECKED
+-------
+All 20 mat movements audited for a demo: 19 have his own photographs, 1 is the
+blocked Single Leg Kick. Every row on a Pilates day (10/10), a Mobility day
+(15/15) and a Push day's warm-up and cool-down (15/15) now opens its movement
+— before the merge those were 10, 5 and 0. Tapped for real: the overlay opens
+The Hundred at 324×405 against the 74×74 thumbnail, the picture loads, the
+start/end badge flips on the shared animator, the cue is underneath and the
+web link is still there. The cool-down keeps its per-stretch timer controls
+and its "run the whole cool-down" after the merge. A movement with no picture
+opens the web search and leaves the overlay shut. verify16, journey and
+audit173 clean, no page errors.
+
 AMIR PT — v201 · 22/09/2026
 ===========================
 
