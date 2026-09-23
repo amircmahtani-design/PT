@@ -1,3 +1,79 @@
+AMIR PT — v205 · 23/09/2026
+===========================
+
+"I need my Wednesday to be a different layout. I want it to be mobility and
+Pilates together. Not just one or the other so let's adjust that so it's not
+alternating weekly. It's both each Wednesday."
+
+WEDNESDAY IS ONE SESSION WITH BOTH HALVES IN IT
+------------------------------------------------
+v195 made Wednesday alternate — mobility one week, Pilates the next — because
+that is what he asked for then. A pair of day types taking turns cannot
+express one session containing both, so the alternation is gone rather than
+patched. DB.alt still exists for any day he wants to alternate in future;
+nothing uses it now.
+
+Wednesday is a day type of its own: "Mobility & Pilates", kind mobpil. It
+builds ONE sheet, in the order the two halves want to be done in —
+
+  MOBILITY · HEAD TO TOE        12 movements, one per area, neck to ankles
+  PILATES MAT · CLASSICAL ORDER  9 movements, level-gated as before
+  CLOSE                          child's pose, box breathing
+
+Mobility opens the body up; the mat work then uses the range it just found.
+The other way round makes the mat half a warm-up for the stretching, which is
+backwards.
+
+WHICH HALF GAVE GROUND, AND WHY IT WAS THE MAT
+-----------------------------------------------
+23 movements, about 50 minutes — inside his hour. To get there one half had
+to shrink, and it is the mat half: nine movements rather than eleven.
+
+The mobility half keeps all twelve areas because this is the only session in
+the week that trains suppleness directly, and a dropped area is a gap that
+stays a gap. The mat half can afford it: buildPilatesFlow already rotates by
+what he has done least, so nothing falls out of the repertoire — it just comes
+round on a longer cycle. The level gate is untouched, and the day still counts
+as a Pilates session, so the mat level keeps progressing exactly as it did.
+
+TWO MOVEMENTS ARE IN BOTH CATALOGUES
+-------------------------------------
+Spine Twist and Spine Stretch Forward are classical mat movements AND entries
+in the mobility library. Built naively that is the same movement twice on one
+sheet. So the mat half is built FIRST and its movements are seeded into the
+mobility builder's "seen" set — which makes that area fall through to its next
+option rather than losing its slot. Nothing is duplicated and nothing is lost.
+
+buildMobilityFlow took three switches for this (noWalk, noClose, skip) rather
+than gaining a second implementation. The 10-minute walk is the rest-day
+opener and Wednesday is a session now; the close is the caller's, so the sheet
+ends on the breathing once, at the bottom.
+
+THE HEADINGS RIDE ON THE FIRST ROW OF EACH HALF
+------------------------------------------------
+Two flows on one sheet need to say where each starts. The caption is attached
+to the first ITEM of each half rather than being an entry of its own, because
+the list index is the timer index, the run-all index and the logging index —
+a heading occupying one of those would put a clock on a word.
+
+IT LANDS TODAY, NOT NEXT WEEK
+------------------------------
+He asked on a Wednesday. The migration rebuilds today's sheet, but only if it
+is still the one the app built by itself: a session he has shaped, or one he
+has already logged a movement in, is his and stays. If he had already made
+Wednesday something else entirely, that decision stands too.
+
+Verified: the week reads Mon Upper · Tue Legs & Core · Wed Mobility & Pilates ·
+Thu Pull · Fri Push · Sat/Sun rest; the sheet builds 23 rows with no repeats;
+the readiness card calls it a Mobility & Pilates day rather than half its name;
+"Run the whole flow (23 movements)" starts on the first one; finishing it logs
+as a flow and counts towards the mat level. Four migration cases checked —
+untouched session rebuilt, touched session preserved, a session already logged
+into preserved, a Wednesday he had changed himself left alone. The standalone
+Mobility (15) and Pilates (10) day types build exactly as before. Regression
+sweep clean: 16 sessions match the program, no repeats, nothing over budget,
+every screen clean at 390 and 360, program and abs audits empty.
+
 AMIR PT — v204 · 23/09/2026
 ===========================
 

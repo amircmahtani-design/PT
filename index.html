@@ -961,6 +961,11 @@ a{color:var(--orange);}
 .coolall-set>summary::after{content:' \25be';}
 .coolall-set[open]>summary::after{content:' \25b4';}
 .flowtog{display:flex;justify-content:flex-end;margin:0 0 10px;}
+/* v205 — the divider between the mobility half and the mat half. */
+.flowsect{display:flex;align-items:center;gap:10px;margin:18px 0 10px;
+  font-size:11px;font-weight:800;letter-spacing:1.1px;text-transform:uppercase;color:var(--gold);}
+.flowsect::after{content:'';flex:1;height:1px;background:var(--line);}
+.mvb+.flowsect{margin-top:22px;}
 .flowtog .swapbtn{font-size:12px;opacity:.68;}
 .coolall-ctl .k{font-size:11px;font-weight:700;letter-spacing:.6px;text-transform:uppercase;color:var(--label);}
 /* v124 — the cool-down's own controls were 30px tall, and this is the
@@ -1652,9 +1657,10 @@ const DEFAULTS = {
      Wednesday mobility, Thursday pull, Friday push, sat sun rest". The old
      default was six lifting days with one rest and no cardio or mobility in
      it anywhere, which is not a week he has ever actually trained. */
-  schedule:{0:"Rest",1:"Upper Body",2:"Legs & Core",3:"Mobility",4:"Pull Day",5:"Push Day",6:"Rest"},
-  /* v195 — Wednesday alternates: odd block weeks Mobility, even Pilates. */
-  alt:{3:["Mobility","Pilates"]},
+  schedule:{0:"Rest",1:"Upper Body",2:"Legs & Core",3:"Mobility & Pilates",4:"Pull Day",5:"Push Day",6:"Rest"},
+  /* v205 — Wednesday is Mobility AND Pilates in one session, every week.
+     DB.alt still exists for any day he wants to alternate; nothing uses it. */
+  alt:{},
   v195alt:1,
   dayOverride:{date:null,split:null},
   /* v117 — the two stages, the look he is aiming at and the date he wants it
@@ -1676,7 +1682,8 @@ const DEFAULTS = {
      coach happens to name one. */
   dayTypes:{ "Cardio":{kind:"cardio",main:[],note:""},
              "Mobility":{kind:"mobility",main:[],note:""},
-             "Pilates":{kind:"pilates",main:[],note:""} },
+             "Pilates":{kind:"pilates",main:[],note:""},
+             "Mobility & Pilates":{kind:"mobpil",main:[],note:""} },
   media:{}, mediaPicked:{}, exMap:{}, progression:{}, deadMedia:{}, demoPick:{},
   /* v116 — three movements he cannot do. They live in DEFAULTS as well as in
      the migration so a fresh install (or a wipe-and-restore) starts with them
@@ -2027,6 +2034,52 @@ function mergeDefaults(parsed){ let d={...structuredClone(DEFAULTS),...parsed};
     const w=String((d.schedule||{})[3]||"");
     if(/^(mobility|pilates)$/i.test(w)){
       d.alt=d.alt||{}; d.alt[3]=["Mobility","Pilates"];
+    }
+  }
+  /* ===== v205 · WEDNESDAY IS BOTH, NOT ONE OR THE OTHER ================
+     "I want it to be mobility and Pilates together. Not just one or the
+     other so let's adjust that so it's not alternating weekly. It's both
+     each Wednesday."
+
+     v195's alternation is gone rather than rewritten: a pair of day types
+     taking turns cannot express one session containing both. Wednesday
+     becomes a single day type that builds the mobility flow AND the mat
+     flow in one sheet.
+
+     Fires once, and only for a Wednesday that is still one of the flow days
+     it was — if he has since made Wednesday something else, that decision
+     stands. */
+  if(!d.v205wed){
+    d.v205wed=1;
+    d.dayTypes=d.dayTypes||{};
+    if(!d.dayTypes["Mobility & Pilates"])
+      d.dayTypes["Mobility & Pilates"]={kind:"mobpil",main:[],note:""};
+    const w=String((d.schedule||{})[3]||"");
+    const pair=(d.alt||{})[3];
+    const wasFlow=/^(mobility|pilates|mobility & pilates)$/i.test(w) ||
+                  (Array.isArray(pair) && pair.length===2);
+    if(wasFlow){
+      if(d.alt) delete d.alt[3];
+      d.schedule=d.schedule||{};
+      d.schedule[3]="Mobility & Pilates";
+      /* He asked for this ON a Wednesday, so it has to land today rather than
+         next week. Today's sheet is rebuilt ONLY if it is still the one the
+         app built by itself: a session he has shaped, or one he has already
+         started moving through, is his, and nothing rewrites it behind him.
+         Tomorrow it would rebuild anyway. */
+      try{
+        const t=today();
+        const isWed=new Date(t+"T12:00:00").getDay()===3;
+        const ov=d.dayOverride;
+        const ovFlow=!!(ov && ov.date===t && /^(mobility|pilates)$/i.test(String(ov.split||"")));
+        const logged=(d.mobility||[]).some(m=>m&&m.d===t);
+        const w=d.workout;
+        const untouched=!!(w && w.date===t && !w.touched && +w.sets===0);
+        if(isWed && !logged){
+          if(ovFlow) d.dayOverride=null;
+          if(untouched || ovFlow) d.workout=null;
+        }
+      }catch(e){}
     }
   }
   if(!d.alt || typeof d.alt!=="object") d.alt={};
@@ -4604,6 +4657,17 @@ function buildCustomDay(name,ctx){
       reps:"—", sets:0, warmup:[], main:[], cooldown:flow,
       recovery:"Breathe, hydrate, and notice how much taller you stand. Mobility is training."};
   }
+  if(kind==="mobpil"){
+    const flow=(dt.main&&dt.main.length)? dt.main.map(enrichMove) : buildMobPilFlow();
+    const pl=(function(){ try{ return pilatesPlan(); }catch(e){ return null; } })();
+    return {title:name, tag:"Recovery \u00b7 Mobility & Pilates", phase:DB.profile.phase, kind:"mobility", loc:locKey(),
+      flowTitle:"Mobility flow + Pilates mat \u00b7 one round"+(pl? " \u00b7 mat level "+pl.level+" of 3" : ""),
+      pilates: pl,
+      note: dt.note || ("Both halves, every Wednesday. Neck to ankles first \u2014 every area gets its slot \u2014 then the classical mat order while the range is there. One round: do the movement, then move on. No sets, no weight."+
+        (pl? " "+pl.note : "")),
+      reps:"\u2014", sets:0, warmup:[], main:[], cooldown:flow,
+      recovery:"Breathe, hydrate, and notice how much taller you stand. This is the session that keeps the other four moving well."};
+  }
   if(kind==="mobility"||kind==="recovery"||kind==="yoga"){
     const flow = (dt.main&&dt.main.length)? dt.main.map(enrichMove) : buildMobilityFlow();
     return {title:name, tag:"Recovery · Mobility", phase:DB.profile.phase, kind:"mobility",
@@ -4632,9 +4696,14 @@ const KIND_NOTE={
   arms:"Arms day — higher reps, strict form, short rests. Chase the pump, not the ego.",
   hiit:"Conditioning — hard intervals with short rests. Move fast but never let form go.",
   pilates:"Pilates-style — slow, controlled, breath-led. Small ranges done properly, quality over load.",
+  mobpil:"Mobility first, neck to ankles, then the Pilates mat order. One round of each, breath-led, no load.",
   strength:"Custom day your coach built."
 };
 function inferDayKind(name){ const s=String(name).toLowerCase();
+  /* v205 — "Mobility & Pilates" is one session containing both, so it is
+     asked first: the mobility test below matches it too and would have
+     built half the day. */
+  if(/mobility|stretch|yoga/.test(s) && /pilates|mat\b/.test(s)) return "mobpil";
   if(/mobility|recovery|yoga|stretch|flexib/.test(s)) return "mobility";
   /* v125 - "cardio" itself was missing from this list, so a day named Cardio
      Day fell through to "strength" and built a lifting session. */
@@ -5748,10 +5817,28 @@ const FLOW_LIB=[
 function flowsDone(){
   try{ return Object.values(DB.completed||{}).filter(c=>c&&c.flow).length; }catch(e){ return 0; }
 }
-function buildMobilityFlow(){
+/* The two the flow always finishes on, named once so the combined Wednesday
+   closes the same way the mobility day does rather than with a second copy. */
+const FLOW_CLOSERS=[
+  {t:"Child's pose", d:"60s", cue:"Sit back onto the heels, arms long, breathe into your back."},
+  {t:"Box breathing", d:"2\u20133 min", cue:"In for 4, hold 4, out for 4, hold 4. This is what actually switches you into recovery."}
+];
+/* opts.noWalk   — skip the optional 10-minute walk (it is the rest-day opener,
+                   and Wednesday is a session now, not a rest day with movement)
+   opts.noClose  — leave the child's pose and the breathing to the caller, so a
+                   combined sheet ends on them once, at the very bottom
+   opts.skip     — movements already spoken for elsewhere on the sheet. Seeding
+                   them into `seen` makes each AREA fall through to its next
+                   option instead of losing its slot, which is what keeps Spine
+                   Twist and Spine Stretch Forward — in both catalogues — from
+                   appearing twice on the same Wednesday. */
+function buildMobilityFlow(opts){
+  opts=opts||{};
   const out=[], seen=new Set();
+  (opts.skip||[]).forEach(t=>{ const k=mobKey(t); if(k) seen.add(k); });
   const push=it=>{ if(!it) return false; const k=mobKey(it.t); if(!k||seen.has(k)) return false;
                    out.push(pickItem(it)); seen.add(k); return true; };
+  if(!opts.noWalk)
   push({t:"Easy walk", d:"10 min", cue:"Optional, and only if you fancy it \u2014 daylight and blood flow, no effort. This is a rest day with movement in it, not a session."});
   /* v158 — head to toe, and every area gets its slot. What is available here
      is filtered first (the pull-up bar for a dead hang, a band for
@@ -5776,9 +5863,39 @@ function buildMobilityFlow(){
       if(push(it)) break;
     }
   });
-  push({t:"Child's pose", d:"60s", cue:"Sit back onto the heels, arms long, breathe into your back."});
-  push({t:"Box breathing", d:"2\u20133 min", cue:"In for 4, hold 4, out for 4, hold 4. This is what actually switches you into recovery."});
+  if(!opts.noClose) FLOW_CLOSERS.forEach(push);
   return applyCoolDefaults(out);
+}
+/* ===== v205 \u00b7 WEDNESDAY IS BOTH =======================================
+   "I want it to be mobility and Pilates together. Not just one or the other
+   \u2014 it's both each Wednesday."
+
+   One sheet, in the order the two halves actually want to be done in:
+   joint-by-joint mobility opens the body up, then the mat work uses the range
+   it just found, then the breathing closes it down. Doing it the other way
+   round means the mat half is the warm-up for the stretching, which is
+   backwards.
+
+   The mobility half keeps all twelve areas \u2014 neck to ankles, nothing
+   dropped, because suppleness is a stated goal and this is the only session
+   in the week that trains it directly. The mat half is the one that gives
+   ground: nine movements rather than eleven. It can afford to, because
+   buildPilatesFlow rotates by what he has done least, so nothing falls out of
+   the repertoire, it just comes round on a longer cycle.
+
+   Roughly: twelve mobility movements at a minute or so, nine mat movements at
+   two, and the close \u2014 about fifty minutes, inside his hour. */
+const MOBPIL_MAT=9;
+function buildMobPilFlow(){
+  /* Mat first, so the mobility half knows what to avoid \u2014 the classical
+     order is the fixed thing, the area slots are the flexible ones. */
+  const mat=buildPilatesFlow(MOBPIL_MAT);
+  const mob=buildMobilityFlow({noWalk:true, noClose:true, skip:mat.map(m=>m.t)});
+  const close=applyCoolDefaults(FLOW_CLOSERS.map(pickItem));
+  if(mob.length)   mob[0].sect="Mobility \u00b7 head to toe";
+  if(mat.length)   mat[0].sect="Pilates mat \u00b7 classical order";
+  if(close.length) close[0].sect="Close";
+  return mob.concat(mat, close);
 }
 /* If the coach (or an old saved workout) gives us a bare name, attach the dose and cue we know. */
 /* ===== v118 · A PICTURE OF THE MOVEMENT, OR NOTHING ======================
@@ -6000,7 +6117,14 @@ function coolBodyHTML(list){
         " ("+list.length+" movements)</button>"+coolAllHTML()+
         (flowDay(DB.workout)? flowTimerToggleHTML() : "")
     : "";
-  return head+list.map((m,i)=>mvHTML(m,i)).join('');
+  /* v205 — a combined Wednesday is two flows on one sheet, so each half says
+     where it starts. The caption rides on the FIRST ITEM of the half rather
+     than being an entry of its own: the list index is the timer index, the
+     run-all index and the logging index, and a heading occupying one of those
+     would put a clock on a word. */
+  return head+list.map((m,i)=>
+    ((m&&m.sect)? "<div class='flowsect'>"+escapeHtml(m.sect)+"</div>" : "")+mvHTML(m,i)
+  ).join('');
 }
 /* One card body, so the quiet flow and the timed cool-down cannot drift apart. */
 /* ===== v202 · A PILATES MOVEMENT HE CANNOT SEE ==========================
@@ -9982,9 +10106,9 @@ coachingDoctrine()+
 "The emoji in these directives is only a fallback for when there is no photograph of that movement. Do not spend effort choosing them.\n\n"+
 "WEEKLY SCHEDULE & DAY TYPES:\n"+
 "HIS WEEK STARTS ON MONDAY \u2014 always list and think Mon-first, never Sunday-first.\n"+
-"THE WEEK HE HAS SETTLED ON: Monday UPPER BODY, Tuesday legs and core, Wednesday MOBILITY OR PILATES (it alternates — odd block weeks mobility, even weeks Pilates, by his own instruction), Thursday pull, Friday push, Saturday and Sunday rest. Monday was a cardio day until he asked whether upper would serve the physique better; it does, because it takes chest, back and shoulders from once a week to twice, and twice beats once for building shape. === THE MASTER PROGRAM — READ THIS BEFORE CHANGING ANY SESSION ===\n"+
-"He has written a 4-week block and it is now what the app builds. Monday Upper Body, Tuesday Legs & Core, Wednesday Mobility (weeks 1 and 3) or Pilates (weeks 2 and 4), Thursday Pull, Friday Push. Week 4 is the deload and is already written as one. The block repeats until he asks for a new one.\n"+
-"ABS FINISH EVERY SESSION — HIS INSTRUCTION, NOT A SUGGESTION: every lifting day ENDS on one abs movement, and each day owns a different region so the week covers all four. Monday LOWER abs (hip flexion), Tuesday UPPER abs (trunk flexion), Thursday OBLIQUES (rotation and side bend), Friday ANTI-EXTENSION (bracing). Never drop the last movement of a session to save time — cut a set off something else. Never put two abs movements in one session, and never give two days the same region in the same week. Wednesday is the mobility/Pilates day and has no finisher; the Pilates weeks are already core work.\n"+
+"THE WEEK HE HAS SETTLED ON: Monday UPPER BODY, Tuesday legs and core, Wednesday MOBILITY & PILATES (ONE session containing BOTH halves — the twelve-area mobility flow, then the classical mat order. His instruction, every week: it is not one or the other and it does not alternate), Thursday pull, Friday push, Saturday and Sunday rest. Monday was a cardio day until he asked whether upper would serve the physique better; it does, because it takes chest, back and shoulders from once a week to twice, and twice beats once for building shape. === THE MASTER PROGRAM — READ THIS BEFORE CHANGING ANY SESSION ===\n"+
+"He has written a 4-week block and it is now what the app builds. Monday Upper Body, Tuesday Legs & Core, Wednesday Mobility & Pilates (both halves, every week), Thursday Pull, Friday Push. Week 4 is the deload and is already written as one. The block repeats until he asks for a new one.\n"+
+"ABS FINISH EVERY SESSION — HIS INSTRUCTION, NOT A SUGGESTION: every lifting day ENDS on one abs movement, and each day owns a different region so the week covers all four. Monday LOWER abs (hip flexion), Tuesday UPPER abs (trunk flexion), Thursday OBLIQUES (rotation and side bend), Friday ANTI-EXTENSION (bracing). Never drop the last movement of a session to save time — cut a set off something else. Never put two abs movements in one session, and never give two days the same region in the same week. Wednesday is the Mobility & Pilates day and has no finisher; the mat half is already core work.\n"+
 "YOUR JOB IS TO COACH THIS PROGRAM, NOT TO REINVENT IT. He said it plainly: \"The app should STOP randomly generating completely different workouts every week. The AI Coach's job is to COACH the program, not constantly reinvent it.\" Variety is not a training stimulus. Progressive overload is, and he cannot overload a movement you keep swapping out.\n"+
 "WHAT YOU MAY CHANGE FREELY: the weight, the rep target, the rest, the order of the exercises, and a like-for-like substitution when the kit is genuinely unavailable (travelling, a machine occupied). Coach every set: what he lifted last time, what to aim for today, when to add load and when to hold.\n"+
 "WHAT YOU MAY NOT DO: replace a core movement because it would be more interesting, add exercises to pad the session, or rebuild the day. Incline Press, Lat Pulldown, a row, Lateral Raise, Romanian Deadlift and Bulgarian Split Squat stay unless there is a real reason. If he asks you to redo or rebuild a day, give him the PROGRAMMED session for that day and week and coach the loads — do not generate a different one.\n"+
@@ -14008,7 +14132,7 @@ function scheduleInApp(){
    v18 ADDITIONS — draggable rest timer · weekly training memory · AI planner
    · Firestore sync
    ========================================================================== */
-const APP_VERSION="v204 · 23/09/2026";
+const APP_VERSION="v205 · 23/09/2026";
 
 /* ===== 1. REST TIMER — drag it anywhere so it never blocks the chat box ===== */
 let _rtDrag=null;
@@ -14402,6 +14526,8 @@ function flowReadinessHTML(c){
            String((typeof pickSplit==="function"? pickSplit() : "")||"");
   const scheduledRest=(typeof isRestDay==="function") && isRestDay();
   const head = scheduledRest? "Rest day"
+             /* v205 — Wednesday is both now, and "Pilates day" is half of it. */
+             : (/pilates/i.test(nm) && /mobility/i.test(nm))? "Mobility & Pilates day"
              : /pilates/i.test(nm)? "Pilates day"
              : /\brest\b|recovery/i.test(nm)? "Recovery day"
              : "Mobility day";
