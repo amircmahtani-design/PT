@@ -1,3 +1,48 @@
+AMIR PT — v203 · 23/09/2026
+===========================
+
+"Why are they small thumbnails I would like them to be larger so I can see
+better."
+
+TWO THINGS WERE MAKING THEM SMALL, AND THE SECOND ONE WAS THE REAL ONE
+-----------------------------------------------------------------------
+The obvious one is 76 pixels.
+
+The one that actually hurt is that the tile was SQUARE while his photographs
+are 480×600 portrait, and the image is fitted with contain rather than cover —
+correctly, because cropping a demo removes the part you need to see. v124 made
+that call about ankle rocks and it was right. But a portrait picture fitted
+inside a square tile is letterboxed: a 76px square showed a figure about 61
+pixels tall with two bars of empty tile above and below it. A third of the
+tile was padding.
+
+So the tile is portrait now, at the photographs' own 4:5. 118×148 against
+76×76. Measured on the page, the picture went from filling roughly two thirds
+of its tile to 97% of a tile that is itself three times the area — the figure
+is about two and a half times the height it was.
+
+contain stays. The free pack's frames are not all 4:5 and cropping the ankles
+off an ankle rock to make a tile look full is the trade v124 already refused.
+As it happens the pack's photographs are 418×627, also portrait, so they fill
+the new tile to 97% as well.
+
+It is still a ROW, not a card. Fifteen movements on a mobility day still scan
+in one scroll, and the tap-to-open from v202 is still there for when he wants
+the movement full size.
+
+360px phones get 100×125 rather than 118×148, so the text column does not get
+squeezed below about 170px.
+
+CHECKED
+-------
+Measured at 390px and 360px: tile 118×148 and 100×125, picture filling 97% of
+it in both, text column 186px and 174px, no horizontal overflow anywhere on
+the screen at either width. A mobility day checked specifically because it
+mixes his photographs with the pack's: 418×627 and 480×600 both fill 97%, no
+letterboxing introduced. Every flow row still opens its movement — Pilates
+10/10, Mobility 15/15, Push day warm-up and cool-down 15/15. audit173,
+verify16 and journey clean, no page errors.
+
 AMIR PT — v202 · 23/09/2026
 ===========================
 

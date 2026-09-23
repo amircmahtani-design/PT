@@ -344,7 +344,26 @@ textarea.txtin{min-height:88px;resize:vertical;line-height:1.45;}
 /* v124 — 68px was sized for an emoji. These are photographs of a man doing
    the movement now, and at 76 the figure is a figure. The rows are set by
    their text, so the extra height costs almost nothing. */
-.mvb .thumb{flex:0 0 76px;height:76px;border-radius:13px;overflow:hidden;border:1px solid var(--line);background:#0d0a07;display:flex;align-items:center;justify-content:center;}
+/* ===== v203 · A SQUARE TILE WAS THROWING AWAY A THIRD OF THE PHOTO =====
+   "Why are they small thumbnails I would like them to be larger so I can see
+   better."
+
+   Two things were making it small. The obvious one is 76 pixels. The one that
+   actually hurt is that the tile was SQUARE while his photographs are 480×600
+   portrait, and object-fit:contain letterboxes rather than crops — correctly,
+   because cropping a demo removes the part you need. So a 76px square showed
+   a figure about 61 pixels tall and two bars of empty tile above and below
+   it. A third of the tile was padding.
+
+   The tile is portrait now, at the photographs' own 4:5, so the whole box is
+   picture. 118×148 against 76×76 is a figure roughly two and a half times
+   the height it was, and the row is still a row rather than a card — fifteen
+   movements on a mobility day still scan in one scroll.
+
+   contain stays. The free pack's frames are not all 4:5 and cropping the
+   ankles off an ankle rock to fill a tile is the trade v124 already refused. */
+.mvb .thumb{flex:0 0 118px;height:148px;border-radius:13px;overflow:hidden;border:1px solid var(--line);background:#0d0a07;display:flex;align-items:center;justify-content:center;}
+@media (max-width:365px){ .mvb .thumb{flex:0 0 100px;height:125px;} }
 /* v124 — contain, not cover, for every demo thumbnail. These are
    instructions: cover cropped the top and bottom off a standing figure, which
    on "ankle rocks" removed the ankles. It also means his portrait photographs
@@ -360,7 +379,7 @@ textarea.txtin{min-height:88px;resize:vertical;line-height:1.45;}
    same room. Deliberately gentle: these are instructions, and washing them
    out to match a palette would be the wrong trade. */
 .mvb .thumb:not(.own) img{filter:saturate(.82) brightness(.94);}
-.mvb .thumb.emo{font-size:29px;}
+.mvb .thumb.emo{font-size:42px;}
 .mvb .txt{flex:1;min-width:0;}
 .mvb .n{font-weight:700;font-size:15px;line-height:1.35;}
 .mvb .n .d{display:inline-block;margin-left:8px;font-size:12px;font-weight:800;color:var(--gold);white-space:nowrap;}
@@ -746,8 +765,8 @@ details.sec2[open] .secsum2:after{content:"\2212";}
 .mvdemo-web{display:block;margin-top:12px;text-align:center;font-size:13px;font-weight:800;color:var(--gold);text-decoration:none;
   border:1px solid var(--line);border-radius:10px;padding:10px;}
 .mvb .thumb.tapme{cursor:pointer;position:relative;}
-.mvb .thumb.tapme::after{content:"\2922";position:absolute;right:3px;bottom:2px;font-size:11px;font-weight:800;
-  color:#fff;background:#000000b3;border-radius:5px;padding:0 3px;line-height:1.35;}
+.mvb .thumb.tapme::after{content:"\2922";position:absolute;right:5px;bottom:4px;font-size:14px;font-weight:800;
+  color:#fff;background:#000000b3;border-radius:6px;padding:1px 5px;line-height:1.35;}
 .fedphase{position:absolute;top:8px;left:8px;background:#0a0806d9;color:var(--gold);
   font-size:11px;font-weight:800;padding:3px 9px;border-radius:9px;border:1px solid var(--line);
   text-transform:uppercase;letter-spacing:.6px;pointer-events:none;}
@@ -13985,7 +14004,7 @@ function scheduleInApp(){
    v18 ADDITIONS — draggable rest timer · weekly training memory · AI planner
    · Firestore sync
    ========================================================================== */
-const APP_VERSION="v202 · 23/09/2026";
+const APP_VERSION="v203 · 23/09/2026";
 
 /* ===== 1. REST TIMER — drag it anywhere so it never blocks the chat box ===== */
 let _rtDrag=null;
