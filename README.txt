@@ -1,3 +1,66 @@
+AMIR PT — v207 · 24/09/2026
+===========================
+
+"Remind the app that with dumbbells my maximum is 10kg per arm — it wanted me
+to do 27kg."
+
+IT DID, AND THE REASON IS WORTH WRITING DOWN
+---------------------------------------------
+Chest-supported Row was filed as eq:"mach". That is correct in a commercial
+gym and wrong in his: there is no chest-supported row machine in the Dubai kit
+list. He does it face down on the incline bench with a dumbbell in each hand —
+which is exactly what his own demo photograph on that card shows.
+
+Tagged as a machine, it sat outside every dumbbell rule. No ceiling, no
+rounding to a weight he owns. So the starting-weight estimator did what it
+does for a machine: scaled it off his barbell row pattern and handed him a
+number. 27kg. There is no 27kg dumbbell in the building.
+
+AND UNDERNEATH IT, THE SAME BUG SHAPE AS EVER
+----------------------------------------------
+v116 added eqOf() precisely because "the library's equipment tag is a guess
+and it is sometimes wrong, which then feeds the location gate, the kit
+rounding and the band copy". His correction wins and sticks.
+
+Then the kit rounding went on reading the guess anyway. Five places —
+roundToKit, atKitCeiling, loadStep, the anchor-picker and the next-weight
+calculation — all read EX(name).eq directly, so setEqOverride could never
+actually reach the thing its own comment said it fed. One rule, several
+implementations, and the wrong one running. Eighth time this shape has come
+up in this file.
+
+All five ask eqOf() now, and a new kitCeilingKg() is the single answer to
+"what is the heaviest this movement can be loaded to here".
+
+THREE PLACES THAT CAN HAND HIM A NUMBER, ONE CEILING
+------------------------------------------------------
+  1  recommendLoad — the outermost point every recommendation leaves by.
+     Anything above the rack is brought back and says so. This catches the
+     paths roundToKit never sees: a coach-set next target, a +kg delta, a
+     stale recommendation saved before a movement was retagged.
+  2  coachSetExLoad — the coach writes straight into the recommendation, so
+     the rack is checked there too. The receipt says what happened rather
+     than quietly showing a different number to the one the coach asked for.
+  3  ceilingPlan — for a logged weight ABOVE the ceiling, which his log now
+     has (20kg, on the app's own suggestion). It used to go on to call that
+     number "your heaviest dumbbell", which it plainly is not. It now says
+     what is true and starts the reps from something real.
+
+The first-time copy changed too: "try 10kg and work up from there — rate it
+easy and I'll jump it straight away" are both promises the rack cannot keep
+when the estimate has landed ON the ceiling, so that case gets its own
+sentence.
+
+Verified: Chest-supported Row resolves to db with a 10kg ceiling; the first
+attempt off a 70kg barbell row now returns 10kg rather than the 41.5kg it
+returned as a machine; a coach +5kg above the rack is brought back with the
+reason; a coach "15kg" on Hammer Curl writes 10kg and says 15 was asked for;
+his logged 20kg is answered honestly instead of being called his heaviest
+dumbbell. Swept every movement in the 4-week program: nothing anywhere returns
+a weight above what the kit can make. Barbell rounding, cable movements and
+band copy all unchanged. Sweep clean — verify16, dupes2, shape, audit173,
+journey, grow196, ceil190.
+
 AMIR PT — v206 · 23/09/2026
 ===========================
 

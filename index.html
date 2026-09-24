@@ -2682,7 +2682,14 @@ const EXTRA_LIB={
  "Single-arm Triceps Extension":{m:["arms"],eq:"mach",cue:"Elbow high and still, extend from the elbow only. Light — this is a finisher.",wristAlt:"Neutral handle"},
  "Incline DB Curl":{m:["arms"],eq:"db",cue:"Lie back on the incline, arms hanging behind you. That stretch at the bottom is the whole point.",wristAlt:"Neutral grip — fine"},
  "Reverse Crunch":{m:["core"],eq:"bw",cue:"Knees to chest, curl the hips off the floor. Slow down on the way back — no swinging.",wristAlt:"No wrist load"},
- "Chest-supported Row":{m:["back"],eq:"mach",cue:"Chest on the pad, row to the ribs. No cheating with the low back.",wristAlt:"Neutral grip — fine"},
+ /* v207 — it was eq:"mach", which is right in a commercial gym and wrong in
+    his. There is no chest-supported row machine in the Dubai kit list: he does
+    it face-down on the incline bench with a dumbbell in each hand, which is
+    what his own demo photograph shows. Tagged mach, it sat outside every
+    dumbbell rule — no ceiling, no rounding to a weight he owns — and the
+    starting-weight estimator scaled it off a barbell pattern and handed him
+    27kg. There is no 27kg dumbbell in the building. */
+ "Chest-supported Row":{m:["back"],eq:"db",cue:"Chest on the pad, row to the ribs. No cheating with the low back.",wristAlt:"Neutral grip — fine"},
  "Cable Lateral Raise":{m:["shoulders"],eq:"mach",cue:"Constant tension, lead with the elbow.",wristAlt:"Neutral grip — fine"},
  "Cable Crunch":{m:["core"],eq:"mach",cue:"Curl the ribs to the hips. It's a crunch, not a hip hinge.",wristAlt:"Rope, neutral grip"},
  "Ab Wheel":{m:["core"],eq:"other",cue:"Roll out only as far as you can keep the low back flat.",wristAlt:"Loaded wrist — skip on a bad TFCC day"},
@@ -3980,8 +3987,8 @@ function pickAnchors(split,key){
      left to progress. They stay in as accessories, where light is fine. */
   const k=kitFor(key);
   const loadable=n=>{
-    const e=EX(n)||{};
-    if((e.eq==="db"||e.eq==="kb") && k.dbMax!=null){
+    const eq=eqOf(n);
+    if((eq==="db"||eq==="kb") && k.dbMax!=null){
       const top=(function(){ try{ const h=realStrengthSessions(n); if(!h.length) return 0;
         return Math.max(...(h[h.length-1].sets||[]).map(x=>x.w||0),0); }catch(e2){ return 0; } })();
       /* Already at or near the ceiling on it? It cannot anchor anything. */
@@ -5046,6 +5053,24 @@ function loadCapFor(name){
 function recommendLoad(ex){
   const r=recommendLoadRaw(ex);
   if(!r) return r;
+  /* ===== v207 · THE LAST WORD ON A NUMBER HE CANNOT LOAD ==============
+     roundToKit clamps the paths that go through it. This catches the ones
+     that do not: a next target the coach typed, a +kg delta, a stale
+     recommendation saved before a movement was retagged. Nothing leaves
+     this function above what the rack can make.
+
+     It is deliberately the OUTERMOST point. Every earlier rule can go on
+     reasoning in whatever units it likes; this is the one place that has
+     to be right, and there is exactly one of it. */
+  const kc=kitCeilingKg(ex);
+  if(kc!=null && r.w!=null && r.w>kc+0.01){
+    const out=Object.assign({}, r, {w:kc, up:false, capped:true, kitCapped:true});
+    out.text=kc+"kg \u2014 that is the heaviest dumbbell you own"+
+      (r.w? " (the "+r.w+"kg above came from a weight you do not have; it has been brought back)" : "")+
+      ". Reps and tempo are the progression from here.";
+    out.why=kc+"kg is the top of your rack, so no rule underneath this one gets to ask for more than that.";
+    return out;
+  }
   /* The ceiling applies before anything else touches the number. */
   const cap=loadCapFor(ex);
   if(cap && r.w!=null && r.w>cap.kg){
@@ -5142,15 +5167,15 @@ function bestTopWeight(name){
 /* Round to something he can actually load here. */
 function roundToKit(name,w){
   const k=kitFor(locKey());
-  const e=EX(name)||{};
+  const eq=eqOf(name);                 /* v207 — his correction, not the guess */
   if(w<=0) return 0;
-  if(e.eq==="db"||e.eq==="kb"){
+  if(eq==="db"||eq==="kb"){
     const step=k.dbStep||1;
     let v=Math.round(w/step)*step;
     if(k.dbMax!=null) v=Math.min(v,k.dbMax);
     return Math.max(step,v);
   }
-  if(e.eq==="bb"||e.eq==="bar"){
+  if(eq==="bb"||eq==="bar"){
     const bar=k.bar||20, sm=(k.plates&&k.plates[0])||1.25;
     if(w<=bar) return bar;
     const perSide=Math.round(((w-bar)/2)/sm)*sm;
@@ -5183,6 +5208,17 @@ function bandProgressionNote(name){
   if(eq==="band") return "No kilos on a band \u2014 progress with reps, then a slower negative, then a thicker band or more tension at the anchor.";
   if(eq==="bw")   return "Bodyweight \u2014 progress with reps, then tempo, then a harder variation.";
   return "";
+}
+/* v207 — the estimator quotes the reference lift it worked from ("about 85%
+   of your Barbell Row"). Once roundToKit has put the answer back on the rack
+   that sentence is no longer true of the number beside it, so the ceiling case
+   gets its own sentence rather than a percentage that stopped applying. */
+function _capEstimate(name,est){
+  if(!est || est.w==null) return est;
+  const c=kitCeilingKg(name);
+  if(c==null || est.w<c-0.01) return est;
+  return Object.assign({}, est, {w:c, full:c, atCeiling:true,
+    why:c+"kg is the heaviest dumbbell you own, so this one starts at the top of the rack and the reps do the work"});
 }
 function estimateStartLoad(name){
   /* Nothing to estimate for something that has no weight. */
@@ -5240,7 +5276,13 @@ function recommendLoadRaw(ex){
     /* Nothing logged for this lift. Work out a starting point from what he
        does lift, rather than telling him to guess. */
     try{
-      const g=estimateStartLoad(ex);
+      const g=_capEstimate(ex, estimateStartLoad(ex));
+      /* v207 — "work up from there" and "I'll jump it straight away" are both
+         promises the rack cannot keep once the estimate has landed ON the
+         ceiling. Its own sentence. */
+      if(g && g.atCeiling && g.w>0) return {w:g.w, up:false, estimate:true, ceiling:true,
+        text:"New one \u2014 and "+g.w+"kg is the heaviest dumbbell you own, so start there. Find your rep number on the first set: reps and tempo are the progression here, not weight.",
+        why:g.why};
       if(g && g.w>0) return {w:g.w, up:false, estimate:true,
         text:"New one — try "+g.w+"kg for the first set and work up from there. "+g.why+". Rate it easy and I'll jump it straight away."};
     }catch(e){}
@@ -5481,6 +5523,20 @@ function ceilingPlan(name,sets){
   if(!ss.length) return null;
   const topW=Math.max(...ss.map(s=>+s.w||0));
   if(!atKitCeiling(name,topW)) return null;
+  /* v207 — a logged weight ABOVE the ceiling. It happens when a movement is
+     retagged (Chest-supported Row was filed as a machine and the estimator
+     handed him 20kg for it), or when a set went in as the pair rather than
+     the dumbbell. Either way the rest of this function would go on to call
+     that number "your heaviest dumbbell", which it plainly is not. Say what
+     is true, put the number back on the rack, and let the reps start from
+     something real. */
+  const _ceil=kitCeilingKg(name);
+  if(_ceil!=null && topW>_ceil+0.01){
+    return {w:_ceil, up:false, ceiling:true, overKit:true, best:null,
+      text:_ceil+"kg \u2014 your dumbbells stop there, and the "+topW+"kg on this movement is above what you own. Start from "+_ceil+"kg and find your reps.",
+      why:"Your heaviest dumbbell is "+_ceil+"kg, so a logged "+topW+"kg on this movement is either the pair counted together or a number the app asked for before it knew what the movement was. Either way the recommendation comes off the rack you actually own.",
+      next:"Take "+_ceil+"kg for as many clean reps as it gives you. That set is the baseline, and reps are the progression from there."};
+  }
   const reps=ss.filter(s=>(+s.w||0)===topW).map(s=>+s.r||0).filter(n=>n>0);
   if(!reps.length) return null;
   const best=Math.max(...reps), low=Math.min(...reps);
@@ -5527,16 +5583,33 @@ function ceilingPlan(name,sets){
     next:"Hold "+reps2+" reps on every set at "+topW+"kg, then we make the movement harder rather than the dumbbell heavier."});
 }
 /* Is he already on the heaviest thing he owns for this movement? */
-function atKitCeiling(name,w){
-  const e=EX(name)||{};
+/* ===== v207 · THE HEAVIEST THIS MOVEMENT CAN BE LOADED TO ==============
+   "Remember with dumbbells my maximum is 10kg per arm \u2014 it wanted me to do
+   27kg."
+
+   It did, and it could, because the ceiling was being asked about the wrong
+   thing. Every kit decision in the app read EX(name).eq \u2014 the catalogue tag,
+   written for a commercial gym \u2014 rather than eqOf(name), which is the same
+   tag WITH his own corrections applied. v116 added eqOf precisely because
+   "the library\u2019s equipment tag is a guess and it is sometimes wrong, which
+   then feeds the location gate, the kit rounding and the band copy", and then
+   the kit rounding went on reading the guess anyway.
+
+   So: one function answers what the kit can make of a movement, it asks
+   eqOf, and everything that needs a ceiling asks it. */
+function kitCeilingKg(name){
+  const eq=(typeof eqOf==="function")? eqOf(name) : ((EX(name)||{}).eq||"");
   const k=kitInfo();
-  if((e.eq==="db"||e.eq==="kb") && k.dbMax!=null) return w>=k.dbMax-0.01;
-  return false;
+  if((eq==="db"||eq==="kb") && k.dbMax!=null) return k.dbMax;
+  return null;
+}
+function atKitCeiling(name,w){
+  const c=kitCeilingKg(name);
+  return c!=null && w>=c-0.01;
 }
 function loadStep(name,current){
   const k=kitInfo();
-  const e=EX(name)||{};
-  const eq=e.eq||"";
+  const eq=eqOf(name)||"";
   if(eq==="db"||eq==="kb") return k.dbStep;              /* per dumbbell */
   if(eq==="bb"||eq==="bar") return k.plates[0]*2;        /* a plate each side */
   if(eq==="mach") return 2.5;
@@ -11348,10 +11421,23 @@ function coachSetExRest(name,rest){
 }
 function coachSetExLoad(name,load){
   const e=coachEx(name); if(!e) return null;
-  const txt=String(load).trim(); if(!txt) return null;
-  const kg=parseFloat(txt.replace(",","."));
-  e.rec={w:isNaN(kg)?"":kg, text:txt+(/kg|lb|band|bw/i.test(txt)?"":"kg")+" today."};
-  coachAfterEx(); return {name:e.name,txt};
+  let txt=String(load).trim(); if(!txt) return null;
+  let kg=parseFloat(txt.replace(",","."));
+  /* v207 — the coach writes straight into the recommendation, so the rack has
+     to be checked here too. It is the same ceiling recommendLoad enforces; a
+     number above it is not a coaching decision, it is a weight that does not
+     exist in the room. The receipt says what happened rather than quietly
+     showing a different number to the one the coach asked for. */
+  let capped=null;
+  try{
+    const c=kitCeilingKg(e.name);
+    if(c!=null && !isNaN(kg) && kg>c+0.01){ capped=kg; kg=c; txt=c+"kg"; }
+  }catch(err){}
+  e.rec={w:isNaN(kg)?"":kg,
+    text: capped!=null
+      ? kg+"kg today \u2014 "+capped+"kg was asked for, and "+kg+"kg is the heaviest dumbbell here."
+      : txt+(/kg|lb|band|bw/i.test(txt)?"":"kg")+" today."};
+  coachAfterEx(); return {name:e.name, txt, capped};
 }
 function coachSetExTempo(name,tempo){
   const e=coachEx(name); if(!e) return null;
@@ -12145,7 +12231,7 @@ function autoReplacementFor(name){
     let sc=0;
     if(patternOf(n)===p) sc+=5;
     const o=EX(n)||{};
-    if((o.eq==="db"||o.eq==="kb") && k.dbMax!=null && k.dbMax<=12) sc-=2;
+    if((eqOf(n)==="db"||eqOf(n)==="kb") && k.dbMax!=null && k.dbMax<=12) sc-=2;
     sc-=((o.pop||500)/1000);
     return sc;
   };
@@ -14413,7 +14499,7 @@ function scheduleInApp(){
    v18 ADDITIONS — draggable rest timer · weekly training memory · AI planner
    · Firestore sync
    ========================================================================== */
-const APP_VERSION="v206 · 23/09/2026";
+const APP_VERSION="v207 · 24/09/2026";
 
 /* ===== 1. REST TIMER — drag it anywhere so it never blocks the chat box ===== */
 let _rtDrag=null;
@@ -15389,7 +15475,7 @@ function easyJumpFor(name,w){
   if(easyRun>=2) step*=2;
   let next=roundToKit(name, w+step);
   if(next<=w) next=w+step;
-  if((e.eq==="db"||e.eq==="kb") && k.dbMax!=null) next=Math.min(next,k.dbMax);
+  const _c=kitCeilingKg(name); if(_c!=null) next=Math.min(next,_c);
   return (next>w)? next : null;
 }
 function setEffort(i,setIdx,e){
