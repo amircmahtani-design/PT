@@ -10550,7 +10550,7 @@ coachingDoctrine()+
 "WHAT YOU MAY NOT DO: replace a core movement because it would be more interesting, add exercises to pad the session, or rebuild the day. Incline Press, Lat Pulldown, a row, Lateral Raise, Romanian Deadlift and Bulgarian Split Squat stay unless there is a real reason. If he asks you to redo or rebuild a day, give him the PROGRAMMED session for that day and week and coach the loads — do not generate a different one.\n"+
 "HOW TO TALK ABOUT PROGRESSION: \"Last time you completed all four sets at 60kg. Today let's try 62kg.\" or \"You missed the final two reps last time, so stay at the same load today and complete all four sets before increasing.\" NEVER: \"let's change your workout to keep your body guessing.\" Never raise the load if the reps or the form went backwards.\n"+
 "WHEN THE BLOCK ENDS you may write the next 4-week block, but keep 70-80% of the movements so the loading continues; only 20-30% rotates. The goal never changes: lean athletic Mario Casas physique — lateral delts and upper chest first, then lat width and upper back, then arms for definition, a flat waist, and legs trained seriously but for athletic proportion rather than size.\n\n"+
-"HIS CONDITIONING IS THE 2KM ROW HE DOES AS THE WARM-UP ON EVERY LIFTING DAY, plus the walk on the front of the Wednesday flow. That is four rows a week. NEVER tell him the week is short of cardio and never propose swapping a lifting day for a cardio day: he has told me plainly that this covers it, and the app no longer counts a dedicated cardio DAY as the only way conditioning happens. If he ever says the conditioning is slipping, the answer is a longer row on the end of Monday, not a fourth rest day. SATURDAY AND SUNDAY ARE ALWAYS REST \u2014 do not schedule anything on them, and do not suggest he trains through the weekend. Three lifting days, one cardio, one mobility, two off. If you think a change would serve his goal better, say so once, briefly, and leave the decision to him; never just move a day.\n[[SET_WEEKDAY: Monday | Cardio Day]] · [[SET_WEEKLY_SCHEDULE: Mon Cardio Day; Tue Pull Day; Wed Full Body; Thu Push Day; Fri Legs & Core; Sat Upper Body; Sun Rest]] · [[CREATE_DAY_TYPE: Mobility Day]] · [[CREATE_DAY_TYPE: Cardio Day | kind:cardio | note:Zone 2 engine work]] · [[REMOVE_SCHEDULE_DAY_TYPE: Rest]]\n"+
+"HIS CONDITIONING IS THE 2KM ROW HE DOES AS THE WARM-UP ON EVERY LIFTING DAY, plus the walk on the front of the Wednesday flow. That is four rows a week. NEVER tell him the week is short of cardio and never propose swapping a lifting day for a cardio day: he has told me plainly that this covers it, and the app no longer counts a dedicated cardio DAY as the only way conditioning happens. If he ever says the conditioning is slipping, the answer is a longer row on the end of Monday, not a fourth rest day. SATURDAY AND SUNDAY ARE ALWAYS REST \u2014 do not schedule anything on them, and do not suggest he trains through the weekend. The app now REFUSES a weekday envelope that puts anything but Rest on Sat or Sun, so an attempt will simply not take. Four lifting days, one Mobility & Pilates, two off. If you think a change would serve his goal better, say so once, briefly, and leave the decision to him; never just move a day.\n[[SET_WEEKDAY: Monday | Cardio Day]] · [[SET_WEEKLY_SCHEDULE: Mon Upper Body; Tue Legs & Core; Wed Mobility & Pilates; Thu Pull Day; Fri Push Day; Sat Rest; Sun Rest]] · [[CREATE_DAY_TYPE: Mobility Day]] · [[CREATE_DAY_TYPE: Cardio Day | kind:cardio | note:Zone 2 engine work]] · [[REMOVE_SCHEDULE_DAY_TYPE: Rest]]\n"+
 "(CREATE_DAY_TYPE options after the name, pipe-separated: kind:cardio|mobility|strength, main:Ex1,Ex2, sets:4, note:...)\n\n"+
 "EXERCISE LIBRARY (add anything not built-in):\n"+
 "[[ADD_LIBRARY_EXERCISE: Seated Cable Row | muscles:back,arms | cue:Drive elbows to hips | category:Pull | equipment:cable | sets:3 | reps:10 | wrist:neutral grip | media:https://...gif]]  (only name is required)\n\n"+
@@ -11272,10 +11272,27 @@ function resolveSplit(raw){ const t=String(raw||"").trim(); if(!t) return null; 
 function ensureDayType(name){ const n=String(name||"").trim(); if(!n) return null; if(SPLITS.includes(n)) return n; if(!DB.dayTypes[n]) DB.dayTypes[n]={kind:inferDayKind(n),main:[],note:""}; return n; }
 function coachCreateDayType(name,opts){ const n=String(name||"").trim(); if(!n) return null; DB.dayTypes[n]=Object.assign({kind:inferDayKind(n),main:[],note:""},DB.dayTypes[n]||{},opts||{}); save(); return n; }
 function coachRemoveDayType(name){ const n=String(name||"").trim(); if(SPLITS.includes(n)) return null; if(DB.dayTypes[n]){ delete DB.dayTypes[n]; Object.keys(DB.schedule).forEach(k=>{ if(DB.schedule[k]===n) DB.schedule[k]="Rest"; }); if(DB.dayOverride&&DB.dayOverride.split===n){ DB.dayOverride={date:null,split:null}; DB.workout=null; } save(); ensureWorkout&&ensureWorkout(); renderItin(); return n; } return null; }
-function coachSetWeekday(dayRaw,splitRaw){ const d=dowIndex(dayRaw); if(d==null||d<0||isNaN(d)) return null; const sp=resolveSplit(splitRaw); if(!sp) return null; ensureDayType(sp); DB.schedule[d]=sp;
+/* ===== v209 · THE WEEKEND IS NOT THE COACH'S TO SPEND =================
+   "Saturday and Sunday are always rest." It is in the brief in capitals, and
+   the brief also carried an EXAMPLE schedule with "Sat Upper Body" in it —
+   which is the shape a model copies when it reaches for the envelope. The
+   example is fixed, and so is the hole it sat in: the coach cannot write a
+   session onto Saturday or Sunday at all now.
+
+   His own dropdown is untouched. A rule he gave me does not get to overrule
+   him; it gets to overrule the thing acting on his behalf. */
+function weekendLocked(d){ return d===0 || d===6; }
+function coachSetWeekday(dayRaw,splitRaw){ const d=dowIndex(dayRaw); if(d==null||d<0||isNaN(d)) return null; const sp=resolveSplit(splitRaw); if(!sp) return null;
+  if(weekendLocked(d) && !/^rest$/i.test(sp)) return null;
+  ensureDayType(sp); DB.schedule[d]=sp;
   if(d===new Date().getDay()){ DB.dayOverride={date:today(),split:sp}; DB.workout=null; } save(); if(d===new Date().getDay()) ensureWorkout(); renderItin(); updateStatus(); return {day:DOW[d],split:sp}; }
 function coachSetWeeklySchedule(raw){ const parts=String(raw||"").split(/\s*;\s*/).map(x=>x.trim()).filter(Boolean); let n=0;
-  parts.forEach(p=>{ const m=p.match(/^(\S+)\s+(.+)$/); if(m){ const d=dowIndex(m[1]); if(d>=0){ const sp=resolveSplit(m[2]); if(sp){ ensureDayType(sp); DB.schedule[d]=sp; n++; } } } });
+  parts.forEach(p=>{ const m=p.match(/^(\S+)\s+(.+)$/); if(m){ const d=dowIndex(m[1]); if(d>=0){ const sp=resolveSplit(m[2]);
+    /* Same rule as coachSetWeekday: a whole-week rewrite is exactly where a
+       weekend session slips in unnoticed, so the weekend rows are skipped
+       rather than the whole envelope being refused. */
+    if(sp && weekendLocked(d) && !/^rest$/i.test(sp)) return;
+    if(sp){ ensureDayType(sp); DB.schedule[d]=sp; n++; } } } });
   if(!n) return null; DB.dayOverride={date:null,split:null}; DB.workout=null; save(); ensureWorkout(); renderItin(); updateStatus(); return n; }
 /* Library */
 function coachAddLibraryExercise(raw){ const parts=String(raw||"").split('|').map(x=>x.trim()); const name=parts[0]; if(!name) return null;
@@ -14582,7 +14599,7 @@ function scheduleInApp(){
    v18 ADDITIONS — draggable rest timer · weekly training memory · AI planner
    · Firestore sync
    ========================================================================== */
-const APP_VERSION="v208 · 24/09/2026";
+const APP_VERSION="v209 · 24/09/2026";
 
 /* ===== 1. REST TIMER — drag it anywhere so it never blocks the chat box ===== */
 let _rtDrag=null;
@@ -14894,7 +14911,32 @@ function restAdvice(){
   const said=!!(ciToday && ciToday.plan==="Rest");
   if(said) reasons.unshift("you said at check-in you were resting today");
   const verdict = said ? "rest" : score>=4 ? "rest" : score>=2 ? "deload" : "go";
-  return {verdict,score,fatigue,fresh,reasons,green,streak,sinceRest,totalSets,trendDown:tr.down,trendUp:tr.up,stale};
+  /* ===== v209 · TWO NUMBERS, ONE WORD ================================
+     "Why does it say 1 day when I have done 8 days."
+
+     Because the card was showing the wrong one of two counts that answer
+     different questions, and calling it by the other one's name.
+
+       streak  = consecutiveTrainingDays(), which counts days he has LOADED
+                 something and stops dead at the first day he did not. It is
+                 a fatigue signal: six of those in a row is why the readiness
+                 score pulls a set. A planned rest day resets it, correctly.
+
+       run     = computeStreak(), the number on the Streak card: did he show
+                 up. Rest days he planned are stepped over, flow days count,
+                 and up to two unplanned misses do not end it.
+
+     Yesterday was his rest day, so the fatigue count is honestly 1 and the
+     run is honestly 8. Both were right. The pill just had the wrong one
+     under the word "streak", sitting on the same screen as the card saying
+     8, which is how he found it.
+
+     The fatigue number keeps its name where it is USED as fatigue ("6 days
+     straight with no rest day", "Consecutive training days" in the brief).
+     Nothing renders it as his streak any more. */
+  let run=streak;
+  try{ run=computeStreak(); }catch(e){}
+  return {verdict,score,fatigue,fresh,reasons,green,streak,run,sinceRest,totalSets,trendDown:tr.down,trendUp:tr.up,stale};
 }
 /* Advice + Amir's override for today. */
 /* Has today's training already happened? Read from what is logged, not from
@@ -14998,7 +15040,7 @@ function flowReadinessHTML(c){
     ? (noCoverage(c.green).slice(0,2).join(" · ") || "nothing flagging")
     : (c.green.length? c.green.slice(0,3).join(" · ") : "recovery looks fine");
   return "<div class='card mt'><div class='card-title'><span>"+(scheduledRest? "😴 " : "🧘 ")+head+"</span>"+
-    "<span class='pill purple'>"+c.streak+"d streak</span></div>"+
+    "<span class='pill purple'>"+(c.run!=null?c.run:c.streak)+"d streak</span></div>"+
     "<div class='coachnote'><div class='who'>◆ Coach</div>"+body+
       "<div class='sm' style='margin-top:8px'>"+(tired?"Well timed: ":"Reading: ")+why+"</div></div>"+
     (scheduledRest? "" :
@@ -15057,7 +15099,7 @@ function readinessHTML(){
   else if(c.verdict==="push") btns=B("null","sec","\u21a9 Back to coach's call")+B("'rest'","ghost","\uD83D\uDE34 Rest instead");
   else btns=B("'rest'","ghost","\uD83D\uDE34 I need a rest day")+B("'push'","sec","\uD83D\uDCAA Add a set");
   return "<div class='card mt'><div class='card-title'><span>"+cfg.icon+" "+cfg.head+"</span>"+
-    "<span class='pill "+cfg.pill+"'>"+c.streak+"d streak</span></div>"+
+    "<span class='pill "+cfg.pill+"'>"+(c.run!=null?c.run:c.streak)+"d streak</span></div>"+
     "<div class='coachnote'><div class='who'>\u25c6 Coach</div>"+body+
       "<div class='sm' style='margin-top:8px'>"+(c.verdict==="rest"||c.verdict==="deload"?"Why: ":"Reading: ")+why+"</div>"+
       weekGapLine()+"</div>"+

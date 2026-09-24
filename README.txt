@@ -1,3 +1,57 @@
+AMIR PT — v209 · 24/09/2026
+===========================
+
+"Why does it say 1 day when I have done 8 days?"
+
+TWO NUMBERS, ONE WORD, AND THE CARD SHOWED THE WRONG ONE
+----------------------------------------------------------
+Both numbers were right. They answer different questions and only one of them
+is his streak.
+
+  consecutiveTrainingDays()  counts days he has LOADED something and stops
+                             dead at the first day he did not. It is a FATIGUE
+                             signal — six in a row is why readiness pulls a
+                             set — and a planned rest day resets it, correctly.
+                             Yesterday was his rest day, so it was honestly 1.
+
+  computeStreak()            the number on the Streak card: did he show up.
+                             Planned rest days are stepped over, flow days
+                             count, and up to two unplanned misses do not end
+                             it. Honestly 8.
+
+v152 wrote that distinction down in a comment and then the readiness card went
+on rendering the fatigue count with the word "streak" under it, on the same
+screen as a card saying 8. That is how he found it.
+
+The pill shows the run now. The fatigue count keeps its name everywhere it is
+used AS fatigue — "6 days straight with no rest day", "Consecutive training
+days" in the coach brief — and nothing renders it as his streak any more.
+
+AND WHILE LOOKING AT HIS WEEK: SATURDAY HAD A SESSION ON IT
+-------------------------------------------------------------
+His screenshot shows Wednesday as Rest and Saturday as Mobility & Pilates.
+Saturday and Sunday are always rest — his rule, in capitals in the coach's
+brief. Two lines under that sentence the brief carried an EXAMPLE schedule
+reading "Sat Upper Body", which is precisely the shape a model copies when it
+reaches for the envelope.
+
+The example is fixed. So is the hole it sat in: SET_WEEKDAY and
+SET_WEEKLY_SCHEDULE now refuse to write anything but Rest onto Saturday or
+Sunday. A whole-week rewrite skips the weekend rows rather than failing
+entirely, so the five weekdays still land.
+
+His own dropdown is untouched and always will be. A rule he gave me does not
+get to overrule him — it gets to overrule the thing acting on his behalf. His
+schedule has not been changed here either; that is his to move.
+
+Verified: with his week seeded (four lifting days, Wednesday rest, weekend
+off) the fatigue count reads 1, the run reads 8, and the pill and the Streak
+card both read 8. The coach cannot put Upper Body on Saturday or Push Day on
+Sunday; a seven-day rewrite containing "Sat Upper Body" applies six rows and
+leaves Saturday on Rest; the coach can still set any weekday and can still set
+the weekend to Rest; setDaySplit by hand does whatever he asks. Sweep clean —
+verify16, audit173, journey, streak194, miss194.
+
 AMIR PT — v208 · 24/09/2026
 ===========================
 
