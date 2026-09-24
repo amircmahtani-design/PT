@@ -1,3 +1,53 @@
+AMIR PT — v208 · 24/09/2026
+===========================
+
+"When I'm typing I should be able to see the rest clock in between exercises."
+
+IT WAS NEVER HIDDEN. IT WAS ABOVE THE GLASS
+---------------------------------------------
+position:fixed on iOS is fixed to the LAYOUT viewport, not to the part of it
+you can see. Focus a rep field and Safari scrolls the visual viewport down
+inside the layout one to make room for the keyboard — and a bar pinned to the
+top of the layout viewport goes with it, straight off the top of the screen.
+Nothing closed, nothing stopped: the clock was still counting, 120 pixels
+above the top of the phone.
+
+visualViewport is the only thing that knows where the visible strip actually
+is, so while the keyboard is up both floats are positioned against it
+directly: the rest clock 6px below the top of what he can see, the session
+pill just above the keyboard. No arithmetic about where they "would have
+been" — an explicit top, cleared the moment the keyboard closes, which puts
+them back through the same restApplyPos/sessApplyPos the drag handlers use. A
+bar he has dragged somewhere keeps that place.
+
+TWO WAYS OFF THE GLASS, ONE ANSWER
+------------------------------------
+The keyboard covering the bottom is one. The visible strip scrolling down
+inside the layout viewport is the other, and it can happen with no height
+change at all — which is precisely the case in his screenshot. Asking only
+about the keyboard would have missed it, so both are asked.
+
+A browser that resizes the layout viewport instead (Chrome on Android)
+reports no overlap and no scroll, which is correct: there nothing needs
+moving.
+
+TWO SMALLER THINGS THAT WOULD HAVE UNDONE IT
+----------------------------------------------
+iOS animates the keyboard open AFTER focus fires and does not reliably send a
+resize for the tail of it, so the field itself nudges the sync at 0, 120, 320
+and 650ms.
+
+And the window resize handler re-clamps a dragged float into the window,
+which would have dragged it straight back off the strip the pin had just put
+it on. While a float is pinned, the pin is the authority.
+
+Verified against both displacement modes: strip shrunk by 336px and not
+scrolled (classic Safari) puts the clock at 6px; strip scrolled 200px with no
+height change (standalone) puts it at 206px, and the session pill lands just
+above the keyboard in both. Keyboard closed restores the clock to its CSS
+position, and a clock dragged to y=400 pins while typing and returns to 400
+after. Sweep clean — verify16, audit173, journey, timer197.
+
 AMIR PT — v207 · 24/09/2026
 ===========================
 

@@ -250,6 +250,9 @@ textarea.txtin{min-height:88px;resize:vertical;line-height:1.45;}
    fixed, so it holds that spot however far he scrolls. Dragging still puts it
    anywhere he likes and that choice is still remembered; this only changes
    where it starts. */
+/* v208 — while the keyboard is up, the rest clock is positioned against the
+   strip of screen you can actually see rather than the layout viewport it is
+   fixed to; see vvSync(). The rules here are its resting state. */
 .resttimer{position:fixed;left:50%;transform:translateX(-50%);top:calc(8px + var(--safe-top));bottom:auto;width:min(520px,calc(100vw - 16px));z-index:44;
   background:#1a120b;border:1px solid #3d2a15;border-radius:16px;padding:9px 11px;
   display:none;flex-direction:column;align-items:stretch;gap:3px;box-shadow:0 12px 34px #000b;touch-action:none;}
@@ -7864,6 +7867,86 @@ function safeTopPx(){
 function tabBarPx(){
   try{ const b=document.querySelector('.tabbar'); return b? b.offsetHeight : 0; }catch(e){ return 0; }
 }
+/* ===== v208 · KEEPING THE CLOCK ON THE GLASS ==========================
+   position:fixed on iOS is fixed to the LAYOUT viewport, not to the part of
+   it you can see. Focus a rep field and Safari scrolls the visual viewport
+   down inside the layout one to make room for the keyboard \u2014 and a bar pinned
+   to the top of the layout viewport goes with it, straight off the top of the
+   screen. Nothing was hidden and nothing was closed: the rest clock was above
+   the glass, still counting.
+
+   visualViewport is the only thing that knows where the visible strip is, so
+   while the keyboard is up both floats are positioned against it directly.
+   No maths about where they "would have been" \u2014 an explicit top, cleared the
+   moment the keyboard closes.
+
+   How much of the layout viewport the keyboard is covering \u2014 zero when there
+   is no keyboard, and zero in a browser that resizes the layout viewport
+   instead, where nothing needs moving anyway. */
+function kbdOverlap(){
+  const vv=window.visualViewport;
+  if(!vv) return 0;
+  /* NOT minus offsetTop: the keyboard covers the bottom of the SCREEN, and
+     offsetTop only says how far the visible strip has scrolled within the
+     layout viewport. Subtracting it made a scrolled page look keyboard-free. */
+  return Math.max(0, Math.round(window.innerHeight - vv.height));
+}
+function kbdOpen(){ return kbdOverlap()>120; }
+/* While the keyboard is up, both floats are positioned against the strip you
+   can actually see: the clock 6px below the top of it, the session pill just
+   above the keyboard. When it closes they go back exactly where they were,
+   through the same restApplyPos/sessApplyPos the drag handlers use — so a bar
+   he has dragged somewhere keeps that place. */
+let _vvRaf=0;
+function vvSync(){
+  if(_vvRaf) return;
+  _vvRaf=requestAnimationFrame(()=>{
+    _vvRaf=0;
+    const vv=window.visualViewport;
+    /* Two ways a fixed float ends up off the glass, and both want the same
+       answer. The keyboard covering the bottom is one. The visible strip
+       having scrolled down inside the layout viewport is the other \u2014 which
+       is what iOS actually does to make room, and it can happen without the
+       height changing at all, so asking only about the keyboard would miss
+       exactly the case he photographed. */
+    const open=kbdOpen() || !!(vv && (vv.offsetTop||0)>4);
+    const R=document.getElementById('restTimer');
+    const S=document.getElementById('sessFloat');
+    if(R){
+      if(open && vv && R.classList.contains('show')){
+        R.dataset.kbd="1";
+        R.style.top=Math.round((vv.offsetTop||0)+6)+"px";
+      } else if(R.dataset.kbd){
+        delete R.dataset.kbd;
+        try{ restApplyPos(); }catch(e){ R.style.top=""; }
+      }
+    }
+    if(S){
+      if(open && vv && S.classList.contains('show')){
+        S.dataset.kbd="1";
+        S.style.top=Math.round((vv.offsetTop||0)+vv.height-(S.offsetHeight||48)-8)+"px";
+        S.style.bottom="auto";
+      } else if(S.dataset.kbd){
+        delete S.dataset.kbd;
+        S.style.bottom="";
+        try{ sessApplyPos(); }catch(e){ S.style.top=""; }
+      }
+    }
+  });
+}
+function vvWatch(){
+  const vv=window.visualViewport;
+  if(!vv) return;
+  vv.addEventListener('resize', vvSync);
+  vv.addEventListener('scroll', vvSync);
+  /* The keyboard animates open AFTER focus fires, and iOS does not reliably
+     send a resize for the tail of it, so the field itself nudges us as well. */
+  const poke=()=>{ vvSync(); setTimeout(vvSync,120); setTimeout(vvSync,320); setTimeout(vvSync,650); };
+  document.addEventListener('focusin', e=>{
+    if(e.target && /^(INPUT|TEXTAREA|SELECT)$/.test(e.target.tagName)) poke();
+  });
+  document.addEventListener('focusout', poke);
+}
 /* Where a dragged float is allowed to sit. */
 function floatBounds(w,h){
   return {
@@ -14499,7 +14582,7 @@ function scheduleInApp(){
    v18 ADDITIONS — draggable rest timer · weekly training memory · AI planner
    · Firestore sync
    ========================================================================== */
-const APP_VERSION="v207 · 24/09/2026";
+const APP_VERSION="v208 · 24/09/2026";
 
 /* ===== 1. REST TIMER — drag it anywhere so it never blocks the chat box ===== */
 let _rtDrag=null;
@@ -22412,6 +22495,7 @@ boot();
 try{ collapsibleSettings(); }catch(e){}
 initRestDrag();
 initSessDrag();
+try{ vvWatch(); }catch(e){}
 registerSW();
 loadPhotos();
 /* v61: read the index of demos already on this phone, then repaint whatever is
@@ -22457,7 +22541,17 @@ setTimeout(async()=>{
   if(localHasHistory()){ _cloudDirty=true; await cloudFlush("startup"); }
   updateSyncDot();
 },1200);
-window.addEventListener('resize',()=>{ try{ restClamp(); sessClamp(); }catch(e){} });
+window.addEventListener('resize',()=>{
+  /* v208 — a keyboard opening can fire this, and clamping to the window would
+     drag the floats straight back off the visible strip vvSync just put them
+     on. While they are pinned, the pin is the authority. */
+  try{
+    const R=document.getElementById('restTimer'), S=document.getElementById('sessFloat');
+    if(!(R&&R.dataset.kbd)) restClamp();
+    if(!(S&&S.dataset.kbd)) sessClamp();
+    vvSync();
+  }catch(e){}
+});
 
 </script>
 </body>
