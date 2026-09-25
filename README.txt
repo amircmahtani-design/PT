@@ -1,3 +1,102 @@
+AMIR PT — v212 · 25/09/2026
+===========================
+
+"Update my PT Coach app so the primary physique goal is now ATHLETIC / LEAN
+MUSCULAR — not bodybuilding size."
+
+WHAT THE APP ALREADY BELIEVED, AND WHERE IT DIDN'T
+----------------------------------------------------
+The doctrine was already his: the target look has said "lean and defined
+rather than big, NOT a bodybuilder" since v117, and the priority table says
+shoulders and lats first, arms in moderation, legs deliberately not a mass
+goal. What was still tuned for growth were the NUMBERS underneath it —
+15-16 sets a week on the big groups, seven movements a day, and a load bump
+every time a session was merely completed. This makes the numbers agree with
+the doctrine, and puts a switch on top of both.
+
+1 · THE OBJECTIVE IS A THING THE APP HAS, NOT A THING IT BELIEVES
+------------------------------------------------------------------
+OBJECTIVES holds two — Athletic / Lean Muscular (his words, verbatim, as the
+blurb) and Maximum size — with their own volume bands and their own
+progression rule. Settings → Training objective switches it, and switching it
+moves the bands, the progression gate and today's session together. The
+alternative is in deliberately: a mode with nothing to switch between is a
+comment, not a setting.
+
+2 · VOLUME: 8-12 AND 6-10, AND THE BLOCK REBUILT TO HIT IT
+------------------------------------------------------------
+PHYSIQUE_TARGET was a fixed table (shoulders 16, back 15, chest 11...). It is
+read off the objective now: 8-12 hard sets a week on chest, back, shoulders
+and legs, 6-10 on arms and core, with shoulders and back at the top of their
+band because the look is shoulder-to-waist.
+
+The block could not hit that, so the block changed. FIVE movements a lifting
+day — four lifts and the abs finisher — which is sixteen lifting slots a week
+rather than twenty-eight. Measured, all four weeks:
+
+    chest 9 · back 12.8 · shoulders 11.3 · legs 9 · arms 6 · core 8
+
+Every group inside its band. 14 working sets a session, 50-54 minutes against
+a 65-minute budget. Back comes out at 12.8 rather than 12 because rows pay
+half-credit into it as a secondary group; it is the priority group and that is
+where the overshoot belongs.
+
+TWO THINGS THIS SUPERSEDES, SAID OUT LOUD RATHER THAN DONE QUIETLY:
+  · the second abs movement per day (v200). One movement, one region, four
+    regions across the week — where v198 started. Eight abs slots could not be
+    paid for out of 6-10 sets; core was the group furthest outside its band by
+    a mile, at 24.
+  · the 3-set standard (v211) on the abs finisher only. The finisher keeps the
+    program's two; his standard governs the lifting. Four days at three sets
+    is 12 core sets a week and outside the band he just set.
+
+3 · WHAT EARNS A HEAVIER WEIGHT
+---------------------------------
+"The coach should NOT say: you completed everything, therefore increase the
+weight." It did. "About right" — 7.5 RPE, two or three in reserve — bumped the
+load, every session, forever.
+
+Three conditions now, all of them: the full prescribed sets at that weight
+with the reps holding up; RIR of roughly 2 or more AND clearly easy rather
+than merely done (average effort at or under 1.6); and recovery there for it —
+not a rest or deload readiness verdict. Everything short of that holds the
+weight and moves something else: a rep, the tempo, the control, the rest, the
+rower. On a cut that is usually the honest lever.
+
+AND A LIVE BUG THE 3-SET STANDARD HAD CREATED: mastery wanted FOUR sets at the
+weight and the sheet now prescribes three, so nothing could ever have
+progressed at all. It asks for the number the movement actually prescribes.
+
+4 · THE ATHLETIC METRICS GET A CARD
+-------------------------------------
+Progress → Athletic performance: bodyweight, waist, body fat, strength-to-
+bodyweight ratio, 2km row, resting heart rate, pull-ups, push-ups, plank. Each
+read from the store the rest of the app reads it from, so nothing here can
+drift from the cards that already show them. Resting heart rate is the only
+new field and has its own box.
+
+Direction is per row: down is progress on the waist, the fat, the 2k and the
+resting pulse; up is progress on the reps, the hold and the ratio. A card that
+called a falling 2k a decline would be worse than no card.
+
+5 · THE CUT
+-------------
+The coach is told, in the phase-1 block, that he is cutting aggressively and
+that holding strength and muscle while the fat comes off IS the successful
+outcome — and that it must not keep increasing training stress on low
+calories. The recovery gate in the progression rule enforces the same thing in
+code rather than leaving it to the model's judgement.
+
+Verified: all four weeks build five movements and 14 sets inside the bands;
+auditProgram and auditAbs clean; the progression gate holds on "about right",
+earns on "clearly easy", holds again when the morning reads rest or deload,
+and holds when the sets are short; switching the objective to Maximum size
+moves every target and switching back restores them; the metrics card renders
+all nine rows with the right direction on each; the coach brief carries the
+objective, the no-auto-add rule, the load rule, the week shape, the bands, the
+cut posture and the metrics. Sweep clean — verify16 (16/16 match), dupes2,
+audit173, journey.
+
 AMIR PT — v211 · 25/09/2026
 ===========================
 

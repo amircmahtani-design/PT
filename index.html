@@ -599,6 +599,14 @@ details.sec2[open] .secsum2:after{content:"\2212";}
 .cmpside .when{margin-top:3px;font-size:12px;font-weight:700;color:var(--txt);}
 .cmpside .when span{color:var(--muted);font-weight:600;}
 .cmpgap{text-align:center;font-size:13px;font-weight:800;color:var(--orange);margin-top:10px;}
+/* v212 — the athletic metrics card. */
+.athwrap{display:flex;flex-direction:column;}
+.athrow{display:flex;align-items:baseline;gap:10px;padding:11px 0;border-bottom:1px solid var(--line);}
+.athrow:last-child{border-bottom:none;}
+.athk{flex:1 1 auto;min-width:0;font-size:13px;font-weight:700;color:var(--muted);}
+.athv{flex:0 0 auto;font-size:17px;font-weight:800;color:#fff;text-align:right;}
+.athv .aths{display:block;font-size:11px;font-weight:700;color:var(--label);margin-top:2px;}
+.athd{flex:0 0 auto;font-size:11px;font-weight:800;min-width:54px;text-align:right;}
 .quickcmp{display:flex;gap:6px;overflow-x:auto;padding:2px 0 0;}
 .quickcmp button{flex:0 0 auto;padding:7px 12px;border-radius:11px;background:var(--pill);border:1px solid var(--line);
   color:var(--muted);font-size:12px;font-weight:700;}
@@ -1203,6 +1211,20 @@ a{color:var(--orange);}
       <div id="compareAiOut"></div>
     </div>
 
+    <!-- v212 — "I want the app to celebrate improving these metrics just as
+         much as adding weight to a lift." So they get a card of their own,
+         above the physique read, in the order he listed them. -->
+    <div class="card" data-sk="athletic">
+      <div class="card-title"><span>Athletic performance</span><span class="itin-edit" id="objChipTop">athletic</span></div>
+      <div id="athleticOut"></div>
+      <div class="mgrid mt">
+        <div class="field"><label>Resting heart rate <span class="hint" style="float:right;font-weight:700;color:var(--gold)">bpm</span></label>
+          <input class="txtin" id="rhrIn" inputmode="numeric" placeholder="e.g. 54" /></div>
+        <div class="field"><label>&nbsp;</label>
+          <button class="btn sec" onclick="logRHR()">Log it</button></div>
+      </div>
+    </div>
+
     <div class="card" data-sk="read">
       <div class="card-title"><span>Coach's read</span></div>
       <button class="btn blue" onclick="analysePhysique()">🔍 Ask coach to analyse my physique</button>
@@ -1429,6 +1451,14 @@ a{color:var(--orange);}
           <button data-v="madrid" onclick="segPick(this,'loc')">🇪🇸 Madrid</button>
           <button data-v="greece" onclick="segPick(this,'loc')">🇬🇷 Greece</button></div>
         <div class="hint mt">Dubai = full gym. Madrid = dumbbells only. Greece = no equipment. Your daily check-in sets this too, so the coach always knows what you can actually lift.</div></div>
+      <!-- v212 — the training objective. Everything that decides volume or
+           progression answers to this, so it sits above the free-text goal
+           rather than inside it. -->
+      <div class="field"><label>Training objective</label>
+        <div class="seg" id="objSeg">
+          <button class="on" data-v="athletic" onclick="segPick(this,'obj')">Athletic / Lean Muscular</button>
+          <button data-v="size" onclick="segPick(this,'obj')">Maximum size</button></div>
+        <div class="hint mt" id="objBlurb"></div></div>
       <div class="field"><label>Goal</label><input class="txtin" id="setGoal" value="Build the physique I want — not chase bodyweight" /></div>
       <div class="field"><label>Current Phase</label><input class="txtin" id="setPhase" value="Lean Recomp / mini-cut" /></div>
       <div class="field"><label>Target physique</label><input class="txtin" id="setTarget" placeholder="Mario Casas" />
@@ -1680,7 +1710,7 @@ const DEFAULTS = {
   checkins:[],
   strength:{},
   weights:[],
-  photos:[], rowing:[], measures:[], meals:[],
+  photos:[], rowing:[], measures:[], meals:[], rhr:[], objective:"athletic",
   /* v119 — every cool-down movement he actually holds, so the mobility half
      of the plan is measured rather than assumed. */
   mobility:[],
@@ -2126,6 +2156,19 @@ function mergeDefaults(parsed){ let d={...structuredClone(DEFAULTS),...parsed};
       if(w && w.date===today() && !w.touched && +w.sets>0 && +w.sets!==d.setsOverride.sets) d.workout=null;
     }catch(e){}
   }
+  /* ===== v212 · THE ATHLETIC OBJECTIVE =================================
+     "The primary physique goal is now ATHLETIC / LEAN MUSCULAR — not
+     bodybuilding size." Set once, with the store the new metrics need, and
+     today's sheet rebuilt onto the new block unless he has started on it. */
+  if(!d.v212obj){
+    d.v212obj=1;
+    if(!OBJECTIVES[d.objective]) d.objective="athletic";
+    if(!Array.isArray(d.rhr)) d.rhr=[];
+    try{
+      const w=d.workout;
+      if(w && w.date===today() && !w.touched && +w.sets>0) d.workout=null;
+    }catch(e){}
+  }
   if(!d.alt || typeof d.alt!=="object") d.alt={};
   if(!Array.isArray(d.measures)) d.measures=[];
   if(Array.isArray(d.photos)) d.photos.forEach((p,i)=>{
@@ -2428,6 +2471,25 @@ function segPick(btn,group){
   if(group==='loc'){ setLocation(btn.dataset.v); toast("Location \u2192 "+LOC().label); renderEquipFields(); }
   if(group==='ciloc'){ ciLocPick=btn.dataset.v; ciLocPickDay=today(); syncCheckinLoc(); }
   if(group==='prov'){ DB.ai.provider=btn.dataset.v; }
+  /* v212 — the training objective. Switching it moves the volume bands and
+     the progression rule together, so the session on the board is rebuilt
+     rather than left describing the old one. */
+  if(group==='obj'){
+    setObjective(btn.dataset.v);
+    try{ if(DB.workout && !DB.workout.touched){ DB.workout=null; ensureWorkout(); } }catch(e){}
+  }
+}
+function renderObjective(){
+  const seg=document.getElementById('objSeg');
+  if(seg) seg.querySelectorAll('button').forEach(b=>b.classList.toggle('on', b.dataset.v===objectiveKey()));
+  const bl=document.getElementById('objBlurb');
+  if(bl){
+    const o=objective();
+    bl.innerHTML=escapeHtml(o.blurb)+
+      "<br><br><b>"+o.major[0]+"\u2013"+o.major[1]+"</b> hard sets a week on chest, back, shoulders and legs; <b>"+
+      o.minor[0]+"\u2013"+o.minor[1]+"</b> on arms and core."+
+      (o.order&&o.order.length? "<br><br>In order: "+o.order.map((x,i)=>(i+1)+". "+escapeHtml(x)).join(" \u00b7 ") : "");
+  }
 }
 
 function bodySVGraw(groups){
@@ -4388,9 +4450,12 @@ function auditAbs(){
       want.forEach(r=>{ if(got.indexOf(r)<0) bad.push("week "+wk+" "+sp+": missing "+r+" (has "+got.join(", ")+")"); });
       got.forEach(r=>count[r]++);
     });
-    /* Four regions, two days each, so every region should come out at two. */
+    /* v212 — four regions across four days, one apiece: every region comes
+       out at exactly ABS_PER_DAY. It was hard-coded to 2 when each day
+       carried two movements; it now follows the constant like everything
+       else, so changing ABS_PER_DAY changes the check with it. */
     Object.keys(count).forEach(r=>{
-      if(count[r]!==2) bad.push("week "+wk+": "+r+" appears "+count[r]+" times, wanted 2");
+      if(count[r]!==ABS_PER_DAY) bad.push("week "+wk+": "+r+" appears "+count[r]+" times, wanted "+ABS_PER_DAY);
     });
   });
   if(bad.length) console.error("ABS PLAN:\n"+bad.join("\n"));
@@ -4450,65 +4515,104 @@ function absRegion(name){
    can be two different regions and still be the same movement family. Week 2
    Friday was Hollow Hold plus Cable Crunch on the first pass and the audit
    caught it. That is what the audit is for. */
-const ABS_DAY={"Upper Body":["lower","brace"], "Legs & Core":["upper","oblique"],
-               "Pull Day":["oblique","lower"], "Push Day":["brace","upper"]};
-const ABS_PER_DAY=2;
+/* v212 — ONE abs movement a day, one region each, all four covered across
+   the week. v200 made it two on his instruction; the objective's 6-10 sets a
+   week for a small group cannot pay for eight abs slots, and core was the
+   group furthest outside its band by a mile. This is where v198 started.
+   Said out loud rather than done quietly — one line to put the second back. */
+const ABS_DAY={"Upper Body":["lower"], "Legs & Core":["upper"],
+               "Pull Day":["oblique"], "Push Day":["brace"]};
+const ABS_PER_DAY=1;
+/* ===== v212 · THE BLOCK, REBUILT FOR THE ATHLETIC OBJECTIVE ============
+   The old block was seven movements a day. With his 3-set standard that is
+   21 working sets a session and, per week, roughly chest 15, back 15,
+   shoulders 12, legs 10, arms 6, core 24 — bodybuilding volume on three of
+   those and, on core, nearly two and a half times what the objective allows.
+
+   The objective sets the ceiling now: 8-12 hard sets a week on a big group,
+   6-10 on a small one. At three sets a movement that is THREE TO FOUR
+   MOVEMENT SLOTS a week per big group and two to three per small one, which
+   is sixteen lifting slots across the four days. Sixteen, not twenty-eight.
+
+     chest      3 slots    9 sets    upper chest, moderate — it reads blocky otherwise
+     back       4 slots   12 sets    lats and upper back: the taper, at the top of the band
+     shoulders  4 slots   12 sets    side delts, the only end of the ratio he can grow
+     legs       3 slots    9 sets    strong and proportionate, deliberately not a mass goal
+     arms       2 slots    6 sets    visible, not big — the group most easily over-trained
+     core       4 slots    8 sets    one movement a day at two sets, four regions a week
+
+   Five movements a session, not seven: four lifts and the abs finisher. About
+   14 working sets and 45-50 minutes plus the row, which is what "do not
+   continuously increase training stress while calories are low" actually
+   looks like on the sheet.
+
+   THE ABS FINISHER IS TWO SETS, NOT THREE. His 3-set standard governs the
+   lifting; the finisher keeps the program's own number, because four days at
+   three sets would put core at 12 and outside the band he just set. Said out
+   loud rather than done quietly — one line to change if he wants it on three.
+
+   WHAT THIS REPLACES: the second abs movement per day (v200). One movement,
+   one region, four regions across the week — which is where v198 started and
+   what the new volume numbers can actually afford. */
 const PROGRAM={
   1:{
-    "Upper Body":[["Incline DB Press",4,"10"],["Lat Pulldown",4,"10"],
-                  ["Seated Cable Row",3,"12"],["Lateral Raise",3,"15"],["Cable Fly",2,"12"],
-                  ["Leg Raise",2,"15"],["Plank",2,"45s"]],
-    "Legs & Core":[["Romanian Deadlift",4,"10"],["Goblet Squat",3,"12"],
-                  ["Reverse Lunge",3,"10 each leg"],["Calf Raise",3,"15"],["DB Curl",2,"12"],
-                  ["Cable Crunch",2,"12"],["Plank Hip Dips",2,"12 each side"]],
-    "Pull Day":[["Lat Pulldown",4,"10"],["Seated Cable Row",4,"10"],
-                  ["DB Reverse Fly",3,"15"],["Face Pull",3,"15"],["Hammer Curl",3,"10"],
-                  ["Side Plank",2,"40s each side"],["Hanging Knee Raise",2,"12"]],
-    "Push Day":[["Incline DB Press",4,"8\u201310"],["Bench Press",3,"10"],
-                  ["DB Shoulder Press",3,"10"],["Lateral Raise",3,"15"],["Cable Fly",3,"12"],
-                  ["Band Dead Bug",2,"10 each side"],["V-Up",2,"12"]]
+    "Upper Body":[["Incline DB Press",3,"8\u201310"],["Lat Pulldown",3,"8\u201310"],
+                  ["Seated Cable Row",3,"10"],["Lateral Raise",3,"12\u201315"],
+                  ["Leg Raise",2,"12\u201315"]],
+    "Legs & Core":[["Romanian Deadlift",3,"8\u201310"],["Bulgarian Split Squat",3,"8 each leg"],
+                  ["Calf Raise",3,"12\u201315"],["DB Curl",3,"10\u201312"],
+                  ["Cable Crunch",2,"12"]],
+    "Pull Day":[["Lat Pulldown",3,"8\u201310"],["Chest-supported Row",3,"10"],
+                  ["Face Pull",3,"12\u201315"],["Hammer Curl",3,"10\u201312"],
+                  ["Side Plank",2,"40s each side"]],
+    "Push Day":[["Incline DB Press",3,"8\u201310"],["Bench Press",3,"8\u201310"],
+                  ["DB Shoulder Press",3,"8\u201310"],["Lateral Raise",3,"12\u201315"],
+                  ["Dead Bug",2,"10 each side"]]
   },
   2:{
-    "Upper Body":[["Incline DB Press",4,"8\u201310"],["Lat Pulldown",4,"8\u201310"],
-                  ["DB Single-arm Row",3,"10 each side"],["Lateral Raise",3,"12\u201315"],["Cable Fly",3,"12"],
-                  ["Hanging Knee Raise",2,"12"],["Band Dead Bug",2,"12 each side"]],
-    "Legs & Core":[["Romanian Deadlift",4,"8"],["Bulgarian Split Squat",4,"8 each leg"],
-                  ["Calf Raise",3,"15"],["Triceps Pushdown",2,"10"],
-                  ["V-Up",2,"12"],["Band Pallof Press",2,"12 each side"]],
-    "Pull Day":[["Lat Pulldown",4,"8\u201310"],["Chest-supported Row",4,"10"],
-                  ["DB Reverse Fly",3,"15"],["Face Pull",3,"12"],["DB Curl",3,"10"],
-                  ["Bicycle Crunch",2,"20 each side"],["Flutter Kick",2,"30s"]],
-    "Push Day":[["Incline DB Press",4,"8"],["Close-grip Bench Press",3,"8\u201310"],
-                  ["DB Shoulder Press",3,"10"],["Cable Lateral Raise",3,"15"],["Cable Fly",3,"15"],
-                  ["Plank",2,"45s"],["Cable Crunch",2,"15"]]
+    "Upper Body":[["Incline DB Press",3,"8"],["Single-arm Lat Pulldown",3,"10 each side"],
+                  ["DB Single-arm Row",3,"10 each side"],["Cable Lateral Raise",3,"12\u201315"],
+                  ["Hanging Knee Raise",2,"10\u201312"]],
+    "Legs & Core":[["Romanian Deadlift",3,"8"],["Goblet Squat",3,"10\u201312"],
+                  ["Calf Raise",3,"15"],["Triceps Pushdown",3,"10\u201312"],
+                  ["V-Up",2,"12"]],
+    "Pull Day":[["Lat Pulldown",3,"8"],["Seated Cable Row",3,"10"],
+                  ["DB Reverse Fly",3,"12\u201315"],["DB Curl",3,"10"],
+                  ["Bicycle Crunch",2,"20 each side"]],
+    "Push Day":[["Incline DB Press",3,"8"],["Close-grip Bench Press",3,"8\u201310"],
+                  ["DB Shoulder Press",3,"8\u201310"],["Lateral Raise",3,"12\u201315"],
+                  ["Plank",2,"45s"]]
   },
   3:{
-    "Upper Body":[["Incline DB Press",4,"8"],["Lat Pulldown",4,"10"],
-                  ["Chest-supported Row",3,"10"],["Cable Lateral Raise",3,"15"],["Cable Fly",2,"15"],
-                  ["Flutter Kick",2,"30s"],["Dead Bug",2,"12 each side"]],
-    "Legs & Core":[["Romanian Deadlift",4,"8\u201310"],["Goblet Squat",4,"10"],
-                  ["Reverse Lunge",3,"12 each leg"],["Calf Raise",3,"20"],["Hammer Curl",2,"12"],
-                  ["Cable Crunch",2,"15"],["Side Plank",2,"45s each side"]],
-    "Pull Day":[["Single-arm Lat Pulldown",4,"10 each side"],["Chest-supported Row",4,"10"],
-                  ["DB Reverse Fly",3,"15"],["Face Pull",3,"15"],["Incline DB Curl",3,"10"],
-                  ["Plank Hip Dips",2,"15 each side"],["Leg Raise",2,"15"]],
-    "Push Day":[["Incline DB Press",4,"8"],["Bench Press",3,"10"],
-                  ["DB Shoulder Press",3,"8\u201310"],["Lateral Raise",3,"12\u201315"],["Cable Fly",3,"12"],
-                  ["Hollow Hold",2,"30s"],["V-Up",2,"15"]]
+    "Upper Body":[["Incline DB Press",3,"8"],["Lat Pulldown",3,"8"],
+                  ["Chest-supported Row",3,"10"],["Cable Lateral Raise",3,"12\u201315"],
+                  ["Flutter Kick",2,"30s"]],
+    "Legs & Core":[["Romanian Deadlift",3,"8"],["Bulgarian Split Squat",3,"8 each leg"],
+                  ["Calf Raise",3,"15\u201320"],["Hammer Curl",3,"10\u201312"],
+                  ["Cable Crunch",2,"12\u201315"]],
+    "Pull Day":[["Single-arm Lat Pulldown",3,"10 each side"],["Chest-supported Row",3,"10"],
+                  ["Face Pull",3,"12\u201315"],["Incline DB Curl",3,"10"],
+                  ["Plank Hip Dips",2,"12 each side"]],
+    "Push Day":[["Incline DB Press",3,"8"],["Bench Press",3,"8\u201310"],
+                  ["DB Shoulder Press",3,"8"],["Lateral Raise",3,"12\u201315"],
+                  ["Hollow Hold",2,"30s"]]
   },
+  /* Week 4 is the deload and is written as one: the same movements, a rep
+     back off the top of each range. On a deficit this is the week that keeps
+     the muscle rather than the week that chases anything. */
   4:{
     "Upper Body":[["Incline DB Press",3,"10"],["Lat Pulldown",3,"10"],
-                  ["Seated Cable Row",3,"12"],["Lateral Raise",3,"15"],["Cable Fly",2,"12"],
-                  ["Leg Raise",2,"12"],["Plank",2,"30s"]],
-    "Legs & Core":[["Romanian Deadlift",3,"10"],["Bulgarian Split Squat",3,"8 each leg"],
-                  ["Calf Raise",3,"15"],["Triceps Pushdown",2,"12"],
-                  ["V-Up",2,"12"],["Band Pallof Press",2,"12 each side"]],
-    "Pull Day":[["Lat Pulldown",3,"10"],["Seated Cable Row",3,"10"],
-                  ["DB Reverse Fly",3,"15"],["Face Pull",2,"15"],["Hammer Curl",2,"12"],
-                  ["Side Plank",2,"30s each side"],["Hanging Knee Raise",2,"10"]],
+                  ["Seated Cable Row",3,"12"],["Lateral Raise",3,"15"],
+                  ["Leg Raise",2,"12"]],
+    "Legs & Core":[["Romanian Deadlift",3,"10"],["Goblet Squat",3,"12"],
+                  ["Calf Raise",3,"15"],["Triceps Pushdown",3,"12"],
+                  ["V-Up",2,"12"]],
+    "Pull Day":[["Lat Pulldown",3,"10"],["Seated Cable Row",3,"12"],
+                  ["Face Pull",3,"15"],["Hammer Curl",3,"12"],
+                  ["Band Pallof Press",2,"12 each side"]],
     "Push Day":[["Incline DB Press",3,"10"],["Bench Press",3,"10"],
-                  ["DB Shoulder Press",3,"10"],["Lateral Raise",3,"15"],["Cable Fly",2,"15"],
-                  ["Dead Bug",2,"10 each side"],["Cable Crunch",2,"12"]]
+                  ["DB Shoulder Press",3,"10"],["Lateral Raise",3,"15"],
+                  ["Band Dead Bug",2,"12 each side"]]
   }
 };
 function programWeek(){
@@ -4763,7 +4867,15 @@ function buildWorkout(){
          it already outranked readiness and the AI. Without this the picker at
          the top of Train did nothing on a programmed day: the rebuild put the
          program's figures straight back. */
-      const n_sets = manualSets? manualSets : (pEx? pEx.sets : (travel? sets : (isAnchor? 4 : 3)));
+      /* v212 — with ONE exception: the abs finisher keeps the program's own
+         number. His 3-set standard governs the lifting; four days of three
+         sets on abs is 12 a week, outside the 6-10 band the objective sets,
+         and core volume is the one place this program was furthest out.
+         Written here rather than in the finisher so there is one rule and
+         one place it lives. */
+      const absFin = (function(){ try{ return !!absRegion(n); }catch(err){ return false; } })();
+      const n_sets = (manualSets && !absFin)? manualSets
+                   : (pEx? pEx.sets : (travel? sets : (isAnchor? 4 : 3)));
       /* v97 — if he has said a movement is reps rather than a hold (or the
          reverse), that decision outlives the session it was made in. */
       const tmd = (typeof isTimed==="function")? isTimed(n, e.timed) : !!e.timed;
@@ -5349,13 +5461,47 @@ function recommendLoadRaw(ex){
      The rule now: he must complete the full number of sets AT THE SAME
      WEIGHT, with reps holding up across them, feeling about right or
      easier. Only then does it go up. Anything less and it stays put. */
-  const need=masterySets();
+  /* ===== v212 · WHAT ACTUALLY EARNS A HEAVIER WEIGHT ===================
+     "The coach should NOT say: you completed everything, therefore increase
+     the weight."
+
+     It did. "About right" — a 7.5 RPE, two or three left in the tank — was
+     enough to add load, every session, forever. On an athletic objective in
+     a deficit that is a treadmill: the number goes up until it stops being
+     clean, and the thing he actually wants (the look, the conditioning, the
+     waist) was never what the rule was measuring.
+
+     Three conditions now, all of them, and only then does the weight move:
+       the full prescribed sets at that weight, with the reps holding up;
+       RIR of roughly 2 or more, and CLEARLY easy rather than merely done —
+         effort 1 is "plenty left", 2 is "solid, 2-3 in reserve", so the
+         objective asks for an average at or under 1.6;
+       recovery there for it — not a rest or deload readiness verdict.
+
+     Everything short of that holds the weight and moves something else: a
+     rep, the tempo, the control, the rest between sets, the rower. That is
+     progression too, and on a cut it is usually the honest one.
+
+     v212 also fixes a live bug the 3-set standard created: mastery wanted
+     FOUR sets at the weight and the sheet now prescribes three, so nothing
+     could ever have progressed. What is needed is the number the movement
+     actually asks for. */
+  const prescribed=(function(){
+    try{ const e=wkFind(ex); if(e) return exSets(e); }catch(err){}
+    return 0;
+  })();
+  const need=Math.max(1, Math.min(masterySets(), prescribed||masterySets()));
   const atTop=sets.filter(s=>s.w===topW);
   const reps=atTop.map(s=>s.r||0);
   const lo=reps.length?Math.min(...reps):0, hi=reps.length?Math.max(...reps):0;
   const repsHeld = reps.length>0 && !repsFellAway(reps);  /* v190 — forwards, so a rising session passes */
   const fullSets = atTop.length>=need;
   const eff=sessionEffort(sets);
+  const obj=objective();
+  const recoveryOk=(function(){
+    if(!obj.recoveryGate) return true;
+    try{ const v=(readinessCall()||{}).verdict; return v!=="rest" && v!=="deload"; }catch(err){ return true; }
+  })();
 
   if(eff!==null){
     if(eff>3.3){
@@ -5372,6 +5518,20 @@ function recommendLoadRaw(ex){
       return {text:"Stay at "+topW+"kg — "+atTop.length+" of "+need+" sets at that weight so far. Get all "+need+" before we add.",up:false,w:topW};
     if(!repsHeld)
       return {text:"Stay at "+topW+"kg — reps fell away to "+lo+" by the last set. Even them out at "+hi+" first.",up:false,w:topW,reps:hi||null};
+    /* Clean and complete, but only "about right" — the weight holds and the
+       rep goes up. This is the branch that used to add load. */
+    if(eff>obj.bumpAt)
+      return {w:topW, up:false, addReps:true, reps:Math.min(25,(hi||lo)+1),
+        text:"Stay at "+topW+"kg and take it to "+Math.min(25,(hi||lo)+1)+" reps. Clean session, but it was about right rather than easy \u2014 "+
+             "the load moves when the load is easy.",
+        why:"Two or three left in the tank is the state to repeat, not the state to jump from. Add the rep, hold the tempo, and the weight will be there next time.",
+        next:"Same weight, one more rep on every set. Or slow the lowering, or cut fifteen seconds off the rest \u2014 all of that is progress."};
+    /* Clearly easy, and the body is in a state to take it. */
+    if(!recoveryOk)
+      return {w:topW, up:false, addReps:true, reps:Math.min(25,(hi||lo)+1),
+        text:"Stay at "+topW+"kg today \u2014 it was easy last time, but this morning reads as a day to recover rather than push.",
+        why:"Adding load on a deload reading is how a cut turns into a stall. The weight is earned; it will still be earned when you are fresh.",
+        next:"Repeat "+topW+"kg, own the reps, and it goes up next session."};
     if(eff<=1.5) return earnedIt(ex,topW,bump*2,need,true,lo);
     return earnedIt(ex,topW,bump,need,false,lo);
   }
@@ -9658,6 +9818,91 @@ const GROUP_PRIORITY=["shoulders","back","chest","arms","legs","core"];
         not enough to lose the lines
    Chasing maximum volume on everything actively works against 1 and 3. */
 /* The look is a set of RATIOS, not a set of measurements. */
+/* ===== v212 · THE OBJECTIVE, NAMED AND SELECTABLE =====================
+   "Change the primary physique goal to ATHLETIC / LEAN MUSCULAR — not
+   bodybuilding size."
+
+   The app already believed this: the target look has said "lean and defined
+   rather than big, NOT a bodybuilder" since v117, and the priorities below
+   say shoulders and lats, arms in moderation, legs deliberately not a mass
+   goal. What it did NOT have was a single switch that every volume and
+   progression decision answers to, and numbers underneath it that match.
+   Both were still tuned for growth: 15-16 sets a week on the big groups and
+   a load bump every time a session was merely completed.
+
+   So the objective becomes a thing the app HAS rather than a thing it
+   believes, with its own volume bands and its own progression rule. His
+   words for it, kept verbatim, are the blurb.
+
+   The alternative is left in deliberately. A mode with nothing to switch
+   between is not a setting, it is a comment. */
+const MAJOR_GROUPS=new Set(["chest","back","shoulders","legs"]);
+const OBJECTIVES={
+  athletic:{
+    key:"athletic",
+    name:"Athletic / Lean Muscular",
+    blurb:"Build visible muscle, V-taper and athletic definition while prioritising conditioning, relative strength and a lean waist. Avoid unnecessary bodybuilding volume or maximal size.",
+    /* Hard sets per muscle per week. His numbers, not a textbook's. */
+    major:[8,12], minor:[6,10],
+    /* A load increase is EARNED, not awarded for turning up. The average
+       effort across the sets at that weight has to be at or under this —
+       effort 2 is "solid, 2-3 in reserve", so 1.6 means most of the session
+       was rated Easy. "Clearly become easy", in his words. */
+    bumpAt:1.6,
+    /* And recovery has to be there for it. On a rest-or-deload readiness
+       verdict the weight holds, whatever the log says. */
+    recoveryGate:true,
+    order:[
+      "Maintain and build enough muscle for an athletic appearance",
+      "Reduce body fat and keep the waist tight",
+      "Improve cardiovascular fitness",
+      "Maintain strength",
+      "Improve relative strength \u2014 strength against bodyweight",
+      "Avoid unnecessary hypertrophy volume"
+    ]
+  },
+  size:{
+    key:"size",
+    name:"Maximum size",
+    blurb:"Classic hypertrophy: chase muscle growth, push volume toward the upper landmarks, and add load whenever a session is completed cleanly.",
+    major:[12,20], minor:[10,16],
+    bumpAt:2.4,
+    recoveryGate:false,
+    order:["Grow every group","Add load whenever it is earned","Eat and recover to support it"]
+  }
+};
+function objectiveKey(){
+  const k=DB && DB.objective;
+  return OBJECTIVES[k]? k : "athletic";
+}
+function objective(){ return OBJECTIVES[objectiveKey()]; }
+function setObjective(k){
+  if(!OBJECTIVES[k]) return null;
+  DB.objective=k; save();
+  try{ renderObjective(); }catch(e){}
+  try{ renderVolume&&renderVolume(); }catch(e){}
+  try{ if(DB.workout) renderWorkoutSheet(DB.workout); }catch(e){}
+  toast("Objective \u00b7 "+OBJECTIVES[k].name);
+  return k;
+}
+/* The band a group is judged against, and the single number inside it the
+   app aims for: a PRIORITY group sits at the top of its band, everything
+   else in the middle. GROUP_PRIORITY already says which is which. */
+function volumeBand(g){
+  const o=objective();
+  return MAJOR_GROUPS.has(g)? o.major : o.minor;
+}
+function physiqueTargetFor(g){
+  const b=volumeBand(g);
+  const pri=GROUP_PRIORITY.indexOf(g);
+  const top=(pri>=0 && pri<=1);           /* shoulders and back carry the look */
+  return top? b[1] : Math.round((b[0]+b[1])/2);
+}
+function physiqueTargets(){
+  const out={};
+  GROUP_PRIORITY.forEach(g=>{ out[g]=physiqueTargetFor(g); });
+  return out;
+}
 const PHYSIQUE_PRIORITY={
   shoulders:"side delts. The whole look is shoulder-to-waist ratio and this is the only end of it he can grow. Highest priority and the one group worth pushing toward its ceiling.",
   back:"lats for the taper, upper back for square posture. WIDTH over sheer thickness - he does not want a slab back.",
@@ -10164,6 +10409,153 @@ function todayCheckin(create){
    the deficit he is actually running. It is the honest answer to "surely I
    can build off my stored fat" \u2014 sometimes yes, sometimes the sums don't
    reach, and he deserves the real number rather than encouragement. */
+/* ===== v212 · THE ATHLETIC METRICS ====================================
+   "I want the app to celebrate improving these metrics just as much as
+   adding weight to a lift."
+
+   Nine numbers, all of them already in the data except resting heart rate,
+   which gets a box of its own. Each one is read from the SAME store the rest
+   of the app reads it from \u2014 weightEntries for the scale, DB.measures for the
+   waist and the body fat, DB.strength for the lifts, DB.rowing for the erg \u2014
+   so nothing here can drift away from the cards that already show them.
+
+   Direction matters and is not the same for every row: down is progress on
+   the waist, the body fat, the row time and resting heart rate; up is
+   progress on the reps, the hold and the strength-to-bodyweight ratio. A
+   card that called a falling 2k time a decline would be worse than no card. */
+function rhrEntries(){
+  return (DB.rhr||[]).filter(x=>x&&x.d&&x.v>0).sort((a,b)=>String(b.d).localeCompare(String(a.d)));
+}
+function logRHR(){
+  const el=document.getElementById('rhrIn');
+  const v=parseFloat((el&&el.value||"").replace(",","."));
+  if(isNaN(v)||v<25||v>140){ toast("Resting heart rate in bpm \u2014 somewhere between 25 and 140"); return; }
+  DB.rhr=DB.rhr||[];
+  const d=today();
+  const prior=DB.rhr.find(x=>x&&x.d===d);
+  if(prior) prior.v=v; else DB.rhr.push({d, v});
+  save();
+  if(el) el.value="";
+  try{ renderAthletic(); }catch(e){}
+  toast("Resting HR "+v+" bpm logged");
+}
+/* The best single set on a bodyweight movement, and when it happened. */
+function bestRepSet(name){
+  let best=null;
+  ((DB.strength||{})[name]||[]).forEach(sess=>{
+    if(!sess.date||sess.date==='prev') return;
+    (sess.sets||[]).forEach(x=>{
+      const r=+x.r||0; if(!r) return;
+      if(!best||r>best.r) best={r, date:sess.date};
+    });
+  });
+  return best;
+}
+/* Strength against bodyweight \u2014 the ratio the objective actually cares
+   about. Taken off the lifts he trains heaviest that have a real bar or
+   stack behind them, because a 10kg dumbbell cannot express a ratio. */
+const REL_LIFTS=["Bench Press","Romanian Deadlift","Lat Pulldown","Barbell Row","Barbell Back Squat","Deadlift"];
+function relativeStrength(){
+  const kg=(DB.profile&&DB.profile.weightKg)||null;
+  if(!kg) return null;
+  let best=null;
+  REL_LIFTS.forEach(n=>{
+    const w=bestTopWeight(n);
+    if(w && (!best || w>best.w)) best={n, w};
+  });
+  if(!best) return null;
+  return {lift:best.n, kg:best.w, ratio:Math.round((best.w/kg)*100)/100, bw:kg};
+}
+function rowBest2k(){
+  const secs=t=>{ const m=String(t||"").match(/^(\d+):(\d{1,2})$/); return m? (+m[1])*60+(+m[2]) : null; };
+  const rows=(DB.rowing||[]).filter(r=>r&&/2000|2k/i.test(String(r.dist||""))&&secs(r.time)!=null)
+                            .map(r=>({t:secs(r.time), time:r.time, date:r.date}))
+                            .sort((a,b)=>String(a.date).localeCompare(String(b.date)));
+  if(!rows.length) return null;
+  const best=rows.reduce((b,r)=>(!b||r.t<b.t)? r : b, null);
+  return {latest:rows[rows.length-1], best, n:rows.length};
+}
+function measSeries(field){
+  return (DB.measures||[]).filter(m=>m && m[field]!=null)
+    .map(m=>({v:+m[field], d:m.d||"", t:m.t||0}))
+    .filter(x=>!isNaN(x.v))
+    .sort((a,b)=>(a.t||0)-(b.t||0));
+}
+/* One row of the card. `dir` is +1 when up is progress, -1 when down is. */
+function athRow(label, value, sub, delta, dir){
+  let tag="";
+  if(delta!=null && Math.abs(delta.n)>0.001){
+    const good=(dir>0)? delta.n>0 : delta.n<0;
+    const arrow=(delta.n>0)? "\u2191" : "\u2193";
+    tag="<span class='athd' style='color:"+(good? "var(--green)":"var(--muted)")+"'>"+
+        arrow+" "+delta.txt+"</span>";
+  }
+  return "<div class='athrow'><div class='athk'>"+escapeHtml(label)+"</div>"+
+    "<div class='athv'>"+value+(sub? "<span class='aths'>"+sub+"</span>":"")+"</div>"+tag+"</div>";
+}
+function renderAthletic(){
+  const el=document.getElementById('athleticOut'); if(!el) return;
+  const chip=document.getElementById('objChipTop');
+  if(chip) chip.textContent=objective().name.toLowerCase();
+  const rows=[];
+  const n1=v=>Math.round(v*10)/10;
+
+  /* bodyweight */
+  const W=weightEntries();
+  if(W.length){
+    const now=W[0], old=W[Math.min(W.length-1, W.findIndex(x=>daysSince(x.date)>=30)>=0? W.findIndex(x=>daysSince(x.date)>=30) : W.length-1)];
+    const d=(old&&old.date!==now.date)? {n:now.w-old.w, txt:n1(Math.abs(now.w-old.w))+" kg"} : null;
+    rows.push(athRow("Bodyweight", n1(now.w)+" kg", "", d, -1));
+  } else rows.push(athRow("Bodyweight","\u2014","log it on the check-in",null,0));
+
+  /* waist */
+  const ws=measSeries("waist");
+  if(ws.length){
+    const now=ws[ws.length-1], old=ws[0];
+    const d=(ws.length>1)? {n:now.v-old.v, txt:n1(Math.abs(now.v-old.v))+" cm"} : null;
+    rows.push(athRow("Waist", n1(now.v)+" cm", "", d, -1));
+  } else rows.push(athRow("Waist","\u2014","tape or a photo estimate",null,0));
+
+  /* body fat */
+  const bf=latestBodyFat();
+  rows.push(bf? athRow("Body fat", n1(bf.pct)+"%", bf.src, null, -1)
+              : athRow("Body fat","\u2014","not estimated yet",null,0));
+
+  /* relative strength */
+  const rs=relativeStrength();
+  rows.push(rs? athRow("Strength / bodyweight", rs.ratio+"\u00d7", rs.lift+" "+rs.kg+"kg at "+n1(rs.bw)+"kg", null, 1)
+              : athRow("Strength / bodyweight","\u2014","needs a barbell or stack lift logged",null,0));
+
+  /* 2km row */
+  const r2=rowBest2k();
+  if(r2){
+    const secs=t=>{ const m=String(t||"").match(/^(\d+):(\d{1,2})$/); return m? (+m[1])*60+(+m[2]) : null; };
+    const d=(r2.n>1)? {n:r2.latest.t-r2.best.t, txt:Math.abs(r2.latest.t-r2.best.t)+"s off your best"} : null;
+    rows.push(athRow("2 km row", r2.latest.time, "best "+r2.best.time, (r2.latest.t!==r2.best.t? d : null), -1));
+  } else rows.push(athRow("2 km row","\u2014","log a time on the rower card",null,0));
+
+  /* resting heart rate */
+  const H=rhrEntries();
+  if(H.length){
+    const now=H[0], old=H[H.length-1];
+    const d=(H.length>1)? {n:now.v-old.v, txt:Math.abs(now.v-old.v)+" bpm"} : null;
+    rows.push(athRow("Resting heart rate", now.v+" bpm", "", d, -1));
+  } else rows.push(athRow("Resting heart rate","\u2014","log one below",null,0));
+
+  /* pull-ups, push-ups, plank */
+  const pu=bestRepSet("Pull-up")||bestRepSet("Chin-up");
+  rows.push(pu? athRow("Pull-ups", pu.r+" reps", "best single set", null, 1)
+              : athRow("Pull-ups","\u2014","not logged yet",null,0));
+  const push=bestRepSet("Push-up");
+  rows.push(push? athRow("Push-ups", push.r+" reps", "best single set", null, 1)
+                : athRow("Push-ups","\u2014","not logged yet",null,0));
+  const pl=bestRepSet("Plank");
+  rows.push(pl? athRow("Plank", pl.r+"s", "longest hold", null, 1)
+              : athRow("Plank","\u2014","not logged yet",null,0));
+
+  el.innerHTML="<div class='athwrap'>"+rows.join("")+"</div>"+
+    "<div class='hint mt'>"+escapeHtml(objective().blurb)+"</div>";
+}
 function latestBodyFat(){
   const ms=(DB.measures||[]).filter(m=>m.bf!=null).sort((a,b)=>(a.t||0)-(b.t||0));
   if(ms.length) return {pct:ms[ms.length-1].bf, src:ms[ms.length-1].src==="ai"?"photo estimate":"logged"};
@@ -10202,13 +10594,19 @@ function energyContext(){
 }
 /* Sets per week that produce THAT physique — not the maximums that produce
    the biggest possible one. */
-const PHYSIQUE_TARGET={ shoulders:16, back:15, chest:11, arms:10, legs:11, core:10 };
+/* v212 — these were 16/15/11/10/11/10, tuned for growth. They are now read
+   off the OBJECTIVE, so switching it switches them: on Athletic / Lean
+   Muscular that is 8-12 hard sets a week on the big groups and 6-10 on the
+   small ones, with shoulders and back at the top of their band because the
+   look is shoulder-to-waist. One definition, asked by the audit, the coach
+   brief, the volume card and the program check alike. */
+function PHYSIQUE_TARGET_AT(g){ return physiqueTargetFor(g); }
 function volumeStatus(days){
   const v=weeklyVolume(days||7);
   const out={};
   Object.keys(VOL_LANDMARKS).forEach(g=>{
     const L=VOL_LANDMARKS[g], n=v[g]||0;
-    const goal=PHYSIQUE_TARGET[g]||L.mav;
+    const goal=physiqueTargetFor(g)||L.mav;
     /* Judged against the target for HIS physique, not against the maximum a
        bodybuilder would chase. Overshooting isn't a win here — it's building
        a body he didn't ask for and spending recovery he needs elsewhere. */
@@ -10312,7 +10710,8 @@ TARGET_LOOK.reads.map(x=>"  \u2022 "+x).join("\n")+"\n"+
   return "  \u2022 FAT AS FUEL, WITH THE ACTUAL NUMBERS: at "+f.bfPct+"% body fat ("+f.src+") he carries about "+f.fatKg+"kg of fat, which can realistically give up around "+f.supply+" kcal a day. His deficit is about "+f.deficit+". "+f.verdict+".\n"+
     (f.covered? "" : "    Tell him this plainly if it comes up. It is not a reason to train less \u2014 the training is what decides whether he keeps what he has \u2014 but he should not be surprised when the loads hold flat instead of climbing, and he should not read that as failure.\n"); })()+
 "  \u2022 PROTECT MUSCLE FIRST. Heavy loads, full range, working sets that mean something. Muscle is lost when the stimulus disappears, not when calories are low.\n"+
-"  \u2022 VOLUME AT THE TARGET, not between the floor and it. He is trying to grow while dieting, which is the hardest version of this; it does not happen on maintenance volume. Scraping down to the minimum is how people finish a cut smaller and softer, and it is the opposite of what he asked for.\n"+
+"  \u2022 VOLUME AT THE TARGET, not above it and not scraping the floor. The target IS the prescription on a cut: enough to hold and slowly build what he has, and no more. Do not add volume because a week went well.\n"+
+"  \u2022 HE IS CUTTING AGGRESSIVELY RIGHT NOW, AND THAT CHANGES WHAT SUCCESS LOOKS LIKE. Maintaining strength and muscle while the fat comes off IS a successful outcome \u2014 say so, out loud, when it happens. Do NOT continuously increase training stress while calories are low: preserve intensity, control total volume, prioritise recovery, keep the muscle, and improve the conditioning gradually. When he moves to maintenance calories the system can allow a little more muscle-building progression, still inside the athletic objective.\n"+
 "  \u2022 NEVER TRADE LOAD FOR SWEAT. Higher reps with lighter weight to 'burn more' is the single worst thing you could do to him right now.\n"+
 "  \u2022 CUT JUNK BEFORE WORK. If recovery is short, remove filler exercises \u2014 not working sets on the movements that hold his shape.\n"+
 "  \u2022 THE STOMACH IS THE MILESTONE, not a bodyweight. Waist measurement and photos decide when stage 1 is done, and you should tell him when you think he is close \u2014 he should not have to ask, and he certainly should not sit in a deficit a month longer than he needs to.\n"+
@@ -10333,7 +10732,20 @@ planClockText()+
 "HIS NUTRITIONIST SENDS HIS FOOD AND THE DAILY NUMBER VARIES, AND THE APP DOES NOT TRACK IT. That figure is his nutritionist\u2019s, not a record of what he ate, so treat it as background fuel and nothing more. There is no target he is hitting and no budget he is spending down. NEVER ask him to log food, never ask what he has eaten, never frame intake as over, under or \"X of Y\", and never congratulate or caution him on a number.\n"+
 "His nutritionist owns the diet and you do NOT advise on it. The ONE exception: if lifts fall away sharply for two weeks, or sleep and energy stay low, say once that it is worth raising with his nutritionist \u2014 then stop.\n"+
 "JUDGE PROGRESS BY: the mirror, the photos, the waist, and the loads on the bar. Not bodyweight.\n\n") : "")+
-"WEEKLY VOLUME \u2014 hard sets per muscle group. Ceilings are set for a LEAN ATHLETIC build rather than maximum mass. Aim for the TARGET figure on the groups that build his shape; the minimum is a floor to stay above, not a place to sit:\n"+
+"=== THE ATHLETIC METRICS \u2014 CELEBRATE THESE LIKE A PB ON THE BAR ===\n"+
+"Progress \u2192 Athletic performance tracks: bodyweight, waist, body-fat estimate, strength-to-bodyweight ratio, 2km row time, resting heart rate, pull-ups, push-ups and plank hold. An improvement in ANY of them is progress under this objective and he wants it named as such. A 2km row eight seconds faster, a waist a centimetre down, two more pull-ups, a lower resting heart rate \u2014 those are the objective, not consolation for a week the bar did not move.\n"+
+"Relative strength is the one to watch: the same weight at a lower bodyweight is a REAL improvement, and it looks like a flat week if you only read the kilos.\n\n"+
+"=== THE TRAINING OBJECTIVE \u2014 READ THIS BEFORE ANY PROGRAMMING DECISION ===\n"+
+"HIS OBJECTIVE IS: "+objective().name.toUpperCase()+".\n"+
+objective().blurb+"\n"+
+"In order of priority:\n"+objective().order.map((x,i)=>"  "+(i+1)+". "+x).join("\n")+"\n"+
+"THIS IS NOT A BODYBUILDING PROGRAM AND MAXIMUM MUSCLE GROWTH IS NOT THE OBJECTIVE. Visible muscle, broad shoulders, a developed chest, back and arms, a narrow waist and real conditioning \u2014 not bulky, not blocky, not bodybuilder-sized.\n"+
+"NEVER add sets, exercises or volume because he completed the last session. Completing the session is the baseline, not an achievement that buys more work. If you think something should be added, say why in one line and let him decide.\n"+
+"PROGRESSIVE OVERLOAD STILL EXISTS and it is conservative and performance-based. A heavier weight is ONE of the ways he progresses and not the main one. The others count just as much: a rep added at the same weight, cleaner technique, better control, a slower lowering, slightly shorter rest, a faster 2k. When he improves any of those, say so as plainly as you would about a PB on the bar.\n"+
+"THE LOAD ONLY GOES UP WHEN ALL OF THESE ARE TRUE: every prescribed rep completed with excellent form; roughly 2 or more reps in reserve; the same load has CLEARLY become easy rather than merely doable; and recovery is good. Otherwise hold the weight and move one of the other levers. The app enforces this in recommendLoad() \u2014 do not talk over it.\n"+
+"WEEK SHAPE: 4 resistance sessions, 3\u20135 rowing or cardio sessions (the 2km row on every lifting day is the standard one \u2014 a longer easy Zone 2 row is a good addition when the week allows), core work on each of the four lifting days, and the weekend off. Resistance training stays the backbone: do NOT turn this into a cardio program, because the muscle is what makes the physique.\n"+
+"REP RANGES: most work at 6\u201312, some accessory work at 10\u201315. Avoid excessive isolation unless a specific imbalance needs it.\n\n"+
+"WEEKLY VOLUME \u2014 hard sets per muscle group, set by the objective: "+objective().major[0]+"\u2013"+objective().major[1]+" on chest, back, shoulders and legs, "+objective().minor[0]+"\u2013"+objective().minor[1]+" on arms and core. Do NOT push toward 15\u201320+ on anything. The TARGET column is where to aim; the ceiling is not a goal:\n"+
 volumeDoctrineText()+"\n"+
 "Below the minimum means that muscle is not being maintained, let alone built \u2014 fix that before adding anything anywhere else. Above the ceiling is not dedication, it is fatigue he cannot recover from and size he does not want; cut it back.\n\n"+
 "WHAT BUILDS THE SHAPE HE WANTS \u2014 bias volume toward these, do not spread it evenly:\n"+
@@ -10569,7 +10981,7 @@ coachingDoctrine()+
 "WEEKLY SCHEDULE & DAY TYPES:\n"+
 "HIS WEEK STARTS ON MONDAY \u2014 always list and think Mon-first, never Sunday-first.\n"+
 "THE WEEK HE HAS SETTLED ON: Monday UPPER BODY, Tuesday legs and core, Wednesday MOBILITY & PILATES (ONE session containing BOTH halves — the twelve-area mobility flow, then Pilates. His instruction, every week: it is not one or the other and it does not alternate. The mobility half is ALL of the body, neck to ankles, every week, and is never the half that gets cut), Thursday pull, Friday push, Saturday and Sunday rest. Monday was a cardio day until he asked whether upper would serve the physique better; it does, because it takes chest, back and shoulders from once a week to twice, and twice beats once for building shape. === THE MASTER PROGRAM — READ THIS BEFORE CHANGING ANY SESSION ===\n"+
-"He has written a 4-week block and it is now what the app builds. Monday Upper Body, Tuesday Legs & Core, Wednesday Mobility & Pilates (both halves, every week), Thursday Pull, Friday Push.\n"+
+"He has written a 4-week block and it is now what the app builds. FIVE movements a lifting day \u2014 four lifts and the abs finisher \u2014 about 14 working sets and 50 minutes plus the row. That is the athletic objective on the sheet: sixteen lifting slots a week, not twenty-eight. Monday Upper Body, Tuesday Legs & Core, Wednesday Mobility & Pilates (both halves, every week), Thursday Pull, Friday Push.\n"+
 "PILATES APPARATUS \u2014 HE HAS A REFORMER AND A WUNDA CHAIR IN DUBAI. So the Pilates half changes with the block week: week 1 mat, week 2 REFORMER, week 3 CHAIR, week 4 mat. Away from Dubai it is mat every week, because the apparatus is not there. The app picks this; you do not need to, and you should not flatten it back to mat. The repertoire is the classical one \u2014 reformer: Footwork, The Hundred on the Reformer, Coordination, Frog and Leg Circles, Arms in Straps, Running, Pelvic Lift, Mermaid, Elephant, Short Spine Massage, Stomach Massage, Long Stretch, Knee Stretches, Short Box Series, Pulling Straps, Swan on the Long Box, Up/Down Stretch, Rowing Series, Long Spine, Side Splits, Tendon Stretch; chair: Footwork, Pumping One Leg, Spine Stretch Forward, Seated Mermaid, Frog Front, Side Stretch, Push Down, Swan on the Chair, Washerwoman, Tendon Stretch, Pull Up on the Chair, Going Up Front, Mountain Climb, Teaser on the Chair. Level-gated exactly like the mat, and the wrist-loaded ones (Elephant, Long Stretch, Knee Stretches, Stomach Massage, Push Down, Swan on the Chair, Washerwoman, Pull Up, Mountain Climb, both Tendon Stretches) drop out on any day he reports wrist pain.\n"+
 "THESE HAVE NO PHOTOGRAPHS YET. He is shooting them; until then their cards show the demo link, which is correct and not a bug. Do not offer to find pictures for them. Week 4 is the deload and is already written as one. The block repeats until he asks for a new one.\n"+
 "ABS FINISH EVERY SESSION — HIS INSTRUCTION, NOT A SUGGESTION: every lifting day ENDS on one abs movement, and each day owns a different region so the week covers all four. Monday LOWER abs (hip flexion), Tuesday UPPER abs (trunk flexion), Thursday OBLIQUES (rotation and side bend), Friday ANTI-EXTENSION (bracing). Never drop the last movement of a session to save time — cut a set off something else. Never put two abs movements in one session, and never give two days the same region in the same week. Wednesday is the Mobility & Pilates day and has no finisher; the mat half is already core work.\n"+
@@ -11698,6 +12110,7 @@ function coachLogMeasurement(a){
   DB.measures=DB.measures.filter(x=>!(x.d===rec.d && (x.src==="manual"||x.src==="ai")));
   DB.measures.push(rec); save();
   try{ renderMeasures(); }catch(e){}
+  try{ renderAthletic(); }catch(e){}
   try{ renderWeightLog(); }catch(e){}
   return Object.keys(rec).filter(k=>!["t","d","src"].includes(k)).length;
 }
@@ -14704,7 +15117,7 @@ function scheduleInApp(){
    v18 ADDITIONS — draggable rest timer · weekly training memory · AI planner
    · Firestore sync
    ========================================================================== */
-const APP_VERSION="v211 · 25/09/2026";
+const APP_VERSION="v212 · 25/09/2026";
 
 /* ===== 1. REST TIMER — drag it anywhere so it never blocks the chat box ===== */
 let _rtDrag=null;
@@ -21165,7 +21578,7 @@ function noteProgramme(text,kind){
    weeks actually delivered, not from a fixed list. */
 function programmePriorities(){
   const v14=weeklyVolume(14);
-  const target=PHYSIQUE_TARGET||{};
+  const target=physiqueTargets();
   const gaps=Object.keys(target)
     .map(g=>({g, got:(v14[g]||0)/2, want:target[g]||10}))
     .map(o=>Object.assign(o,{deficit:o.want-o.got}))
@@ -22293,8 +22706,8 @@ function renderProgrammeView(){
   const anchors=splits.map(k=>
     "<div class='pgrow'><span class='k'>"+escapeHtml(k)+"</span><span class='v'>"+escapeHtml(dayLine(k))+"</span></div>").join("");
   const vol=weeklyVolume(7);
-  const volRow=Object.keys(PHYSIQUE_TARGET||{}).map(g=>{
-    const got=vol[g]||0, want=PHYSIQUE_TARGET[g];
+  const volRow=GROUP_PRIORITY.map(g=>{
+    const got=vol[g]||0, want=physiqueTargetFor(g);
     const pct=Math.min(100,Math.round(got/want*100));
     return "<div class='pgvol'><span class='k'>"+g+"</span><span class='bar'><i style='width:"+pct+"%'></i></span>"+
            "<span class='v'>"+Math.round(got)+"/"+want+"</span></div>";
@@ -22605,6 +23018,8 @@ function boot(){
   document.querySelectorAll('#provSeg button').forEach(b=>b.classList.toggle('on',b.dataset.v===DB.ai.provider));
   renderMetrics(); renderItin(); renderStrengthPBs(); renderRowing(); renderRowingLog(); renderPhotos(); renderIntegrations(); updateStreak();
   try{ renderMeasures(); }catch(e){}
+  try{ renderAthletic(); }catch(e){}
+  try{ renderObjective(); }catch(e){}
   try{ renderWeightLog(); }catch(e){}
   try{ renderGifStatus(); }catch(e){}
   try{ renderRestPrefs(); }catch(e){}
