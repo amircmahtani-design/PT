@@ -295,19 +295,14 @@ textarea.txtin{min-height:88px;resize:vertical;line-height:1.45;}
 .sessbar .sbtns button.hold{background:#2a1c0e;border-color:#5c3a15;color:var(--gold);}
 .sessbar .sbtns button.fin{background:linear-gradient(100deg,#ff8a2b,#ff5a1a);border-color:#ff8a2b;color:#fff;}
 
-/* Floating pause pill — follows you around the session */
-.sessfloat{position:fixed;right:12px;bottom:calc(150px + var(--safe-bot));z-index:46;display:none;align-items:center;gap:9px;
-  background:#0e2416;border:1.5px solid #1fbf68;border-radius:999px;padding:8px 9px 8px 12px;box-shadow:0 12px 30px #000c;touch-action:none;}
-.sessfloat.show{display:flex;}
-.sessfloat.paused{background:#241d0c;border-color:var(--gold);}
-.sessfloat.moved{left:0;top:0;right:auto;bottom:auto;}
-.sessfloat .sft{font-weight:800;font-size:19px;color:#fff;font-variant-numeric:tabular-nums;letter-spacing:-.5px;cursor:grab;user-select:none;-webkit-user-select:none;}
-.sessfloat.drag .sft{cursor:grabbing;}
-.sessfloat .sfb{flex:0 0 auto;width:42px;height:42px;border-radius:999px;border:none;font-size:16px;font-weight:800;
-  background:#1fbf68;color:#04180d;display:flex;align-items:center;justify-content:center;}
-.sessfloat.paused .sfb{background:var(--gold);color:#1a1206;}
-.sessfloat .sfd{font-size:10px;font-weight:800;text-transform:uppercase;letter-spacing:.6px;color:var(--green);}
-.sessfloat.paused .sfd{color:var(--gold);}
+/* v218 — the two stamps on the session card. Both are buttons: the times
+   are the clock, so correcting one has to be as easy as reading it. */
+.sessbar .stamps{display:flex;gap:8px;margin-top:10px;}
+.sessbar .stamp{flex:1 1 0;display:flex;flex-direction:column;align-items:flex-start;gap:2px;
+  border:1px solid var(--line);background:var(--card2);border-radius:12px;padding:9px 11px;text-align:left;}
+.sessbar .stamp b{font-size:10px;font-weight:800;text-transform:uppercase;letter-spacing:.7px;color:var(--label);}
+.sessbar .stamp span{font-size:17px;font-weight:800;color:#fff;font-variant-numeric:tabular-nums;letter-spacing:-.4px;}
+.sessbar.on .stamp b{color:var(--green);}
 
 /* Cool-down / mobility timers */
 .mvb .mvtime{margin-top:7px;min-height:40px;background:#1a120b;border:1px solid #3d2a15;color:var(--orange);border-radius:10px;
@@ -1558,10 +1553,6 @@ a{color:var(--orange);}
   </div>
 </div>
 
-<div class="sessfloat" id="sessFloat">
-  <div class="sft" id="sessFloatT">0:00<div class="sfd" id="sessFloatD">Training</div></div>
-  <button class="sfb" id="sessFloatB" onclick="sessToggle()">❙❙</button>
-</div>
 
 <div id="updBar" class="updbar" onclick="applyUpdate()"><b>Update ready</b><span id="updV"></span><em>tap to load it</em></div>
 <nav class="tabbar" id="tabbar">
@@ -1760,7 +1751,7 @@ const DEFAULTS = {
   rest:{ sets:90, ex:150 },
   cloud:{on:true, config:JSON.stringify(FB_CONFIG,null,2), syncId:FB_SYNC_DEFAULT, last:null, syncKeys:false},
   prefs:{visualMode:"auto", showIcons:true, exerciseGifs:true, workoutFormat:"list", coachStyle:"Warm, confident and direct",
-         restPos:null, restMini:false, sessPos:null,
+         restPos:null, restMini:false,
          /* v115 — 45 seconds a side is his default now, and it is a stored
             preference rather than whatever each library entry happened to say. */
          cooldown:{sec:45, perSide:true, source:"default"}},
@@ -7817,7 +7808,6 @@ function startRest(sec,label,onDone){
   restApplyPos();
   document.getElementById('restLab').textContent=label||"Rest · next set in";
   restTick(); if(restInt) clearInterval(restInt); restInt=setInterval(restTick,250);
-  try{ sessAvoidRest(); }catch(e){}
   saveTimers();
 }
 function restTick(){
@@ -7838,12 +7828,18 @@ function restDue(){
 }
 function stopRest(){ restActive=false; restDoneCb=null; _coolQ=null; clearSavedTimers(); if(restInt){clearInterval(restInt);restInt=null;} const t=document.getElementById('restTimer'); if(t){t.classList.remove('show');t.classList.remove('due');} releaseWake(); markCoolRunning(-1); try{ stackFloats(); }catch(e){} }
 /* ==========================================================================
-   v48 — THE SESSION CLOCK
-   Start it when you begin, pause it when life interrupts, finish it when
-   you're done. Time is stored as a list of segments so that pausing is exact
-   and nothing is lost to a reload, a locked screen, or a closed tab —
-   every figure is derived from wall-clock timestamps, never from a ticking
-   counter that stops when the browser suspends us.
+   v218 — THE SESSION CLOCK IS TWO TIMESTAMPS
+   It used to be a stopwatch you had to nurse: a list of segments, a floating
+   pause pill, pause and resume, and a running total that a single stray reset
+   could wipe. Amir trained for over an hour and the card told him "under a
+   minute on the clock", and his answer was the right one — "it should log
+   when I started and when I finished and that's it. I rarely stop."
+
+   So that is all it is. One start, one finish, elapsed is the difference.
+   There is nothing to pause, nothing to forget to un-pause, and no running
+   total to lose. Both times are TYPEABLE, which is the real repair: if the
+   app is ever wrong about them again he corrects it in two taps instead of
+   losing the session.
    ========================================================================== */
 /* v217 — the ONLY way the session clock is allowed to disappear. Every
    caller names its reason and the note is kept, so a clock that resets
@@ -7851,8 +7847,8 @@ function stopRest(){ restActive=false; restDoneCb=null; _coolQ=null; clearSavedT
 function clearSession(why){
   const s=DB.session;
   let ms=0, started="";
-  try{ ms=(s&&s.segs)? s.segs.reduce((a,g)=>a+Math.max(0,(g.e||Date.now())-g.s),0) : 0; }catch(e){}
-  try{ started=(s&&s.segs&&s.segs.length)? clockOf(s.segs[0].s) : ""; }catch(e){}
+  try{ ms=(s&&s.start!=null)? Math.max(0,((s.end!=null?s.end:Date.now())-s.start)) : 0; }catch(e){}
+  try{ started=(s&&s.start!=null)? clockOf(s.start) : ""; }catch(e){}
   DB.session=null;
   if(!s) return;
   if(!DB.diag) DB.diag={};
@@ -7860,42 +7856,47 @@ function clearSession(why){
   DB.diag.sessClears.push({at:Date.now(), date:today(), was:s.date||null, why:why||"unknown", ms:ms, started:started});
   if(DB.diag.sessClears.length>20) DB.diag.sessClears=DB.diag.sessClears.slice(-20);
 }
-function sess(){
-  let s=DB.session;
-  if(s && s.date!==today()){                    /* yesterday's clock left running */
-    if(s.segs&&s.segs.length&&s.segs[s.segs.length-1].e==null) s.segs[s.segs.length-1].e=s.segs[s.segs.length-1].s;
-    clearSession("a new day started \u2014 yesterday's clock was closed off");
-    s=null;
-  }
+/* A clock saved by v217 or earlier is a list of segments. Read it once, keep
+   the first start and the last finish, and throw the rest away — the pauses
+   were never what he wanted counted. */
+function sessMigrate(s){
+  if(!s || s.start!==undefined || !s.segs) return s;
+  const segs=s.segs||[];
+  if(segs.length){
+    s.start=segs[0].s;
+    const last=segs[segs.length-1];
+    s.end = s.done? (last.e!=null? last.e : last.s) : null;
+  } else { s.start=null; s.end=null; }
+  delete s.segs; delete s.done;
   return s;
 }
-function sessMs(){
-  const s=sess(); if(!s) return 0;
-  return (s.segs||[]).reduce((a,g)=>a+Math.max(0,(g.e||Date.now())-g.s),0);
+function sess(){
+  let s=DB.session;
+  if(s && s.date!==today()){                    /* yesterday's session left open */
+    clearSession("a new day started — yesterday's session was closed off");
+    return null;
+  }
+  return s? sessMigrate(s) : null;
 }
-function sessRunning(){ const s=sess(); return !!(s && s.segs && s.segs.length && s.segs[s.segs.length-1].e==null); }
-function sessStarted(){ return !!sess(); }
-function sessFinished(){ const s=sess(); return !!(s && s.done); }
+function sessMs(){
+  const s=sess(); if(!s || s.start==null) return 0;
+  return Math.max(0,(s.end!=null? s.end : Date.now()) - s.start);
+}
+function sessRunning(){ const s=sess(); return !!(s && s.start!=null && s.end==null); }
+function sessStarted(){ const s=sess(); return !!(s && s.start!=null); }
+function sessFinished(){ const s=sess(); return !!(s && s.end!=null); }
 function fmtDur(ms){
   const sec=Math.max(0,Math.round(ms/1000)), h=Math.floor(sec/3600), m=Math.floor((sec%3600)/60), ss=sec%60;
   return h? (h+":"+String(m).padStart(2,'0')+":"+String(ss).padStart(2,'0'))
           : (m+":"+String(ss).padStart(2,'0'));
 }
-/* v116 — the elapsed figure was already measured from wall-clock timestamps,
-   so it never drifts when the phone locks. What was missing was the anchor:
-   without seeing the time you started, a number you don't expect has nothing
-   to check itself against. Both ends are now on the card. */
 function clockOf(ms){
   if(!ms) return "";
   const d=new Date(ms);
   return String(d.getHours()).padStart(2,'0')+":"+String(d.getMinutes()).padStart(2,'0');
 }
-function sessStartClock(){ const s=sess(); return (s&&s.segs&&s.segs.length)? clockOf(s.segs[0].s) : ""; }
-function sessEndClock(){
-  const s=sess(); if(!s||!s.segs||!s.segs.length) return "";
-  const last=s.segs[s.segs.length-1];
-  return last.e? clockOf(last.e) : "";
-}
+function sessStartClock(){ const s=sess(); return (s&&s.start!=null)? clockOf(s.start) : ""; }
+function sessEndClock(){ const s=sess(); return (s&&s.end!=null)? clockOf(s.end) : ""; }
 function fmtDurWords(ms){
   const mins=Math.round(ms/60000);
   if(mins<1) return "under a minute";
@@ -7903,34 +7904,97 @@ function fmtDurWords(ms){
   return Math.floor(mins/60)+"h "+(mins%60)+"m";
 }
 function startSession(quiet){
-  if(sessRunning()) return;
   const s=sess();
-  if(s && s.done){ s.done=false; delete s.endedAt; }        /* carrying on after "finish" */
-  if(!s) DB.session={date:today(), segs:[], done:false};
-  DB.session.segs.push({s:Date.now(), e:null});
-  markSession(); save(); sessTickStart(); renderSessBar(); sessFloatSync();
-  if(!quiet) toast("Clock started ⏱");
+  if(s && s.start!=null){
+    if(s.end==null) return;                     /* already running */
+    s.end=null;                                 /* carrying on after "finish" */
+  } else {
+    DB.session={date:today(), start:Date.now(), end:null};
+  }
+  markSession(); save(); sessTickStart(); renderSessBar();
 }
-function pauseSession(){
-  if(!sessRunning()) return;
-  const g=DB.session.segs[DB.session.segs.length-1]; g.e=Date.now();
-  save(); sessTickStop(); renderSessBar(); sessFloatSync();
-  toast("Paused — the clock is waiting ⏸");
-}
-function resumeSession(){ if(sessRunning()) return; startSession(true); toast("Back on the clock ▶"); }
-function sessToggle(){ sessRunning()? pauseSession() : resumeSession(); }
-/* Finish stops the clock but does NOT mark the workout complete — that's the
+/* Finish stamps the end. It does NOT mark the workout complete — that's the
    green button at the bottom, which calls this itself. */
 function endSession(){
-  const s=sess(); if(!s) return 0;
-  if(sessRunning()) DB.session.segs[DB.session.segs.length-1].e=Date.now();
-  s.done=true; s.endedAt=new Date().toISOString();
-  const ms=sessMs(); save(); sessTickStop(); renderSessBar(); sessFloatSync();
+  const s=sess(); if(!s || s.start==null) return 0;
+  if(s.end==null) s.end=Date.now();
+  const ms=sessMs(); save(); sessTickStop(); renderSessBar();
   return ms;
 }
+function resumeSession(){ startSession(); }     /* "Carry on" after finishing */
 function resetSession(){
-  if(!confirm("Reset today's session clock back to zero?")) return;
-  clearSession("you pressed Reset on the clock"); save(); sessTickStop(); renderSessBar(); sessFloatSync(); toast("Clock reset");
+  if(!confirm("Clear today's start and finish times?")) return;
+  clearSession("you pressed Reset on the clock");
+  save(); sessTickStop(); renderSessBar(); toast("Times cleared");
+}
+/* ----- typing the times in -----
+   The app can be wrong about when he started. He cannot. Every figure on the
+   card is derived from these two numbers, so being able to type them is the
+   whole safety net: a session is never lost again, only mistyped. */
+function parseClock(txt, ref){
+  const m=String(txt||"").trim().match(/^(\d{1,2})\s*[:.\s]?\s*(\d{2})$/);
+  if(!m) return null;
+  const h=+m[1], mi=+m[2];
+  if(h>23 || mi>59) return null;
+  const d=new Date(ref||Date.now());
+  d.setHours(h,mi,0,0);
+  return d.getTime();
+}
+/* If he has already pressed the green button, the completed record carries the
+   duration — correcting the clock has to correct that too, or the summary card
+   keeps quoting the old number back at him. */
+function syncCompletionDur(){
+  try{ const c=DB.completed && DB.completed[today()]; if(c) c.durMs=sessMs(); }catch(e){}
+}
+function afterSessEdit(){
+  syncCompletionDur(); save(); renderSessBar(); sessTick();
+  try{ renderWorkoutSheet(DB.workout); }catch(e){}
+  try{ renderWeek(); renderHistory(); }catch(e){}
+}
+function editSessTime(which){
+  const s=sess();
+  if(!s || s.start==null) return setSessTimes();
+  const end=(which==="end");
+  const cur=end? (s.end!=null? clockOf(s.end) : clockOf(Date.now())) : clockOf(s.start);
+  const ans=prompt(end? "What time did you finish? (24h, e.g. 20:39)"
+                      : "What time did you start? (24h, e.g. 19:15)", cur);
+  if(ans==null) return;
+  const t=parseClock(ans, s.start);
+  if(t==null){ toast("I need a time like 19:15"); return; }
+  if(end){
+    if(t<s.start){ toast("That's before you started"); return; }
+    s.end=t;
+  } else {
+    if(s.end!=null && t>s.end){ toast("That's after you finished"); return; }
+    /* A start later than right now would read 0:00 and look broken rather
+       than wrong, so it is refused where he can see it. */
+    if(s.end==null && t>Date.now()+60000){ toast("That's still in the future"); return; }
+    s.start=t;
+  }
+  afterSessEdit();
+  toast("Clock set · "+fmtDurWords(sessMs()));
+}
+/* Both ends at once — for a session the app never timed, or one it got wrong
+   badly enough that starting from scratch is quicker than correcting it. */
+function setSessTimes(){
+  const s=sess();
+  const a=prompt("What time did you START training? (24h, e.g. 19:15)", s&&s.start!=null? clockOf(s.start) : "");
+  if(a==null) return;
+  const t0=parseClock(a);
+  if(t0==null){ toast("I need a time like 19:15"); return; }
+  if(t0>Date.now()+60000){ toast("That start is still in the future"); return; }
+  const b=prompt("And what time did you FINISH? (24h — leave blank if you're still going)",
+                 s&&s.end!=null? clockOf(s.end) : clockOf(Date.now()));
+  let t1=null;
+  if(b!=null && String(b).trim()!==""){
+    t1=parseClock(b,t0);
+    if(t1==null){ toast("I need a time like 20:39"); return; }
+    if(t1<t0){ toast("That finish is before the start"); return; }
+  }
+  DB.session={date:today(), start:t0, end:t1};
+  afterSessEdit();
+  if(t1!=null) sessTickStop(); else sessTickStart();
+  toast("Clock set · "+fmtDurWords(sessMs()));
 }
 /* Anything logged without pressing Start still gets timed — the clock starts
    itself rather than quietly recording nothing. */
@@ -7940,43 +8004,45 @@ let _sessInt=null;
 function sessTickStart(){ if(_sessInt) clearInterval(_sessInt); _sessInt=setInterval(sessTick,1000); sessTick(); }
 function sessTickStop(){ if(_sessInt){ clearInterval(_sessInt); _sessInt=null; } sessTick(); }
 function sessTick(){
-  const txt=fmtDur(sessMs());
-  const a=document.getElementById('sessClock'); if(a) a.textContent=txt;
-  const b=document.getElementById('sessFloatT');
-  if(b){ const d=document.getElementById('sessFloatD'); b.childNodes[0].nodeValue=txt; if(d) d.textContent=sessRunning()?"Training":"Paused"; }
+  const a=document.getElementById('sessClock'); if(a) a.textContent=fmtDur(sessMs());
 }
 
 /* ----- the card that sits above the warm-up ----- */
+function stampsHTML(fin){
+  return "<div class='stamps'>"+
+    "<button class='stamp' onclick=\"editSessTime('start')\">"+
+      "<b>Started</b><span>"+(sessStartClock()||"—")+"</span></button>"+
+    "<button class='stamp' onclick=\"editSessTime('end')\">"+
+      "<b>Finished</b><span>"+(fin? sessEndClock() : "still going")+"</span></button>"+
+  "</div>";
+}
 function sessBarHTML(){
-  const started=sessStarted(), running=sessRunning(), fin=sessFinished(), ms=sessMs();
+  const started=sessStarted(), fin=sessFinished(), ms=sessMs();
   if(!started){
     return "<div class='sessbar' id='sessBar'>"+
       "<div class='sl'>Session clock</div>"+
       "<div class='sc' id='sessClock'>0:00</div>"+
-      "<div class='sm2'>"+(sessClearNote()||"Press start when you begin. Pause it whenever you get interrupted — only real training time is counted.")+"</div>"+
-      "<div class='sbtns'><button class='go' onclick='startSession()'>▶ Start training</button></div>"+
+      "<div class='sm2'>"+(sessClearNote()||"It stamps the time you start and the time you finish — that's the whole clock. Nothing to pause.")+"</div>"+
+      "<div class='sbtns'><button class='go' onclick='startSession()'>▶ Start training</button>"+
+        "<button onclick='setSessTimes()'>Type the times</button></div>"+
     "</div>";
   }
   if(fin){
-    const span=(sessStartClock()&&sessEndClock())? sessStartClock()+" → "+sessEndClock()+" · " : "";
     return "<div class='sessbar' id='sessBar'>"+
       "<div class='sl'>Session clock · stopped</div>"+
       "<div class='sc' id='sessClock'>"+fmtDur(ms)+"</div>"+
-      "<div class='sm2'>"+span+fmtDurWords(ms)+" of actual training"+(sessPauseNote()||"")+".</div>"+
+      stampsHTML(true)+
+      "<div class='sm2'>"+fmtDurWords(ms)+" from start to finish. Tap either time to correct it.</div>"+
       "<div class='sbtns'><button onclick='resumeSession()'>▶ Carry on</button>"+
         "<button onclick='resetSession()'>Reset</button></div>"+
     "</div>";
   }
-  const st=sessStartClock();
-  return "<div class='sessbar "+(running?"on":"hold")+"' id='sessBar'>"+
-    "<div class='sl'>"+(running?"Training · clock running":"Paused")+(st? " · started "+st : "")+"</div>"+
+  return "<div class='sessbar on' id='sessBar'>"+
+    "<div class='sl'>Training · started "+sessStartClock()+"</div>"+
     "<div class='sc' id='sessClock'>"+fmtDur(ms)+"</div>"+
-    "<div class='sm2'>"+(running
-      ? "Tap pause if you get pulled away — the pill follows you down the page too."
-      : "Clock stopped. Nothing is counting until you resume.")+"</div>"+
+    stampsHTML(false)+
+    "<div class='sm2'>Counting from your first logged set. Tap either time if it's wrong.</div>"+
     "<div class='sbtns'>"+
-      (running? "<button class='hold' onclick='pauseSession()'>❙❙ Pause</button>"
-              : "<button class='go' onclick='resumeSession()'>▶ Resume</button>")+
       "<button class='fin' onclick='finishSessionBtn()'>■ Finish</button>"+
     "</div></div>";
 }
@@ -7986,12 +8052,12 @@ function layoffLine(){
   try{
     const L=layoffInfo();
     if(L.gap==null) return "no lifting logged yet";
-    if(!L.tier) return "training continuously, last session "+L.gap+"d ago \u2014 progress loads normally";
+    if(!L.tier) return "training continuously, last session "+L.gap+"d ago — progress loads normally";
     return "FIRST SESSION BACK after "+L.gap+" days off. "+
       (L.tier===1
         ? "Hold last session's weights today, no increases, however good they felt."
         : "Start ~10% below his last top weights and ramp back. Do NOT attempt PRs or add load today.")+
-      " Say so plainly \u2014 he expects to be pulled back, not flattered.";
+      " Say so plainly — he expects to be pulled back, not flattered.";
   }catch(e){ return "unknown"; }
 }
 /* One line for the coach's prompt so it knows how long he's actually been at it. */
@@ -8002,8 +8068,9 @@ function sessClockLine(){
     const recent=(DB.completed||{});
     const past=Object.keys(recent).sort().reverse().slice(1,6).map(d=>recent[d]).filter(c=>c&&c.durMs);
     const avg=past.length? Math.round(past.reduce((a,c)=>a+c.durMs,0)/past.length/60000) : null;
-    return (sessFinished()?"finished":sessRunning()?"running":"PAUSED")+" at "+mins+" min of actual training"+
-           (sessPauseNote()?(" ("+sessPauseNote().replace(/^ · /,"")+")"):"")+
+    return (sessFinished()?"finished":"running")+" · started "+sessStartClock()+
+           (sessFinished()? (", finished "+sessEndClock()) : "")+
+           " · "+mins+" min"+
            (avg?(" · his recent sessions average "+avg+" min"):"");
   }catch(e){ return "unknown"; }
 }
@@ -8017,15 +8084,8 @@ function sessClearNote(){
     const when=clockOf(last.at);
     const had=last.ms>60000? (" It was showing "+fmtDur(last.ms)+".") : "";
     return "Clock was cleared at "+when+" — "+escapeHtml(last.why)+"."+had+
-           " Press start and it runs from zero.";
+           " Start it again, or type the times in.";
   }catch(e){ return ""; }
-}
-function sessPauseNote(){
-  const s=sess(); if(!s||!s.segs||s.segs.length<2) return "";
-  const first=s.segs[0].s, last=s.segs[s.segs.length-1].e||Date.now();
-  const gap=(last-first)-sessMs();
-  if(gap<60000) return "";
-  return " · "+fmtDurWords(gap)+" paused";
 }
 function renderSessBar(){
   const el=document.getElementById('sessBar'); if(!el) return;
@@ -8041,49 +8101,6 @@ function finishSessionBtn(){
   }
 }
 
-/* ----- the floating pause pill ----- */
-function sessFloatSync(){
-  const f=document.getElementById('sessFloat'); if(!f) return;
-  const show = sessStarted() && !sessFinished();
-  f.classList.toggle('show',show);
-  f.classList.toggle('paused',!sessRunning());
-  const b=document.getElementById('sessFloatB'); if(b) b.textContent=sessRunning()?"❙❙":"▶";
-  sessApplyPos(); sessTick();
-}
-function sessApplyPos(){
-  const f=document.getElementById('sessFloat'); if(!f) return;
-  const p=DB.prefs&&DB.prefs.sessPos;
-  if(p&&p.x!=null){ f.classList.add('moved'); f.style.left=p.x+"px"; f.style.top=p.y+"px"; }
-  else { f.classList.remove('moved'); f.style.left=""; f.style.top=""; f.style.bottom=""; }
-  sessClamp();
-  try{ stackFloats(); }catch(e){}
-}
-function sessClamp(){
-  const f=document.getElementById('sessFloat');
-  if(!f||!f.classList.contains('moved')||!f.classList.contains('show')) return;
-  clampFloat(f);
-  sessAvoidRest();
-}
-/* v116 — both floats are draggable, so both can end up in the same place, and
-   when they do the session pill sits on the rest timer's +15 and Skip buttons
-   and you cannot reach them. Whoever moved last gives way: the pill steps
-   below the rest bar, or above it if there is no room underneath. */
-function sessAvoidRest(){
-  const f=document.getElementById('sessFloat');
-  const r=document.getElementById('restTimer');
-  if(!f||!r) return;
-  if(!f.classList.contains('show')||!r.classList.contains('show')) return;
-  const a=f.getBoundingClientRect(), b=r.getBoundingClientRect();
-  if(!a.height||!b.height) return;
-  const hit = a.left<b.right && a.right>b.left && a.top<b.bottom && a.bottom>b.top;
-  if(!hit) return;
-  f.classList.add('moved');
-  let y=b.bottom+8;
-  if(y+a.height > window.innerHeight-6) y=b.top-a.height-8;
-  y=Math.max(6,Math.min(window.innerHeight-a.height-6,y));
-  f.style.left=Math.max(6,Math.min(window.innerWidth-a.width-6,a.left))+"px";
-  f.style.top=y+"px";
-}
 /* ===== v156 · THE FLOATING TIMERS COULD BE DRAGGED UNDER THE NOTCH =======
    Both floats park themselves correctly to begin with — their CSS tops are
    calc(8px + var(--safe-top)). The DRAG did not know about any of that. It
@@ -8155,38 +8172,24 @@ function kbdOpen(){ return kbdOverlap()>120; }
 
    A float he has DRAGGED somewhere is still his: the stack only places the
    ones that are still at home. */
-const FLOAT_GAP=8;
+/* v218 — the session pill is gone, so the rest bar is the only float at
+   home, and it simply sits at the top of whatever strip he can actually see. */
 function floatTopBase(){
   const vv=window.visualViewport;
   /* v208 — while the keyboard is up, or the visible strip has scrolled down
-     inside the layout viewport, the stack follows what he can actually see. */
+     inside the layout viewport, the bar follows what he can actually see. */
   if(vv && (kbdOpen() || (vv.offsetTop||0)>4)) return Math.round((vv.offsetTop||0)+6);
   return safeTopPx()+8;
 }
 function stackFloats(){
   const R=document.getElementById('restTimer');
-  const S=document.getElementById('sessFloat');
-  if(!R||!S) return;
-  const base=floatTopBase();
-  const pillHome = S.classList.contains('show') && !S.classList.contains('moved');
-  if(pillHome){
-    S.style.top=base+"px";
-    S.style.bottom="auto";          /* its CSS home is bottom-anchored */
-  } else if(!S.classList.contains('moved')){
-    S.style.top=""; S.style.bottom="";
-  }
-  if(!R.classList.contains('moved')){
-    /* The bar drops by exactly the pill's height when the pill is above it,
-       and sits at the base when it is not. Measured, not assumed \u2014 the pill
-       is taller while it says "Paused". */
-    const h=pillHome? ((S.offsetHeight||58)+FLOAT_GAP) : 0;
-    R.style.top=(base+h)+"px";
-  }
+  if(!R || R.classList.contains('moved')) return;
+  R.style.top=floatTopBase()+"px";
 }
 /* While the keyboard is up, both floats are positioned against the strip you
    can actually see: the clock 6px below the top of it, the session pill just
    above the keyboard. When it closes they go back exactly where they were,
-   through the same restApplyPos/sessApplyPos the drag handlers use — so a bar
+   through the same restApplyPos the drag handlers use — so a bar
    he has dragged somewhere keeps that place. */
 let _vvRaf=0;
 function vvSync(){
@@ -8202,25 +8205,24 @@ function vvSync(){
        exactly the case he photographed. */
     const open=kbdOpen() || !!(vv && (vv.offsetTop||0)>4);
     const R=document.getElementById('restTimer');
-    const S=document.getElementById('sessFloat');
-    /* v214 — the default layout is the stack, and it already follows the
-       visible strip, so placing it is the whole job for a float at home. */
+    /* v214 — the default layout already follows the visible strip, so
+       placing it is the whole job for a bar that is still at home. */
     try{ stackFloats(); }catch(e){}
     /* A float he has dragged keeps his place \u2014 but not behind the keyboard.
        Clamped from the STORED position rather than the pinned one, or each
        tick would read back its own nudge and walk the float up the screen. */
-    [R,S].forEach(el=>{
+    [R].forEach(el=>{
       if(!el || !el.classList.contains('moved') || !el.classList.contains('show')) return;
       if(open && vv){
         el.dataset.kbd="1";
-        const st=(el===R)? (DB.prefs&&DB.prefs.restPos) : (DB.prefs&&DB.prefs.sessPos);
+        const st=(DB.prefs&&DB.prefs.restPos);
         const y=(st && st.y!=null)? +st.y : (parseFloat(el.style.top)||0);
         const h=el.offsetHeight||48;
         const lo=(vv.offsetTop||0)+6, hi=Math.max(lo,(vv.offsetTop||0)+vv.height-h-8);
         el.style.top=Math.round(Math.max(lo,Math.min(y,hi)))+"px";
       } else if(el.dataset.kbd){
         delete el.dataset.kbd;
-        try{ (el===R? restApplyPos : sessApplyPos)(); }catch(e){}
+        try{ restApplyPos(); }catch(e){}
       }
     });
   });
@@ -8254,68 +8256,6 @@ function clampFloat(el){
   const y=Math.max(b.minY, Math.min(b.maxY, parseFloat(el.style.top)||0));
   el.style.left=x+"px"; el.style.top=y+"px";
 }
-let _sfDrag=null;
-/* v65.1 — the pill would not stay where it was put.
-   _sfDrag was created without x0/y0/moved, so the move handler's test
-   `Math.abs(nx - _sfDrag.x0) > 4` was comparing against undefined: NaN > 4 is
-   always FALSE, so `moved` never became true. Every drag was therefore treated
-   as a TAP on release, and the tap branch calls sessApplyPos(), which puts it
-   straight back in its corner.
-
-   The rest timer never had this bug because it just sets moved=true on any
-   movement. Same approach here, plus the start point is now recorded in the
-   same coordinate space it's compared against. */
-function initSessDrag(){
-  const f=document.getElementById('sessFloat'); if(!f) return;
-  /* The whole pill drags except the pause button — a 19px time label was a
-     small target with wet hands. */
-  const handles=[document.getElementById('sessFloatT'), f.querySelector('.sfd')].filter(Boolean);
-  if(!handles.length) return;
-  let lastTap=0;
-  handles.forEach(h=>{
-    h.addEventListener('pointerdown',ev=>{
-      const r=f.getBoundingClientRect();
-      _sfDrag={dx:ev.clientX-r.left, dy:ev.clientY-r.top, id:ev.pointerId,
-               x0:ev.clientX, y0:ev.clientY, moved:false};
-      f.classList.add('drag','moved');
-      f.style.left=r.left+"px"; f.style.top=r.top+"px";
-      try{ h.setPointerCapture(ev.pointerId); }catch(e){}
-      ev.preventDefault();
-    });
-    h.addEventListener('pointermove',ev=>{
-      if(!_sfDrag||ev.pointerId!==_sfDrag.id) return;
-      if(Math.abs(ev.clientX-_sfDrag.x0)>4 || Math.abs(ev.clientY-_sfDrag.y0)>4) _sfDrag.moved=true;
-      const w=f.offsetWidth, hh=f.offsetHeight;
-      /* Clamp live, not just on release, so it can't be dragged off-screen —
-         and v156: not under the status bar or behind the tab bar either. */
-      const b=floatBounds(w,hh);
-      let x=Math.max(b.minX,Math.min(b.maxX, ev.clientX-_sfDrag.dx));
-      let y=Math.max(b.minY,Math.min(b.maxY, ev.clientY-_sfDrag.dy));
-      f.style.left=x+"px"; f.style.top=y+"px";
-      ev.preventDefault();
-    });
-    const up=ev=>{
-      if(!_sfDrag||ev.pointerId!==_sfDrag.id) return;
-      const moved=_sfDrag.moved; _sfDrag=null; f.classList.remove('drag');
-      if(moved){
-        sessClamp();
-        DB.prefs=DB.prefs||{};
-        DB.prefs.sessPos={x:parseFloat(f.style.left)||0, y:parseFloat(f.style.top)||0};
-        save();
-        return;
-      }
-      /* A real tap. Two quick ones send it back to its corner. */
-      const n=Date.now();
-      if(n-lastTap<420){
-        DB.prefs=DB.prefs||{}; DB.prefs.sessPos=null; save();
-        sessApplyPos(); toast("Pill back to its corner"); lastTap=0;
-      } else { lastTap=n; sessApplyPos(); }
-    };
-    h.addEventListener('pointerup',up);
-    h.addEventListener('pointercancel',up);
-  });
-}
-
 /* ==========================================================================
    v48 — COOL-DOWN TIMERS
    Every stretch has a dose ("45s each side"). Read it, count it down, beep,
@@ -15295,7 +15235,7 @@ function scheduleInApp(){
    v18 ADDITIONS — draggable rest timer · weekly training memory · AI planner
    · Firestore sync
    ========================================================================== */
-const APP_VERSION="v217 · 25/09/2026";
+const APP_VERSION="v218 · 25/09/2026";
 
 /* ===== 1. REST TIMER — drag it anywhere so it never blocks the chat box ===== */
 let _rtDrag=null;
@@ -16497,7 +16437,7 @@ function undoComplete(){
   if(!DB.completed||!DB.completed[today()]) return;
   delete DB.completed[today()];
   if(DB.session) DB.session.done=false;            /* carry on where the clock left off */
-  save(); updateStreak(); renderWorkoutSheet(DB.workout); sessFloatSync();
+  save(); updateStreak(); renderWorkoutSheet(DB.workout); renderSessBar();
   try{ renderWeek(); renderReadiness(); }catch(e){}
   toast("Marked as not finished \u2014 carry on");
 }
@@ -16568,13 +16508,17 @@ function completeBlockHTML(w){
   const effTxt=(s.avgEff!=null)? " \u00b7 felt "+effortWord(s.avgEff) : "";
 
   if(c){
-    const when=new Date(c.at).toLocaleTimeString('en-GB',{hour:'2-digit',minute:'2-digit'});
-    const dur = c.durMs ? (" \u00b7 "+fmtDurWords(c.durMs)+" on the clock"+(sessPauseNote()||"")) : "";
+    /* v218 \u2014 the clock IS a start and a finish now, so the card reads them
+       out rather than quoting the moment he happened to press the button. */
+    const st=sessStartClock(), en=sessEndClock();
+    const when=(st&&en)? (st+"\u2013"+en)
+                       : new Date(c.at).toLocaleTimeString('en-GB',{hour:'2-digit',minute:'2-digit'});
+    const dur = c.durMs ? (" \u00b7 "+fmtDurWords(c.durMs)) : "";
     return "<div class='sheet-sec donewrap' id='doneCard'>"+
       "<div class='donecard'>"+
         "<div class='donehd'>\u2705 Session complete</div>"+
         "<div class='donestat'>"+(bits.join("  \u00b7  ")||"nothing logged")+effTxt+"</div>"+
-        "<div class='donesub'>"+c.exercises+"/"+c.planned+" exercises \u00b7 finished "+when+dur+
+        "<div class='donesub'>"+c.exercises+"/"+c.planned+" exercises \u00b7 "+((st&&en)?"":"finished ")+when+dur+
           (c.skipped&&c.skipped.length? " \u00b7 skipped "+c.skipped.join(", ") : "")+"</div>"+
         "<div class='donerun'>"+(DB.streak||1)+" day run \uD83D\uDD25</div>"+
         "<button class='btn ghost mt' onclick='undoComplete()'>\u21a9 Not finished after all</button>"+
@@ -23308,7 +23252,7 @@ function boot(){
          const hp=document.getElementById('heroPhase'); if(hp) hp.textContent="Today · "+LOC().label; }
   renderWeek(); renderReadiness(); renderFirstRun(); renderTomorrow(); renderEquipFields(); renderCloudFields(); restApplyPos(); renderStorageStatus(); renderWxFields();
   try{ renderProgrammeView(); }catch(e){}
-  try{ sessFloatSync(); if(sessRunning()) sessTickStart(); }catch(e){}
+  try{ if(sessRunning()) sessTickStart(); else sessTick(); }catch(e){}
   /* v197 — last, once the sheet is on the page: a resumed hold timer writes
      into a button that has to exist first. */
   try{ restoreTimers(); }catch(e){}
@@ -23319,7 +23263,6 @@ function boot(){
 boot();
 try{ collapsibleSettings(); }catch(e){}
 initRestDrag();
-initSessDrag();
 try{ vvWatch(); }catch(e){}
 registerSW();
 loadPhotos();
@@ -23371,9 +23314,8 @@ window.addEventListener('resize',()=>{
      drag the floats straight back off the visible strip vvSync just put them
      on. While they are pinned, the pin is the authority. */
   try{
-    const R=document.getElementById('restTimer'), S=document.getElementById('sessFloat');
+    const R=document.getElementById('restTimer');
     if(!(R&&R.dataset.kbd)) restClamp();
-    if(!(S&&S.dataset.kbd)) sessClamp();
     vvSync();
   }catch(e){}
 });

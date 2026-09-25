@@ -1,3 +1,63 @@
+AMIR PT — v218 · 25/09/2026
+===========================
+
+"I probably exercised for an hour and more and I have no idea how much I did
+coz of the timer reset. I think instead of a pill that floats it should log
+when I started and when I finished and that's it. I rarely stop when I
+workout now."
+
+THE CLOCK IS TWO TIMESTAMPS
+----------------------------
+He is right, and it is the better design regardless of the bug. A stopwatch
+made of segments has to be nursed: started, paused, resumed, and every one of
+those is a chance to lose the session — which is exactly what happened. He
+trained for over an hour and the card told him "under a minute".
+
+DB.session is now {date, start, end}. Elapsed is end minus start. That is the
+whole model. Nothing to pause, nothing to forget to un-pause, no running total
+that a stray clear can wipe to zero.
+
+AND HE CAN TYPE THEM IN
+------------------------
+This is the part that actually fixes his complaint rather than just apologising
+for it. Both stamps on the session card are buttons. Tap Started, type 19:15,
+and the clock, the session card and today's completed record all correct
+themselves. The app can be wrong about when he started; he cannot. A session is
+never lost again, only mistyped.
+
+  · editSessTime('start'|'end') — correct one end.
+  · setSessTimes() — type both, for a session the app never timed at all.
+    On the not-started card as "Type the times".
+  · Refused: rubbish, a finish before the start, a start after the finish,
+    and a start in the future (which would read 0:00 and look broken rather
+    than wrong).
+  · syncCompletionDur() writes the corrected duration back into
+    DB.completed[today()], so the green summary card stops quoting the old
+    number back at him.
+
+THE FLOATING PILL IS GONE
+--------------------------
+It existed to carry a pause button down the page. There is no pause any more,
+so there is nothing to carry. Removed outright: the element, its CSS, the drag
+handler, sessFloatSync, sessApplyPos, sessClamp and sessAvoidRest — about 150
+lines, and with them the whole class of bugs where two floats argued over the
+same corner of the screen. stackFloats() now has one float to place and reads
+as three lines. The rest timer is untouched and still follows the keyboard.
+
+MIGRATION
+----------
+A session saved by v217 or earlier is a list of segments. It is read once, the
+first start and the last finish are kept, the pauses are discarded, and the
+segs are deleted. A session that was still running stays running. Verified both
+ways.
+
+Verified in headless Chromium: a start/train/finish cycle reads 1h 14m; a v217
+segment list migrates to {date,start,end} with the segs gone; his exact case
+(a card saying "1 min" with a completed record to match) becomes 1h 24m on both
+the clock and the summary the moment he types 19:15; rubbish, backwards and
+future times are all refused; the pill element is absent. Sweep clean: verify16
+(16/16), audit173 at 390 and 360, journey, timer197, fix217.
+
 AMIR PT — v217 · 25/09/2026
 ===========================
 
