@@ -913,6 +913,9 @@ a{color:var(--orange);}
 .receipt.bad .rhd{color:var(--red);}
 .receipt .rgo{font-weight:700;letter-spacing:.2px;text-transform:none;opacity:.75;}
 .receipt .rl{font-size:14px;font-weight:600;color:var(--txt);line-height:1.5;margin-top:2px;}
+/* v215 — the movement named once, at the top of the group. */
+.receipt .rex{font-size:15px;font-weight:800;color:#fff;line-height:1.4;}
+.receipt .rex + .rl{color:var(--muted);font-weight:700;}
 .receipt .rundo{margin-top:9px;}
 .receipt:active{transform:scale(.99);}
 
@@ -15197,7 +15200,7 @@ function scheduleInApp(){
    v18 ADDITIONS — draggable rest timer · weekly training memory · AI planner
    · Firestore sync
    ========================================================================== */
-const APP_VERSION="v214 · 25/09/2026";
+const APP_VERSION="v215 · 25/09/2026";
 
 /* ===== 1. REST TIMER — drag it anywhere so it never blocks the chat box ===== */
 let _rtDrag=null;
@@ -22227,6 +22230,67 @@ function receiptHTML(res,label){
     (res.undoId? "<div class='rundo'><button class='undoBtn' onclick='event.stopPropagation();undoAction(\""+res.undoId+"\")'>Undo</button></div>":"")+
   "</div>";
 }
+/* ===== v215 · ONE REPLY, ONE CARD PER MOVEMENT ========================
+   "What happened here? This needs to be fixed."
+
+   He asked the coach for a Bench Press and got four identical green cards
+   down the whole screen \u2014 3 sets, 12 reps, rest 1m, 30kg \u2014 each with its own
+   heading and its own Undo. Four receipts for one decision.
+
+   The receipts themselves are right and they should stay: every verified
+   change gets one, and that is what stops the coach claiming things it did
+   not do. What was wrong is that the CHAT rendered them one card each. A
+   reply that sets four properties of the same movement is one change to him,
+   so it is one card: the movement named once at the top, everything that
+   happened to it on a line underneath, one Undo.
+
+   The Undo uses the FIRST action's snapshot, which is the state before any of
+   them \u2014 so one tap puts the movement back exactly as it was, rather than
+   leaving him to unpick four cards in the right order.
+
+   Consecutive only, and only when the anchor names the same exercise: two
+   separate movements in one reply still get a card each, which is right,
+   because they are two changes. */
+function groupReceipts(list){
+  const out=[];
+  (list||[]).forEach(r=>{
+    const lines=(r.receipt&&r.receipt.lines)||[];
+    if(!lines.length) return;
+    const ex=(r.receipt&&r.receipt.anchor&&r.receipt.anchor.ex)||null;
+    const last=out[out.length-1];
+    if(ex && last && last.ex===ex){ last.items.push(r); return; }
+    out.push({ex, items:[r]});
+  });
+  return out;
+}
+/* "Bench Press \u00b7 3 sets" under a heading that already says Bench Press is
+   the movement's name three times on one card. Stripped where it matches
+   exactly, left alone where it does not \u2014 a line that reads differently is a
+   line I have not seen, and mangling it would be worse than repeating it. */
+function receiptStripEx(line,ex){
+  if(!ex) return String(line);
+  const esc=String(ex).replace(/[.*+?^${}()|[\]\\]/g,"\\$&");
+  const t=String(line).replace(new RegExp("^\\s*"+esc+"\\s*(?:\u00b7|:|\u2014|-|\u2192)?\\s*","i"),"").trim();
+  return t || String(line);
+}
+function receiptGroupHTML(g){
+  const items=(g&&g.items)||[];
+  if(!items.length) return "";
+  if(items.length===1) return receiptHTML(items[0]);
+  const anchor=(items[0].receipt&&items[0].receipt.anchor)||null;
+  const aJson=anchor? attrEsc(JSON.stringify(anchor)) : "";
+  const lines=[];
+  items.forEach(r=>((r.receipt&&r.receipt.lines)||[]).forEach(l=>lines.push(receiptStripEx(l,g.ex))));
+  /* The snapshot taken before the FIRST of them is the state before all of
+     them, so one Undo is the whole group. */
+  const undoId=items.find(r=>r.undoId);
+  return "<div class='receipt'"+(anchor? " onclick='jumpToChange(\""+aJson.replace(/'/g,"&#39;")+"\")'":"")+">"+
+    "<div class='rhd'>Updated in Train"+(anchor? "<span class='rgo'>tap to see it \u203a</span>":"")+"</div>"+
+    (g.ex? "<div class='rex'>"+escapeHtml(g.ex)+"</div>" : "")+
+    "<div class='rl'>"+escapeHtml(lines.join(" \u00b7 "))+"</div>"+
+    (undoId? "<div class='rundo'><button class='undoBtn' onclick='event.stopPropagation();undoAction(\""+undoId.undoId+"\")'>Undo all "+items.length+"</button></div>":"")+
+  "</div>";
+}
 function failureHTML(msg){
   return "<div class='receipt bad'><div class='rhd'>Nothing changed</div><div class='rl'>"+escapeHtml(String(msg))+"</div></div>";
 }
@@ -23026,9 +23090,13 @@ async function sendChat(){
     }
 
     /* --- 6. show the receipts, then the words --------------------------- */
-    receipts.forEach(r=>{
-      const html=receiptHTML(r);
-      if(html){ DB.chat.push({role:"log",text:html}); noteProgramme(r.receipt.lines.join(" · "),"coach"); }
+    groupReceipts(receipts).forEach(g=>{
+      const html=receiptGroupHTML(g);
+      if(!html) return;
+      DB.chat.push({role:"log",text:html});
+      const all=[];
+      g.items.forEach(r=>((r.receipt&&r.receipt.lines)||[]).forEach(l=>all.push(l)));
+      noteProgramme(all.join(" · "),"coach");
     });
     legacyNotes.forEach(n=>DB.chat.push({role:"log",text:n}));
     failures.forEach(f=>DB.chat.push({role:"log",text:failureHTML(f)}));

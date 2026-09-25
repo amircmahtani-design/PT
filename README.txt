@@ -1,3 +1,54 @@
+AMIR PT — v215 · 25/09/2026
+===========================
+
+"What happened here? This needs to be fixed."
+
+FOUR CARDS FOR ONE DECISION
+-----------------------------
+He asked the coach for a Bench Press and got four identical green receipts
+filling the entire screen — 3 sets, 12 reps, rest 1m, 30 kg — each with its
+own heading, its own "tap to see it" and its own Undo. The reply he was
+actually reading was pushed off the bottom.
+
+The receipts are not the problem and they are not going anywhere: every
+verified change gets one, and that is the machinery that stops the coach
+claiming things it did not do. What was wrong is that the chat rendered them
+ONE CARD EACH. A reply that sets four properties of the same movement is one
+change to him, so it is one card now:
+
+    UPDATED IN TRAIN                    tap to see it ›
+    Bench Press
+    3 sets · 12 reps · rest 1m · 30 kg
+    [ Undo all 4 ]
+
+The movement is named once, at the top, and the repeated "Bench Press · "
+prefix comes off each line — but only where it matches exactly. A line that
+reads differently is a line I have not seen, and mangling it would be worse
+than repeating it.
+
+ONE UNDO, NOT FOUR IN THE RIGHT ORDER
+---------------------------------------
+The Undo uses the FIRST action's snapshot, which is the state before any of
+them. One tap puts the movement back exactly as it was. Unpicking four cards
+in reverse order was not a thing anybody should have to do mid-session.
+
+Grouping is CONSECUTIVE and only where the receipt's anchor names the same
+exercise. Two different movements in one reply still get a card each, because
+they are two changes.
+
+AND THE PILL IN THAT SCREENSHOT
+---------------------------------
+The session pill is under the rest bar in his photograph rather than above it.
+That is v213: v214 went live two minutes before he took it and his phone had
+not picked it up. Checked rather than assumed — the stack holds on the Coach
+screen too, pill above bar on Train, Coach and back again.
+
+Verified: his exact case — four actions on Bench Press in one reply — renders
+ONE card reading "Bench Press / 3 sets · 12 reps · rest 1m · 30 kg" with a
+single "Undo all 4", and that Undo restores the movement byte-for-byte to what
+it was. Two movements in one reply still render two cards. Sweep clean —
+verify16 (16/16), audit173, journey, apply201.
+
 AMIR PT — v214 · 25/09/2026
 ===========================
 
