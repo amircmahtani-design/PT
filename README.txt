@@ -1,3 +1,62 @@
+AMIR PT — v211 · 25/09/2026
+===========================
+
+"Use 3 sets as standard. Also don't reduce the sets coz I'm not feeling weak
+at all."
+
+A STANDARD IS NOT A DAY PASS
+------------------------------
+DB.setsOverride was stamped with a date and every reader checked it against
+today(), so a number he picked expired at midnight and the next session went
+back to being chosen from his check-in. That is an override, not a setting,
+and he has just told me which one he wanted.
+
+The date is gone. standingSets() is the single answer to "what has he set",
+six readers ask it, and it holds until he taps Program. It lives in the
+defaults as 3, so it survives a reinstall.
+
+AND THE READINESS SCORE STOPS EDITING HIS SESSION
+---------------------------------------------------
+On a deload verdict it took a set off every accessory. Two things wrong with
+that.
+
+It broke the standing rule that nothing rewrites a session behind him: he
+opened Train, saw the 3 he had chosen on the sets row, and the card said 2.
+Both numbers were on screen at once, in the same card, contradicting each
+other.
+
+And it is a score arguing with the man doing the lifting. 72 sets in 7 days is
+a real reading. "I am not feeling weak at all" is a better one, and he is the
+one who knows. Same for the soreness rule, which used to delete the last
+accessory outright.
+
+The reading is still shown in full on the readiness card — the sets, the
+backward numbers, the hard sets — and the buttons under it still work. What
+has gone is the silent edit. The one thing readinessAdjust still DOES rather
+than says is swap a movement that loads a pain he named this morning, because
+that is safety, not volume.
+
+WHAT 3 EVERYWHERE ACTUALLY CHANGES
+------------------------------------
+It is not only an increase. The block's main lifts were on 4 in places —
+Incline DB Press and Lat Pulldown on Upper, Romanian Deadlift on Legs — and
+those come DOWN to 3. Accessories and the two abs movements go UP from 2.
+
+Every lifting day is now 7 movements × 3 = 21 sets, about 65 minutes, inside
+his hour. Weekly sets per group move to: chest 15, back 15, shoulders 12,
+core 24, legs 10.5, arms 6. Core is the one that stands out — four days ×
+two abs movements × three sets — against a target of about 10. Flagged to
+him rather than quietly carved out: an exception the app invents is exactly
+the behaviour he has objected to before.
+
+Verified: all four lifting days build 7 movements on 3 sets each, 21 sets, on
+a check-in of sleep 4, energy 4, soreness high and a "rest" verdict —
+readinessAdjust reports and changes nothing. The standard survives into
+tomorrow's session. Tapping Program hands it straight back to the block's
+4/3/2. Sweep clean — shape (no session over budget), audit173, journey.
+verify16 now reports the 3s against the program's 4s and 2s, which is the
+change he asked for rather than a fault.
+
 AMIR PT — v210 · 25/09/2026
 ===========================
 

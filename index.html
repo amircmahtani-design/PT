@@ -1705,7 +1705,11 @@ const DEFAULTS = {
   /* His nutritionist owns these. They live here only so the coach can see what
      the deficit is doing to his RECOVERY and program around it. */
   nutrition:{calorieTarget:1500, proteinTarget:null, phase:"Lean recomp — nutritionist-led", log:[]},
-  cardio:null, readiness:null, restCall:null, setsOverride:null, completed:{}, tomorrow:null,
+  cardio:null, readiness:null, restCall:null,
+  /* v211 — "use 3 sets as standard". It is a setting, not a day pass, so it
+     lives here as the default and survives a reinstall. Tapping Program on
+     the sets row clears it and hands the session back to the block. */
+  setsOverride:{sets:3}, completed:{}, tomorrow:null,
   session:null,
   wx:{key:"", on:false, plan:"free", synced:null, count:0, quota:null, quotaLeft:null,
       autoGif:false, reqMonth:null, reqUsed:0, fedHost:0},
@@ -2104,6 +2108,23 @@ function mergeDefaults(parsed){ let d={...structuredClone(DEFAULTS),...parsed};
       if(cur.trim() && !/reformer|wunda|pilates chair/i.test(cur))
         e.dubai=cur.replace(/\s*$/,"")+"; Pilates reformer; Pilates (Wunda) chair";
     }catch(err){}
+  }
+  /* ===== v211 · THREE SETS, AS STANDARD ================================
+     "Use 3 sets as standard." Said once, so it is set once — and it no
+     longer expires at midnight the way a dated override did.
+
+     An existing dated override is carried across rather than dropped: if he
+     had picked a number today it was the same decision, just with a shelf
+     life. Fires once; after this the sets row is his to change. */
+  if(!d.v211sets){
+    d.v211sets=1;
+    const prior=d.setsOverride && +d.setsOverride.sets;
+    d.setsOverride={sets:(prior>=1&&prior<=8)? prior : 3};
+    /* Today's sheet picks it up unless he has already started on it. */
+    try{
+      const w=d.workout;
+      if(w && w.date===today() && !w.touched && +w.sets>0 && +w.sets!==d.setsOverride.sets) d.workout=null;
+    }catch(e){}
   }
   if(!d.alt || typeof d.alt!=="object") d.alt={};
   if(!Array.isArray(d.measures)) d.measures=[];
@@ -4667,10 +4688,10 @@ function buildWorkout(){
   note+=" "+tb.mins+" min available"+(est0.row?" (including a "+est0.row+" min row)":"")+" \u2014 "+main.length+" moves \u00d7 "+sets+" sets fits in about "+est0.total+".";
   /* Amir's manual set count beats everything \u2014 readiness, AI, rebuilds. */
   let manualSets=0;
-  if(DB.setsOverride && DB.setsOverride.date===today()){
-    sets=DB.setsOverride.sets;
+  if(standingSets()){
+    sets=standingSets();
     manualSets=sets;
-    note+=" You've set this session to "+sets+" sets yourself \u2014 that stands.";
+    note+=" Every movement is on "+sets+" sets because that is your standard \u2014 tap Program on the sets row to hand it back.";
   }
   /* Warm-up and cool-down come from THIS session's movements, not a fixed list. */
   const warmup=buildWarmup(main,{travel,wrist,firstEx:main[0]});
@@ -6987,16 +7008,16 @@ function repsSummary(w){
               : (lo!=null? (lo===hi? String(lo) : lo+"\u2013"+hi) : null)};
 }
 function setsPickerHTML(w){
-  const locked=!!(DB.setsOverride && DB.setsOverride.date===today());
+  const locked=!!standingSets();
   const r=setsRange(w);
-  const cur=locked? (DB.setsOverride.sets) : (r&&r.list.length===1? r.min : 0);
+  const cur=locked? standingSets() : (r&&r.list.length===1? r.min : 0);
   const btn=n=>"<button class='setspick"+(cur===n?" on":"")+"' onclick='pickSets("+n+")'>"+n+"</button>";
   const autoLab = w.programmed? "Program" : "Auto";
   const note = locked
-    ? "Every movement is on <b>"+DB.setsOverride.sets+"</b> because you set it. Tap <b>"+autoLab+"</b> to hand it back."
+    ? "Every movement is on <b>"+standingSets()+"</b> \u2014 your standard, on every session until you change it. Tap <b>"+autoLab+"</b> to hand it back to the program."
     : (w.programmed
-        ? "The program sets <b>"+(r?r.text:"\u2013")+"</b> per movement. Tap a number to put the whole session on one figure for today."
-        : "Chosen from your readiness \u2014 <b>"+(r?r.text:w.sets)+"</b>"+(r&&r.list.length>1? ", the main lifts taking the extra set":"")+". Tap a number to put the whole session on one figure for today.");
+        ? "The program sets <b>"+(r?r.text:"\u2013")+"</b> per movement. Tap a number to make it your standard on every session."
+        : "Chosen from your readiness \u2014 <b>"+(r?r.text:w.sets)+"</b>"+(r&&r.list.length>1? ", the main lifts taking the extra set":"")+". Tap a number to make it your standard on every session.");
   const rp=repsSummary(w);
   return "<div class='setsbar'><div class='lab'>Sets per exercise"+
       (r? " \u00b7 <span style='color:var(--gold)'>"+r.text+" now</span>" : "")+"</div>"+
@@ -7335,7 +7356,7 @@ function _renderSheetInner(w){
        setting, so it stays a plain chip. */
     "<div class='meta'>"+(function(){
       const r=(typeof setsRange==="function")? setsRange(w) : null;
-      const mine=!!(DB.setsOverride && DB.setsOverride.date===today());
+      const mine=!!standingSets();
       const tap=(cls,txt)=>"<button class='pill "+cls+" tapchip' onclick='openSessionEditor()' aria-label='edit sets and reps for the whole session'>"+txt+" <span class='pe'>edit</span></button>";
       const setsChip=tap("orange",(r? r.text : w.sets)+" sets");
       if(mine)         return setsChip+tap("","every movement · your call");
@@ -10927,8 +10948,8 @@ function resyncSections(){
 function finalizeCoachEdit(){
   resyncSections();
   save();
-  if(DB.setsOverride && DB.setsOverride.date===today() && DB.workout && DB.workout.sets>0 && DB.workout.sets!==DB.setsOverride.sets){
-    DB.workout.sets=DB.setsOverride.sets;
+  if(standingSets() && DB.workout && DB.workout.sets>0 && DB.workout.sets!==standingSets()){
+    DB.workout.sets=standingSets();
     DB.workout.main=(DB.workout.main||[]).map(e=>exObject(e.name));
   }
   if(document.getElementById('workoutSheet')) renderWorkoutSheet(DB.workout);
@@ -11179,15 +11200,31 @@ function coachSwapWorkoutEx(oldRaw,newRaw){
   DB.workout.main[idx]=exObject(nn); finalizeCoachEdit();
   const warn = canDoHere(nn) ? "" : " (heads up: that needs kit you don't have in "+LOC().label+")";
   return {from:o,to:nn,warn}; }
+/* ===== v211 · A STANDARD IS NOT A DAY PASS ============================
+   "Use 3 sets as standard."
+
+   DB.setsOverride was stamped with a date and every reader checked it against
+   today(), so the number he picked expired at midnight and the session went
+   back to being chosen from his check-in. That is a setting, not an override,
+   and he has just told me what it should be.
+
+   The date is gone. One function answers what he has standing, six readers
+   ask it, and it holds until he taps Program to hand it back. */
+function standingSets(){
+  const o=DB.setsOverride;
+  if(!o) return 0;
+  const n=+o.sets;
+  return (n>=1&&n<=8)? n : 0;
+}
 /* Set the sets for today's session.
    manual=true  \u2192 Amir asked, so it sticks even when the workout is rebuilt or replanned.
    manual=false \u2192 the coach/AI proposing, which never overrules a manual choice. */
 function setSessionSets(n,manual){
   n=parseInt(n); if(isNaN(n)||n<1||n>8) return null;
   coachEnsureWorkout();
-  const locked = DB.setsOverride && DB.setsOverride.date===today();
-  if(!manual && locked) return DB.setsOverride.sets;      // Amir's call wins
-  if(manual) DB.setsOverride={date:today(),sets:n};
+  const locked = !!standingSets();
+  if(!manual && locked) return standingSets();            // Amir's call wins
+  if(manual) DB.setsOverride={sets:n};
   DB.workout.sets=n;
   /* ===== v170 \u00b7 IN PLACE, NOT REBUILT ===================================
      This rebuilt every entry from the catalogue and deleted its set count, so
@@ -14667,7 +14704,7 @@ function scheduleInApp(){
    v18 ADDITIONS — draggable rest timer · weekly training memory · AI planner
    · Firestore sync
    ========================================================================== */
-const APP_VERSION="v210 · 25/09/2026";
+const APP_VERSION="v211 · 25/09/2026";
 
 /* ===== 1. REST TIMER — drag it anywhere so it never blocks the chat box ===== */
 let _rtDrag=null;
@@ -19697,7 +19734,7 @@ defAction("set_sets",{
        does. The sets and the rounds are the same number, so move both. */
     const gids=new Set(targets.filter(Boolean).map(e=>e.grp).filter(Boolean));
     if(DB.workout.groups) gids.forEach(g=>{ if(DB.workout.groups[g]) DB.workout.groups[g].rounds=a.sets; });
-    if(a.all){ DB.workout.sets=a.sets; DB.setsOverride={date:today(),sets:a.sets}; }
+    if(a.all){ DB.workout.sets=a.sets; DB.setsOverride={sets:a.sets}; }
     resyncGroups(DB.workout);
     return {n:targets.length, sets:a.sets};
   },
@@ -21275,20 +21312,27 @@ function readinessAdjust(w){
                 why="You flagged "+area+" pain this morning, so anything that loads it is out."; }
     }
   }
-  if(call.verdict==="deload" || (sleep<=5&&energy<=5)){
-    w.main.forEach(e=>{ if(exSets(e)>2 && !e.anchor){ e.sets=exSets(e)-1; try{ e.scheme=schemeFor(e.name,e.sets,e); }catch(err){} changed.push(e.name+" −1 set"); } });
-    why=(why? why+" " : "")+"Sleep "+sleep+" and energy "+energy+" — a set off the accessories. The main lifts keep their volume because that's what the block is measuring.";
-  } else if(call.verdict==="push" && energy>=8 && sleep>=7){
+  /* ===== v211 · IT SAYS ITS PIECE, IT DOES NOT CUT THE SESSION =========
+     "Don't reduce the sets coz I'm not feeling weak at all."
+
+     The readiness score used to take a set off every accessory on a deload
+     verdict. Two things wrong with that. It contradicts the standing rule
+     that nothing rewrites a session behind him — he opened Train, saw the
+     3 he had chosen, and the card said 2. And it is a score arguing with the
+     man doing the lifting: 72 sets in 7 days is a real reading, "I am not
+     feeling weak" is a better one, and he is the one who knows.
+
+     The reading is still shown, in full, on the readiness card. The buttons
+     under it still work. What has gone is the silent edit. */
+  if(call.verdict==="push" && energy>=8 && sleep>=7){
     why=(why? why+" ":"")+"Recovered and firing — full volume, and the load calls stand.";
   }
+  /* v211 — and nor does "properly sore" drop a movement any more. Same
+     reason: it is his session. If soreness should cost him the last
+     accessory, the readiness card says so and he taps "Actually, rest" or
+     removes it himself. */
   if(/high|severe|very/.test(sore)){
-    /* Drop the single most redundant accessory rather than everything. */
-    const cut=w.main.filter(e=>!e.anchor && !e.grp).slice(-1)[0];
-    if(cut && w.main.length>3){
-      w.main=w.main.filter(e=>e!==cut);
-      changed.push(cut.name+" dropped");
-      why=(why? why+" ":"")+"You're properly sore, so the last accessory goes. Recovery is the constraint today.";
-    }
+    why=(why? why+" ":"")+"You logged heavy soreness this morning \u2014 worth knowing, and the session is unchanged. Cut something yourself if it is not moving well.";
   }
   if(changed.length) resyncGroups(w);
   return {changed, why};
