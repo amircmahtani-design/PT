@@ -1744,6 +1744,11 @@ const DEFAULTS = {
      the sets row clears it and hands the session back to the block. */
   setsOverride:{sets:3}, completed:{}, tomorrow:null,
   session:null,
+  /* v217 — a tiny ring buffer of "the clock was cleared" breadcrumbs. Amir's
+     clock reset itself and neither of us could say why. Every route that
+     nulls the session now leaves a dated note here, so the next time it
+     happens the card says what did it instead of us guessing. */
+  diag:{sessClears:[]},
   wx:{key:"", on:false, plan:"free", synced:null, count:0, quota:null, quotaLeft:null,
       autoGif:false, reqMonth:null, reqUsed:0, fedHost:0},
   /* v129 — 65 minutes is his standard session. It used to be 45, which was
@@ -5426,7 +5431,14 @@ function recommendLoadRaw(ex){
   const pr=DB.progression&&DB.progression[ex];
   const h=DB.strength[ex];
   const topPrev = (h&&h.length)? Math.max(...((lastStrengthSession(ex)||{}).sets||[]).map(s=>s.w).concat([0])) : null;
-  if(pr){
+  /* ===== v217 · A TARGET IS FOR BEFORE THE SET, NOT AFTER IT ==========
+     The coach's "next target" sits in DB.progression and outranked
+     everything below it \u2014 forever, and answering with topPrev, which is the
+     weight of the PREVIOUS session. So an instruction given before he
+     touched the bar kept quoting last week's number over three sets he had
+     just done today. Once he has lifted today, today is the answer. */
+  const doneToday=todaySets(ex);
+  if(pr && !doneToday.length){
     if(pr.next) return {text:"Next target: "+pr.next+" (set by coach).",up:true,w:topPrev};
     if(pr.keep && topPrev!=null) return {text:"Stay at "+topPrev+"kg this session — coach wants it kept. Own the reps.",up:false,w:topPrev};
     if(pr.delta && topPrev!=null){ const w=Math.max(0,topPrev+pr.delta); return {text:w+"kg — coach added "+(pr.delta>0?"+":"")+pr.delta+"kg vs last time.",up:pr.delta>0,w}; }
@@ -7833,11 +7845,27 @@ function stopRest(){ restActive=false; restDoneCb=null; _coolQ=null; clearSavedT
    every figure is derived from wall-clock timestamps, never from a ticking
    counter that stops when the browser suspends us.
    ========================================================================== */
+/* v217 — the ONLY way the session clock is allowed to disappear. Every
+   caller names its reason and the note is kept, so a clock that resets
+   itself can be explained afterwards rather than argued about. */
+function clearSession(why){
+  const s=DB.session;
+  let ms=0, started="";
+  try{ ms=(s&&s.segs)? s.segs.reduce((a,g)=>a+Math.max(0,(g.e||Date.now())-g.s),0) : 0; }catch(e){}
+  try{ started=(s&&s.segs&&s.segs.length)? clockOf(s.segs[0].s) : ""; }catch(e){}
+  DB.session=null;
+  if(!s) return;
+  if(!DB.diag) DB.diag={};
+  if(!Array.isArray(DB.diag.sessClears)) DB.diag.sessClears=[];
+  DB.diag.sessClears.push({at:Date.now(), date:today(), was:s.date||null, why:why||"unknown", ms:ms, started:started});
+  if(DB.diag.sessClears.length>20) DB.diag.sessClears=DB.diag.sessClears.slice(-20);
+}
 function sess(){
   let s=DB.session;
   if(s && s.date!==today()){                    /* yesterday's clock left running */
     if(s.segs&&s.segs.length&&s.segs[s.segs.length-1].e==null) s.segs[s.segs.length-1].e=s.segs[s.segs.length-1].s;
-    DB.session=null; s=null;
+    clearSession("a new day started \u2014 yesterday's clock was closed off");
+    s=null;
   }
   return s;
 }
@@ -7902,7 +7930,7 @@ function endSession(){
 }
 function resetSession(){
   if(!confirm("Reset today's session clock back to zero?")) return;
-  DB.session=null; save(); sessTickStop(); renderSessBar(); sessFloatSync(); toast("Clock reset");
+  clearSession("you pressed Reset on the clock"); save(); sessTickStop(); renderSessBar(); sessFloatSync(); toast("Clock reset");
 }
 /* Anything logged without pressing Start still gets timed — the clock starts
    itself rather than quietly recording nothing. */
@@ -7925,7 +7953,7 @@ function sessBarHTML(){
     return "<div class='sessbar' id='sessBar'>"+
       "<div class='sl'>Session clock</div>"+
       "<div class='sc' id='sessClock'>0:00</div>"+
-      "<div class='sm2'>Press start when you begin. Pause it whenever you get interrupted — only real training time is counted.</div>"+
+      "<div class='sm2'>"+(sessClearNote()||"Press start when you begin. Pause it whenever you get interrupted — only real training time is counted.")+"</div>"+
       "<div class='sbtns'><button class='go' onclick='startSession()'>▶ Start training</button></div>"+
     "</div>";
   }
@@ -7978,6 +8006,19 @@ function sessClockLine(){
            (sessPauseNote()?(" ("+sessPauseNote().replace(/^ · /,"")+")"):"")+
            (avg?(" · his recent sessions average "+avg+" min"):"");
   }catch(e){ return "unknown"; }
+}
+/* v217 — if the clock went to zero today, say so and say why. A number he
+   doesn't expect needs a reason next to it, not a shrug. */
+function sessClearNote(){
+  try{
+    const L=((DB.diag||{}).sessClears)||[];
+    const last=L[L.length-1];
+    if(!last || last.date!==today()) return "";
+    const when=clockOf(last.at);
+    const had=last.ms>60000? (" It was showing "+fmtDur(last.ms)+".") : "";
+    return "Clock was cleared at "+when+" — "+escapeHtml(last.why)+"."+had+
+           " Press start and it runs from zero.";
+  }catch(e){ return ""; }
 }
 function sessPauseNote(){
   const s=sess(); if(!s||!s.segs||s.segs.length<2) return "";
@@ -8756,9 +8797,16 @@ function prefillWeight(e){
   /* Mid-exercise: whatever he is actually working with now, including any
      jump an "easy" rating has just triggered. */
   if(done.length){
-    if(e.rec && e.rec.w) return e.rec.w;
     const last=done[done.length-1];
-    return (last&&last.w)||"";
+    const lastW=(last&&+last.w)||0;
+    const lastAt=(last&&last.at)||null;
+    if(e.rec && e.rec.w){
+      const fresh = (e.rec.at!=null && lastAt!=null)
+        ? (e.rec.at>lastAt)                 /* stamped: newer than the bar wins */
+        : (+e.rec.w>lastW);                 /* unstamped: only a heavier call wins */
+      if(fresh) return e.rec.w;
+    }
+    return lastW||"";
   }
   /* First set: what the coach is calling for, which is last session's weight
      unless he has earned an increase. */
@@ -8865,7 +8913,7 @@ function toggleTiming(i){
     const n=exSets(e);
     e.scheme=n+" sets \u00b7 "+(next? "30\u201360s hold" : "8\u201312");
   }
-  if(next) delete e.rec; else { try{ e.rec=recommendLoad(e.name); }catch(err){} }
+  if(next) delete e.rec; else { try{ setRec(e,recommendLoad(e.name)); }catch(err){} }
   markSessionTouched(); save();
   try{ const el=document.getElementById('exb'+i); if(el){ el.outerHTML=exBlockHTML(e,i); paintDemos(); } }catch(err){}
   toast(e.name+" \u2192 "+(next? "timed hold" : "reps"));
@@ -9055,7 +9103,7 @@ function delLoggedSet(exIdx,setIdx){
     if(!DB.strength[ex.name].length) delete DB.strength[ex.name];
   }
   /* The load call came from what was logged, so it has to be recomputed. */
-  try{ ex.rec=recommendLoad(ex.name); }catch(e){}
+  try{ setRec(ex,recommendLoad(ex.name)); }catch(e){}
   /* So does the rep range, or a mis-tapped 20 would outlive the chip. */
   try{ learnRepRange(ex.name); }catch(e){}
   delete ex.adjNote;
@@ -9570,7 +9618,7 @@ async function logSet(i){
   try{ learnRepRange(ex.name); }catch(e){}
   /* Recompute from what he has now actually done, so the load call and the
      progression panel agree with the set he just logged. */
-  try{ if(logNeedsWeight(ex.name,ex)) ex.rec=recommendLoad(ex.name); }catch(e){}
+  try{ if(logNeedsWeight(ex.name,ex)) setRec(ex,recommendLoad(ex.name)); }catch(e){}
   /* v181 — with no index the chip renders without its delete button, so a set
      logged by mistake could not be removed until something re-rendered the
      card. Pass it. */
@@ -9634,7 +9682,35 @@ function saveSet(ex,set){
   if(!DB.strength[ex]) DB.strength[ex]=[];
   let sess=DB.strength[ex].find(s=>s.date===today());
   if(!sess){ sess={date:today(),sets:[]}; DB.strength[ex].push(sess); }
+  /* v217 — when. Without it there is no way to tell a load call the app made
+     a minute ago from one it made before he touched the bar, and that is
+     exactly the question the weight box has to answer. */
+  if(set && set.at==null) set.at=Date.now();
   sess.sets.push(set); save(); renderStrengthPBs();
+}
+/* ===== v217 · THE BOX FOLLOWS THE BAR =================================
+   "I put a weight and it keeps going back to 30 even tho it's 47.5 what I
+   logged in."
+
+   An hour earlier the coach had set Bench Press to 30kg. That writes a
+   recommendation onto the movement, and prefillWeight preferred the
+   recommendation over the log for the whole session \u2014 so every repaint of
+   the card put 30 back in the box under three logged sets of 47.5.
+
+   A recommendation is a thing the app said BEFORE a set; the log is what he
+   actually did. Once he has lifted, the log is the newer fact. So every
+   recommendation is stamped with when it was made, and mid-exercise it only
+   wins if it is newer than the last set he logged.
+
+   For a movement whose rec predates this version and has no stamp, the rule
+   falls back to arithmetic: a call HEAVIER than the set he just did is the
+   app asking for a jump and wins; a call at or below what he is already
+   lifting is stale by definition and does not. */
+function setRec(e,rec){
+  if(!e) return rec;
+  if(rec && typeof rec==="object") rec.at=Date.now();
+  e.rec=rec;
+  return rec;
 }
 /* ===== v201 · WHAT THE COACH SAYS IS WHAT THE TIMER DOES ===============
    "The coach says how much rest between but then the app does what it wants.
@@ -12091,10 +12167,10 @@ function coachSetExLoad(name,load){
     const c=kitCeilingKg(e.name);
     if(c!=null && !isNaN(kg) && kg>c+0.01){ capped=kg; kg=c; txt=c+"kg"; }
   }catch(err){}
-  e.rec={w:isNaN(kg)?"":kg,
+  setRec(e,{w:isNaN(kg)?"":kg,
     text: capped!=null
       ? kg+"kg today \u2014 "+capped+"kg was asked for, and "+kg+"kg is the heaviest dumbbell here."
-      : txt+(/kg|lb|band|bw/i.test(txt)?"":"kg")+" today."};
+      : txt+(/kg|lb|band|bw/i.test(txt)?"":"kg")+" today."});
   coachAfterEx(); return {name:e.name, txt, capped};
 }
 function coachSetExTempo(name,tempo){
@@ -12303,7 +12379,7 @@ function coachAdjustSets(a,scope){
   if(base===null) return {noBase:true, name:e.name};
   if(d===null) return null;
   const target=Math.max(0,Math.round((base+d)*2)/2);
-  e.rec={w:target, text:target+"kg"+(scope==="next"?" for the next set.":" for the rest of these sets.")};
+  setRec(e,{w:target, text:target+"kg"+(scope==="next"?" for the next set.":" for the rest of these sets.")});
   e.adjNote=(d>0?"+":"")+d+"kg "+(scope==="next"?"next set":"on remaining sets");
   save(); try{ renderWorkoutSheet(DB.workout); }catch(e2){}
   return {name:e.name, target, d};
@@ -12458,7 +12534,7 @@ function coachDeloadWorkout(a){
   const f=1+(pct>0? -pct:pct)/100;
   m.forEach(e=>{
     const base=(e.rec&&parseFloat(e.rec.w))||null;
-    if(base){ const t=Math.round(base*f*2)/2; e.rec={w:t,text:t+"kg — deload."}; }
+    if(base){ const t=Math.round(base*f*2)/2; setRec(e,{w:t,text:t+"kg — deload."}); }
     e.sets=Math.max(2,(exSets(e)-1));
     try{ e.scheme=schemeFor(e.name,e.sets); }catch(err){}
   });
@@ -15219,7 +15295,7 @@ function scheduleInApp(){
    v18 ADDITIONS — draggable rest timer · weekly training memory · AI planner
    · Firestore sync
    ========================================================================== */
-const APP_VERSION="v216 · 25/09/2026";
+const APP_VERSION="v217 · 25/09/2026";
 
 /* ===== 1. REST TIMER — drag it anywhere so it never blocks the chat box ===== */
 let _rtDrag=null;
@@ -16255,7 +16331,7 @@ function setEffort(i,setIdx,e){
     if(w>0){
       const next=easyJumpFor(ex.name,w);
       if(next && setsLeft){
-        ex.rec={w:next, text:next+"kg for the next set \u2014 that one was easy, so it wasn't your working weight."};
+        setRec(ex,{w:next, text:next+"kg for the next set \u2014 that one was easy, so it wasn't your working weight."});
         ex.adjNote="+"+(Math.round((next-w)*10)/10)+"kg now \u00b7 last set was easy";
         markSessionTouched();
         jumped={from:w,to:next};
@@ -16263,7 +16339,7 @@ function setEffort(i,setIdx,e){
         /* Already at the top of the rack \u2014 reps are the only lever left. */
         const reps=(done[setIdx]&&done[setIdx].r)||0;
         const t=Math.min(25, reps+3);
-        ex.rec={w, text:w+"kg again but go for "+t+" reps \u2014 that's your heaviest, so reps are the progression."};
+        setRec(ex,{w, text:w+"kg again but go for "+t+" reps \u2014 that's your heaviest, so reps are the progression."});
         ex.adjNote="same weight, "+t+" reps \u00b7 at your ceiling";
         markSessionTouched();
         jumped={from:w,to:w,reps:t};
@@ -19113,7 +19189,19 @@ function actSnapshot(label,meta){
   }catch(e){ console.warn("snapshot",e); return null; }
 }
 /* Restore a snapshot and repaint everything that could be showing stale data. */
-const UNDO_CARRY=["chat","chatCtx","undo","memory"];
+/* ===== v217 · UNDO IS FOR THE PLAN, NOT FOR THE WORK ==================
+   Undo restores a whole-DB snapshot, and only four keys were carried across
+   it. Everything else went back \u2014 including DB.strength, DB.session,
+   DB.rowing and DB.completed. So tapping Undo on a coach change made an hour
+   ago silently deleted every set he had logged since, stopped his clock at
+   whatever it read then, and gave no hint that it had.
+
+   A receipt says "Bench Press \u00b7 3 sets". Undoing it should put the sets
+   prescription back and nothing else. The record of what he actually DID is
+   not part of any plan change and is never the app's to roll back. */
+const UNDO_CARRY=["chat","chatCtx","undo","memory",
+                  "strength","session","rowing","mobility","completed",
+                  "measures","checkins","photos","rhr","weights","diag"];
 function undoTo(id){
   const s=SNAPS[id];
   if(!s||!s.before) return null;
@@ -19522,7 +19610,7 @@ function applyLogTypeToEx(e){
   } else {
     try{ e.scheme=schemeFor(e.name, exSets(e), e); }catch(err){}
   }
-  if(meta.weight){ try{ e.rec=recommendLoad(e.name); }catch(err){} }
+  if(meta.weight){ try{ setRec(e,recommendLoad(e.name)); }catch(err){} }
   else delete e.rec;
   return e;
 }
@@ -20321,7 +20409,7 @@ defAction("set_load",{
   apply:a=>{
     if(a.promoted){ try{ setPermanentLogType(a.name, a.promoted.type); }catch(e){} }
     const e=wkFind(a.name);
-    e.rec={text:a.kg+"kg — you asked for this", w:a.kg, manual:true};
+    setRec(e,{text:a.kg+"kg — you asked for this", w:a.kg, manual:true});
     e.load=a.kg;
     DB.progression[e.name]=Object.assign({},DB.progression[e.name],{next:a.kg+"kg", keep:false, delta:0});
     return {name:a.name, kg:a.kg};
@@ -20659,7 +20747,7 @@ defAction("lighten_session",{
       if(before>2){ e.sets=before-1; try{ e.scheme=schemeFor(e.name,e.sets,e); }catch(err){} changed.push(e.name); }
       if(logNeedsWeight(e.name,e) && e.rec && e.rec.w){
         const w=roundToKit(e.name, e.rec.w*(1-pct/100));
-        e.rec={text:w+"kg — backed off "+pct+"% today", w, eased:true};
+        setRec(e,{text:w+"kg — backed off "+pct+"% today", w, eased:true});
         e.load=w;
       }
     });
@@ -20754,7 +20842,7 @@ defAction("clear_day",{
         if(!DB.strength[e.name].length) delete DB.strength[e.name];
       });
       if(DB.completed) delete DB.completed[today()];
-      DB.session=null;
+      clearSession("today was discarded from the chat");
     }
     DB.workout=null;
     setDayState({cleared:true, restDay:!!a.rest, mode:a.mode||"delete",

@@ -1,3 +1,57 @@
+AMIR PT — v217 · 25/09/2026
+===========================
+
+"My timer reset no idea why and I put a weight and it keeps going back to 30
+even tho it's 47.5 what I logged in. Please fix."
+
+TWO BUGS. THE WEIGHT ONE I FOUND.
+----------------------------------
+The weight box was arguing with his log. When the coach sets a load —
+"set_load" writes DB.progression[name]={next:"30kg"} — recommendLoadRaw
+answered with that instruction for the rest of the session, and it computed
+the number from topPrev, the PREVIOUS session's top set. So he benched 47.5
+three times, the box kept offering 30, and every correction he typed was
+overwritten by the next render.
+
+Three changes, all in the same direction: what he actually lifted wins.
+
+  · recommendLoadRaw's coach-target branch (pr.next / pr.keep / pr.delta)
+    is now skipped the moment todaySets(ex) is non-empty. An instruction
+    given BEFORE he lifts still stands; once there are sets on the board the
+    load comes from the sets.
+  · saveSet stamps every set with at:Date.now(), and the new setRec(e,rec)
+    stamps every recommendation the same way. All eleven .rec= write sites go
+    through it.
+  · prefillWeight mid-exercise follows the last logged set unless the
+    recommendation is genuinely newer (stamped) or heavier (legacy, unstamped
+    — a real mid-set jump to 50 still wins).
+
+THE CLOCK — I COULD NOT PROVE A CAUSE
+--------------------------------------
+I did not find why his session clock went back to 0:04, and I am not going to
+invent one. What I ruled out by reading the code: mergeDefaults (DEFAULTS has
+session:null, the parsed DB spreads over it), applyUpdate (saves first, then
+reloads), today()'s UTC boundary (20:22 in Dubai is 16:22 UTC — no rollover),
+and startSession (it preserves existing segments).
+
+What I did instead:
+
+  · UNDO_CARRY now carries strength, session, rowing, mobility, completed,
+    measures, checkins, photos, rhr and weights. An undo restores a whole-DB
+    snapshot, so before this an undo of a chat action could take the clock and
+    the logged sets with it. That is one plausible route, closed.
+  · DB.session is now nulled in exactly ONE place: clearSession(why). The
+    three routes that clear it — a new day rolling over, the Reset button,
+    and discarding today from the chat — each name their reason, and the note
+    is kept in a 20-entry ring at DB.diag.sessClears.
+  · If the clock was cleared today, the session card says so where the
+    encouraging line normally sits: "Clock was cleared at 20:22 — you pressed
+    Reset on the clock. It was showing 41:18." Next time it happens he will
+    have the answer on screen instead of me guessing at it a day later.
+
+DB.diag survives an undo too, so the breadcrumb cannot be erased by the thing
+it is there to catch.
+
 AMIR PT — v216 · 25/09/2026
 ===========================
 
