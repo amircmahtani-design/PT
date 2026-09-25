@@ -7811,7 +7811,7 @@ function restDue(){
   releaseWake();
   if(cb) try{ cb(); }catch(e){ console.warn(e); }
 }
-function stopRest(){ restActive=false; restDoneCb=null; _coolQ=null; clearSavedTimers(); if(restInt){clearInterval(restInt);restInt=null;} const t=document.getElementById('restTimer'); if(t){t.classList.remove('show');t.classList.remove('due');} releaseWake(); markCoolRunning(-1); }
+function stopRest(){ restActive=false; restDoneCb=null; _coolQ=null; clearSavedTimers(); if(restInt){clearInterval(restInt);restInt=null;} const t=document.getElementById('restTimer'); if(t){t.classList.remove('show');t.classList.remove('due');} releaseWake(); markCoolRunning(-1); try{ stackFloats(); }catch(e){} }
 /* ==========================================================================
    v48 — THE SESSION CLOCK
    Start it when you begin, pause it when life interrupts, finish it when
@@ -8000,8 +8000,9 @@ function sessApplyPos(){
   const f=document.getElementById('sessFloat'); if(!f) return;
   const p=DB.prefs&&DB.prefs.sessPos;
   if(p&&p.x!=null){ f.classList.add('moved'); f.style.left=p.x+"px"; f.style.top=p.y+"px"; }
-  else { f.classList.remove('moved'); f.style.left=""; f.style.top=""; }
+  else { f.classList.remove('moved'); f.style.left=""; f.style.top=""; f.style.bottom=""; }
   sessClamp();
+  try{ stackFloats(); }catch(e){}
 }
 function sessClamp(){
   const f=document.getElementById('sessFloat');
@@ -8084,6 +8085,50 @@ function kbdOverlap(){
   return Math.max(0, Math.round(window.innerHeight - vv.height));
 }
 function kbdOpen(){ return kbdOverlap()>120; }
+/* ===== v214 · THE PILL SITS ON TOP OF THE REST BAR ====================
+   "The pause pill needs to go just above the rest timer as default."
+
+   It was parked bottom-right, 150px up from the tab bar, which put it over
+   the middle of whatever card he was reading \u2014 in his photograph, across the
+   demo picture of the movement he was about to do. The rest bar was already
+   at the top. Two floating things, two different corners, one of them in the
+   way.
+
+   They are a STACK now: the pill takes the top slot and the rest bar sits
+   directly under it. One function decides that, everything that moves either
+   of them calls it, and it follows the visible strip so it survives the
+   keyboard the same way v208 made the clock survive it.
+
+   A float he has DRAGGED somewhere is still his: the stack only places the
+   ones that are still at home. */
+const FLOAT_GAP=8;
+function floatTopBase(){
+  const vv=window.visualViewport;
+  /* v208 — while the keyboard is up, or the visible strip has scrolled down
+     inside the layout viewport, the stack follows what he can actually see. */
+  if(vv && (kbdOpen() || (vv.offsetTop||0)>4)) return Math.round((vv.offsetTop||0)+6);
+  return safeTopPx()+8;
+}
+function stackFloats(){
+  const R=document.getElementById('restTimer');
+  const S=document.getElementById('sessFloat');
+  if(!R||!S) return;
+  const base=floatTopBase();
+  const pillHome = S.classList.contains('show') && !S.classList.contains('moved');
+  if(pillHome){
+    S.style.top=base+"px";
+    S.style.bottom="auto";          /* its CSS home is bottom-anchored */
+  } else if(!S.classList.contains('moved')){
+    S.style.top=""; S.style.bottom="";
+  }
+  if(!R.classList.contains('moved')){
+    /* The bar drops by exactly the pill's height when the pill is above it,
+       and sits at the base when it is not. Measured, not assumed \u2014 the pill
+       is taller while it says "Paused". */
+    const h=pillHome? ((S.offsetHeight||58)+FLOAT_GAP) : 0;
+    R.style.top=(base+h)+"px";
+  }
+}
 /* While the keyboard is up, both floats are positioned against the strip you
    can actually see: the clock 6px below the top of it, the session pill just
    above the keyboard. When it closes they go back exactly where they were,
@@ -8104,26 +8149,26 @@ function vvSync(){
     const open=kbdOpen() || !!(vv && (vv.offsetTop||0)>4);
     const R=document.getElementById('restTimer');
     const S=document.getElementById('sessFloat');
-    if(R){
-      if(open && vv && R.classList.contains('show')){
-        R.dataset.kbd="1";
-        R.style.top=Math.round((vv.offsetTop||0)+6)+"px";
-      } else if(R.dataset.kbd){
-        delete R.dataset.kbd;
-        try{ restApplyPos(); }catch(e){ R.style.top=""; }
+    /* v214 — the default layout is the stack, and it already follows the
+       visible strip, so placing it is the whole job for a float at home. */
+    try{ stackFloats(); }catch(e){}
+    /* A float he has dragged keeps his place \u2014 but not behind the keyboard.
+       Clamped from the STORED position rather than the pinned one, or each
+       tick would read back its own nudge and walk the float up the screen. */
+    [R,S].forEach(el=>{
+      if(!el || !el.classList.contains('moved') || !el.classList.contains('show')) return;
+      if(open && vv){
+        el.dataset.kbd="1";
+        const st=(el===R)? (DB.prefs&&DB.prefs.restPos) : (DB.prefs&&DB.prefs.sessPos);
+        const y=(st && st.y!=null)? +st.y : (parseFloat(el.style.top)||0);
+        const h=el.offsetHeight||48;
+        const lo=(vv.offsetTop||0)+6, hi=Math.max(lo,(vv.offsetTop||0)+vv.height-h-8);
+        el.style.top=Math.round(Math.max(lo,Math.min(y,hi)))+"px";
+      } else if(el.dataset.kbd){
+        delete el.dataset.kbd;
+        try{ (el===R? restApplyPos : sessApplyPos)(); }catch(e){}
       }
-    }
-    if(S){
-      if(open && vv && S.classList.contains('show')){
-        S.dataset.kbd="1";
-        S.style.top=Math.round((vv.offsetTop||0)+vv.height-(S.offsetHeight||48)-8)+"px";
-        S.style.bottom="auto";
-      } else if(S.dataset.kbd){
-        delete S.dataset.kbd;
-        S.style.bottom="";
-        try{ sessApplyPos(); }catch(e){ S.style.top=""; }
-      }
-    }
+    });
   });
 }
 function vvWatch(){
@@ -15152,7 +15197,7 @@ function scheduleInApp(){
    v18 ADDITIONS — draggable rest timer · weekly training memory · AI planner
    · Firestore sync
    ========================================================================== */
-const APP_VERSION="v213 · 25/09/2026";
+const APP_VERSION="v214 · 25/09/2026";
 
 /* ===== 1. REST TIMER — drag it anywhere so it never blocks the chat box ===== */
 let _rtDrag=null;
@@ -15166,6 +15211,7 @@ function restApplyPos(){
   const b=document.getElementById('restMiniBtn');
   if(b) b.innerHTML=(DB.prefs&&DB.prefs.restMini)?"\u25a1":"\u2013";
   restClamp();
+  try{ stackFloats(); }catch(e){}
 }
 function restClamp(){
   const t=restEl(); if(!t||!t.classList.contains('moved')||!t.classList.contains('show')) return;

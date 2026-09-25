@@ -1,3 +1,47 @@
+AMIR PT — v214 · 25/09/2026
+===========================
+
+"The pause pill needs to go just above the rest timer as default."
+
+TWO FLOATING THINGS, TWO DIFFERENT CORNERS
+--------------------------------------------
+The rest bar has lived at the top since v121. The session pill was parked
+bottom-right, 150px up from the tab bar — which put it across the middle of
+whatever card he was reading. In his photograph it was sitting on the demo
+picture of the movement he was about to do.
+
+They are a STACK now: the pill takes the top slot and the rest bar sits
+directly under it, nine pixels down. stackFloats() is the single function that
+decides that, and everything that moves either float ends by calling it —
+restApplyPos, sessApplyPos, stopRest, and the visual-viewport sync.
+
+The bar drops by the pill's MEASURED height rather than a number typed in
+here, because the pill is taller when it says Paused than when it says
+Training.
+
+IT SURVIVES THE KEYBOARD, WHICH IS WHERE v208 LEFT OFF
+--------------------------------------------------------
+v208 taught both floats to follow the visible strip when iOS scrolls the
+visual viewport to make room for the keyboard. It did that by pinning them
+separately — the clock to the top of the strip, the pill just above the
+keyboard. With a stack that is the wrong answer twice over, so the placement
+is now one calculation: floatTopBase() says where the top of the visible strip
+is, and the stack hangs off it. Verified in both modes — the strip shrinking
+by a keyboard's height, and the strip scrolling down inside the layout
+viewport with no height change at all. Nine pixels between them in each.
+
+AND A FLOAT HE HAS DRAGGED IS STILL HIS
+-----------------------------------------
+The stack only places the ones still at home. A dragged pill keeps its
+position, and the rest bar takes the top slot on its own. The keyboard pinning
+for a dragged float now clamps from the STORED position rather than the pinned
+one — reading back its own nudge each tick would have walked it up the screen.
+
+Verified: both up, pill 8-70 and bar 78-162, no overlap; the rest ending
+leaves the pill at the top; the bar alone returns to the top slot; a pill
+dragged to y=600 stays there and the bar goes to 8. Sweep clean — verify16
+(16/16), audit173, journey, timer197.
+
 AMIR PT — v213 · 25/09/2026
 ===========================
 
