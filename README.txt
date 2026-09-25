@@ -1,3 +1,40 @@
+AMIR PT — v210 · 25/09/2026
+===========================
+
+"In Then & now I don't remember when I was my fattest vs now. I want to be
+able to choose by weight to compare as well."
+
+THE SCALE REMEMBERS, SO HE DOESN'T HAVE TO
+--------------------------------------------
+Two halves to this.
+
+THE LIST SAYS WHAT HE WEIGHED. Every option in both dropdowns now reads
+"89.7 kg · 15 Jan 26 · Front". The weight leads, because a closed <select> on
+a phone shows about twenty characters and the weight is the thing he is
+choosing by — a date means nothing to him a year later and 89.7 kg means
+everything. The date is short for the same reason; the full one is under the
+picture and the open picker is full width anyway. A shot with no weigh-in
+within ten days says "no weigh-in" rather than borrowing a number from a
+different month.
+
+AND TWO CHIPS DO THE REMEMBERING. Heaviest and Lightest sit next to the date
+chips. They find the photo nearest his highest (or lowest) logged bodyweight
+and put it against the latest shot OF THE SAME ANGLE where one exists, the
+same rule bestPair already used — a heavy side-on next to a lean front-on
+tells him nothing. Whichever of the two is older becomes "Then", so picking a
+heaviest that happens to be recent cannot read the pair backwards.
+
+The weight beside a photo is the same weightNear() lookup the cards use, so
+the list, the chips and the pictures can never disagree.
+
+Verified against a year of shots: the list reads weight-first in both
+dropdowns; Heaviest pairs 89.7 kg on 15/01 against today's 83.6 kg, front
+against front, −6.1 kg, 8 months apart; Lightest pairs 81.2 kg on 11/06
+against today. The date chips are untouched — first-vs-latest and 1 month
+back both still pick what they did. With no weigh-ins at all it says so and
+changes nothing rather than throwing. Sweep clean — verify16, audit173,
+journey, cmp192.
+
 AMIR PT — v209 · 24/09/2026
 ===========================
 

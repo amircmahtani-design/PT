@@ -602,6 +602,9 @@ details.sec2[open] .secsum2:after{content:"\2212";}
 .quickcmp{display:flex;gap:6px;overflow-x:auto;padding:2px 0 0;}
 .quickcmp button{flex:0 0 auto;padding:7px 12px;border-radius:11px;background:var(--pill);border:1px solid var(--line);
   color:var(--muted);font-size:12px;font-weight:700;}
+/* v210 — these two carry weight, date and angle in one line, and a closed
+   select on a phone shows perhaps twenty characters of it. */
+#cmpA,#cmpB{font-size:14px;padding-left:10px;padding-right:6px;}
 .intcell{display:flex;flex-direction:column;min-width:0;}
 .intcell .k{font-size:11px;font-weight:800;letter-spacing:.4px;text-transform:uppercase;
   color:var(--label);margin-bottom:5px;white-space:nowrap;}
@@ -1186,6 +1189,10 @@ a{color:var(--orange);}
         <button onclick="quickCompare(90)">3 months</button>
         <button onclick="quickCompare(180)">6 months</button>
         <button onclick="quickCompare(0)">First vs latest</button>
+        <!-- v210 — "I don't remember when I was my fattest vs now." The scale
+             does, so it picks the photo rather than his memory. -->
+        <button onclick="quickCompareWeight('max')">Heaviest</button>
+        <button onclick="quickCompareWeight('min')">Lightest</button>
       </div>
       <div class="mgrid mt">
         <div class="field"><label>Then</label><select class="txtin" id="cmpA" onchange="setCmp('a',this.value)"></select></div>
@@ -13651,6 +13658,12 @@ function photoWhen(p){
   const d=new Date(p&&p.t? p.t : Date.now());
   return d.toLocaleDateString('en-GB',{day:'2-digit',month:'2-digit',year:'numeric'});
 }
+/* v210 — "15 Jan 26": short enough to sit behind the weight in a closed
+   dropdown and still tell him which shot it is. */
+function photoWhenShort(p){
+  const d=new Date(p&&p.t? p.t : Date.now());
+  return d.toLocaleDateString('en-GB',{day:'numeric',month:'short',year:'2-digit'});
+}
 function photoWhenLong(p){
   const d=new Date(p&&p.t? p.t : Date.now());
   return d.toLocaleDateString('en-GB',{weekday:'short',day:'numeric',month:'long',year:'numeric'});
@@ -13978,10 +13991,65 @@ function lbSetThen(){ const p=lbCur(); if(!p) return; _cmpA=pkey(p); closePhoto(
 function lbSetNow(){ const p=lbCur(); if(!p) return; _cmpB=pkey(p); closePhoto(); renderCompareControls(); toast("Set as Now · "+photoWhen(p)); }
 
 /* ----- Then & now ----- */
+/* ===== v210 · CHOOSING BY WEIGHT ======================================
+   "In Then & now I don't remember when I was my fattest vs now. I want to be
+   able to choose by weight to compare as well."
+
+   Two halves to that. The list says what he weighed in each shot, so picking
+   by weight is possible by reading it — a date means nothing to him a year
+   later and 87.9 kg means everything. And two chips do the remembering for
+   him: the scale knows which day was the heaviest and which the lightest,
+   and it does not need him to.
+
+   The weight beside a photo is the same weightNear() lookup the pictures
+   themselves use, so the list and the cards can never disagree. Where there
+   was no weigh-in within ten days of a shot, the option says so rather than
+   borrowing a number from a different month. */
 function optListFor(sel,cur){
-  return photosSorted().slice().reverse().map(p=>
-    "<option value='"+attrEsc(pkey(p))+"'"+(pkey(p)===String(cur)?" selected":"")+">"+
-    photoWhen(p)+(p.pose?" · "+escapeHtml(p.pose):"")+"</option>").join("");
+  return photosSorted().slice().reverse().map(p=>{
+    const kg=photoWeight(p);
+    /* The WEIGHT leads, because a closed <select> on a phone shows only the
+       first few characters and the weight is the thing he is choosing by.
+       The date is short for the same reason; the full one is under the
+       picture anyway, and the open picker is full width. */
+    return "<option value='"+attrEsc(pkey(p))+"'"+(pkey(p)===String(cur)?" selected":"")+">"+
+      (kg? kg.w.toFixed(1)+" kg" : "no weigh-in")+" · "+photoWhenShort(p)+
+      (p.pose?" · "+escapeHtml(p.pose):"")+"</option>";
+  }).join("");
+}
+/* Every photo that has a weigh-in near it, heaviest first. */
+function photosByWeight(){
+  return photosSorted().map(p=>{
+    const kg=photoWeight(p);
+    return kg? {p, w:kg.w} : null;
+  }).filter(Boolean).sort((a,b)=>b.w-a.w);
+}
+/* The heaviest (or lightest) he has a photo of, against the latest shot of the
+   same angle where there is one — a front against a front, the way bestPair
+   does it, because a heavy side-on next to a lean front-on tells him nothing.
+   */
+function quickCompareWeight(which){
+  const list=photosByWeight();
+  if(list.length<2){
+    toast(list.length? "Only one photo has a weigh-in near it" : "No weigh-ins near your photos yet");
+    return;
+  }
+  const pick=(which==="min")? list[list.length-1] : list[0];
+  const all=photosSorted();
+  const pose=pick.p.pose||"";
+  const samePose=all.filter(p=>(p.pose||"")===pose && p!==pick.p);
+  const pool=samePose.length? samePose : all.filter(p=>p!==pick.p);
+  const now=pool[pool.length-1];
+  if(!now){ toast("Need a second photo to compare against"); return; }
+  /* Whichever is older is "then" — picking his heaviest AFTER the latest shot
+     would otherwise read the pair backwards. */
+  const A=(pick.p.t<=now.t)? pick.p : now;
+  const B=(pick.p.t<=now.t)? now : pick.p;
+  _cmpA=pkey(A); _cmpB=pkey(B);
+  renderCompareControls();
+  const label=(which==="min")? "lightest" : "heaviest";
+  toast("Your "+label+" on record \u2014 "+pick.w.toFixed(1)+" kg on "+photoWhen(pick.p)+
+        (samePose.length? "" : " (different angle \u2014 it is the only other shot)"));
 }
 function setCmp(which,v){ if(which==='a') _cmpA=String(v); else _cmpB=String(v); renderCompare(); }
 function renderCompareControls(){
@@ -14599,7 +14667,7 @@ function scheduleInApp(){
    v18 ADDITIONS — draggable rest timer · weekly training memory · AI planner
    · Firestore sync
    ========================================================================== */
-const APP_VERSION="v209 · 24/09/2026";
+const APP_VERSION="v210 · 25/09/2026";
 
 /* ===== 1. REST TIMER — drag it anywhere so it never blocks the chat box ===== */
 let _rtDrag=null;
