@@ -1,3 +1,46 @@
+AMIR PT — v216 · 25/09/2026
+===========================
+
+"Why did you get rid of my second abs exercise. Bring it back for all my
+workouts."
+
+HIS INSTRUCTION OUTRANKS MY BAND
+----------------------------------
+v212 cut abs to one movement a day. The reason was arithmetic: the athletic
+objective sets 6-10 hard sets a week for a small muscle group, and eight abs
+slots at two sets is sixteen. I said so at the time rather than burying it —
+but he has now told me twice that he wants two on every session, and that
+settles it.
+
+So the BAND moves rather than the program. Core is written into the objective
+as an explicit exception at 12-18, which is what his instruction actually
+costs. Arms stay at 6-10; he never asked to raise that one. An app that flags
+his own standing instruction as an error every week is not auditing anything,
+it is arguing.
+
+BACK TO SIX MOVEMENTS A DAY
+-----------------------------
+Four lifts and two abs. Two regions a day, eight slots, each of the four
+regions twice a week:
+
+    Upper Body    lower + anti-extension
+    Legs & Core   upper + obliques
+    Pull Day      obliques + lower
+    Push Day      anti-extension + upper
+
+And the pair on a day is never the same movement FAMILY — a cable crunch and a
+hollow hold are both trunk flexion, which is the mistake v200 made and
+auditAbs caught. Checked across all sixteen sessions: no clashes.
+
+16 working sets a session (4×3 + 2×2), about 58 minutes with the row, inside
+his 65. Weekly: chest 9, back 12.8, shoulders 11.3, legs 9, arms 6, core 16 —
+every group inside its band now that core's band says what he wants.
+
+Verified: all sixteen sessions carry two abs movements with two different
+regions and no family clash; auditProgram and auditAbs clean; the core band
+reads 12-18 and arms still reads 6-10; a built Push Day ends on Dead Bug and
+V-Up. Sweep clean — verify16 (16/16), dupes2, audit173, journey.
+
 AMIR PT — v215 · 25/09/2026
 ===========================
 

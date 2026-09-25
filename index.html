@@ -4522,14 +4522,24 @@ function absRegion(name){
    can be two different regions and still be the same movement family. Week 2
    Friday was Hollow Hold plus Cable Crunch on the first pass and the audit
    caught it. That is what the audit is for. */
-/* v212 — ONE abs movement a day, one region each, all four covered across
-   the week. v200 made it two on his instruction; the objective's 6-10 sets a
-   week for a small group cannot pay for eight abs slots, and core was the
-   group furthest outside its band by a mile. This is where v198 started.
-   Said out loud rather than done quietly — one line to put the second back. */
-const ABS_DAY={"Upper Body":["lower"], "Legs & Core":["upper"],
-               "Pull Day":["oblique"], "Push Day":["brace"]};
-const ABS_PER_DAY=1;
+/* ===== v216 · TWO ABS MOVEMENTS, BACK, ON EVERY SESSION ===============
+   "Why did you get rid of my second abs exercise. Bring it back for all my
+   workouts."
+
+   Fair. v212 cut it to one because the objective's 6-10 hard sets a week for
+   a small group could not pay for eight abs slots, and I said so at the time
+   rather than burying it — but he has now told me twice that he wants two,
+   which settles it. His instruction outranks a band I derived.
+
+   So the band moves instead of the program. Core is his stated exception and
+   is written as one in OBJECTIVES; arms stay at 6-10. An app that flags his
+   own instruction as an error every week is not auditing anything, it is
+   arguing.
+
+   Two regions a day, eight slots, each of the four regions twice a week. */
+const ABS_DAY={"Upper Body":["lower","brace"], "Legs & Core":["upper","oblique"],
+               "Pull Day":["oblique","lower"], "Push Day":["brace","upper"]};
+const ABS_PER_DAY=2;
 /* ===== v212 · THE BLOCK, REBUILT FOR THE ATHLETIC OBJECTIVE ============
    The old block was seven movements a day. With his 3-set standard that is
    21 working sets a session and, per week, roughly chest 15, back 15,
@@ -4565,44 +4575,44 @@ const PROGRAM={
   1:{
     "Upper Body":[["Incline DB Press",3,"8\u201310"],["Lat Pulldown",3,"8\u201310"],
                   ["Seated Cable Row",3,"10"],["Lateral Raise",3,"12\u201315"],
-                  ["Leg Raise",2,"12\u201315"]],
+                  ["Leg Raise",2,"12\u201315"],["Plank",2,"45s"]],
     "Legs & Core":[["Romanian Deadlift",3,"8\u201310"],["Bulgarian Split Squat",3,"8 each leg"],
                   ["Calf Raise",3,"12\u201315"],["DB Curl",3,"10\u201312"],
-                  ["Cable Crunch",2,"12"]],
+                  ["Cable Crunch",2,"12"],["Side Plank",2,"40s each side"]],
     "Pull Day":[["Lat Pulldown",3,"8\u201310"],["Chest-supported Row",3,"10"],
                   ["Face Pull",3,"12\u201315"],["Hammer Curl",3,"10\u201312"],
-                  ["Side Plank",2,"40s each side"]],
+                  ["Side Plank",2,"40s each side"],["Hanging Knee Raise",2,"12"]],
     "Push Day":[["Incline DB Press",3,"8\u201310"],["Bench Press",3,"8\u201310"],
                   ["DB Shoulder Press",3,"8\u201310"],["Lateral Raise",3,"12\u201315"],
-                  ["Dead Bug",2,"10 each side"]]
+                  ["Dead Bug",2,"10 each side"],["V-Up",2,"12"]]
   },
   2:{
     "Upper Body":[["Incline DB Press",3,"8"],["Single-arm Lat Pulldown",3,"10 each side"],
                   ["DB Single-arm Row",3,"10 each side"],["Cable Lateral Raise",3,"12\u201315"],
-                  ["Hanging Knee Raise",2,"10\u201312"]],
+                  ["Hanging Knee Raise",2,"10\u201312"],["Band Dead Bug",2,"12 each side"]],
     "Legs & Core":[["Romanian Deadlift",3,"8"],["Goblet Squat",3,"10\u201312"],
                   ["Calf Raise",3,"15"],["Triceps Pushdown",3,"10\u201312"],
-                  ["V-Up",2,"12"]],
+                  ["V-Up",2,"12"],["Band Pallof Press",2,"12 each side"]],
     "Pull Day":[["Lat Pulldown",3,"8"],["Seated Cable Row",3,"10"],
                   ["DB Reverse Fly",3,"12\u201315"],["DB Curl",3,"10"],
-                  ["Bicycle Crunch",2,"20 each side"]],
+                  ["Bicycle Crunch",2,"20 each side"],["Flutter Kick",2,"30s"]],
     "Push Day":[["Incline DB Press",3,"8"],["Close-grip Bench Press",3,"8\u201310"],
                   ["DB Shoulder Press",3,"8\u201310"],["Lateral Raise",3,"12\u201315"],
-                  ["Plank",2,"45s"]]
+                  ["Plank",2,"45s"],["Cable Crunch",2,"15"]]
   },
   3:{
     "Upper Body":[["Incline DB Press",3,"8"],["Lat Pulldown",3,"8"],
                   ["Chest-supported Row",3,"10"],["Cable Lateral Raise",3,"12\u201315"],
-                  ["Flutter Kick",2,"30s"]],
+                  ["Flutter Kick",2,"30s"],["Dead Bug",2,"12 each side"]],
     "Legs & Core":[["Romanian Deadlift",3,"8"],["Bulgarian Split Squat",3,"8 each leg"],
                   ["Calf Raise",3,"15\u201320"],["Hammer Curl",3,"10\u201312"],
-                  ["Cable Crunch",2,"12\u201315"]],
+                  ["Cable Crunch",2,"12\u201315"],["Plank Hip Dips",2,"12 each side"]],
     "Pull Day":[["Single-arm Lat Pulldown",3,"10 each side"],["Chest-supported Row",3,"10"],
                   ["Face Pull",3,"12\u201315"],["Incline DB Curl",3,"10"],
-                  ["Plank Hip Dips",2,"12 each side"]],
+                  ["Plank Hip Dips",2,"12 each side"],["Leg Raise",2,"15"]],
     "Push Day":[["Incline DB Press",3,"8"],["Bench Press",3,"8\u201310"],
                   ["DB Shoulder Press",3,"8"],["Lateral Raise",3,"12\u201315"],
-                  ["Hollow Hold",2,"30s"]]
+                  ["Hollow Hold",2,"30s"],["V-Up",2,"15"]]
   },
   /* Week 4 is the deload and is written as one: the same movements, a rep
      back off the top of each range. On a deficit this is the week that keeps
@@ -4610,16 +4620,16 @@ const PROGRAM={
   4:{
     "Upper Body":[["Incline DB Press",3,"10"],["Lat Pulldown",3,"10"],
                   ["Seated Cable Row",3,"12"],["Lateral Raise",3,"15"],
-                  ["Leg Raise",2,"12"]],
+                  ["Leg Raise",2,"12"],["Band Dead Bug",2,"10 each side"]],
     "Legs & Core":[["Romanian Deadlift",3,"10"],["Goblet Squat",3,"12"],
                   ["Calf Raise",3,"15"],["Triceps Pushdown",3,"12"],
-                  ["V-Up",2,"12"]],
+                  ["V-Up",2,"12"],["Side Plank",2,"30s each side"]],
     "Pull Day":[["Lat Pulldown",3,"10"],["Seated Cable Row",3,"12"],
                   ["Face Pull",3,"15"],["Hammer Curl",3,"12"],
-                  ["Band Pallof Press",2,"12 each side"]],
+                  ["Band Pallof Press",2,"12 each side"],["Hanging Knee Raise",2,"10"]],
     "Push Day":[["Incline DB Press",3,"10"],["Bench Press",3,"10"],
                   ["DB Shoulder Press",3,"10"],["Lateral Raise",3,"15"],
-                  ["Band Dead Bug",2,"12 each side"]]
+                  ["Band Dead Bug",2,"12 each side"],["Cable Crunch",2,"12"]]
   }
 };
 function programWeek(){
@@ -9896,6 +9906,13 @@ const OBJECTIVES={
     blurb:"Build visible muscle, V-taper and athletic definition while prioritising conditioning, relative strength and a lean waist. Avoid unnecessary bodybuilding volume or maximal size.",
     /* Hard sets per muscle per week. His numbers, not a textbook's. */
     major:[8,12], minor:[6,10],
+    /* v216 — CORE is his stated exception and is written as one. He wants two
+       abs movements on every session; eight slots at two sets is sixteen a
+       week, and no arithmetic makes that fit 6-10. The band moves rather than
+       the program, because an app that flags his own standing instruction as
+       an error every week is not auditing, it is arguing. Arms stay at 6-10 —
+       that one he never asked to raise. */
+    bands:{core:[12,18]},
     /* A load increase is EARNED, not awarded for turning up. The average
        effort across the sets at that weight has to be at or under this —
        effort 2 is "solid, 2-3 in reserve", so 1.6 means most of the session
@@ -9964,6 +9981,8 @@ function setObjective(k){
    else in the middle. GROUP_PRIORITY already says which is which. */
 function volumeBand(g){
   const o=objective();
+  /* A group the objective names explicitly wins over the major/minor default. */
+  if(o.bands && o.bands[g]) return o.bands[g];
   return MAJOR_GROUPS.has(g)? o.major : o.minor;
 }
 function physiqueTargetFor(g){
@@ -11067,7 +11086,7 @@ coachingDoctrine()+
 "He has written a 4-week block and it is now what the app builds. FIVE movements a lifting day \u2014 four lifts and the abs finisher \u2014 about 14 working sets and 50 minutes plus the row. That is the athletic objective on the sheet: sixteen lifting slots a week, not twenty-eight. Monday Upper Body, Tuesday Legs & Core, Wednesday Mobility & Pilates (both halves, every week), Thursday Pull, Friday Push.\n"+
 "PILATES APPARATUS \u2014 HE HAS A REFORMER AND A WUNDA CHAIR IN DUBAI. So the Pilates half changes with the block week: week 1 mat, week 2 REFORMER, week 3 CHAIR, week 4 mat. Away from Dubai it is mat every week, because the apparatus is not there. The app picks this; you do not need to, and you should not flatten it back to mat. The repertoire is the classical one \u2014 reformer: Footwork, The Hundred on the Reformer, Coordination, Frog and Leg Circles, Arms in Straps, Running, Pelvic Lift, Mermaid, Elephant, Short Spine Massage, Stomach Massage, Long Stretch, Knee Stretches, Short Box Series, Pulling Straps, Swan on the Long Box, Up/Down Stretch, Rowing Series, Long Spine, Side Splits, Tendon Stretch; chair: Footwork, Pumping One Leg, Spine Stretch Forward, Seated Mermaid, Frog Front, Side Stretch, Push Down, Swan on the Chair, Washerwoman, Tendon Stretch, Pull Up on the Chair, Going Up Front, Mountain Climb, Teaser on the Chair. Level-gated exactly like the mat, and the wrist-loaded ones (Elephant, Long Stretch, Knee Stretches, Stomach Massage, Push Down, Swan on the Chair, Washerwoman, Pull Up, Mountain Climb, both Tendon Stretches) drop out on any day he reports wrist pain.\n"+
 "THESE HAVE NO PHOTOGRAPHS YET. He is shooting them; until then their cards show the demo link, which is correct and not a bug. Do not offer to find pictures for them. Week 4 is the deload and is already written as one. The block repeats until he asks for a new one.\n"+
-"ABS FINISH EVERY SESSION — HIS INSTRUCTION, NOT A SUGGESTION: every lifting day ENDS on one abs movement, and each day owns a different region so the week covers all four. Monday LOWER abs (hip flexion), Tuesday UPPER abs (trunk flexion), Thursday OBLIQUES (rotation and side bend), Friday ANTI-EXTENSION (bracing). Never drop the last movement of a session to save time — cut a set off something else. Never put two abs movements in one session, and never give two days the same region in the same week. Wednesday is the Mobility & Pilates day and has no finisher; the mat half is already core work.\n"+
+"ABS FINISH EVERY SESSION — HIS INSTRUCTION, NOT A SUGGESTION: every lifting day ENDS on TWO abs movements, and each day owns two different regions so the week covers all four twice. Monday LOWER + ANTI-EXTENSION, Tuesday UPPER + OBLIQUES, Thursday OBLIQUES + LOWER, Friday ANTI-EXTENSION + UPPER. Never drop them to save time — cut a set off something else. The two on one day must never be the same movement family (a cable crunch and a hollow hold are both trunk flexion), and CORE is the one group whose weekly volume deliberately sits above the small-group band, because he has asked for it twice and his instruction outranks the band. Wednesday is the Mobility & Pilates day and has no finisher; the mat half is already core work.\n"+
 "YOUR JOB IS TO COACH THIS PROGRAM, NOT TO REINVENT IT. He said it plainly: \"The app should STOP randomly generating completely different workouts every week. The AI Coach's job is to COACH the program, not constantly reinvent it.\" Variety is not a training stimulus. Progressive overload is, and he cannot overload a movement you keep swapping out.\n"+
 "WHAT YOU MAY CHANGE FREELY: the weight, the rep target, the rest, the order of the exercises, and a like-for-like substitution when the kit is genuinely unavailable (travelling, a machine occupied). Coach every set: what he lifted last time, what to aim for today, when to add load and when to hold.\n"+
 "WHAT YOU MAY NOT DO: replace a core movement because it would be more interesting, add exercises to pad the session, or rebuild the day. Incline Press, Lat Pulldown, a row, Lateral Raise, Romanian Deadlift and Bulgarian Split Squat stay unless there is a real reason. If he asks you to redo or rebuild a day, give him the PROGRAMMED session for that day and week and coach the loads — do not generate a different one.\n"+
@@ -15200,7 +15219,7 @@ function scheduleInApp(){
    v18 ADDITIONS — draggable rest timer · weekly training memory · AI planner
    · Firestore sync
    ========================================================================== */
-const APP_VERSION="v215 · 25/09/2026";
+const APP_VERSION="v216 · 25/09/2026";
 
 /* ===== 1. REST TIMER — drag it anywhere so it never blocks the chat box ===== */
 let _rtDrag=null;
