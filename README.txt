@@ -1,3 +1,52 @@
+AMIR PT — v213 · 25/09/2026
+===========================
+
+The body-type chart the phrase came off — ten silhouettes, and he named two of
+them.
+
+A CORRIDOR, NOT AN ADJECTIVE
+------------------------------
+v212 gave the app an objective called "Athletic / Lean Muscular" and a blurb
+describing it. Good enough to program volume against, and vague where it
+mattered most: an adjective cannot tell the coach when he has arrived, and it
+cannot tell it what to refuse.
+
+Naming two of the ten fixes both. ATHLETIC is the FLOOR — visible muscle
+without thickness, shoulders and chest defined rather than slabbed, abs faintly
+there, waist obviously narrower than the shoulders. That is where the look
+starts working, and it is a leanness threshold more than a muscle one. LEAN
+MUSCULAR is the CEILING — the same frame with more muscle and less fat on it,
+capped delts, clear separation, lats wide enough that the waist reads small
+from the front. Still narrow. The far end of what he wants, not a waypoint to
+something bigger.
+
+And the four past it are named so the coach can refuse them BY NAME rather
+than by feel: MUSCULAR, BODYBUILDER, POWERLIFTER, STRONGMAN. The useful thing
+about the chart is that it shows what those cost — past LEAN MUSCULAR the
+silhouettes get thick through the waist, the hips and the legs, and the
+shoulder-to-waist ratio gets WORSE as the mass goes up. They are not a more
+advanced version of his goal; they are a different goal.
+
+The chart itself is fitness-marketing shorthand rather than any kind of
+taxonomy. As a shared vocabulary for what he is asking for it is exact, and
+exact is what the coach was missing.
+
+The two words now appear in the coach brief as a floor and a ceiling with
+instructions to describe where he is in them ("between ATHLETIC and LEAN
+MUSCULAR, closer to the first" says more than any adjective the model could
+invent), under the objective in Settings, and under the nine numbers on the
+Athletic performance card — which is how he tells where in the corridor he
+actually is.
+
+The image is not in the repo. It is someone else's photograph and the app did
+not need it: what it needed was what the two labels mean, and that is now
+written down in the objective where every decision can read it.
+
+Verified: the corridor reaches the coach brief with both builds and all four
+refusals by name; the Settings blurb and the metrics card both carry it;
+switching to Maximum size drops it, because a corridor that applies to every
+objective is not a corridor. Sweep clean — verify16 (16/16), audit173, journey.
+
 AMIR PT — v212 · 25/09/2026
 ===========================
 

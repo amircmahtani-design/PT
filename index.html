@@ -2488,6 +2488,10 @@ function renderObjective(){
     bl.innerHTML=escapeHtml(o.blurb)+
       "<br><br><b>"+o.major[0]+"\u2013"+o.major[1]+"</b> hard sets a week on chest, back, shoulders and legs; <b>"+
       o.minor[0]+"\u2013"+o.minor[1]+"</b> on arms and core."+
+      /* v213 — the corridor, in the two words he chose for it. */
+      (o.look? "<br><br>The corridor: <b>"+escapeHtml(o.look.floor.name)+"</b> is the floor, <b>"+
+               escapeHtml(o.look.ceiling.name)+"</b> is the ceiling. "+
+               escapeHtml(o.look.refuse.join(", "))+" are off the table \u2014 past the ceiling the shoulder-to-waist ratio gets worse, not better." : "")+
       (o.order&&o.order.length? "<br><br>In order: "+o.order.map((x,i)=>(i+1)+". "+escapeHtml(x)).join(" \u00b7 ") : "");
   }
 }
@@ -9859,7 +9863,29 @@ const OBJECTIVES={
       "Maintain strength",
       "Improve relative strength \u2014 strength against bodyweight",
       "Avoid unnecessary hypertrophy volume"
-    ]
+    ],
+    /* ===== v213 · THE TWO BUILDS HE MEANT ==============================
+       He sent the body-type chart the phrase came off: ten silhouettes,
+       and he named two of them. That turns "athletic / lean muscular" from
+       a phrase into a CORRIDOR with a floor, a ceiling and a line he does
+       not want to cross, which is far more programmable than an adjective.
+
+       The chart itself is fitness-marketing shorthand rather than any kind
+       of taxonomy \u2014 but as a shared vocabulary for what he is asking for it
+       is exact, and exact is what the coach was missing.
+
+       FLOOR and CEILING are both targets, not a range to sit in the middle
+       of: ATHLETIC is where the look starts working, LEAN MUSCULAR is the
+       far end of it and the most he wants. Everything past that is named
+       here so the coach can refuse it by name rather than by feel. */
+    look:{
+      floor:{ name:"ATHLETIC",
+        reads:"Visible muscle without thickness. Shoulders and chest defined rather than slabbed, abs faintly there, waist obviously narrower than the shoulders, arms moderate. This is where the look starts working \u2014 it is a LEANNESS threshold more than a muscle one." },
+      ceiling:{ name:"LEAN MUSCULAR",
+        reads:"The same frame with more muscle and less fat on it: capped delts, clear separation, abs sharp, lats wide enough that the waist reads small from the front. Still narrow, still not thick. This is the far end of what he wants, not a waypoint to something bigger." },
+      refuse:["MUSCULAR","BODYBUILDER","POWERLIFTER","STRONGMAN"],
+      refuseWhy:"Past LEAN MUSCULAR the chart goes thick: heavier through the waist, the hips and the legs, and the shoulder-to-waist ratio gets WORSE as the mass goes up. Those builds are not a more advanced version of his goal, they are a different goal, and any decision that trends toward them is the wrong decision however good the reason sounds."
+    }
   },
   size:{
     key:"size",
@@ -10553,8 +10579,11 @@ function renderAthletic(){
   rows.push(pl? athRow("Plank", pl.r+"s", "longest hold", null, 1)
               : athRow("Plank","\u2014","not logged yet",null,0));
 
+  const L=objective().look;
   el.innerHTML="<div class='athwrap'>"+rows.join("")+"</div>"+
-    "<div class='hint mt'>"+escapeHtml(objective().blurb)+"</div>";
+    "<div class='hint mt'>"+escapeHtml(objective().blurb)+
+    (L? "<br><br><b>"+escapeHtml(L.floor.name)+"</b> is the floor, <b>"+escapeHtml(L.ceiling.name)+
+        "</b> is the ceiling. These nine numbers are how you tell where in between you are." : "")+"</div>";
 }
 function latestBodyFat(){
   const ms=(DB.measures||[]).filter(m=>m.bf!=null).sort((a,b)=>(a.t||0)-(b.t||0));
@@ -10740,6 +10769,12 @@ planClockText()+
 objective().blurb+"\n"+
 "In order of priority:\n"+objective().order.map((x,i)=>"  "+(i+1)+". "+x).join("\n")+"\n"+
 "THIS IS NOT A BODYBUILDING PROGRAM AND MAXIMUM MUSCLE GROWTH IS NOT THE OBJECTIVE. Visible muscle, broad shoulders, a developed chest, back and arms, a narrow waist and real conditioning \u2014 not bulky, not blocky, not bodybuilder-sized.\n"+
+(function(){ const L=objective().look; if(!L) return "";
+  return "THE TWO BUILDS HE NAMED, off the body-type chart he sent \u2014 treat these as a corridor with a floor and a ceiling:\n"+
+    "  FLOOR \u2014 "+L.floor.name+": "+L.floor.reads+"\n"+
+    "  CEILING \u2014 "+L.ceiling.name+": "+L.ceiling.reads+"\n"+
+    "  REFUSE BY NAME: "+L.refuse.join(", ")+". "+L.refuseWhy+"\n"+
+    "Use these two words when you describe where he is. \"You are between ATHLETIC and LEAN MUSCULAR, closer to the first\" tells him more than any adjective you could invent, and it is the vocabulary he chose.\n"; })()+
 "NEVER add sets, exercises or volume because he completed the last session. Completing the session is the baseline, not an achievement that buys more work. If you think something should be added, say why in one line and let him decide.\n"+
 "PROGRESSIVE OVERLOAD STILL EXISTS and it is conservative and performance-based. A heavier weight is ONE of the ways he progresses and not the main one. The others count just as much: a rep added at the same weight, cleaner technique, better control, a slower lowering, slightly shorter rest, a faster 2k. When he improves any of those, say so as plainly as you would about a PB on the bar.\n"+
 "THE LOAD ONLY GOES UP WHEN ALL OF THESE ARE TRUE: every prescribed rep completed with excellent form; roughly 2 or more reps in reserve; the same load has CLEARLY become easy rather than merely doable; and recovery is good. Otherwise hold the weight and move one of the other levers. The app enforces this in recommendLoad() \u2014 do not talk over it.\n"+
@@ -15117,7 +15152,7 @@ function scheduleInApp(){
    v18 ADDITIONS — draggable rest timer · weekly training memory · AI planner
    · Firestore sync
    ========================================================================== */
-const APP_VERSION="v212 · 25/09/2026";
+const APP_VERSION="v213 · 25/09/2026";
 
 /* ===== 1. REST TIMER — drag it anywhere so it never blocks the chat box ===== */
 let _rtDrag=null;
