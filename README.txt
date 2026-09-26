@@ -1,3 +1,53 @@
+AMIR PT — v220 · 26/09/2026
+===========================
+
+"I know sat and Sunday are rest days but I switched Wednesday to Saturday
+today so always allow me to override the system."
+
+CHANGING TODAY IS NOT CHANGING HIS WEEK
+----------------------------------------
+He could always pick a different session for today — the dropdown was never
+locked, and v209 was explicit that the weekend rule constrains the COACH and
+not him. What the app did with his choice was the problem.
+
+Every path that changed TODAY called setDaySplit(dow, split), and setDaySplit
+writes DB.schedule[dow]. So moving one Wednesday session onto one Saturday
+quietly made EVERY Saturday a mobility day from then on — and because the
+schedule now agreed with the override, the card stopped saying "swapped" and
+told him it was his plan. He overrode the system and the system overrode him
+back, permanently and silently. That is the opposite of what he asked for.
+
+A day change is a day change now. setTodayOnly(split) stamps DB.dayOverride
+for today, rebuilds the sheet, and touches nothing else. Tomorrow his week is
+exactly as he left it.
+
+  · The Train dropdown, the coach's "today is X" shortcut and the verified
+    set_day_type action all go through it. All three were rewriting his week.
+  · The planner still writes DB.schedule — that is its job, and the row he
+    edits is the row that changes.
+  · No weekend lock on this path, and there will not be one. Saturday and
+    Sunday are his standing rest days; that rule exists to stop the coach
+    spending his weekend on its own initiative, not to argue with him.
+  · The picker note reads "today only · Rest was planned", and the toast says
+    "just today, your week is unchanged".
+
+AND THE COACH STOPS ARGUING
+----------------------------
+overrideLine() is one sentence every prompt now agrees on: his week says Rest,
+he has chosen Mobility & Pilates, it is a one-off, coach the session he picked.
+It goes into the main brief's live state and into the morning check-in, both
+the system and user halves. Previously the check-in read isRestDay() — which
+does respect the override, so that part was already right — but nothing ever
+told the coach WHY today looked different from the week it had been briefed on
+in capitals.
+
+Verified in headless Chromium on a real Saturday: picking Mobility & Pilates
+builds the flow day, leaves all seven schedule rows untouched, reads "today
+only · Rest was planned", and hands the coach the override sentence;
+isRestDay() is false; set_day_type behaves identically; and setDaySplit still
+writes the week when the planner calls it. Sweep clean: verify16 16/16,
+journey, audit173 at 390 and 360, flow219, typ218.
+
 AMIR PT — v219 · 26/09/2026
 ===========================
 

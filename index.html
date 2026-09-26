@@ -3906,6 +3906,24 @@ function splitIsFlow(split){ const k=splitKindOf(split); return k==="mobility"||
 
    Rest is part of the programme, not a gap in it. A week with two rest days
    has not missed anything. */
+/* v220 — one line the prompts can all agree on. When he has moved a session
+   onto a day his week calls rest, the coach is told so plainly, because a
+   coach that spends the conversation telling him to rest while he is mid-set
+   is arguing with him. */
+function overrideLine(){
+  try{
+    const iso=today();
+    const o=DB.dayOverride;
+    if(!o || o.date!==iso || !o.split) return "";
+    const dow=new Date().getDay();
+    const planned=DB.schedule[dow]||"Rest";
+    if(o.split===planned) return "";
+    return "HE HAS OVERRIDDEN TODAY HIMSELF: his week says "+planned+", he has chosen "+o.split+
+           " and that is what he is doing. It is a one-off — his standing week is unchanged. "+
+           "Do NOT tell him to rest, do NOT suggest he put it back, do NOT treat it as a mistake. "+
+           "Coach the session he has chosen.";
+  }catch(e){ return ""; }
+}
 function isRestDay(split){
   const s=String(split===undefined? pickSplit() : split).trim();
   return !s || /^rest$/i.test(s);
@@ -9818,13 +9836,15 @@ async function submitCheckin(){
 async function analyseCheckin(ci){
   if(DB.ai.provider==="openai"&&DB.ai.key){
     const rest=isRestDay();
-    const sys=coachSystem()+
+    const ovr=overrideLine();
+    const sys=coachSystem()+(ovr? ("\n"+ovr) : "")+
       (rest
         ? "\nThe user just did their morning check-in and TODAY IS ONE OF HIS TWO REST DAYS. Saturday and Sunday are rest days, always, and they are part of the programme rather than a gap in it. Do NOT propose training, do NOT suggest skipping or moving the rest day, do NOT frame any muscle group as behind or needing catching up, and do NOT offer a light session, a bit of mobility or a walk as a way to get work in. Read his numbers, say what the rest is doing for him, and if anything needs saying about the week ahead, say that. Warm, direct, 3-4 sentences."
         : "\nThe user just did their morning check-in. Warm, direct 3-4 sentence read: comment on the numbers, what it means for today's training/volume, what you're adjusting. Reference injuries/context if relevant.");
     const usr="Morning check-in: weight "+(ci.weight||'—')+"kg, sleep "+(ciNum(ci.sleep)!=null? ci.sleep+"/10":"not logged")+", energy "+(ciNum(ci.energy)!=null? ci.energy+"/10":"not logged")+", plan: "+(ci.plan||'not said')+", pain: "+(ci.pain||'none')+". Location today: "+LOC().label+" ("+currentEquipment()+"). Today scheduled: "+pickSplit()+". "+
       (rest? "It is a REST DAY. Nothing is being trained today and nothing is behind. Do not prescribe anything."
-           : "Use his last 7 days (above) to say what needs hitting today.");
+           : "Use his last 7 days (above) to say what needs hitting today.")+
+      (ovr? (" "+ovr) : "");
     const out=await callAI([{role:"system",content:sys},{role:"user",content:usr}],220);
     if(out) return fmt(out);
   }
@@ -11156,7 +11176,7 @@ coachingDoctrine()+
 "\n- SESSION CLOCK: "+sessClockLine()+
 "\n- LAYOFF: "+layoffLine()+
 "\n- Phase: "+p.phase+"\n- Mode: "+(p.mode||"\u2014")+
-"\n- Today scheduled: "+pickSplit()+"\n- Today's exercises: "+curW+
+"\n- Today scheduled: "+pickSplit()+(overrideLine()? ("\n- "+overrideLine()) : "")+"\n- Today's exercises: "+curW+
 "\n- Custom day types: "+dayTypesStr+"\n- Cardio: "+cardioStr+"\n- Nutrition: "+nutStr+
 "\n- Prefs: visual="+(prefs.visualMode||'auto')+", icons="+(prefs.showIcons!==false)+", format="+(prefs.workoutFormat||'list')+
 "\n\nAVAILABLE EXERCISES IN "+LOC().label.toUpperCase()+" (a representative slice \u2014 name any other and the app will find it):\n"+promptExNames().join(", ")+
@@ -13067,7 +13087,7 @@ function intentActions(){
         const match=all.find(x=>x.toLowerCase().indexOf(want)>=0) ||
                     (/rest/.test(want)? "Rest" : null);
         if(!match) return null;
-        setDaySplit(new Date().getDay(), match);
+        setTodayOnly(match);                       /* v220 — today, not every week */
         markSessionTouched();
         return n("\ud83d\udcc5 Today \u2192 "+match);
       }catch(e){ return null; } },
@@ -13973,17 +13993,51 @@ function renderTrainDayPick(){
   const planned=DB.schedule[new Date().getDay()]||"Rest";
   const over=DB.dayOverride&&DB.dayOverride.date===today()&&DB.dayOverride.split&&DB.dayOverride.split!==planned;
   document.querySelectorAll('.traindaynote').forEach(note=>{
-    note.textContent = over? ("swapped · "+planned+" was planned") : (LOC().label+" · planned");
+    note.textContent = over? ("today only · "+planned+" was planned") : (LOC().label+" · planned");
     note.style.color = over? "var(--gold)" : "var(--label)";
   });
   /* The standalone card is a fallback, not a second copy. */
   const card=document.getElementById('trainDayCard');
   if(card) card.hidden = !!document.getElementById('setupDaySel');
 }
+/* ===== v220 · CHANGING TODAY IS NOT CHANGING HIS WEEK ==================
+   "I know sat and Sunday are rest days but I switched Wednesday to Saturday
+   today so always allow me to override the system."
+
+   He could always pick a different session for today — the dropdown was
+   never locked. What it did with the choice was the problem: every path that
+   changed TODAY called setDaySplit, which writes DB.schedule[dow]. So moving
+   one Wednesday onto one Saturday quietly made EVERY Saturday a mobility day
+   from then on, and the card then told him that was his plan. The system
+   overriding him, which is the opposite of what he asked for.
+
+   A day change is now a day change. DB.dayOverride is stamped for today and
+   nothing else moves; tomorrow his week is exactly as he left it. Changing
+   the week for good is still the planner's job, where the row he edits is the
+   row that changes.
+
+   There is no weekend lock on this path and there never will be. Saturday and
+   Sunday are his standing rest days — that rule stops the COACH spending his
+   weekend on its own initiative. It was never meant to argue with him. */
+function setTodayOnly(split){
+  if(!split) return null;
+  const sp=String(split).trim(); if(!sp) return null;
+  if(!allSplits().includes(sp)){ DB.dayTypes=DB.dayTypes||{}; if(!DB.dayTypes[sp]) DB.dayTypes[sp]={kind:inferDayKind(sp),main:[],note:""}; }
+  DB.dayOverride={date:today(), split:sp};
+  DB.workout=null;
+  try{ ensureWorkout(); }catch(e){}
+  const t=document.getElementById('heroTitle'); if(t) t.textContent=sp;
+  save();
+  try{ renderItin(); renderTomorrow(); renderWeek(); }catch(e){}
+  try{ renderTrainDayPick(); }catch(e){}
+  return sp;
+}
 function setTodaySplit(split){
   if(!split) return;
-  setDaySplit(new Date().getDay(), split);
-  try{ renderTrainDayPick(); }catch(e){}
+  const planned=DB.schedule[new Date().getDay()]||"Rest";
+  setTodayOnly(split);
+  toast(split===planned? ("Today \u2192 "+split)
+                       : ("Today \u2192 "+split+" \u00b7 just today, your week is unchanged"));
 }
 function setDaySplit(dow,split){
   if(!split) return;
@@ -15245,7 +15299,7 @@ function scheduleInApp(){
    v18 ADDITIONS — draggable rest timer · weekly training memory · AI planner
    · Firestore sync
    ========================================================================== */
-const APP_VERSION="v219 · 26/09/2026";
+const APP_VERSION="v220 · 26/09/2026";
 
 /* ===== 1. REST TIMER — drag it anywhere so it never blocks the chat box ===== */
 let _rtDrag=null;
@@ -20596,7 +20650,7 @@ defAction("set_day_type",{
     const logged=(DB.workout&&Array.isArray(DB.workout.main))
       ? DB.workout.main.reduce((n,e)=>n+todaySets(e.name).length,0) : 0;
     try{ if(typeof restoreDay==="function" && todayCleared()) restoreDay(); }catch(e){}
-    setDaySplit(new Date().getDay(), a.split);
+    setTodayOnly(a.split);                         /* v220 — today, not every week */
     return {split:a.split, keptLogged:logged};
   },
   verify:a=>{
