@@ -1691,7 +1691,7 @@ const DEFAULTS = {
      Wednesday mobility, Thursday pull, Friday push, sat sun rest". The old
      default was six lifting days with one rest and no cardio or mobility in
      it anywhere, which is not a week he has ever actually trained. */
-  schedule:{0:"Rest",1:"Upper Body",2:"Legs & Core",3:"Mobility & Pilates",4:"Pull Day",5:"Push Day",6:"Rest"},
+  schedule:{0:"Rest",1:"Pilates",2:"Legs & Core",3:"Mobility & Pilates",4:"Pull Day",5:"Push Day",6:"Rest"},
   /* v205 — Wednesday is Mobility AND Pilates in one session, every week.
      DB.alt still exists for any day he wants to alternate; nothing uses it. */
   alt:{},
@@ -2122,6 +2122,36 @@ function mergeDefaults(parsed){ let d={...structuredClone(DEFAULTS),...parsed};
           if(ovFlow) d.dayOverride=null;
           if(untouched || ovFlow) d.workout=null;
         }
+      }catch(e){}
+    }
+  }
+  /* ===== v221 · MONDAY IS A PILATES DAY =============================
+     "Let's make Monday a full Pilates workout day every Monday."
+
+     Fires once, and only for a Monday that is still Upper Body — the day the
+     app put there itself in v212. If he has since made Monday something else,
+     that decision is his and it stands. Today's sheet is rebuilt only if it
+     is still the one the app built by itself and he has not started moving
+     through it; a session he has shaped or begun is never rewritten behind
+     him. Tomorrow it would rebuild anyway. */
+  if(!d.v221mon){
+    d.v221mon=1;
+    d.dayTypes=d.dayTypes||{};
+    if(!d.dayTypes["Pilates"]) d.dayTypes["Pilates"]={kind:"pilates",main:[],note:""};
+    const m=String((d.schedule||{})[1]||"");
+    if(/^(upper body|rest|)$/i.test(m)){
+      d.schedule=d.schedule||{};
+      d.schedule[1]="Pilates";
+      if(d.alt) delete d.alt[1];
+      try{
+        const t=today();
+        const isMon=new Date(t+"T12:00:00").getDay()===1;
+        const logged=(d.mobility||[]).some(x=>x&&x.d===t) ||
+                     Object.keys(d.strength||{}).some(k=>(d.strength[k]||[]).some(x=>x&&x.date===t));
+        const ov=d.dayOverride;
+        const w=d.workout;
+        const untouched=!!(w && w.date===t && !w.touched);
+        if(isMon && !logged && !(ov&&ov.date===t) && untouched) d.workout=null;
       }catch(e){}
     }
   }
@@ -4995,14 +5025,22 @@ function buildCustomDay(name,ctx){
       recovery:"Hydrate well, refuel with protein + carbs. Great for recovery and the engine."};
   }
   if(kind==="pilates"){
-    const flow=(dt.main&&dt.main.length)? dt.main.map(enrichMove) : buildPilatesFlow(11);
+    /* v221 \u2014 a full studio session: reformer, chair, then mat. */
+    const flow=(dt.main&&dt.main.length)? dt.main.map(enrichMove) : buildStudioFlow();
     const pl=(function(){ try{ return pilatesPlan(); }catch(e){ return null; } })();
-    return {title:name, tag: LOC().tag+" · Pilates", phase:DB.profile.phase, kind:"mobility", loc:locKey(),
-      flowTitle:"Pilates mat flow · one round"+(pl? " · level "+pl.level+" of 3" : ""),
-      pilates: pl,
-      note: dt.note || ("Classical mat order. One round \u2014 do the movement, then move on. No sets, no weight: slow, controlled and breath-led."+
+    const kit=(function(){ try{ return studioKit(); }catch(e){ return []; } })();
+    const kitWords=kit.length
+      ? kit.map(a=>FOCUS_LABEL[a].toLowerCase()).concat(["mat"]).join(", ").replace(/, ([^,]*)$/," and $1")
+      : "mat";
+    return {title:name, tag: LOC().tag+" \u00b7 Pilates", phase:DB.profile.phase, kind:"mobility", loc:locKey(),
+      flowTitle:"Pilates studio \u00b7 "+kitWords+(pl? " \u00b7 level "+pl.level+" of 3" : ""),
+      pilates: pl, studio:kit,
+      note: dt.note || ((kit.length
+        ? "The whole studio, in the order it is taught: "+kitWords+". "
+        : "Mat only here \u2014 no reformer and no chair, so the mat takes the whole session. ")+
+        "One round \u2014 do the movement, then move on. No sets, no weight: slow, controlled and breath-led."+
         (pl? " "+pl.note+(pl.toNext? " "+pl.toNext+" more session"+(pl.toNext===1?"":"s")+" and "+pl.adds.slice(0,3).join(", ")+" come in." : "") : "")),
-      reps:"—", sets:0, warmup:[], main:[], cooldown:flow,
+      reps:"\u2014", sets:0, warmup:[], main:[], cooldown:flow,
       recovery:"Breathe, hydrate, and notice how much taller you stand. Mobility is training."};
   }
   if(kind==="mobpil"){
@@ -5133,23 +5171,37 @@ function pilatesPlan(){
   return {level:lvl, done, unlocked, toNext:Math.max(0,next),
           adds:lvl<3? PILATES_LEVELS[lvl+1] : [], note:PILATES_LEVEL_NOTE[lvl]};
 }
-function buildPilatesFlow(total){
+/* v221 — "The Hundred" and "The Hundred on the Reformer" are the same
+   exercise on different equipment, and doing both in one session is padding,
+   not programming. Strip the apparatus off a name so the mat half can tell
+   what the reformer and the chair have already covered. */
+function pilatesBase(name){
+  return String(name||"")
+    .replace(/\s+on the (reformer|chair|long box|mat)\b/i,"")
+    .replace(/^seated\s+/i,"")
+    .replace(/\s*\(.*\)\s*$/,"")
+    .trim().toLowerCase();
+}
+function buildPilatesFlow(total,skip){
   total=total||11;
-  /* The Hundred opens every class — it's the warm-up, never rotated out. */
-  const opener="The Hundred";
+  const done=new Set((skip||[]).map(pilatesBase).filter(Boolean));
+  /* The Hundred opens every class — it's the warm-up, never rotated out.
+     Unless the reformer has already done it, in which case the mat half picks
+     up where the apparatus left off. */
+  const opener=done.has(pilatesBase("The Hundred"))? null : "The Hundred";
   /* v126 — only what the level has unlocked, still in classical order. */
   let pool=PILATES_ORDER;
   try{ const pl=pilatesPlan(); if(pl.unlocked.length) pool=PILATES_ORDER.filter(n=>pl.unlocked.indexOf(n)>=0); }catch(e){}
-  const rest=pool.filter(n=>n!==opener);
+  const rest=pool.filter(n=>n!==opener && !done.has(pilatesBase(n)));
   /* Rotate by what he's done least, then put the chosen ones BACK into
      classical order so the sequence still flows properly. */
   const scored=rest.map(n=>({n,days:lastFlowDays(n)}))
                    .sort((a,b)=>(b.days-a.days)||(PILATES_ORDER.indexOf(a.n)-PILATES_ORDER.indexOf(b.n)));
   const off=_reroll%Math.max(1,scored.length);
   const rolled=off? scored.slice(off).concat(scored.slice(0,off)) : scored;
-  const chosen=rolled.slice(0,Math.max(0,total-1)).map(o=>o.n)
+  const chosen=rolled.slice(0,Math.max(0,total-(opener?1:0))).map(o=>o.n)
                      .sort((a,b)=>PILATES_ORDER.indexOf(a)-PILATES_ORDER.indexOf(b));
-  return [opener].concat(chosen).map(n=>{
+  return (opener? [opener] : []).concat(chosen).map(n=>{
     const e=PILATES_LIB[n]||{};
     return {t:n, d:e.d||"×8", cue:e.cue||""};
   });
@@ -6428,8 +6480,51 @@ function pilatesHalf(total){
   const app=apparatusFlow(focus,total);
   if(!app.length) return {focus:"mat", list:buildPilatesFlow(total)};
   if(app.length>=total) return {focus, list:app};
-  const fill=buildPilatesFlow(total-app.length);
+  const fill=buildPilatesFlow(total-app.length, app.map(m=>m.t));
   return {focus, list:app.concat(fill), mat:fill.length};
+}
+/* ===== v221 · MONDAY IS A FULL PILATES STUDIO SESSION =================
+   "Let's make Monday a full Pilates workout day every Monday. Make sure it
+   uses my full equipment. I have reformer the chair and the mat."
+
+   Wednesday picks ONE apparatus and rotates it week by week, because it is
+   half a session — the mobility flow has the other half. Monday is the whole
+   session, so it is not a choice between them: reformer, then chair, then mat
+   to finish, which is the order a studio teaches them in and the order that
+   goes from most supported to least.
+
+   Everything underneath is the machinery Wednesday already uses, so a level
+   he has not reached stays locked, a movement that loads the wrist is dropped
+   on a day he has reported wrist pain, and what he did last week is what gets
+   rotated out. Away from Dubai there is no reformer and no chair, so the mat
+   takes the whole session rather than the day quietly shrinking. */
+const STUDIO_BLOCKS=[{app:"ref",n:6},{app:"chair",n:4}];
+const STUDIO_MAT=4;
+function buildStudioFlow(){
+  const out=[];
+  let short=0;
+  STUDIO_BLOCKS.forEach(b=>{
+    const list=apparatusHere(b.app)? apparatusFlow(b.app,b.n) : [];
+    if(!list.length){ short+=b.n; return; }
+    if(list.length<b.n) short+=(b.n-list.length);
+    list[0].sect=FOCUS_LABEL[b.app]+" · "+list.length+" movement"+(list.length===1?"":"s");
+    list.forEach(m=>out.push(m));
+  });
+  /* The mat carries whatever the apparatus could not — a kit he does not
+     have here, or a level that has not unlocked enough of one yet. */
+  const mat=buildPilatesFlow(STUDIO_MAT+short, out.map(m=>m.t));
+  if(mat.length) mat[0].sect = out.length? "Pilates mat · to finish" : "Pilates mat · classical order";
+  mat.forEach(m=>out.push(m));
+  const close=applyCoolDefaults(FLOW_CLOSERS.map(pickItem));
+  if(close.length) close[0].sect="Close";
+  close.forEach(m=>out.push(m));
+  return out;
+}
+/* Which apparatus today's studio session actually has, for the title and the
+   note — asked without rebuilding the sheet, the way mobPilFocus is. */
+function studioKit(){
+  return STUDIO_BLOCKS.filter(b=>apparatusHere(b.app) && apparatusFlow(b.app,b.n).length)
+                      .map(b=>b.app);
 }
 function buildMobPilFlow(){
   /* The Pilates half first, so the mobility half knows what to avoid \u2014 its
@@ -11128,17 +11223,17 @@ coachingDoctrine()+
 "The emoji in these directives is only a fallback for when there is no photograph of that movement. Do not spend effort choosing them.\n\n"+
 "WEEKLY SCHEDULE & DAY TYPES:\n"+
 "HIS WEEK STARTS ON MONDAY \u2014 always list and think Mon-first, never Sunday-first.\n"+
-"THE WEEK HE HAS SETTLED ON: Monday UPPER BODY, Tuesday legs and core, Wednesday MOBILITY & PILATES (ONE session containing BOTH halves — the twelve-area mobility flow, then Pilates. His instruction, every week: it is not one or the other and it does not alternate. The mobility half is ALL of the body, neck to ankles, every week, and is never the half that gets cut), Thursday pull, Friday push, Saturday and Sunday rest. Monday was a cardio day until he asked whether upper would serve the physique better; it does, because it takes chest, back and shoulders from once a week to twice, and twice beats once for building shape. === THE MASTER PROGRAM — READ THIS BEFORE CHANGING ANY SESSION ===\n"+
-"He has written a 4-week block and it is now what the app builds. FIVE movements a lifting day \u2014 four lifts and the abs finisher \u2014 about 14 working sets and 50 minutes plus the row. That is the athletic objective on the sheet: sixteen lifting slots a week, not twenty-eight. Monday Upper Body, Tuesday Legs & Core, Wednesday Mobility & Pilates (both halves, every week), Thursday Pull, Friday Push.\n"+
+"THE WEEK HE HAS SETTLED ON: Monday PILATES (a FULL studio session \u2014 reformer, then chair, then mat, in that order; his own instruction, and it uses all three because he owns all three. It is not a mat class and it is not a rest day), Tuesday legs and core, Wednesday MOBILITY & PILATES (ONE session containing BOTH halves — the twelve-area mobility flow, then Pilates. His instruction, every week: it is not one or the other and it does not alternate. The mobility half is ALL of the body, neck to ankles, every week, and is never the half that gets cut), Thursday pull, Friday push, Saturday and Sunday rest. Monday was Upper Body until he asked for a full Pilates day there instead. THAT COSTS RESISTANCE VOLUME and he knows it \u2014 chest, back and shoulders drop from twice a week to once. Do not re-litigate it and do not keep offering to put Upper Body back; he was given the number once and it is his call. If chest or shoulders fall below their band, the answer is another movement on Thursday or Friday, never a change to Monday. === THE MASTER PROGRAM — READ THIS BEFORE CHANGING ANY SESSION ===\n"+
+"He has written a 4-week block and it is now what the app builds. FIVE movements a lifting day \u2014 four lifts and the abs finisher \u2014 about 14 working sets and 50 minutes plus the row. That is the athletic objective on the sheet. Monday PILATES STUDIO (reformer, chair, mat \u2014 no sets, no weight), Tuesday Legs & Core, Wednesday Mobility & Pilates (both halves, every week), Thursday Pull, Friday Push. THREE lifting days, two Pilates days, two off.\n"+
 "PILATES APPARATUS \u2014 HE HAS A REFORMER AND A WUNDA CHAIR IN DUBAI. So the Pilates half changes with the block week: week 1 mat, week 2 REFORMER, week 3 CHAIR, week 4 mat. Away from Dubai it is mat every week, because the apparatus is not there. The app picks this; you do not need to, and you should not flatten it back to mat. The repertoire is the classical one \u2014 reformer: Footwork, The Hundred on the Reformer, Coordination, Frog and Leg Circles, Arms in Straps, Running, Pelvic Lift, Mermaid, Elephant, Short Spine Massage, Stomach Massage, Long Stretch, Knee Stretches, Short Box Series, Pulling Straps, Swan on the Long Box, Up/Down Stretch, Rowing Series, Long Spine, Side Splits, Tendon Stretch; chair: Footwork, Pumping One Leg, Spine Stretch Forward, Seated Mermaid, Frog Front, Side Stretch, Push Down, Swan on the Chair, Washerwoman, Tendon Stretch, Pull Up on the Chair, Going Up Front, Mountain Climb, Teaser on the Chair. Level-gated exactly like the mat, and the wrist-loaded ones (Elephant, Long Stretch, Knee Stretches, Stomach Massage, Push Down, Swan on the Chair, Washerwoman, Pull Up, Mountain Climb, both Tendon Stretches) drop out on any day he reports wrist pain.\n"+
 "THESE HAVE NO PHOTOGRAPHS YET. He is shooting them; until then their cards show the demo link, which is correct and not a bug. Do not offer to find pictures for them. Week 4 is the deload and is already written as one. The block repeats until he asks for a new one.\n"+
-"ABS FINISH EVERY SESSION — HIS INSTRUCTION, NOT A SUGGESTION: every lifting day ENDS on TWO abs movements, and each day owns two different regions so the week covers all four twice. Monday LOWER + ANTI-EXTENSION, Tuesday UPPER + OBLIQUES, Thursday OBLIQUES + LOWER, Friday ANTI-EXTENSION + UPPER. Never drop them to save time — cut a set off something else. The two on one day must never be the same movement family (a cable crunch and a hollow hold are both trunk flexion), and CORE is the one group whose weekly volume deliberately sits above the small-group band, because he has asked for it twice and his instruction outranks the band. Wednesday is the Mobility & Pilates day and has no finisher; the mat half is already core work.\n"+
+"ABS FINISH EVERY SESSION — HIS INSTRUCTION, NOT A SUGGESTION: every lifting day ENDS on TWO abs movements, and each day owns two different regions so the week covers all four twice. Tuesday UPPER + OBLIQUES, Thursday OBLIQUES + LOWER, Friday ANTI-EXTENSION + UPPER \u2014 Monday is a Pilates day now and carries no finisher. Never drop them to save time — cut a set off something else. The two on one day must never be the same movement family (a cable crunch and a hollow hold are both trunk flexion), and CORE is the one group whose weekly volume deliberately sits above the small-group band, because he has asked for it twice and his instruction outranks the band. Wednesday is the Mobility & Pilates day and Monday is the Pilates studio day; neither has a finisher, because Pilates IS core work.\n"+
 "YOUR JOB IS TO COACH THIS PROGRAM, NOT TO REINVENT IT. He said it plainly: \"The app should STOP randomly generating completely different workouts every week. The AI Coach's job is to COACH the program, not constantly reinvent it.\" Variety is not a training stimulus. Progressive overload is, and he cannot overload a movement you keep swapping out.\n"+
 "WHAT YOU MAY CHANGE FREELY: the weight, the rep target, the rest, the order of the exercises, and a like-for-like substitution when the kit is genuinely unavailable (travelling, a machine occupied). Coach every set: what he lifted last time, what to aim for today, when to add load and when to hold.\n"+
 "WHAT YOU MAY NOT DO: replace a core movement because it would be more interesting, add exercises to pad the session, or rebuild the day. Incline Press, Lat Pulldown, a row, Lateral Raise, Romanian Deadlift and Bulgarian Split Squat stay unless there is a real reason. If he asks you to redo or rebuild a day, give him the PROGRAMMED session for that day and week and coach the loads — do not generate a different one.\n"+
 "HOW TO TALK ABOUT PROGRESSION: \"Last time you completed all four sets at 60kg. Today let's try 62kg.\" or \"You missed the final two reps last time, so stay at the same load today and complete all four sets before increasing.\" NEVER: \"let's change your workout to keep your body guessing.\" Never raise the load if the reps or the form went backwards.\n"+
 "WHEN THE BLOCK ENDS you may write the next 4-week block, but keep 70-80% of the movements so the loading continues; only 20-30% rotates. The goal never changes: lean athletic Mario Casas physique — lateral delts and upper chest first, then lat width and upper back, then arms for definition, a flat waist, and legs trained seriously but for athletic proportion rather than size.\n\n"+
-"HIS CONDITIONING IS THE 2KM ROW HE DOES AS THE WARM-UP ON EVERY LIFTING DAY, plus the walk on the front of the Wednesday flow. That is four rows a week. NEVER tell him the week is short of cardio and never propose swapping a lifting day for a cardio day: he has told me plainly that this covers it, and the app no longer counts a dedicated cardio DAY as the only way conditioning happens. If he ever says the conditioning is slipping, the answer is a longer row on the end of Monday, not a fourth rest day. SATURDAY AND SUNDAY ARE ALWAYS REST \u2014 do not schedule anything on them, and do not suggest he trains through the weekend. The app now REFUSES a weekday envelope that puts anything but Rest on Sat or Sun, so an attempt will simply not take. Four lifting days, one Mobility & Pilates, two off. If you think a change would serve his goal better, say so once, briefly, and leave the decision to him; never just move a day.\n[[SET_WEEKDAY: Monday | Cardio Day]] · [[SET_WEEKLY_SCHEDULE: Mon Upper Body; Tue Legs & Core; Wed Mobility & Pilates; Thu Pull Day; Fri Push Day; Sat Rest; Sun Rest]] · [[CREATE_DAY_TYPE: Mobility Day]] · [[CREATE_DAY_TYPE: Cardio Day | kind:cardio | note:Zone 2 engine work]] · [[REMOVE_SCHEDULE_DAY_TYPE: Rest]]\n"+
+"HIS CONDITIONING IS THE 2KM ROW HE DOES AS THE WARM-UP ON EVERY LIFTING DAY, plus the walk on the front of the Wednesday flow. That is three rows a week now that Monday is Pilates. NEVER tell him the week is short of cardio and never propose swapping a lifting day for a cardio day: he has told me plainly that this covers it, and the app no longer counts a dedicated cardio DAY as the only way conditioning happens. If he ever says the conditioning is slipping, the answer is a longer row on the end of Tuesday, not a fourth rest day. SATURDAY AND SUNDAY ARE ALWAYS REST \u2014 do not schedule anything on them, and do not suggest he trains through the weekend. The app now REFUSES a weekday envelope that puts anything but Rest on Sat or Sun, so an attempt will simply not take. Three lifting days, one Pilates studio, one Mobility & Pilates, two off. If you think a change would serve his goal better, say so once, briefly, and leave the decision to him; never just move a day.\n[[SET_WEEKDAY: Monday | Cardio Day]] · [[SET_WEEKLY_SCHEDULE: Mon Pilates; Tue Legs & Core; Wed Mobility & Pilates; Thu Pull Day; Fri Push Day; Sat Rest; Sun Rest]] · [[CREATE_DAY_TYPE: Mobility Day]] · [[CREATE_DAY_TYPE: Cardio Day | kind:cardio | note:Zone 2 engine work]] · [[REMOVE_SCHEDULE_DAY_TYPE: Rest]]\n"+
 "(CREATE_DAY_TYPE options after the name, pipe-separated: kind:cardio|mobility|strength, main:Ex1,Ex2, sets:4, note:...)\n\n"+
 "EXERCISE LIBRARY (add anything not built-in):\n"+
 "[[ADD_LIBRARY_EXERCISE: Seated Cable Row | muscles:back,arms | cue:Drive elbows to hips | category:Pull | equipment:cable | sets:3 | reps:10 | wrist:neutral grip | media:https://...gif]]  (only name is required)\n\n"+
@@ -15299,7 +15394,7 @@ function scheduleInApp(){
    v18 ADDITIONS — draggable rest timer · weekly training memory · AI planner
    · Firestore sync
    ========================================================================== */
-const APP_VERSION="v220 · 26/09/2026";
+const APP_VERSION="v221 · 26/09/2026";
 
 /* ===== 1. REST TIMER — drag it anywhere so it never blocks the chat box ===== */
 let _rtDrag=null;

@@ -1,3 +1,77 @@
+AMIR PT — v221 · 26/09/2026
+===========================
+
+"Let's make Monday a full Pilates workout day every Monday. Make sure it uses
+my full equipment. I have reformer the chair and the mat. So every Monday and
+Wednesday Pilates both using the equipment. Wednesday is mobility and pilates."
+
+MONDAY IS THE WHOLE STUDIO
+---------------------------
+Wednesday picks ONE apparatus and rotates it week by week — mat, reformer,
+chair, mat — because it is half a session; the twelve-area mobility flow has
+the other half. Monday is the whole session, so it is not a choice between
+them. Reformer, then chair, then mat to finish: the order a studio teaches
+them in, and the order that runs from most supported to least.
+
+  · buildStudioFlow() — 6 reformer, 4 chair, 4 mat, then the closers. 16
+    movements in Dubai.
+  · Everything underneath is the machinery Wednesday already uses, so a level
+    he has not reached stays locked (9 reformer and 6 chair movements at level
+    1, opening to 16 and 10 at level 2 and 21 and 14 at level 3), a movement
+    that loads the wrist is dropped on a day he has reported wrist pain, and
+    what he did last week is what rotates out. Half the apparatus work changes
+    week to week at level 1, which is simply what a nine-movement pool allows;
+    it opens up as he levels.
+  · Away from Dubai there is no reformer and no chair, so the MAT TAKES THE
+    WHOLE SESSION — 12 movements — rather than the day quietly shrinking.
+  · The old "pilates" day type built a mat class of 11. Any day named Pilates
+    is now the full studio, so the coach inventing one gets the same thing.
+
+NO MOVEMENT TWICE IN ONE SESSION
+---------------------------------
+"The Hundred" and "The Hundred on the Reformer" are the same exercise on
+different equipment, and doing both is padding. pilatesBase() strips the
+apparatus off a name, and buildPilatesFlow takes a skip list, so the mat half
+picks up where the apparatus left off — including dropping its own fixed
+opener when the reformer has already done it. Wednesday's apparatus half got
+the same fix.
+
+WHAT IT COSTS, MEASURED
+------------------------
+Monday was Upper Body, which v212 put there to take chest, back and shoulders
+from once a week to twice. Three lifting days instead of four, averaged across
+the four-week block:
+
+              before   after   band
+  chest          9.0     6.0    8-12   <-- BELOW
+  back          15.4     9.4    8-12
+  shoulders     15.8    11.3    8-12
+  arms          12.8    10.9    6-10
+  legs           9.0     9.0    8-12
+  core          17.5    13.5   12-18
+
+Only chest actually falls out of band, by two sets. One more chest movement on
+Push Day closes it without touching Monday. His instruction stands and the
+programme is NOT changed on my own initiative — he has the number and the
+decision. The coach brief is told the same thing in as many words: do not
+re-litigate Monday, and if a group drops below its band the answer is a
+movement on Thursday or Friday.
+
+Coach brief updated throughout: the week, the abs-finisher rota (Monday no
+longer carries one), the row count (three, not four), and the weekly-schedule
+example envelope.
+
+Migration fires once and only for a Monday still reading Upper Body — a day
+he has since changed is his. Today's sheet is rebuilt only if it is still the
+one the app built and he has not begun it.
+
+Verified in headless Chromium: Dubai Monday builds 16 movements in four
+labelled sections, 6 reformer and 4 chair all from the apparatus library, no
+duplicates, every movement carrying a cue; Madrid and Greece build 12 mat with
+zero apparatus; four consecutive Mondays rotate half the apparatus work each
+time. Sweep clean: verify16 16/16, journey, audit173 at 390 and 360, ovr220,
+flow219.
+
 AMIR PT — v220 · 26/09/2026
 ===========================
 
