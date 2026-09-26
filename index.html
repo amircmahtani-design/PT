@@ -7512,7 +7512,12 @@ function _renderSheetInner(w){
     return;
   }
   if(w.sets===0){
+    /* v219 — a mobility or Pilates day is a session like any other and he
+       wants to know how long it took. The clock was only ever on the lifting
+       sheet, so a flow day had no start, no finish and nothing on the record
+       but the time he pressed the button. */
     host.innerHTML="<div class='sheet'>"+wkHeaderHTML(w)+"</div><div id='wkMenu' data-open='0'></div><div class='sheet-sec'><div class='recovery'>"+w.note+"</div></div>"+
+      sessBarHTML()+
       sheetSec("mob",flowSecTitle(w),moveCount(w.cooldown),coolBodyHTML(w.cooldown),true)+
       flowDoneHTML(w)+"</div>";
     try{ bindSheetSecs(); }catch(e){}
@@ -8305,11 +8310,16 @@ function mobilitySecs(days){
 }
 function coolTimer(i){
   if(_coolQ && _coolQ.i===i && restActive){ stopRest(); return; }   /* tap again = stop */
+  /* v219 — on a flow day there are no sets to log, so this is the first
+     thing he actually does. It starts the clock, the way saveSet does on a
+     lifting day. */
+  if(flowDay(DB.workout)) try{ autoStartSession(); }catch(e){}
   _coolQ={i:i, side:1, all:false}; coolStep();
 }
 function coolRunAll(){
   const list=coolList(); if(!list.length) return;
   if(_coolQ && _coolQ.all && restActive){ stopRest(); toast("Cool-down stopped"); return; }
+  if(flowDay(DB.workout)) try{ autoStartSession(); }catch(e){}
   _coolQ={i:0, side:1, all:true}; coolStep();
 }
 /* v115 — a unilateral stretch is not finished until BOTH sides are, and the
@@ -15235,7 +15245,7 @@ function scheduleInApp(){
    v18 ADDITIONS — draggable rest timer · weekly training memory · AI planner
    · Firestore sync
    ========================================================================== */
-const APP_VERSION="v218 · 25/09/2026";
+const APP_VERSION="v219 · 26/09/2026";
 
 /* ===== 1. REST TIMER — drag it anywhere so it never blocks the chat box ===== */
 let _rtDrag=null;
@@ -16462,11 +16472,15 @@ function flowDoneHTML(w){
   const c=completionOf();
   const n=moveCount((w&&w.cooldown)||[]);
   if(c){
-    const when=new Date(c.at).toLocaleTimeString('en-GB',{hour:'2-digit',minute:'2-digit'});
+    /* v219 — the two stamps, same as the lifting card. */
+    const st=sessStartClock(), en=sessEndClock();
+    const when=(st&&en)? (st+"\u2013"+en)
+                       : new Date(c.at).toLocaleTimeString('en-GB',{hour:'2-digit',minute:'2-digit'});
+    const dur=c.durMs? (" \u00b7 "+fmtDurWords(c.durMs)) : "";
     return "<div class='sheet-sec donewrap' id='doneCard'><div class='donecard'>"+
       "<div class='donehd'>\u2705 Flow complete</div>"+
       "<div class='donestat'>"+escapeHtml(c.title||"Mobility")+" \u00b7 "+n+"</div>"+
-      "<div class='donesub'>finished "+when+"</div>"+
+      "<div class='donesub'>"+((st&&en)?"":"finished ")+when+dur+"</div>"+
       "<div class='donerun'>"+(DB.streak||1)+" day run \uD83D\uDD25</div>"+
       "<button class='btn ghost mt' onclick='undoComplete()'>\u21a9 Not finished after all</button>"+
       "<div class='syncdot'></div></div></div>";

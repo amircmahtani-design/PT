@@ -1,3 +1,38 @@
+AMIR PT — v219 · 26/09/2026
+===========================
+
+"In mobility and Pilates I should also have a start and stop button. To say
+complete. I'm currently doing it."
+
+THE CLOCK WAS NEVER ON THE FLOW DAY
+------------------------------------
+It was not a bug in the clock, it was a hole in the sheet. renderWorkoutSheet
+has a separate branch for w.sets===0 — a mobility or Pilates day, where you
+move through a flow instead of logging sets — and that branch printed the
+header, the note, the movements and the green button. No session card at all.
+So a Wednesday had no start, no finish, and nothing on the record but the
+moment he happened to press Flow complete.
+
+Three changes:
+
+  · sessBarHTML() is in the flow branch now, in the same place it sits on a
+    lifting day. Start, Finish, both stamps, and Type the times.
+  · A flow day has no sets to log, so nothing was ever calling
+    autoStartSession. Running a movement timer now does it — coolTimer and
+    coolRunAll both, gated on flowDay() so a lifting day's cool-down does not
+    start anything on its own.
+  · The Flow complete card reads the two stamps and the duration, the same
+    as the lifting one: "Mobility & Pilates · 23 moves · 06:30–07:22 · 52 min".
+
+Flow complete already called endSession(), so it stamps the finish itself —
+he does not have to press Finish first.
+
+Verified in headless Chromium on a real Mobility & Pilates day: the session
+card is on the sheet; running the first movement starts the clock; 52 minutes
+is carried onto the completed record and the card; and typing a corrected
+start afterwards moves the card, the clock and the record together. Sweep
+clean: verify16 16/16, journey, audit173 at 390 and 360, typ218.
+
 AMIR PT — v218 · 25/09/2026
 ===========================
 
