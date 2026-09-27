@@ -1,3 +1,42 @@
+AMIR PT — v227 · 27/09/2026
+===========================
+
+"This graph is counterintuitive it looks like I'm doing better but I was
+actually slower so we need to edit that."
+
+THE LINE WAS TELLING HIM THE OPPOSITE OF THE TRUTH
+---------------------------------------------------
+A rowing split is a time, so a SMALLER number is the better one: 2:02 beats
+2:20. Plotted the normal way round, his fastest week sat at the bottom of the
+chart and the weeks he rowed slower climbed towards the top — so the line rose
+while he got slower, and the picture read as progress.
+
+I knew this when I built it in v222 and answered it with a caption: "Lower is
+faster." That was not good enough and he was right to say so. The shape of a
+line is read before any words underneath it are. A caption cannot outrun it.
+
+  · chartSVG takes opt.invert, which flips the value-to-pixel mapping while
+    leaving everything else — the axis labels, the tap-to-read handler, the
+    crosshair — working off the same function. The axis still shows the split
+    he knows; it just runs quickest at the TOP.
+  · So up means faster, a line falling means he slowed down, and the picture
+    agrees with the number beside it.
+  · His best week gets a green dot, so the peak is the thing the eye lands on.
+  · The note under the chart says which way it runs rather than asking him to
+    invert it in his head.
+
+Only the rowing chart is inverted. Weight, lifts and every other series are
+untouched, because for those a bigger number is genuinely higher.
+
+Verified in headless Chromium on a series shaped like his — fast start, one
+great week, slower finish: the fastest split (2:02.3) plots highest, the
+slowest (2:20.8) lowest, the last week sits BELOW the first because he ended
+slower, the axis reads 1:59.5 at the top down to 2:23.6 at the bottom, and
+exactly one green dot marks the best week. The foot still reads "12.8s per 500m
+slower than week one" — and now the line agrees with it. Sweep clean: verify16
+16/16, journey, audit173 at 390 and 360, prog224, and the weight chart draws
+normally.
+
 AMIR PT — v226 · 27/09/2026
 ===========================
 

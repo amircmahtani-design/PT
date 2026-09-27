@@ -14486,11 +14486,13 @@ function renderRowPace(){
           : ("Nothing logged at "+escapeHtml(_rowDist)+" yet."))+"</div>";
     return;
   }
+  const best=weeks.reduce((a,w)=>Math.min(a,w.best.split),Infinity);
   const pts=weeks.map(w=>({x:shortDate(w.week), y:Math.round(w.best.split*10)/10,
                            full:"week of "+ukDate(w.week),
+                           /* the fastest week gets its own dot */
+                           c:(w.best.split===best? "#1fbf68" : null),
                            t:(w.best.time? (w.best.time+" for "+w.best.dist) : "")}));
   const first=weeks[0].best.split, last=weeks[weeks.length-1].best.split;
-  const best=weeks.reduce((a,w)=>Math.min(a,w.best.split),Infinity);
   const d=first-last;                         /* positive = he got faster */
   /* A gap is a duration, not a clock time: eight seconds reads "8s", not
      "0:08" and certainly not "08". */
@@ -14499,10 +14501,12 @@ function renderRowPace(){
   const trend = Math.abs(d)<0.5? "about the same as your first week"
               : (d>0? (gap(d)+" per 500m faster than week one")
                     : (gap(d)+" per 500m slower than week one"));
-  el.innerHTML=chips+chartSVG(pts,{unit:" /500m",color:"#4a9dff",fmt:"split"})+
+  el.innerHTML=chips+chartSVG(pts,{unit:" /500m",color:"#4a9dff",fmt:"split",invert:true})+
     "<div class='chartfoot'><span>"+weeks.length+" week"+(weeks.length===1?"":"s")+" \u00b7 "+escapeHtml(_rowDist)+"</span>"+
     "<span>best "+fmtSplit(best)+"</span><span>"+trend+"</span></div>"+
-    "<div class='hint mt'>Each point is your fastest 500m split that week. Lower is faster.</div>";
+    "<div class='hint mt'>Each point is your fastest 500m split that week. "+
+    "<b>Higher on the chart is faster</b> \u2014 the axis runs quickest at the top, so the line "+
+    "rising means you got quicker. Green marks your best week.</div>";
 }
 function renderRowing(){
   const best={}; DB.rowing.forEach(r=>{ const s=timeToSec(r.time); if(isNaN(s))return; if(!(r.dist in best)||s<best[r.dist].s) best[r.dist]={time:r.time,s}; });
@@ -15770,7 +15774,7 @@ function scheduleInApp(){
    v18 ADDITIONS — draggable rest timer · weekly training memory · AI planner
    · Firestore sync
    ========================================================================== */
-const APP_VERSION="v226 · 27/09/2026";
+const APP_VERSION="v227 · 27/09/2026";
 
 /* ===== 1. REST TIMER — drag it anywhere so it never blocks the chat box ===== */
 let _rtDrag=null;
@@ -16551,7 +16555,15 @@ function chartSVG(pts,opt){
   if(max===min){ const d=Math.abs(min)*0.05||1; max=min+d; min=Math.max(0,min-d); }
   else { const pad=(max-min)*0.15; max+=pad; min=Math.max(0,min-pad); }
   const X=i=>pts.length===1? (pl+(W-pl-pr)/2) : pl+i*((W-pl-pr)/(pts.length-1));
-  const Y=v=>ptop+(1-(v-min)/(max-min))*(H-ptop-pbot);
+  /* v227 — some series are better when the number is SMALLER. A rowing split
+     is one: 2:02 beats 2:20. Plotted normally the fastest week sits at the
+     bottom of the chart and a week he rowed slower climbs, so the line reads
+     as improvement while the data says the opposite. No caption fixes that —
+     the shape of the line is read before any words are. Inverted, the axis
+     still shows the split he knows and up still means better. */
+  const Y=opt.invert
+    ? (v=>ptop+((v-min)/(max-min))*(H-ptop-pbot))
+    : (v=>ptop+(1-(v-min)/(max-min))*(H-ptop-pbot));
   const col=opt.color||"#ff8a2b", gid="cg"+(++_cgId);
   let grid="",lab="";
   for(let g=0;g<=3;g++){
