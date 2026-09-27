@@ -1,3 +1,46 @@
+AMIR PT — v228 · 27/09/2026
+===========================
+
+"Why does it keep asking this question. It should always know what this is
+always restored."
+
+DON'T ASK A QUESTION YOU ALREADY KNOW THE ANSWER TO
+----------------------------------------------------
+The card pre-filled his Sync ID from DB.cloud.syncId. So the app HAD the
+answer, and was still making him tap a button to use it. Worse, there was no
+automatic pull anywhere in the startup sequence — so every launch on a device
+whose storage had been cleared showed him the same form again, and until he
+tapped it the app looked like a new account with no history.
+
+That card is also the explanation for most of what he has reported this week.
+A device that keeps starting empty has no lifts, no rowing, no session history
+and no weights — which is exactly the list of things he has been telling me
+were missing from Progress.
+
+autoRestore() now runs at startup:
+
+  · History already here → nothing happens, and the card is cleared (history
+    can arrive from a later sync, and a stale "nothing logged" card above real
+    data is worse than the original question).
+  · Empty, with a Sync ID and a cloud config on file → it pulls, silently, on
+    its own. The card says "Restoring your history…" while it works and
+    disappears when it is done.
+  · Empty, cloud unreachable → says so, keeps the ID in the box, offers Try
+    again. It does not imply his data is gone, because it is not.
+  · Empty, nothing at that Sync ID → says the ID is case-sensitive and asks
+    him to check it against his other device.
+  · Empty with NO Sync ID at all → that is a real question, so it still asks.
+
+Safe in the direction that matters: cloudPush already refuses to write to the
+cloud from a device with no local history until it has pulled, so pulling
+EARLIER can only protect the backup, never endanger it.
+
+Verified in headless Chromium across all five states with the network call
+stubbed: the restore fires exactly once and only when it should, the card
+clears when history exists, both failure modes explain themselves and keep the
+Sync ID, and a device with no ID still gets the form. Sweep clean: verify16
+16/16, journey, audit173 at 390 and 360, inv227, ph226.
+
 AMIR PT — v227 · 27/09/2026
 ===========================
 

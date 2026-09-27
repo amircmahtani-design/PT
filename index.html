@@ -15774,7 +15774,7 @@ function scheduleInApp(){
    v18 ADDITIONS — draggable rest timer · weekly training memory · AI planner
    · Firestore sync
    ========================================================================== */
-const APP_VERSION="v227 · 27/09/2026";
+const APP_VERSION="v228 · 27/09/2026";
 
 /* ===== 1. REST TIMER — drag it anywhere so it never blocks the chat box ===== */
 let _rtDrag=null;
@@ -16281,16 +16281,71 @@ function readinessHTML(){
       weekGapLine()+"</div>"+
     (btns? "<div class='readyrow'>"+btns+"</div>" : "")+"</div>";
 }
-/* A fresh install (or a new home-screen app) starts empty. Say so, and offer
-   the one thing that fixes it, instead of quietly looking like a new account. */
+/* ===== v228 · DON'T ASK A QUESTION YOU ALREADY KNOW THE ANSWER TO =====
+   "Why does it keep asking this question. It should always know what this is
+   always restored."
+
+   He is right. The card pre-filled his Sync ID from DB.cloud.syncId — so the
+   app HAD the answer and was still making him tap a button to use it. And
+   there was no automatic pull anywhere at startup, so every launch on a device
+   whose storage had been cleared showed him the same form again.
+
+   Now: an empty device with a Sync ID on file restores itself, silently, on
+   load. The card only asks a question when there genuinely is one — no ID
+   saved at all — and otherwise just reports what is happening.
+
+   This is safe in the direction that matters. cloudPush already refuses to
+   write to the cloud from a device with no history until it has pulled, so
+   pulling sooner can only ever protect the backup, never endanger it. */
+let _autoRestore=null;               /* null | "running" | "done" | "fail:<why>" */
+async function autoRestore(){
+  /* Clearing the card is part of the job: history can arrive from a later
+     sync, and a stale "nothing logged" card sitting above real data is worse
+     than the original question. */
+  if(localHasHistory()){ _autoRestore="done"; try{ renderFirstRun(); }catch(e){} return; }
+  const c=DB.cloud||{};
+  if(!c.syncId || !c.config){ _autoRestore=null; renderFirstRun(); return; }
+  if(_autoRestore==="running") return;
+  _autoRestore="running"; DB.cloud.on=true; renderFirstRun();
+  let stat=null;
+  try{ stat=await cloudPull(false); }catch(e){}
+  if(stat===null) _autoRestore="fail:reach";
+  else if(stat.fresh || !localHasHistory()) _autoRestore="fail:empty";
+  else { _autoRestore="done"; toast("History restored \u2601\uFE0F"); }
+  try{ renderFirstRun(); }catch(e){}
+}
 function renderFirstRun(){
   const el=document.getElementById('firstRun'); if(!el) return;
   if(localHasHistory()){ el.innerHTML=""; return; }
   const id=(DB.cloud&&DB.cloud.syncId)||"";
+  const why="<div class='sm' style='margin-bottom:12px;line-height:1.6'>iOS keeps a home-screen app's storage <b>completely separate from Safari</b> \u2014 adding it to your home screen starts a blank copy. Your history isn't lost if cloud sync was on; it's under your Sync ID.</div>";
+  /* It knows the ID. It does not need to ask. */
+  if(id && _autoRestore==="running"){
+    el.innerHTML="<div class='card' style='border-color:#5c3712'>"+
+      "<div class='card-title'><span>Restoring your history</span></div>"+
+      "<div class='sm' style='line-height:1.6'><span class='spin'></span> Pulling everything back from <b>"+attrEsc(id)+"</b>\u2026 this takes a moment on a fresh install.</div>"+
+    "</div>";
+    return;
+  }
+  if(id && String(_autoRestore||"").indexOf("fail:")===0){
+    const empty=_autoRestore==="fail:empty";
+    el.innerHTML="<div class='card' style='border-color:#5c3712'>"+
+      "<div class='card-title'><span>Couldn't restore automatically</span></div>"+
+      "<div class='sm' style='margin-bottom:12px;line-height:1.6'>"+
+        (empty? "I reached your cloud but found no backup under <b>"+attrEsc(id)+"</b>. The Sync ID is case-sensitive \u2014 check it matches the one on your other device."
+              : "I couldn't reach your cloud just now. That is usually the connection rather than your data \u2014 everything is still under <b>"+attrEsc(id)+"</b>.")+
+      "</div>"+
+      "<div class='field' style='margin-bottom:10px'><label>Your Sync ID</label>"+
+        "<input class='txtin' id='frSyncId' value='"+attrEsc(id)+"' /></div>"+
+      "<button class='btn' onclick='firstRunRestore()'>Try again</button>"+
+      "<div id='frMsg' class='hint mt' style='font-size:12.5px'></div>"+
+    "</div>";
+    return;
+  }
   el.innerHTML=
     "<div class='card' style='border-color:#5c3712'>"+
       "<div class='card-title'><span>Nothing logged on this device</span></div>"+
-      "<div class='sm' style='margin-bottom:12px;line-height:1.6'>iOS keeps a home-screen app's storage <b>completely separate from Safari</b> \u2014 adding it to your home screen starts a blank copy. Your history isn't lost if cloud sync was on; it's under your Sync ID.</div>"+
+      why+
       "<div class='field' style='margin-bottom:10px'><label>Your Sync ID</label>"+
         "<input class='txtin' id='frSyncId' value='"+attrEsc(id)+"' placeholder='the one you set on your other device' /></div>"+
       "<button class='btn' onclick='firstRunRestore()'>Restore my history</button>"+
@@ -23921,6 +23976,9 @@ initRestDrag();
 try{ vvWatch(); }catch(e){}
 registerSW();
 loadPhotos();
+/* v228 — an empty device with a Sync ID on file puts itself back together
+   rather than showing him a form he has already filled in once. */
+try{ autoRestore(); }catch(e){}
 /* v61: read the index of demos already on this phone, then repaint whatever is
    on screen with them. Pure IndexedDB — no network, no requests. */
 gifIdxLoad().then(async n=>{
