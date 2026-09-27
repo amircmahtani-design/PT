@@ -414,6 +414,14 @@ textarea.txtin{min-height:88px;resize:vertical;line-height:1.45;}
 .cchip{background:#0d0a07;border:1px solid var(--line);color:var(--muted);border-radius:9px;padding:7px 12px;font-size:12px;font-weight:700;}
 .cchip.on{background:#2a1c0e;border-color:#3d2a15;color:var(--orange);}
 .chartbox{position:relative;}
+/* v223 — the weight then & now. Two plain figures and the change between
+   them; the colour is on the change, never on the weights themselves. */
+.wcmp{display:flex;gap:10px;margin-top:4px;}
+.wcmp .wc{flex:1 1 0;background:var(--card2);border:1px solid var(--line);border-radius:14px;padding:11px 13px;}
+.wcmp .wc b{display:block;font-size:10px;font-weight:800;text-transform:uppercase;letter-spacing:.7px;color:var(--label);}
+.wcmp .wc span{display:block;font-size:23px;font-weight:800;color:#fff;letter-spacing:-.8px;font-variant-numeric:tabular-nums;line-height:1.25;}
+.wcmp .wc em{display:block;font-style:normal;font-size:11.5px;font-weight:700;color:var(--muted);}
+.wcdelta{margin-top:8px;font-size:14.5px;font-weight:800;}
 .chartread{display:flex;align-items:baseline;gap:8px;margin-bottom:6px;min-height:22px;flex-wrap:wrap;}
 .chartread i{width:9px;height:9px;border-radius:3px;flex:0 0 9px;align-self:center;}
 .chartread .crv{font-size:17px;font-weight:800;color:var(--txt);font-variant-numeric:tabular-nums;letter-spacing:-.2px;}
@@ -1221,9 +1229,11 @@ a{color:var(--orange);}
         <button onclick="quickCompareWeight('max')">Heaviest</button>
         <button onclick="quickCompareWeight('min')">Lightest</button>
       </div>
+      <!-- v223 — the scale's then & now, which needs no photographs. -->
+      <div id="cmpWeight"></div>
       <div class="mgrid mt">
-        <div class="field"><label>Then</label><select class="txtin" id="cmpA" onchange="setCmp('a',this.value)"></select></div>
-        <div class="field"><label>Now</label><select class="txtin" id="cmpB" onchange="setCmp('b',this.value)"></select></div>
+        <div class="field"><label>Then <span class="hint">photo</span></label><select class="txtin" id="cmpA" onchange="setCmp('a',this.value)"></select></div>
+        <div class="field"><label>Now <span class="hint">photo</span></label><select class="txtin" id="cmpB" onchange="setCmp('b',this.value)"></select></div>
       </div>
       <div id="compareOut"></div>
       <button class="btn sec mt" onclick="aiCompare()">🔍 Ask coach what's changed</button>
@@ -9949,7 +9959,7 @@ async function submitCheckin(){
   const analysis=await analyseCheckin(ci);
   btn.disabled=false; btn.innerHTML="Analyse My Day";
   document.getElementById('ciResult').innerHTML="<div class='card mt'><div class='card-title'><span>Coach’s read · "+LOC().label+"</span></div><div class='coachnote'><div class='who'>◆ Coach</div>"+analysis+"</div><button class='btn green mt' onclick=\"go('workout')\">Open today's workout</button></div>";
-  renderMetrics(); try{ drawChart(); renderWeightLog(); }catch(e){} updateStatus(); renderItin(); renderWeek(); renderReadiness(); toast("Check-in saved · "+LOC().label);
+  renderMetrics(); try{ drawChart(); renderWeightLog(); try{ renderWeightCompare(); }catch(e){} }catch(e){} updateStatus(); renderItin(); renderWeek(); renderReadiness(); toast("Check-in saved · "+LOC().label);
 }
 async function analyseCheckin(ci){
   if(DB.ai.provider==="openai"&&DB.ai.key){
@@ -14273,7 +14283,7 @@ function saveWeight(){
   if(d>today()){ toast("That date hasn’t happened yet"); return; }
   logWeightOn(d, Math.round(kg*10)/10);
   const el=document.getElementById('wgKg'); if(el) el.value="";
-  drawChart(); renderWeightLog();
+  drawChart(); renderWeightLog(); try{ renderWeightCompare(); }catch(e){}
   try{ renderMetrics(); updateStatus(); }catch(e){}
   toast(fmtNum(kg)+"kg logged · "+ukDate(d));
 }
@@ -14282,7 +14292,7 @@ function delWeight(dstr){
   if(!confirm("Remove the weight logged on "+ukDate(dstr)+"?")) return;
   row.weight=null;
   syncProfileWeight(); save();
-  drawChart(); renderWeightLog();
+  drawChart(); renderWeightLog(); try{ renderWeightCompare(); }catch(e){}
   try{ renderMetrics(); updateStatus(); }catch(e){}
   toast("Removed");
 }
@@ -14891,11 +14901,11 @@ function photosByWeight(){
    does it, because a heavy side-on next to a lean front-on tells him nothing.
    */
 function quickCompareWeight(which){
+  /* v223 — the scale answers first, because he always has it. The photos
+     answer too when there are any. */
+  _cmpWhich=which; renderWeightCompare();
   const list=photosByWeight();
-  if(list.length<2){
-    toast(list.length? "Only one photo has a weigh-in near it" : "No weigh-ins near your photos yet");
-    return;
-  }
+  if(list.length<2) return;
   const pick=(which==="min")? list[list.length-1] : list[0];
   const all=photosSorted();
   const pose=pick.p.pose||"";
@@ -14913,19 +14923,88 @@ function quickCompareWeight(which){
   toast("Your "+label+" on record \u2014 "+pick.w.toFixed(1)+" kg on "+photoWhen(pick.p)+
         (samePose.length? "" : " (different angle \u2014 it is the only other shot)"));
 }
+/* ===== v223 · THE WEIGHT COMPARISON STOOD ON THE PHOTOS ==============
+   "I also don't have the weights in the then and now to then compare the
+   fotos."
+
+   The weights were not missing. The PHOTOS were. Every part of this card is
+   photo-driven — the chips pick a pair of pictures, the dropdowns list
+   pictures, and a weight only ever appeared as a LABEL on a picture. With
+   fewer than two photos the selects render a single "—" and the card has
+   nothing to say, which is what he photographed: a control that looks broken
+   rather than one that is empty.
+
+   He has weighed in every day for a week. That is a then and a now already,
+   and it does not need a photograph to be worth seeing. So the weight
+   comparison is its own thing now: same chips, real numbers, and it works
+   with nothing but the scale. The photographs remain the better evidence and
+   the card still says so — but it no longer holds the numbers hostage. */
+let _cmpMode=0;                      /* days back; 0 = first vs latest */
+let _cmpWhich=null;                  /* "max" | "min", when a chip picked one */
+function weightPair(mode,which){
+  const all=weightEntries().slice().reverse();          /* oldest first */
+  if(all.length<2) return null;
+  const now=all[all.length-1];
+  if(which==="max"||which==="min"){
+    const pool=all.slice(0,-1).length? all.slice(0,-1) : all;
+    const pick=pool.reduce((b,x)=>{
+      if(!b) return x;
+      return (which==="max")? (x.w>b.w? x:b) : (x.w<b.w? x:b);
+    },null);
+    if(!pick || pick===now) return null;
+    return {then:pick, now, why:(which==="max"?"heaviest":"lightest")+" on record"};
+  }
+  if(!mode) return {then:all[0], now, why:"first weigh-in"};
+  const target=new Date(now.date+"T12:00:00").getTime()-mode*864e5;
+  const then=all.slice(0,-1).reduce((b,x)=>{
+    const t=new Date(x.date+"T12:00:00").getTime();
+    return (!b || Math.abs(t-target)<Math.abs(new Date(b.date+"T12:00:00").getTime()-target))? x : b;
+  },null);
+  if(!then) return null;
+  const off=Math.round(Math.abs(new Date(now.date+"T12:00:00").getTime()-new Date(then.date+"T12:00:00").getTime())/864e5);
+  return {then, now, why:off+" day"+(off===1?"":"s")+" apart"};
+}
+function renderWeightCompare(){
+  const el=document.getElementById('cmpWeight'); if(!el) return;
+  const n=weightEntries().length;
+  if(n<2){
+    el.innerHTML="<div class='muted' style='font-size:14px'>"+
+      (n? "One weigh-in so far. Log another and the change shows here."
+        : "Log a bodyweight above and this fills in.")+"</div>";
+    return;
+  }
+  const pr=weightPair(_cmpMode,_cmpWhich);
+  if(!pr){ el.innerHTML="<div class='muted' style='font-size:14px'>Not enough weigh-ins for that comparison yet.</div>"; return; }
+  const d=pr.now.w-pr.then.w;
+  const dir=Math.abs(d)<0.05? "level" : (d<0? "down":"up");
+  const col=Math.abs(d)<0.05? "var(--muted)" : (d<0? "var(--green)":"var(--gold)");
+  el.innerHTML=
+    "<div class='wcmp'>"+
+      "<div class='wc'><b>Then</b><span>"+pr.then.w.toFixed(1)+" kg</span><em>"+ukDate(pr.then.date)+"</em></div>"+
+      "<div class='wc'><b>Now</b><span>"+pr.now.w.toFixed(1)+" kg</span><em>"+ukDate(pr.now.date)+"</em></div>"+
+    "</div>"+
+    "<div class='wcdelta' style='color:"+col+"'>"+
+      (dir==="level"? "No change" : (d<0?"\u2193 ":"\u2191 ")+Math.abs(d).toFixed(1)+" kg "+dir)+
+      " <span class='muted' style='font-weight:700'>\u00b7 "+escapeHtml(pr.why)+"</span></div>";
+}
 function setCmp(which,v){ if(which==='a') _cmpA=String(v); else _cmpB=String(v); renderCompare(); }
 function renderCompareControls(){
+  try{ renderWeightCompare(); }catch(e){}   /* v223 — the numbers never wait on the pictures */
   const a=document.getElementById('cmpA'), b=document.getElementById('cmpB');
   if(!a||!b) return;
   const all=photosSorted();
   if(all.length<2){
-    a.innerHTML=b.innerHTML="<option>—</option>";
+    /* v223 — an enabled dropdown holding one dash reads as broken. Say what
+       is actually missing, and leave the weights above to do their job. */
+    a.innerHTML=b.innerHTML="<option>no photos yet</option>";
+    a.disabled=b.disabled=true;
     const out=document.getElementById('compareOut');
     if(out) out.innerHTML="<div class='muted' style='font-size:14px;padding:10px 0'>"+
-      (all.length? "One photo so far. Take another in a few weeks and this is where you'll see the difference."
-                 : "Add two photos and they'll appear here side by side.")+"</div>";
+      (all.length? "One photo so far — the numbers above are the comparison until there are two. Take another in a few weeks and the pictures go side by side here."
+                 : "The numbers above work on their own. Add two physique photos and the pictures appear here side by side as well.")+"</div>";
     return;
   }
+  a.disabled=b.disabled=false;
   /* First look: pick the fairest pair rather than blindly oldest-vs-newest,
      which paired a front shot against a side one and warned about its own
      choice. Anything he's picked himself is left alone. */
@@ -14969,7 +15048,8 @@ function bestPair(daysBack){
   return best;
 }
 function quickCompare(daysBack){
-  if((DB.photos||[]).length<2){ toast("Need at least two photos"); return; }
+  _cmpMode=daysBack; _cmpWhich=null; renderWeightCompare();   /* v223 */
+  if((DB.photos||[]).length<2){ return; }                     /* weights still answered */
   const best=bestPair(daysBack);
   if(!best){ toast("Not enough photos of one angle yet"); return; }
   _cmpA=pkey(best.then); _cmpB=pkey(best.now);
@@ -15529,7 +15609,7 @@ function scheduleInApp(){
    v18 ADDITIONS — draggable rest timer · weekly training memory · AI planner
    · Firestore sync
    ========================================================================== */
-const APP_VERSION="v222 · 27/09/2026";
+const APP_VERSION="v223 · 27/09/2026";
 
 /* ===== 1. REST TIMER — drag it anywhere so it never blocks the chat box ===== */
 let _rtDrag=null;

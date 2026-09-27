@@ -1,3 +1,47 @@
+AMIR PT — v223 · 27/09/2026
+===========================
+
+"I also don't have the weights in the then and now to then compare the fotos."
+
+THE WEIGHTS WERE NOT MISSING. THE PHOTOS WERE.
+-----------------------------------------------
+Every part of Then & now is photo-driven. The chips pick a pair of pictures,
+the two dropdowns list pictures, and a weight only ever appeared as a LABEL on
+a picture ("85.8 kg · 21 Sept · Front"). With fewer than two photos the
+selects render a single "—", the chips toast an apology, and the card has
+nothing to say — which is exactly what he photographed: a control that looks
+broken rather than one that is empty.
+
+He has weighed in every day for a week. That is a then and a now already, and
+it does not need a photograph to be worth seeing.
+
+  · weightPair(mode,which) reads weightEntries() — the same list the chart
+    and the table use — and answers all six chips: 1 month, 3 months, 6
+    months, first vs latest, heaviest, lightest. Where he has less history
+    than the chip asks for it takes the nearest and SAYS so ("6 days apart")
+    rather than pretending.
+  · renderWeightCompare() draws Then and Now as two figures with the change
+    underneath: "↓ 2.5 kg down · heaviest on record". The colour is on the
+    change, never on the weights themselves.
+  · The chips drive the weights FIRST and the photos after, so they answer
+    even with no photos on file. quickCompare no longer returns early before
+    the numbers are drawn.
+  · The photo selects now read "no photos yet" and are disabled, and the note
+    says the numbers above work on their own — rather than an enabled
+    dropdown holding one dash.
+
+Nothing about the photo comparison changed. With two photos on file the
+dropdowns, the pairing and the side-by-side are exactly as they were, and the
+weight block sits above them saying the same thing in numbers.
+
+Verified in headless Chromium against his state (six weigh-ins, no photos):
+first vs latest reads 85.8 → 83.3, down 2.5 kg; heaviest and lightest both
+resolve; a 3-day chip finds the 24th; a 1-month chip falls back to the oldest
+and says "6 days apart"; one weigh-in and none both give their own line. With
+three photos and three weigh-ins the dropdowns are enabled and carry their kg
+labels, the pair renders, and picking heaviest leaves the pictures in place.
+Sweep clean: verify16 16/16, journey, audit173 at 390 and 360, row222.
+
 AMIR PT — v222 · 27/09/2026
 ===========================
 
