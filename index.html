@@ -679,6 +679,16 @@ details.sec2[open] .secsum2:after{content:"\2212";}
 .btnicon svg{flex:0 0 auto;opacity:.85;}
 /* v229 — a quiet disclosure inside a card: present when he wants it, silent
    when he does not. */
+/* v234 — the angle-labelling grid. Big enough to tell a front from a side
+   at a glance, small enough that twenty fit on a phone screen. */
+.pfgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(96px,1fr));gap:10px;}
+.pfcell img{width:100%;height:118px;object-fit:cover;border-radius:10px;border:1px solid var(--line);
+  display:block;background:#0d0a07;}
+.pfcell .pfd{font-size:10.5px;font-weight:700;color:var(--muted);text-align:center;margin:4px 0 5px;}
+.pfseg{display:flex;gap:4px;}
+.pfseg button{flex:1 1 0;min-height:34px;padding:6px 2px;border-radius:9px;font-size:11.5px;font-weight:800;
+  background:var(--pill);border:1px solid var(--line);color:var(--muted);}
+.pfseg button.on{background:#2a1c0e;border-color:var(--orange);color:var(--orange);}
 .wsub{font-size:10.5px;font-weight:800;text-transform:uppercase;letter-spacing:1px;
   color:var(--label);margin:0 2px 7px;}
 .tinysec{border-top:1px solid var(--hair);padding-top:10px;}
@@ -1245,6 +1255,7 @@ a{color:var(--orange);}
         <button data-v="Front" onclick="setPoseFilter('Front')">Front</button>
         <button data-v="Side" onclick="setPoseFilter('Side')">Side</button>
       </div>
+      <div id="poseFixHost2"></div>
       <div id="photoTimeline"></div>
       <div class="posebtns mt">
         <label class="btn sec">📷 Front photo
@@ -1287,6 +1298,7 @@ a{color:var(--orange);}
         <div class="field"><label>Now</label><select class="txtin" id="cmpB" onchange="setCmp('b',this.value)"></select></div>
       </div>
       <div id="compareOut"></div>
+      <div id="poseFixHost"></div>
       <button class="btn sec mt" onclick="aiCompare()">🔍 Ask coach what's changed</button>
       <div id="compareAiOut"></div>
     </div>
@@ -14735,8 +14747,8 @@ function renderPhotos(){
     (pairs? (" You shot two on "+pairs+" of these days, and the app's own buttons are Front then Side — "+
             "so the first of each day is almost certainly the front one.") : "")+
     "<div class='posebtns mt'>"+
-      "<button class='btn sec' onclick='poseByOrder()'>First of each day Front, second Side</button>"+
-      "<button class='btn ghost' onclick='poseKeepAll()'>They’re right, leave them</button>"+
+      "<button class='btn sec' onclick='togglePoseFix(true)'>Label them one by one</button>"+
+      "<button class='btn ghost' onclick='poseByOrder()'>First of each day Front, second Side</button>"+
     "</div>"+
     "<div class='hint mt'>Either way, tap any photo to set its angle by hand.</div>"+
     "</div>" : "";
@@ -15387,6 +15399,14 @@ function renderCompare(){
       " apart, which will not show much.</div>";
   if(swap.length)
     tooClose+="<div class='hint mt' style='text-align:center'>"+swap.join(" ")+"</div>";
+  /* v234 — when every photo carries the same angle the comparison cannot do
+     what he asked for, and the way to fix it belongs HERE, not in another
+     card he was never going to open. */
+  if(posesLookWrong() && !_poseFixOpen)
+    tooClose+="<div class='notebox mt'><b>Every photo is labelled "+
+      escapeHtml((photosSorted()[0]||{}).pose||"Front")+".</b> Recovering them brought back the pictures and "+
+      "the dates but not which way you were facing, so a front cannot be matched to a front."+
+      "<div class='posebtns mt'><button class='btn sec' onclick='togglePoseFix(true)'>Label the angles</button></div></div>";
   out.innerHTML="<div class='cmpwrap'>"+side(A,"Then","a")+side(B,"Now","b")+"</div>"+
     "<div class='cmpgap'>"+gapWords(B.t-A.t)+"</div>"+
     (mismatch? "<div class='hint mt' style='text-align:center'>These are different angles — comparing the same pose reads far more honestly.</div>":"")+
@@ -15802,6 +15822,7 @@ function renderProgress(){
   step(window.renderStrengthPBs);       /* was never on this path */
   step(window.renderCompareControls);   /* draws the weight comparison too */
   step(window.renderPhotos);
+  step(window.renderPoseFix);
   step(window.renderProgrammeView);
   step(window.renderAthletic);
   step(window.renderMeasures);
@@ -16040,7 +16061,7 @@ function scheduleInApp(){
    v18 ADDITIONS — draggable rest timer · weekly training memory · AI planner
    · Firestore sync
    ========================================================================== */
-const APP_VERSION="v233 · 27/09/2026";
+const APP_VERSION="v234 · 27/09/2026";
 
 /* ===== 1. REST TIMER — drag it anywhere so it never blocks the chat box ===== */
 let _rtDrag=null;
@@ -16737,6 +16758,81 @@ function photoIdTime(id){
    so within a day the first shot is the front one and the second the side.
    That is a guess — so it is offered as a button with the rule written on it,
    rather than applied behind him. */
+/* ===== v234 · A LABELLING SCREEN, BECAUSE I DESTROYED THE LABELS =====
+   "It still says all front. When some are side some are front. This used to
+   work before."
+
+   It did work before, and the reason it stopped is mine. His photo list was
+   orphaned — the images survived in IndexedDB, the metadata did not — and the
+   v226 recovery put every one of them back labelled Front, because the angle
+   is not stored in the image and I had nothing else to go on. The originals
+   are gone. No amount of cleverness recovers them: the app has to be told.
+
+   v230 offered a one-tap guess, but it sits inside the Physique photos card
+   and he has been looking at Then & now. A fix he cannot see is not a fix.
+
+   So: a grid of every photo with a Front/Side toggle under each, reachable
+   from BOTH cards, and the one-tap guess at the top of it for the days he
+   shot a pair. Twenty photos in about twenty taps, or one if the guess is
+   right. */
+let _poseFixOpen=false;
+function togglePoseFix(on){
+  _poseFixOpen=(on===undefined)? !_poseFixOpen : !!on;
+  renderPoseFix();
+  if(_poseFixOpen){
+    const el=document.getElementById('poseFix');
+    if(el) setTimeout(()=>el.scrollIntoView({behavior:"smooth",block:"start"}),60);
+  }
+}
+function setPoseOf(key,pose){
+  const p=photoByKey(key); if(!p) return;
+  p.pose=(pose==="Side")? "Side" : "Front";
+  delete p.recovered;
+  save();
+  renderPoseFix();
+  try{ renderPhotos(); }catch(e){}
+  try{ renderCompareControls(); }catch(e){}
+}
+function poseFixHTML(){
+  const all=photosSorted().slice().reverse();          /* newest first */
+  if(!all.length) return "";
+  const rec=all.filter(p=>p&&p.recovered).length;
+  const cells=all.map(p=>{
+    const k=pkey(p), f=(p.pose||"Front")==="Front";
+    return "<div class='pfcell'>"+
+      "<img src='"+photoSrc(p)+"' alt='' loading='lazy' onclick='openPhoto(\""+k+"\")'/>"+
+      "<div class='pfd'>"+photoWhenShort(p)+"</div>"+
+      "<div class='pfseg'>"+
+        "<button class='"+(f?"on":"")+"' onclick=\"setPoseOf('"+jsAttr(k)+"','Front')\">Front</button>"+
+        "<button class='"+(!f?"on":"")+"' onclick=\"setPoseOf('"+jsAttr(k)+"','Side')\">Side</button>"+
+      "</div></div>";
+  }).join("");
+  return "<div class='card mt' id='poseFix'>"+
+    "<div class='card-title'><span>Label the angles</span>"+
+      "<span class='itin-edit'>"+all.length+" photo"+(all.length===1?"":"s")+"</span></div>"+
+    "<div class='sm' style='line-height:1.6;margin-bottom:10px'>Recovering your photos brought the pictures and their dates back, but not "+
+      "which way you were facing — that is not stored in the image. Set each one below and Then &amp; now will compare "+
+      "a front against a front again.</div>"+
+    (rec? "<div class='posebtns' style='margin-bottom:10px'>"+
+      "<button class='btn sec' onclick='poseByOrder()'>Guess: first of each day Front, second Side</button></div>" : "")+
+    "<div class='pfgrid'>"+cells+"</div>"+
+    "<button class='btn ghost mt' onclick='togglePoseFix(false)'>Done</button>"+
+  "</div>";
+}
+function renderPoseFix(){
+  ['poseFixHost','poseFixHost2'].forEach(id=>{
+    const el=document.getElementById(id); if(!el) return;
+    el.innerHTML=_poseFixOpen? poseFixHTML() : "";
+  });
+}
+/* Do the angles look like they were never set? Every photo sharing one label
+   when he shoots two a session is the signature of the recovery. */
+function posesLookWrong(){
+  const all=photosSorted();
+  if(all.length<3) return false;
+  const poses=new Set(all.map(p=>(p.pose||"Front")));
+  return poses.size===1;
+}
 function poseByOrder(){
   const byDay={};
   (DB.photos||[]).forEach(p=>{ if(!p||!p.recovered) return;

@@ -1,3 +1,47 @@
+AMIR PT — v234 · 27/09/2026
+===========================
+
+"It still says all front. When some are side some are front. This used to work
+before. Fix this."
+
+IT DID WORK BEFORE, AND I BROKE IT
+-----------------------------------
+His photo LIST was orphaned — the images survived in IndexedDB, the metadata
+did not. The v226 recovery put every photograph back and labelled all of them
+Front, because the angle is not stored in the image and there was nothing else
+to go on. His real Front/Side labels were in the list that was lost. They are
+gone, and no amount of cleverness recovers them: the app has to be told.
+
+That is the honest position, and it should have been the headline of v226
+rather than a line in a note.
+
+A FIX HE CANNOT SEE IS NOT A FIX
+---------------------------------
+v230 already offered a one-tap guess. It sits inside the Physique photos card,
+and he has spent four rounds looking at Then & now. He was never going to find
+it.
+
+So there is a labelling screen now, and it is reachable from BOTH cards:
+
+  · Then & now detects that every photo carries the same angle — the
+    signature of the recovery — and says so where the problem shows, with a
+    Label the angles button under the pair.
+  · The screen is a grid of every photograph with a Front / Side toggle under
+    each. One tap per photo, applied instantly, timeline and comparison
+    redrawn as he goes. Tapping the picture itself opens it full size.
+  · The one-tap guess sits at the top for the days he shot a pair: first of
+    that day Front, second Side.
+  · The prompt disappears the moment the angles stop being uniform.
+
+Twenty photographs in about twenty taps, or one if the guess is right.
+
+Verified in headless Chromium on nine photos all labelled Front: the mislabel
+is detected, the prompt appears inside Then & now, the grid opens with nine
+cells and two toggles each, one tap flips a photo to Side and clears the
+detection, the guess produces Front/Side alternating within every day that has
+two, and the prompt is gone afterwards. Sweep clean: verify16 16/16, journey,
+audit173 at 390 and 360, v233, ph226, auto228, prog224.
+
 AMIR PT — v233 · 27/09/2026
 ===========================
 
