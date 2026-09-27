@@ -14673,9 +14673,18 @@ function renderPhotos(){
      angle could not be known, so it is labelled Front and says so until he
      corrects it. Silently guessing would be worse than asking. */
   const rec=(DB.photos||[]).filter(p=>p&&p.recovered).length;
+  const days=new Set((DB.photos||[]).filter(p=>p&&p.recovered).map(p=>(p.d||"").slice(0,10)));
+  const pairs=[...days].filter(d=>(DB.photos||[]).filter(p=>p&&p.recovered&&(p.d||"").slice(0,10)===d).length===2).length;
   const recNote=rec? "<div class='notebox mb'><b>"+rec+" photo"+(rec===1?"":"s")+" recovered.</b> "+
-    "The images and their dates came back intact. I could not tell front from side, so they are "+
-    "all labelled Front — tap any one to set its angle." +
+    "The images and their dates came back intact, but the ANGLE is not stored in the file, so they are "+
+    "all labelled Front. That stops Then &amp; now comparing a front against a front."+
+    (pairs? (" You shot two on "+pairs+" of these days, and the app's own buttons are Front then Side — "+
+            "so the first of each day is almost certainly the front one.") : "")+
+    "<div class='posebtns mt'>"+
+      "<button class='btn sec' onclick='poseByOrder()'>First of each day Front, second Side</button>"+
+      "<button class='btn ghost' onclick='poseKeepAll()'>They’re right, leave them</button>"+
+    "</div>"+
+    "<div class='hint mt'>Either way, tap any photo to set its angle by hand.</div>"+
     "</div>" : "";
   const list=photosFiltered();
   if(!list.length){
@@ -15068,11 +15077,13 @@ function renderCompareControls(){
     return;
   }
   a.disabled=b.disabled=false;
-  /* First look: pick the fairest pair rather than blindly oldest-vs-newest,
-     which paired a front shot against a side one and warned about its own
-     choice. Anything he's picked himself is left alone. */
+  /* v230 — "as mentioned then should have the heaviest photo". The numbers
+     above already open on heaviest-vs-latest; the pictures were still opening
+     on oldest-vs-newest, so the two halves of one card disagreed about what
+     "then" meant. They use the same rule now, and the same angle on both
+     sides. Anything he has picked himself is left alone. */
   if(!photoByKey(_cmpA) || !photoByKey(_cmpB)){
-    const d=bestPair(0);
+    const d=heaviestPair() || bestPair(0);
     if(d){ _cmpA=pkey(d.then); _cmpB=pkey(d.now); }
     else { _cmpA=pkey(all[0]); _cmpB=pkey(all[all.length-1]); }
   }
@@ -15084,6 +15095,22 @@ function renderCompareControls(){
    front shot. Which angle gets used is decided by which one actually has the
    history to cover the gap he asked for — not by whichever he happened to add
    last, which was arbitrary when he shoots three angles in one go. */
+/* The heaviest shot he has a weigh-in for, against the latest shot of the SAME
+   ANGLE. A heavy side-on next to a lean front-on tells him nothing, so if the
+   angle cannot be matched this returns null and the old date-based pairing
+   takes over rather than quietly comparing two different things. */
+function heaviestPair(){
+  const scored=photosSorted().map(p=>{ const w=photoWeight(p); return w? {p, w:w.w} : null; }).filter(Boolean);
+  if(scored.length<2) return null;
+  const heaviest=scored.reduce((b,x)=>(!b||x.w>b.w)? x : b, null);
+  if(!heaviest) return null;
+  const pose=heaviest.p.pose||"";
+  const samePose=photosSorted().filter(p=>(p.pose||"")===pose && p!==heaviest.p);
+  if(!samePose.length) return null;
+  const now=samePose[samePose.length-1];
+  if(now.t<=heaviest.p.t) return null;          /* nothing newer at that angle */
+  return {then:heaviest.p, now};
+}
 function bestPair(daysBack){
   const all=photosSorted();
   if(all.length<2) return null;
@@ -15794,7 +15821,7 @@ function scheduleInApp(){
    v18 ADDITIONS — draggable rest timer · weekly training memory · AI planner
    · Firestore sync
    ========================================================================== */
-const APP_VERSION="v229 · 27/09/2026";
+const APP_VERSION="v230 · 27/09/2026";
 
 /* ===== 1. REST TIMER — drag it anywhere so it never blocks the chat box ===== */
 let _rtDrag=null;
@@ -16477,6 +16504,44 @@ function photoIdTime(id){
   const m=String(id||"").match(/^ph(\d{13})/);
   const t=m? +m[1] : 0;
   return (t>1262304000000 && t<Date.now()+864e5)? t : 0;   /* sane epoch only */
+}
+/* ===== v230 · UNDOING MY OWN GUESS ==================================
+   "they not all front it's front and side so make sure it compares apples
+   with apples."
+
+   v226 got his photographs back and then labelled every one of them Front,
+   because the angle is the one thing the id does not carry. That was honest,
+   and it is now the thing in the way: pairing a front against a front is
+   impossible when everything claims to be a front.
+
+   He shoots two per session, and the app's own buttons are Front then Side,
+   so within a day the first shot is the front one and the second the side.
+   That is a guess — so it is offered as a button with the rule written on it,
+   rather than applied behind him. */
+function poseByOrder(){
+  const byDay={};
+  (DB.photos||[]).forEach(p=>{ if(!p||!p.recovered) return;
+    const d=(p.d||"").slice(0,10); (byDay[d]=byDay[d]||[]).push(p); });
+  let n=0;
+  Object.keys(byDay).forEach(d=>{
+    byDay[d].sort((a,b)=>(a.t||0)-(b.t||0)).forEach((p,i)=>{
+      const want=(i%2===0)? "Front" : "Side";
+      if(p.pose!==want){ p.pose=want; n++; }
+      delete p.recovered;
+    });
+  });
+  save();
+  try{ renderPhotos(); }catch(e){}
+  try{ renderProgress(); }catch(e){}
+  toast(n? (n+" photo"+(n===1?"":"s")+" relabelled \u2014 check any that look wrong") : "Nothing to relabel");
+}
+/* He has looked and they are right as they are. */
+function poseKeepAll(){
+  (DB.photos||[]).forEach(p=>{ if(p) delete p.recovered; });
+  save();
+  try{ renderPhotos(); }catch(e){}
+  try{ renderProgress(); }catch(e){}
+  toast("Left as they are");
 }
 function reclaimPhotos(){
   DB.photos=DB.photos||[];

@@ -1,3 +1,55 @@
+AMIR PT — v230 · 27/09/2026
+===========================
+
+"As mentioned then should have the heaviest photo and also they not all front
+it's front and side so make sure it compares apples with apples."
+
+THE TWO HALVES OF ONE CARD DISAGREED
+-------------------------------------
+The numbers opened on heaviest-vs-latest from v226. The PICTURES were still
+opening on oldest-vs-newest, so the card showed "88.0 kg → 83.3 kg · heaviest
+on record" above two photographs four days apart. One card, two definitions of
+"then".
+
+heaviestPair() now picks the heaviest shot he has a weigh-in for, against the
+latest shot AT THE SAME ANGLE. If the angle cannot be matched it returns null
+and the old date-based pairing takes over, rather than quietly putting a heavy
+side-on next to a lean front-on.
+
+UNDOING MY OWN GUESS
+---------------------
+v226 got his photographs back and then labelled every one of them Front,
+because the angle is the one thing a photo id does not carry. That was honest
+at the time and it is now the thing standing in the way: pairing a front
+against a front is impossible when everything claims to be a front. His
+dropdown showed twenty shots, all "Front", two per day — which is him shooting
+a front and a side each session.
+
+The app's own buttons are Front then Side, so within a day the first shot is
+almost certainly the front one. That is a GUESS, so it is a button with the
+rule written on it rather than something applied behind him:
+
+  · "First of each day Front, second Side" — relabels every recovered photo
+    and says how many it changed.
+  · "They're right, leave them" — clears the flag and the note.
+  · Either way, tapping a photo still sets its angle by hand.
+
+The note also counts how many days actually have two shots, so the reasoning
+is visible rather than asserted.
+
+Verified in headless Chromium on ten recovered photos across five days, two a
+day, all labelled Front: the note offers the fix and correctly counts five
+paired days; applying it produces Front,Side alternating within every day; and
+the comparison then opens on the 88.0 kg shot against the latest, BOTH Front,
+with the weights above reading 88.0 → 83.3, heaviest on record. The two halves
+of the card now say the same thing. Sweep clean: verify16 16/16, journey,
+audit173 at 390 and 360, ph226, cmp223, def226.
+
+(Note to self: a multi-edit script that asserts writes NOTHING. The first
+attempt at this version reported one edit applied and then failed on the next,
+so the applied one was silently lost and only turned up when the browser said
+the function did not exist. Re-verify every edit in a script that failed.)
+
 AMIR PT — v229 · 27/09/2026
 ===========================
 
