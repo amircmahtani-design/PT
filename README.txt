@@ -1,3 +1,36 @@
+AMIR PT — v229 · 27/09/2026
+===========================
+
+"I will never log my weight here so we can remove this. I also want to have
+the table with weights collapsible and seperate so I can simply see the graph.
+The table in fact we can simply remove. I like graphs."
+
+THE BODYWEIGHT CARD IS THE GRAPH NOW
+-------------------------------------
+The logging form is gone. He weighs in on the morning check-in, which writes
+to the same record, so a second way to type the same number was clutter under
+the only thing he wanted to look at. The graph takes the space it freed — 215
+pixels tall instead of 180.
+
+ONE THING I DID NOT DELETE, AND WHY
+------------------------------------
+He asked for the table to go too. The table was the only way to DELETE a
+wrong weight: the check-in writes today's date and nothing else, so a number
+that went in wrong three days ago would have become permanent and would sit in
+the graph, the strip and the Then & now comparison forever.
+
+So it is folded away rather than destroyed — one quiet line under the chart,
+"Fix an entry", closed by default. The card reads as just a graph, which is
+what he asked for, and correcting a mistake is a tap when he needs it. If he
+would rather it was gone outright, that is one line to remove — but it should
+be a decision he makes knowing what it costs, not one I make silently.
+
+Verified in headless Chromium with 27 check-ins: the card renders the chart
+and its footer and nothing else, the disclosure is closed on load, the table
+and its delete buttons still exist inside it, and deleting an entry still
+works and redraws the chart. Sweep clean: verify16 16/16, journey, audit173 at
+390 and 360, prog224, auto228.
+
 AMIR PT — v228 · 27/09/2026
 ===========================
 

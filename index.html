@@ -677,6 +677,15 @@ details.sec2[open] .secsum2:after{content:"\2212";}
    whole reason the tab reads as three things instead of twelve. */
 .btnicon{display:inline-flex;align-items:center;justify-content:center;gap:8px;}
 .btnicon svg{flex:0 0 auto;opacity:.85;}
+/* v229 — a quiet disclosure inside a card: present when he wants it, silent
+   when he does not. */
+.tinysec{border-top:1px solid var(--hair);padding-top:10px;}
+.tinysec>summary{list-style:none;cursor:pointer;font-size:12px;font-weight:800;
+  text-transform:uppercase;letter-spacing:.7px;color:var(--label);padding:6px 0;
+  display:flex;align-items:center;gap:7px;min-height:32px;}
+.tinysec>summary::-webkit-details-marker{display:none;}
+.tinysec>summary::after{content:"\203a";margin-left:auto;font-size:17px;color:var(--dim);transition:transform .2s;}
+.tinysec[open]>summary::after{transform:rotate(90deg);}
 .secgrp{font-size:11px;font-weight:800;text-transform:uppercase;letter-spacing:1.1px;
   color:var(--label);margin:32px 4px 12px;}
 .secgrp:first-of-type{margin-top:8px;}
@@ -1185,15 +1194,24 @@ a{color:var(--orange);}
     <!-- v225 — three numbers, before any tap. The tab used to open on twelve
          shut drawers and answer nothing. -->
     <div class="pstrip" id="progStrip" data-nowrap="1"></div>
+    <!-- v229 — "I will never log my weight here so we can remove this... The
+         table in fact we can simply remove. I like graphs." He logs on the
+         morning check-in, so the form is gone. The table is the only way to
+         DELETE a wrong entry, so rather than destroy that it is folded away
+         behind one line: the card is the graph, and correcting a mistake is a
+         tap when he needs it. -->
     <div class="card" data-sk="weight" data-grp="body" data-open="1"><div class="card-title"><span>Bodyweight</span></div>
       <div id="wtWrap"></div>
-      <div class="mgrid mt">
-        <div class="field"><label>Date</label><input class="txtin" id="wgDate" type="date" /></div>
-        <div class="field"><label>Weight <span class="hint">kg</span></label><input class="txtin" id="wgKg" inputmode="decimal" placeholder="e.g. 84.2" /></div>
-      </div>
-      <button class="btn green" onclick="saveWeight()">Log this weight</button>
-      <div class="hint mt">Missed a morning? Set the date back and log it here — this and the check-in write to the same record.</div>
-      <div id="wgLog"></div>
+      <details class="tinysec mt">
+        <summary>Fix an entry</summary>
+        <div class="hint" style="margin:2px 0 8px">You log your weight on the morning check-in. This is only here for correcting one that went in wrong.</div>
+        <div class="mgrid">
+          <div class="field"><label>Date</label><input class="txtin" id="wgDate" type="date" /></div>
+          <div class="field"><label>Weight <span class="hint">kg</span></label><input class="txtin" id="wgKg" inputmode="decimal" placeholder="e.g. 84.2" /></div>
+        </div>
+        <button class="btn sec mt" onclick="saveWeight()">Save that weight</button>
+        <div id="wgLog"></div>
+      </details>
     </div>
     <!-- v222 — the rowing card. renderRowing() and renderRowingLog() have
          existed for a long time and both open with `if(!el) return`, so with
@@ -14263,7 +14281,9 @@ function drawChart(){
   /* v128 — the readout wants a real date, not the axis's short one. */
   const pts=ser.map(x=>({x:shortDate(x.date), y:x.w, full:x.date? ukDate(x.date):""}));
   const d=ser[ser.length-1].w-ser[0].w;
-  wrap.innerHTML=chartSVG(pts,{unit:"kg",color:"#ffa54a"})+
+  /* v229 — the card is the graph now, so the graph gets the room the form
+     used to take. */
+  wrap.innerHTML=chartSVG(pts,{unit:"kg",color:"#ffa54a",h:215})+
     "<div class='chartfoot'><span>"+ser.length+" check-ins</span><span>now "+fmtNum(ser[ser.length-1].w)+"kg</span>"+
     "<span>"+(d>0?"+":"")+fmtNum(d)+"kg over the block</span></div>";
 }
@@ -15774,7 +15794,7 @@ function scheduleInApp(){
    v18 ADDITIONS — draggable rest timer · weekly training memory · AI planner
    · Firestore sync
    ========================================================================== */
-const APP_VERSION="v228 · 27/09/2026";
+const APP_VERSION="v229 · 27/09/2026";
 
 /* ===== 1. REST TIMER — drag it anywhere so it never blocks the chat box ===== */
 let _rtDrag=null;
