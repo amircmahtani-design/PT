@@ -1,3 +1,52 @@
+AMIR PT — v231 · 27/09/2026
+===========================
+
+"The then and now still doesn't work. Keeps getting a random entry. I want the
+foto where i was fattest in Then."
+
+TWO CAUSES. NEITHER OF THEM WAS RANDOMNESS.
+--------------------------------------------
+1 · IT ANSWERED A QUESTION HE DID NOT ASK
+v230 read "the heaviest photo" as "the photo with the heaviest weight attached
+to it". A photo only gets a weight attached when a weigh-in falls within ten
+days of it. His heaviest day is 88.0 kg on 25 August and he has NO photograph
+inside that window — his nearest is the 14th. So every photo he owns carries a
+weight between 83 and 85 kg, the heaviest of those is 84.8 kg on 21 September,
+and the card paired it against the 25th: four days apart, under a headline
+saying 88.0 kg. Of course it looked random.
+
+The photo where he was fattest is the one nearest THE DAY THE SCALE WAS
+HIGHEST. That needs no weigh-in near the photo at all, because it looks the
+relationship up the other way round: find the heaviest weigh-in, then find the
+photo closest to it. fattestPhoto() does that, measuring the gap in DAYS so two
+shots from one morning are equally close, and breaking a tie towards the
+front-on, which is the angle a physique comparison is read in.
+
+2 · THE DEFAULT WAS PICKED TOO EARLY AND THEN DEFENDED
+renderCompareControls only recomputed the pair when one of the two keys failed
+to resolve. Photos arrive from IndexedDB AFTER boot, and the v226 recovery adds
+more again after that — so the first render locked in a pair chosen from
+whatever handful existed at that instant, and nothing ever revisited it. THAT
+is what "keeps getting a random entry" actually was.
+
+The default is now re-derived whenever the SET of photos changes (count, oldest,
+newest and the poses, as a cheap fingerprint). A choice HE made — either
+dropdown, or Set as Then in the viewer — is flagged and defended. A chip sets a
+RULE rather than two photos, so it re-derives.
+
+AND IT SAYS WHY
+Under the pair: “Then” is your photo nearest your heaviest day — 88 kg on
+25/08/2026, and this shot is the closest one to it, 11 days before. A default
+that explains itself cannot read as a random pick, and when the nearest photo
+is a fortnight off that is worth knowing rather than hiding.
+
+Verified in headless Chromium on exactly his shape — heaviest day 25 August
+with no photograph that month: Then resolves to 14 August (the nearest shot),
+Now to 25 September, both Front, with the explanation naming the 11-day gap.
+A photo arriving later for 24 August re-picks the pair to it, one day off his
+heaviest. A pair he sets by hand survives every re-render. Sweep clean:
+verify16 16/16, journey, audit173 at 390 and 360, pose230, ph226, cmp223.
+
 AMIR PT — v230 · 27/09/2026
 ===========================
 

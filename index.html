@@ -14557,6 +14557,15 @@ const POSES=["Front","Side"];
 let _poseFilter="all";
 let _lbIdx=-1;              // index into the CURRENT filtered list, for the lightbox
 let _cmpA=null,_cmpB=null;  // photo KEYS, so the pick survives a re-sort
+/* v231 — the pair was only ever computed when one of the two keys did not
+   resolve. Photos arrive from IndexedDB AFTER boot, and the recovery adds more
+   again after that, so the first render locked in a pair chosen from whatever
+   handful existed at that instant and nothing ever revisited it. That is what
+   "keeps getting a random entry" was: a default picked too early and then
+   defended. The default is now recomputed whenever the SET of photos changes,
+   and only a choice he made himself is defended. */
+let _cmpUser=false;         // he picked these two, so leave them alone
+let _cmpSig="";             // what the photo set looked like when we chose
 
 /* Identity is the photo's own id, never its timestamp: two shots taken in one
    session, or a batch restored from a backup, can share a millisecond, and
@@ -14929,8 +14938,8 @@ function delPhotoFromBox(){
   if(!confirm("Delete this photo from "+photoWhen(p)+"?")) return;
   const gi=photoIdx(p); closePhoto(); delPhoto(gi);
 }
-function lbSetThen(){ const p=lbCur(); if(!p) return; _cmpA=pkey(p); closePhoto(); renderCompareControls(); toast("Set as Then · "+photoWhen(p)); }
-function lbSetNow(){ const p=lbCur(); if(!p) return; _cmpB=pkey(p); closePhoto(); renderCompareControls(); toast("Set as Now · "+photoWhen(p)); }
+function lbSetThen(){ const p=lbCur(); if(!p) return; _cmpUser=true; _cmpA=pkey(p); closePhoto(); renderCompareControls(); toast("Set as Then · "+photoWhen(p)); }
+function lbSetNow(){ const p=lbCur(); if(!p) return; _cmpUser=true; _cmpB=pkey(p); closePhoto(); renderCompareControls(); toast("Set as Now · "+photoWhen(p)); }
 
 /* ----- Then & now ----- */
 /* ===== v210 · CHOOSING BY WEIGHT ======================================
@@ -14973,7 +14982,7 @@ function photosByWeight(){
 function quickCompareWeight(which){
   /* v223 — the scale answers first, because he always has it. The photos
      answer too when there are any. */
-  _cmpWhich=which; renderWeightCompare();
+  _cmpWhich=which; _cmpUser=false; renderWeightCompare();
   const list=photosByWeight();
   if(list.length<2) return;
   const pick=(which==="min")? list[list.length-1] : list[0];
@@ -15059,7 +15068,7 @@ function renderWeightCompare(){
       (dir==="level"? "No change" : (d<0?"\u2193 ":"\u2191 ")+Math.abs(d).toFixed(1)+" kg "+dir)+
       " <span class='muted' style='font-weight:700'>\u00b7 "+escapeHtml(pr.why)+"</span></div>";
 }
-function setCmp(which,v){ if(which==='a') _cmpA=String(v); else _cmpB=String(v); renderCompare(); }
+function setCmp(which,v){ _cmpUser=true; if(which==='a') _cmpA=String(v); else _cmpB=String(v); renderCompare(); }
 function renderCompareControls(){
   try{ renderWeightCompare(); }catch(e){}   /* v223 — the numbers never wait on the pictures */
   const a=document.getElementById('cmpA'), b=document.getElementById('cmpB');
@@ -15077,6 +15086,10 @@ function renderCompareControls(){
     return;
   }
   a.disabled=b.disabled=false;
+  /* A cheap fingerprint of the set: count, newest and oldest. */
+  const sig=all.length+"|"+(all[0].t||0)+"|"+(all[all.length-1].t||0)+"|"+all.map(p=>p.pose||"").join("");
+  if(sig!==_cmpSig && !_cmpUser){ _cmpA=null; _cmpB=null; }
+  _cmpSig=sig;
   /* v230 — "as mentioned then should have the heaviest photo". The numbers
      above already open on heaviest-vs-latest; the pictures were still opening
      on oldest-vs-newest, so the two halves of one card disagreed about what
@@ -15095,21 +15108,58 @@ function renderCompareControls(){
    front shot. Which angle gets used is decided by which one actually has the
    history to cover the gap he asked for — not by whichever he happened to add
    last, which was arbitrary when he shoots three angles in one go. */
-/* The heaviest shot he has a weigh-in for, against the latest shot of the SAME
-   ANGLE. A heavy side-on next to a lean front-on tells him nothing, so if the
-   angle cannot be matched this returns null and the old date-based pairing
-   takes over rather than quietly comparing two different things. */
+/* ===== v231 · "I WANT THE FOTO WHERE I WAS FATTEST" =================
+   v230 read that as "the photo with the heaviest weight attached to it", and
+   photoWeight() only attaches a weigh-in within ten days of a shot. His
+   heaviest day is 88.0 kg on 25 August and he has NO photograph inside that
+   window — his nearest is the 14th. So every photo he owns carries a weight
+   between 83 and 85 kg, the heaviest of those is 84.8 kg on 21 September, and
+   the card paired it against the 25th: four days apart, and looking for all
+   the world like it had picked at random.
+
+   It had not picked at random. It had answered a question he did not ask. The
+   photo where he was fattest is the one nearest THE DAY THE SCALE WAS HIGHEST
+   — which needs no weigh-in near the photo at all, because it looks the
+   relationship up the other way round. */
+function heaviestDay(){
+  const e=weightEntries();                       /* newest first */
+  if(!e.length) return null;
+  return e.reduce((b,x)=>(!b||x.w>b.w)? x : b, null);
+}
+function fattestPhoto(){
+  const all=photosSorted();
+  if(!all.length) return null;
+  const hd=heaviestDay(); if(!hd) return null;
+  const target=new Date(hd.date+"T12:00:00").getTime();
+  if(isNaN(target)) return null;
+  /* Nearest in time to that day, measured in DAYS — two shots from the same
+     morning are the same distance away, and which of them is a few seconds
+     closer is noise. A tie goes to the front-on, because that is the angle a
+     physique comparison is read in. */
+  const dayOff=p=>Math.round(Math.abs(p.t-target)/864e5);
+  let best=null;
+  all.forEach(p=>{
+    if(!best){ best=p; return; }
+    const a=dayOff(p), b=dayOff(best);
+    if(a<b){ best=p; return; }
+    if(a===b && /front/i.test(p.pose||"") && !/front/i.test(best.pose||"")) best=p;
+  });
+  return best;
+}
+/* That photo, against the latest shot AT THE SAME ANGLE. A heavy side-on next
+   to a lean front-on tells him nothing, so the same angle is preferred; when
+   there is none it falls back to the latest of any angle rather than giving
+   up, and renderCompare already warns about a mismatched pair. */
 function heaviestPair(){
-  const scored=photosSorted().map(p=>{ const w=photoWeight(p); return w? {p, w:w.w} : null; }).filter(Boolean);
-  if(scored.length<2) return null;
-  const heaviest=scored.reduce((b,x)=>(!b||x.w>b.w)? x : b, null);
-  if(!heaviest) return null;
-  const pose=heaviest.p.pose||"";
-  const samePose=photosSorted().filter(p=>(p.pose||"")===pose && p!==heaviest.p);
-  if(!samePose.length) return null;
-  const now=samePose[samePose.length-1];
-  if(now.t<=heaviest.p.t) return null;          /* nothing newer at that angle */
-  return {then:heaviest.p, now};
+  const all=photosSorted();
+  if(all.length<2) return null;
+  const then=fattestPhoto(); if(!then) return null;
+  const pose=then.pose||"";
+  const same=all.filter(p=>(p.pose||"")===pose && p!==then && p.t>then.t);
+  const any =all.filter(p=>p!==then && p.t>then.t);
+  const pool=same.length? same : any;
+  if(!pool.length) return null;
+  return {then, now:pool[pool.length-1]};
 }
 function bestPair(daysBack){
   const all=photosSorted();
@@ -15138,7 +15188,7 @@ function bestPair(daysBack){
   return best;
 }
 function quickCompare(daysBack){
-  _cmpMode=daysBack; _cmpWhich=null; renderWeightCompare();   /* v223 */
+  _cmpMode=daysBack; _cmpWhich=null; _cmpUser=false; renderWeightCompare();   /* v223 */
   if((DB.photos||[]).length<2){ return; }                     /* weights still answered */
   const best=bestPair(daysBack);
   if(!best){ toast("Not enough photos of one angle yet"); return; }
@@ -15169,9 +15219,24 @@ function renderCompare(){
       (kg? "<div class='cmpkg'>"+escapeHtml(kg.text)+"</div>" : "")+
       "<div class='when'>"+photoWhen(P)+"<span> · "+photoAgo(P)+(P.pose?" · "+escapeHtml(P.pose):"")+"</span></div></div>";
   };
+  /* v231 — say WHY these two. A default that explains itself cannot look
+     like a random pick, and when the nearest photo to his heaviest day is a
+     fortnight off that is worth knowing rather than hiding. */
+  let picked="";
+  if(!_cmpUser){
+    const f=fattestPhoto(), hd=heaviestDay();
+    if(f && hd && pkey(f)===_cmpA){
+      const off=Math.round(Math.abs(f.t-new Date(hd.date+"T12:00:00").getTime())/864e5);
+      picked="<div class='hint mt' style='text-align:center'>\u201cThen\u201d is your photo nearest your heaviest day \u2014 "+
+        fmtNum(hd.w)+" kg on "+ukDate(hd.date)+
+        (off>1? (", and this shot is the closest one to it, "+off+" days "+(f.t<new Date(hd.date+"T12:00:00").getTime()?"before":"after")+".") : ".")+
+        "</div>";
+    }
+  }
   out.innerHTML="<div class='cmpwrap'>"+side(A,"Then","a")+side(B,"Now","b")+"</div>"+
     "<div class='cmpgap'>"+gapWords(B.t-A.t)+"</div>"+
     (mismatch? "<div class='hint mt' style='text-align:center'>These are different angles — comparing the same pose reads far more honestly.</div>":"")+
+    picked+
     weightBetween(A.t,B.t);
 }
 /* ===== v192 · WHAT HE WEIGHED IN THAT PHOTO ============================
@@ -15821,7 +15886,7 @@ function scheduleInApp(){
    v18 ADDITIONS — draggable rest timer · weekly training memory · AI planner
    · Firestore sync
    ========================================================================== */
-const APP_VERSION="v230 · 27/09/2026";
+const APP_VERSION="v231 · 27/09/2026";
 
 /* ===== 1. REST TIMER — drag it anywhere so it never blocks the chat box ===== */
 let _rtDrag=null;
