@@ -1669,6 +1669,11 @@ a{color:var(--orange);}
     <select class="txtin" id="lbPose" onchange="setPhotoPose(this.value)">
       <option value="Front">Front</option><option value="Side">Side</option>
     </select>
+    <!-- v233 — the angle was editable and the DATE was not. A recovered
+         photo takes its date from its own id, which is right when the shot
+         was taken in the app and wrong if it was ever imported, and every
+         comparison downstream inherits the error with no way to correct it. -->
+    <input class="txtin" id="lbDate" type="date" onchange="setPhotoDate(this.value)" aria-label="date this photo was taken" />
     <button class="lbx" onclick="lbSetThen()">Then</button>
     <button class="lbx" onclick="lbSetNow()">Now</button>
     <button class="lbx" style="color:var(--red)" onclick="delPhotoFromBox()">Delete</button>
@@ -14840,6 +14845,8 @@ function paintLightbox(keepZoom){
   const d=document.getElementById('lbDate'); if(d) d.textContent=photoWhenLong(p);
   const a=document.getElementById('lbAgo'); if(a) a.textContent=photoAgo(p)+(p.pose?" · "+p.pose:" · not labelled yet")+photoWeightTag(p);
   const s=document.getElementById('lbPose'); if(s) s.value=p.pose||"Other";
+  const dt=document.getElementById('lbDate');
+  if(dt) dt.value=(p.d||new Date(p.t||Date.now()).toISOString().slice(0,10)).slice(0,10);
   /* v192 — say which of the two he is on, so the next arrow is obviously a
      toggle between them rather than a way out of the comparison. */
   const bx=document.getElementById('lbox');
@@ -14977,6 +14984,25 @@ function delPhotoFromBox(){
   const p=lbCur(); if(!p) return;
   if(!confirm("Delete this photo from "+photoWhen(p)+"?")) return;
   const gi=photoIdx(p); closePhoto(); delPhoto(gi);
+}
+/* v233 — correcting when a photo was taken. The time of day is kept where
+   there is one, so two shots from the same morning stay in the order he took
+   them; only the day moves. */
+function setPhotoDate(v){
+  const p=lbCur(); if(!p||!v) return;
+  const old=new Date(p.t||Date.now());
+  const d=new Date(v+"T00:00:00");
+  if(isNaN(d)) { toast("That date didn't read"); return; }
+  d.setHours(old.getHours(),old.getMinutes(),old.getSeconds(),old.getMilliseconds());
+  p.t=d.getTime();
+  p.d=v;
+  delete p.recovered;                       /* he has confirmed this one */
+  (DB.photos||[]).sort((a,b)=>(a.t||0)-(b.t||0));
+  save();
+  try{ renderPhotos(); }catch(e){}
+  try{ renderProgress(); }catch(e){}
+  try{ paintLightbox(); }catch(e){}
+  toast("Dated "+ukDate(v));
 }
 function lbSetThen(){ const p=lbCur(); if(!p) return; _cmpUser=true; _cmpA=pkey(p); closePhoto(); renderCompareControls(); toast("Set as Then · "+photoWhen(p)); }
 function lbSetNow(){ const p=lbCur(); if(!p) return; _cmpUser=true; _cmpB=pkey(p); closePhoto(); renderCompareControls(); toast("Set as Now · "+photoWhen(p)); }
@@ -15140,7 +15166,21 @@ function renderCompareControls(){
      "then" meant. They use the same rule now, and the same angle on both
      sides. Anything he has picked himself is left alone. */
   if(!photoByKey(_cmpA) || !photoByKey(_cmpB)){
-    const d=heaviestPair() || bestPair(0);
+    /* ===== v233 · "I don't have photos from August." ==================
+       That settles it. His weight peaked at 88 kg in the week of 25 August
+       and there is no photograph of it, so "the photo he weighed most in"
+       will keep landing on 21 September — four days before his latest shot.
+       Correct by the rule, and two pictures four days apart show nothing.
+
+       So the card opens on the widest span he actually has, which is what a
+       then-and-now is FOR, and falls back to the fattest photo when that is
+       genuinely the better of the two. The Heaviest chip still puts it back
+       in one tap, and the note under the pair says which is on screen. */
+    const fat=heaviestPair(), wide=widestPair();
+    const span=x=>x? Math.abs(x.now.t-x.then.t)/864e5 : 0;
+    const d=(fat && span(fat)>=21)? fat
+          : (wide && span(wide)>span(fat))? wide
+          : (fat || wide || bestPair(0));
     if(d){ _cmpA=pkey(d.then); _cmpB=pkey(d.now); }
     else { _cmpA=pkey(all[0]); _cmpB=pkey(all[all.length-1]); }
   }
@@ -15318,30 +15358,35 @@ function renderCompare(){
      when there is no photograph near his heaviest day — because that is the
      real answer to "where is the fat one", and no algorithm can fix it. */
   let picked="";
-  if(pkey(photoByKey(_cmpA)||{})===_cmpA && fattestPhoto() && pkey(fattestPhoto())===_cmpA){
+  const fatP=fattestPhoto(), wideP=widestPair();
+  const kgA=photoWeight(A);
+  if(fatP && pkey(fatP)===_cmpA){
     const gap=heaviestDayGap();
-    const kg=photoWeight(A);
-    const bits=[];
-    bits.push("<b>\u201cThen\u201d is the photo you weighed most in</b>"+(kg? " \u2014 "+fmtNum(kg.w)+" kg" : "")+".");
+    const bits=["<b>\u201cThen\u201d is the photo you weighed most in</b>"+(kgA? " \u2014 "+fmtNum(kgA.w)+" kg" : "")+"."];
     if(gap && gap.days>10)
       bits.push("Your heaviest day was "+fmtNum(gap.day.w)+" kg on "+ukDate(gap.day.date)+
-                ", and you have no photograph within "+gap.days+" days of it \u2014 so this is the heaviest you have on camera.");
+                ", and there is no photograph within "+gap.days+" days of it.");
     picked="<div class='hint mt' style='text-align:center;line-height:1.55'>"+bits.join(" ")+"</div>";
+  } else if(wideP && pkey(wideP.then)===_cmpA && !_cmpUser){
+    picked="<div class='hint mt' style='text-align:center;line-height:1.55'><b>Your widest gap</b> \u2014 "+
+      "first photo against latest"+(kgA? ", "+fmtNum(kgA.w)+" kg then" : "")+". "+
+      "The heaviest you were photographed is only days from your latest shot, so this shows more."+
+      "</div>";
   }
   /* Two pictures a few days apart are not a comparison, whatever the rule
      that chose them. Say so, and offer the one that is. */
   let tooClose="";
   const spanDays=Math.round(Math.abs(B.t-A.t)/864e5);
-  if(spanDays<21){
-    const w=widestPair();
-    if(w && Math.round(Math.abs(w.now.t-w.then.t)/864e5)>spanDays)
-      tooClose="<div class='notebox mt'>These two are only "+spanDays+" day"+(spanDays===1?"":"s")+
-        " apart, which will not show much. Your widest gap is "+
-        Math.round(Math.abs(w.now.t-w.then.t)/864e5)+" days."+
-        "<div class='posebtns mt'><button class='btn sec' onclick='useWidestPair()'>Show first photo vs latest</button></div></div>";
-  } else if(_cmpUser){
-    tooClose="<div class='hint mt' style='text-align:center'><button class='swapbtn' onclick='useFattestPair()'>Back to the fattest photo</button></div>";
-  }
+  const swap=[];
+  if(!(fatP && pkey(fatP)===_cmpA))
+    swap.push("<button class='swapbtn' onclick='useFattestPair()'>Heaviest photo</button>");
+  if(!(wideP && pkey(wideP.then)===_cmpA))
+    swap.push("<button class='swapbtn' onclick='useWidestPair()'>Widest gap</button>");
+  if(spanDays<21)
+    tooClose+="<div class='notebox mt'>These two are only "+spanDays+" day"+(spanDays===1?"":"s")+
+      " apart, which will not show much.</div>";
+  if(swap.length)
+    tooClose+="<div class='hint mt' style='text-align:center'>"+swap.join(" ")+"</div>";
   out.innerHTML="<div class='cmpwrap'>"+side(A,"Then","a")+side(B,"Now","b")+"</div>"+
     "<div class='cmpgap'>"+gapWords(B.t-A.t)+"</div>"+
     (mismatch? "<div class='hint mt' style='text-align:center'>These are different angles — comparing the same pose reads far more honestly.</div>":"")+
@@ -15995,7 +16040,7 @@ function scheduleInApp(){
    v18 ADDITIONS — draggable rest timer · weekly training memory · AI planner
    · Firestore sync
    ========================================================================== */
-const APP_VERSION="v232 · 27/09/2026";
+const APP_VERSION="v233 · 27/09/2026";
 
 /* ===== 1. REST TIMER — drag it anywhere so it never blocks the chat box ===== */
 let _rtDrag=null;

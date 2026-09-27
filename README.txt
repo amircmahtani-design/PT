@@ -1,3 +1,52 @@
+AMIR PT — v233 · 27/09/2026
+===========================
+
+"I don't have photos from August."
+
+That settles the question the last four versions were circling. His weight
+peaked at 88 kg in the week of 25 August and there is NO photograph of it. So
+"the photo he weighed most in" will keep resolving to 21 September — four days
+before his latest shot — and two pictures four days apart show nothing,
+however correct the rule that chose them.
+
+THE CARD OPENS ON THE WIDEST SPAN HE ACTUALLY HAS
+--------------------------------------------------
+First photo against latest: 6 August to 25 September, fifty days. That is what
+a then-and-now is FOR. The fattest photo is still one tap away on a Heaviest
+photo button, and the note under the pair always says which of the two is on
+screen and why:
+
+  Your widest gap — first photo against latest, 83.7 kg then. The heaviest you
+  were photographed is only days from your latest shot, so this shows more.
+
+  “Then” is the photo you weighed most in — 84.8 kg. Your heaviest day was
+  88 kg on 25/08/2026, and there is no photograph within 11 days of it.
+
+It falls back to the fattest photo automatically whenever that pair spans three
+weeks or more — so the moment he photographs a heavier period, the default
+goes back to being the one he asked for, with no setting to remember.
+
+AND A PHOTO'S DATE IS EDITABLE NOW
+-----------------------------------
+The angle could be corrected and the DATE could not. A recovered photo takes
+its date from its own id, which is right when the shot was taken in the app and
+wrong if it was ever imported — and every comparison downstream inherits the
+error with no way to reach it. There is a date field in the photo viewer beside
+the angle. Changing it re-sorts the timeline, clears the recovered flag, and
+redraws everything that reads photos. The time of day is kept, so two shots
+from one morning stay in the order he took them.
+
+This matters directly here: he says he has no August photographs, and the app
+lists three. Either he has forgotten them or their dates are wrong — and until
+now there was no way for him to look and fix it.
+
+Verified in headless Chromium on his real set: the card opens on 6 Aug vs
+25 Sep, fifty days, with the widest-gap note; Heaviest photo switches to 21 Sep
+vs 25 Sep and warns that four days will not show much; the switch back works;
+and re-dating a photo to 15 July moves it and re-sorts the timeline. Sweep
+clean: verify16 16/16, journey, audit173 at 390 and 360, pose230, ph226,
+auto228, prog224, btn232.
+
 AMIR PT — v232 · 27/09/2026
 ===========================
 
