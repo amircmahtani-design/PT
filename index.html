@@ -2290,7 +2290,26 @@ function mergeDefaults(parsed){ let d={...structuredClone(DEFAULTS),...parsed};
      today's sheet rebuilt onto the new block unless he has started on it. */
   if(!d.v212obj){
     d.v212obj=1;
-    if(!OBJECTIVES[d.objective]) d.objective="athletic";
+    /* ===== v235 · THIS ONE LINE WAS ERASING HIS ENTIRE DATABASE =========
+     OBJECTIVES is `const`, declared eight thousand lines below this point.
+     mergeDefaults runs from load(), which runs at `let DB = load()` — long
+     before that const is initialised. So this reference threw
+     "Cannot access 'OBJECTIVES' before initialization" on EVERY SINGLE LOAD,
+     load()'s catch swallowed it and returned a blank DEFAULTS, and the first
+     save() of the session wrote that blank over everything he had.
+
+     Every symptom of the last two days is this line: the clock resetting, the
+     weights vanishing, "nothing logged on this device", the empty session
+     history, the orphaned photographs (DB.photos wiped while the images
+     survived in IndexedDB), and the angles he relabelled going back to Front
+     on every launch. He was not imagining any of it and none of it was
+     flaky — the database was destroyed and rebuilt from defaults every time
+     the app opened.
+
+     The check itself is worth keeping, so it moves to where OBJECTIVES is
+     actually alive: validObjective(), called from boot. Nothing in load()
+     may touch a const declared later. */
+  if(d.objective!==undefined && typeof d.objective!=="string") d.objective="athletic";
     if(!Array.isArray(d.rhr)) d.rhr=[];
     try{
       const w=d.workout;
@@ -2398,9 +2417,36 @@ function migrate129(d){
   }
   return d;
 }
-function load(){ try{
-  let s=localStorage.getItem(STORE_KEY) || localStorage.getItem(BACKUP_KEY);
-  if(s) return mergeDefaults(JSON.parse(s));
+/* ===== v235 · A CATCH THAT RETURNS DEFAULTS IS A SHREDDER ============
+   The old shape was: read, parse, migrate, and on ANY throw hand back an
+   empty database — which the next save() then wrote over the top of his real
+   data. One bad line in 250 lines of migrations was enough to erase
+   everything, silently, on every launch.
+
+   Now the parse and the migrations are separate concerns. If the migrations
+   throw, the PARSED DATA IS STILL RETURNED, unmigrated but whole, and the
+   failure is flagged where he can see it. Defaults are only ever returned
+   when there was genuinely nothing to read. */
+function load(){
+  let raw=null;
+  try{ raw=localStorage.getItem(STORE_KEY) || localStorage.getItem(BACKUP_KEY); }catch(e){}
+  if(raw){
+    let parsed=null;
+    try{ parsed=JSON.parse(raw); }catch(e){ parsed=null; }
+    if(parsed && typeof parsed==="object"){
+      try{ return mergeDefaults(parsed); }
+      catch(e){
+        /* Migrations failed. His data did not. */
+        try{ console.error("migration failed, data kept unmigrated:",e); }catch(_){}
+        try{ window._migrateError=String(e&&e.message||e); }catch(_){}
+        const safe={...structuredClone(DEFAULTS),...parsed};
+        if(!safe.prefs) safe.prefs={};
+        return safe;
+      }
+    }
+  }
+  try{
+  let s=raw;
   /* ===== v185 · A MIGRATION MUST NOT BE WAITING TO UNDO HIS FIRST EDIT ====
      The v172 week assertion runs on LOAD, and a brand-new profile has never
      been loaded from storage — so the flag was still unset the first time he
@@ -2412,11 +2458,50 @@ function load(){ try{
   fresh.prefs.weekV160=true; fresh.prefs.weekV172=true;
   return fresh;
 }catch(e){ return structuredClone(DEFAULTS); } }
+/* The objective check that used to sit in mergeDefaults, now somewhere
+   OBJECTIVES is actually initialised. */
+function validObjective(){
+  try{ if(!OBJECTIVES[DB.objective]) DB.objective="athletic"; }catch(e){}
+}
+/* ===== v235 · NEVER WRITE AN EMPTY DATABASE OVER A FULL ONE ==========
+   cloudPush has refused since it was written to overwrite the cloud copy from
+   a device with no history — "the difference between a backup and a shredder".
+   Local storage had no such guard, so the blank DB that load() handed back
+   went straight over the top of everything. The same rule now applies at home:
+   if what is in memory is empty and what is on disk is not, the write is
+   refused and the disk copy is put BACK into memory. */
+function dbHistorySize(o){
+  try{
+    let n=0;
+    Object.keys((o&&o.strength)||{}).forEach(k=>{ n+=((o.strength[k]||[]).length); });
+    n+=((o&&o.checkins)||[]).length + ((o&&o.rowing)||[]).length +
+        Object.keys((o&&o.completed)||{}).length + ((o&&o.photos)||[]).length;
+    return n;
+  }catch(e){ return 0; }
+}
+let _blankGuard=0;
 function save(){
   DB._rev=Date.now();
   let json;
   try{ json=JSON.stringify(DB); }
   catch(e){ try{ flagSaveFailure(e); }catch(_){} return false; }
+  /* The guard. Cheap, and only ever does anything in the case that destroyed
+     his data: memory empty, disk full. */
+  try{
+    if(dbHistorySize(DB)===0){
+      const raw=localStorage.getItem(STORE_KEY);
+      if(raw){
+        const disk=JSON.parse(raw);
+        if(dbHistorySize(disk)>0){
+          if(_blankGuard++<3) console.error("refused to save an empty database over "+dbHistorySize(disk)+" records");
+          /* Put the real data back rather than just declining to lose it. */
+          try{ restoreDB(mergeDefaults(disk)); }catch(e){ Object.assign(DB,disk); }
+          try{ flagSaveFailure(new Error("The app tried to save an empty database over your history. It has been put back — nothing was lost.")); }catch(_){}
+          return false;
+        }
+      }
+    }
+  }catch(e){}
   /* IndexedDB first \u2014 far larger quota, so even with localStorage full the
      data still lands somewhere and restoreIfWiped() can bring it back. */
   try{ idbSet(json); }catch(e){}
@@ -16061,7 +16146,7 @@ function scheduleInApp(){
    v18 ADDITIONS — draggable rest timer · weekly training memory · AI planner
    · Firestore sync
    ========================================================================== */
-const APP_VERSION="v234 · 27/09/2026";
+const APP_VERSION="v235 · 27/09/2026";
 
 /* ===== 1. REST TIMER — drag it anywhere so it never blocks the chat box ===== */
 let _rtDrag=null;
@@ -24325,6 +24410,7 @@ function boot(){
     if(inj && !inj.value) inj.value=DB.profile.injuries||injuryText(); }
   try{ prefillCheckin(); }catch(e){}
   document.querySelectorAll('#provSeg button').forEach(b=>b.classList.toggle('on',b.dataset.v===DB.ai.provider));
+  try{ validObjective(); }catch(e){}     /* v235 — where OBJECTIVES is alive */
   renderMetrics(); renderItin(); renderIntegrations(); updateStreak();
   try{ renderProgress(); }catch(e){}     /* v224 — the whole tab, in one place */
   try{ renderMeasures(); }catch(e){}

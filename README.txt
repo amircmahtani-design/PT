@@ -1,3 +1,65 @@
+AMIR PT — v235 · 27/09/2026
+===========================
+
+"I keep labeling the angles and every time I open the app I need to do it
+again which means it's not saving. Fix this."
+
+ONE LINE HAS BEEN ERASING HIS ENTIRE DATABASE ON EVERY LAUNCH
+--------------------------------------------------------------
+He was right, and it is far bigger than the angles.
+
+  mergeDefaults(), line 2293:   if(!OBJECTIVES[d.objective]) d.objective="athletic";
+  OBJECTIVES, a const:          line 10179
+
+mergeDefaults runs from load(), which runs at `let DB = load()` — eight
+thousand lines before that const is initialised. A `const` in its temporal
+dead zone does not read as undefined, it THROWS. So every load threw
+"Cannot access 'OBJECTIVES' before initialization", load()'s catch swallowed
+it and returned a blank DEFAULTS, and the first save() of the session wrote
+that blank over everything he had.
+
+It went in with v212, which is exactly when this started.
+
+EVERY SYMPTOM OF THE LAST TWO DAYS IS THIS LINE
+  · the session clock resetting to zero
+  · "Nothing logged on this device" on a phone he trains with daily
+  · the weight graph empty under a full table
+  · Session history reading 0 against a 10-day streak
+  · the photographs orphaned — DB.photos wiped while the images survived in
+    IndexedDB, which is the only reason they came back at all
+  · the angles going back to Front on every launch
+
+None of it was flaky and he was not imagining any of it. The database was
+destroyed and rebuilt from defaults every time the app opened. Everything I
+shipped on top of that — the recovery, the auto-restore, the relabelling
+screen — was treating symptoms of this.
+
+THREE FIXES, NOT ONE
+---------------------
+1 · The check moves to validObjective(), called from boot where OBJECTIVES is
+    alive. Nothing in load() may touch a const declared later.
+
+2 · load() no longer answers a failure by deleting everything. Parse and
+    migrate are separate now: if the migrations throw, THE PARSED DATA IS
+    STILL RETURNED, unmigrated but whole, and the error is logged. Defaults
+    are returned only when there was genuinely nothing to read. A catch that
+    returns defaults is a shredder, and it should never have been written that
+    way.
+
+3 · save() refuses to write an empty database over a full one. cloudPush has
+    had exactly this guard since it was written — "the difference between a
+    backup and a shredder" — and local storage had none. If memory is empty
+    and disk is not, the write is refused, the disk copy is put BACK into
+    memory, and the failure is surfaced.
+
+Verified in headless Chromium: a canary key, a logged lift and a Side-labelled
+photo all survive a reload, and survive three launches in a row — they did not
+survive one before. Labelling angles then reopening keeps Front,Side,Front,Side
+where it previously came back all Front with every photo re-flagged as
+recovered. Forcing an empty DB and saving is refused, the data is restored to
+memory, and the disk copy is untouched. Sweep clean: verify16 16/16, journey,
+audit173 at 390 and 360, pose234, v233, ph226, auto228, prog224.
+
 AMIR PT — v234 · 27/09/2026
 ===========================
 
