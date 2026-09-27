@@ -1,3 +1,59 @@
+AMIR PT — v224 · 27/09/2026
+===========================
+
+"Plus none of my workouts are visible even though it says 10 day streak so my
+progress tab is failing in most places."
+
+He is right, and it is one cause rather than five.
+
+THE TAB RENDERED ITSELF IN PIECES
+----------------------------------
+Opening Progress re-rendered SOME of its blocks — the weight chart, the weight
+log, rowing, the history — and left the rest holding whatever they had drawn
+at boot.
+
+  · "Your lifts" is drawn by renderStrengthPBs(), which ran once at startup
+    and then only when a set was saved.
+  · The weight comparison is drawn by renderCompareControls(), which ran when
+    a photo changed.
+
+Neither was on the tab-entry path at all. So any data arriving after boot — a
+cloud restore, a file import, or simply the app having been open since before
+he trained — stayed invisible in those blocks until something unrelated
+happened to redraw them. A tab that half-refreshes is worse than one that does
+not, because the stale half looks like an answer.
+
+renderProgress() now draws the whole tab: chart, weight log, rowing, pace,
+lifts, the comparison, photos, the programme block, the athletic card,
+measurements, the phase card and the history. It is called on tab entry, from
+boot() (so every restore path — cloud, file, backup — is covered, since they
+all end in boot), and from refreshAllViews() (so logging a set through chat no
+longer leaves "Your lifts" stale).
+
+Caught by running the whole tab against ten real days in headless Chromium:
+"Your lifts" read "No lifts yet" with seven sessions of Bench Press in the
+record, and the weight comparison read "Log a bodyweight above" with ten
+weigh-ins. Both now populate.
+
+A COMPLETED SESSION IS A SESSION
+---------------------------------
+Session history counted a completion only `if(c.flow)`. A completed LIFTING
+day whose sets were not logged movement-by-movement left no trace — while the
+streak counted it, because showedUpDates() reads DB.completed. Ten on the
+counter and "Nothing logged yet" underneath it: exactly what he photographed.
+
+  · Every completion is in the history now. The record already carries the
+    title, set count, volume and duration, and the card shows them:
+    "✅ Push Day · 17 sets · 2.9t moved".
+  · The 7-day counters and the section label read the completion's own title
+    when there are no sets to categorise, so five push days count as five push
+    days instead of zero.
+
+Verified against his exact state — ten days of completions, no logged sets, no
+rows: the streak reads 10 and the history now shows 10 cards in 4 sections
+with the counters agreeing. Sweep clean: verify16 16/16, journey, audit173 at
+390 and 360, cmp223, row222.
+
 AMIR PT — v223 · 27/09/2026
 ===========================
 

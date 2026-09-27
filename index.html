@@ -2463,10 +2463,8 @@ function go(s){
   }
   if(s==='checkin'){ syncCheckinLoc(); try{ prefillCheckin(); }catch(e){} }
   if(s==='coach') renderChat();
-  if(s==='progress'){ try{ drawChart(); }catch(e){}
-    try{ renderRowing(); renderRowPace(); renderRowingLog(); }catch(e){}
-    try{ renderWeightLog(); }catch(e){} }
-  if(s==='progress'){ try{ renderHistory(); }catch(e){} }
+  if(s==='progress'){ renderProgress(); }
+
   if(s==='workout'){ ensureWorkout(); renderReadiness(); }
   if(s==='today'){ renderWeek(); renderReadiness(); renderFirstRun(); renderTomorrow(); }
   _curScreen=s;
@@ -15415,21 +15413,78 @@ async function aiCompare(){
   }catch(e){ out.innerHTML="<div class='hint mt'>Couldn't reach the coach just then.</div>"; }
 }
 
+/* ===== v224 · THE PROGRESS TAB RENDERED ITSELF IN PIECES ==============
+   "Plus none of my workouts are visible even though it says 10 day streak so
+   my progress tab is failing in most places."
+
+   He is right, and the reason is one thing rather than five. Opening Progress
+   re-rendered SOME of its blocks — the weight chart, the weight log, rowing,
+   the history — and left the rest holding whatever they had drawn at boot.
+   "Your lifts" is rendered by renderStrengthPBs(), which ran once at startup
+   and then only when a set was saved. The weight comparison is rendered by
+   renderCompareControls(), which ran when a photo changed. Neither was on the
+   tab-entry path at all.
+
+   So any data that arrived after boot — a cloud restore, a file import, or
+   simply the app having been open since before he trained — was invisible in
+   those blocks until something unrelated happened to redraw them. A tab that
+   half-refreshes is worse than one that does not, because the stale half
+   looks like an answer.
+
+   One function renders the tab. Every block is in it. It is called on entry
+   and after anything that replaces the database. */
+function renderProgress(){
+  const step=(fn)=>{ try{ if(typeof fn==="function") fn(); }catch(e){} };
+  step(window.drawChart);
+  step(window.renderWeightLog);
+  step(window.renderRowing);
+  step(window.renderRowPace);
+  step(window.renderRowingLog);
+  step(window.renderStrengthPBs);       /* was never on this path */
+  step(window.renderCompareControls);   /* draws the weight comparison too */
+  step(window.renderPhotos);
+  step(window.renderProgrammeView);
+  step(window.renderAthletic);
+  step(window.renderMeasures);
+  step(window.renderPhaseCard);
+  step(window.renderHistory);
+}
 function renderHistory(){
   const byDate={};
   Object.entries(DB.strength).forEach(([ex,arr])=>arr.forEach(s=>{ if(s.date==='prev'||!s.date)return; (byDate[s.date]=byDate[s.date]||{lifts:[],rows:[]}); byDate[s.date].lifts.push({ex,sets:s.sets}); }));
   DB.rowing.forEach(r=>{ if(!r.date)return; (byDate[r.date]=byDate[r.date]||{lifts:[],rows:[]}); byDate[r.date].rows.push(r); });
   /* v152 — a flow day logs no sets and no metres, so it never reached this
      screen and his week looked emptier than it was. A completed flow is a
-     session he did; it belongs in the record of what he did. */
+     session he did; it belongs in the record of what he did.
+
+     v224 — and so is every OTHER completed session. The `if(!c.flow) return`
+     dropped a day he had marked complete unless it happened to be a flow, so
+     a session whose sets were not logged movement-by-movement left no trace
+     here at all — while the streak counted it, because showedUpDates() reads
+     DB.completed. Ten days on the counter and "Nothing logged yet" underneath
+     it, which is what he photographed. The completion record carries the
+     title, the set count, the volume and the duration; that is a session, and
+     it is shown. */
   Object.entries(DB.completed||{}).forEach(([d,c])=>{
-    if(!c || !c.flow) return;
+    if(!c) return;
     (byDate[d]=byDate[d]||{lifts:[],rows:[]});
-    byDate[d].flow=c;
+    if(c.flow) byDate[d].flow=c;
+    else byDate[d].done=c;
   });
   const dates=Object.keys(byDate).sort().reverse();
   const wk=Date.now()-7*864e5; const cnt={Push:0,Pull:0,Legs:0,Row:0};
-  dates.forEach(d=>{ if(new Date(d).getTime()<wk) return; const g=byDate[d]; const cats=g.lifts.map(l=>catOf(l.ex)); if(cats.includes("Push"))cnt.Push++; if(cats.includes("Pull"))cnt.Pull++; if(cats.includes("Legs"))cnt.Legs++; if(g.rows.length)cnt.Row++; });
+  dates.forEach(d=>{
+    if(new Date(d).getTime()<wk) return;
+    const g=byDate[d];
+    const cats=g.lifts.map(l=>catOf(l.ex));
+    /* v224 — with no sets logged the day still has a name on its completion
+       record, and that name is what he called the session. Use it. */
+    const t=String((g.done&&g.done.title)||"");
+    if(cats.includes("Push") || (!cats.length && /push|chest|press/i.test(t))) cnt.Push++;
+    if(cats.includes("Pull") || (!cats.length && /pull|back|row day/i.test(t))) cnt.Pull++;
+    if(cats.includes("Legs") || (!cats.length && /leg|lower|squat/i.test(t))) cnt.Legs++;
+    if(g.rows.length) cnt.Row++;
+  });
   const sm=document.getElementById('histSummary'); if(sm) sm.innerHTML=[["💪 Push",cnt.Push],["🎣 Pull",cnt.Pull],["🦵 Legs",cnt.Legs],["🚣 Row",cnt.Row]].map(x=>"<div class='metric'><div class='label'>"+x[0]+" · 7d</div><div class='val'>"+x[1]+"<small> sessions</small></div></div>").join('');
   const body=document.getElementById('histBody');
   if(!dates.length){ body.innerHTML="<div class='card'><div class='muted' style='font-size:14px'>Nothing logged yet. Log sets in Train or tell your coach what you lifted.</div></div>"; return; }
@@ -15440,8 +15495,16 @@ function renderHistory(){
      now they're stacked together and the sections collapse. */
   const sessionOf=d=>{
     const g=byDate[d], cats=g.lifts.map(l=>catOf(l.ex));
+    const t=String((g.done&&g.done.title)||"");
     const label = cats.includes("Push")&&"Push" || cats.includes("Pull")&&"Pull"
-               || cats.includes("Legs")&&"Legs" || (g.rows.length?"Row / Cardio":"")
+               || cats.includes("Legs")&&"Legs"
+               /* v224 — a day with nothing logged but a completion is named
+                  by what he called it. */
+               || (!cats.length && /push|chest/i.test(t) && "Push")
+               || (!cats.length && /pull|back/i.test(t) && "Pull")
+               || (!cats.length && /leg|lower/i.test(t) && "Legs")
+               || (!cats.length && /pilates|mobil|stretch/i.test(t) && "Mobility")
+               || (g.rows.length?"Row / Cardio":"")
                || (g.flow? "Mobility" : "Session");
     return {d,g,label};
   };
@@ -15458,12 +15521,21 @@ function renderHistory(){
     const rowLines=g.rows.map(r=>"<div class='hline'><span class='en'>\ud83d\udea3 Row "+r.dist+"</span><span class='ev'>"+r.time+"</span></div>").join('');
     const flowLine=g.flow? "<div class='hline'><span class='en'>\uD83E\uDDD8 "+escapeHtml(g.flow.title||"Mobility")+
       "</span><span class='ev'>"+(g.flow.moves||0)+" moves</span></div>" : "";
+    /* v224 — a completed session with no set-by-set log still says what it
+       was and what it added up to, rather than showing as an empty card. */
+    const doneLine=(g.done && !g.lifts.length && !g.rows.length)
+      ? "<div class='hline'><span class='en'>\u2705 "+escapeHtml(g.done.title||"Session")+"</span><span class='ev'>"+
+        ([ (g.done.sets? g.done.sets+" set"+(g.done.sets===1?"":"s") : ""),
+           (g.done.volume? fmtVol(g.done.volume)+" moved" : "")
+         ].filter(Boolean).join(" \u00b7 ") || (g.done.exercises? g.done.exercises+" exercises" : "logged"))+
+        "</span></div>"
+      : "";
     const dd=new Date(d).toLocaleDateString('en-GB',{weekday:'short',day:'numeric',month:'short'});
     const comp=(DB.completed||{})[d];
     const durChip=(comp&&comp.durMs)? "<span class='splitchip' style='color:var(--muted);border-color:var(--line)'>\u23f1 "+fmtDurWords(comp.durMs)+"</span>" : "";
     return "<div class='card' style='border-left:3px solid "+col+"'><div class='hgroup'><div class='hd'><div class='dt'>"+dd+"</div>"+
       "<span class='splitchip' style='color:"+col+";border-color:"+col+"44;background:"+col+"1a'>"+label+"</span>"+durChip+"</div>"+
-      flowLine+liftLines+rowLines+"</div></div>";
+      flowLine+doneLine+liftLines+rowLines+"</div></div>";
   };
 
   if(DB.prefs && DB.prefs.histFlat){
@@ -15609,7 +15681,7 @@ function scheduleInApp(){
    v18 ADDITIONS — draggable rest timer · weekly training memory · AI planner
    · Firestore sync
    ========================================================================== */
-const APP_VERSION="v223 · 27/09/2026";
+const APP_VERSION="v224 · 27/09/2026";
 
 /* ===== 1. REST TIMER — drag it anywhere so it never blocks the chat box ===== */
 let _rtDrag=null;
@@ -19584,6 +19656,9 @@ function refreshAllViews(){
     try{ refreshDoneCard(); }catch(e){}
     try{ updateStatus(); }catch(e){}
     try{ dedupeHeadings(); foldProse(); }catch(e){}
+    /* v224 — Progress is a view of the same data, so it repaints with the
+       rest. Logging a set from chat used to leave "Your lifts" stale. */
+    try{ renderProgress(); }catch(e){}
   } finally { _refreshing=false; }
 }
 /* The hero card on Home restates today's session, so it has to move too. */
@@ -23602,7 +23677,8 @@ function boot(){
     if(inj && !inj.value) inj.value=DB.profile.injuries||injuryText(); }
   try{ prefillCheckin(); }catch(e){}
   document.querySelectorAll('#provSeg button').forEach(b=>b.classList.toggle('on',b.dataset.v===DB.ai.provider));
-  renderMetrics(); renderItin(); renderStrengthPBs(); renderRowing(); renderRowPace(); renderRowingLog(); renderPhotos(); renderIntegrations(); updateStreak();
+  renderMetrics(); renderItin(); renderIntegrations(); updateStreak();
+  try{ renderProgress(); }catch(e){}     /* v224 — the whole tab, in one place */
   try{ renderMeasures(); }catch(e){}
   try{ renderAthletic(); }catch(e){}
   try{ renderObjective(); }catch(e){}
