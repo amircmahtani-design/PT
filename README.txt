@@ -1,3 +1,63 @@
+AMIR PT — v225 · 27/09/2026
+===========================
+
+"Rowing speeds should also be a graph. The progress tab is very busy it needs
+to be better laid out so it's easy to read. Look at it properly and fix it and
+make sure the UI has no spacing errors."
+
+THE ROWING GRAPH WAS ALREADY THERE — SHUT
+------------------------------------------
+v222 built the pace chart. The card shipped collapsed, so he never saw it. It
+opens by default now.
+
+TWELVE IDENTICAL DRAWERS IS NOT A LAYOUT
+-----------------------------------------
+Shot at 390px and looked at properly. What was actually wrong:
+
+  · twelve collapsed cards of identical height and weight in one flat list,
+    every gap the same 14px, so nothing was near the thing it related to and
+    nothing said what mattered;
+  · the tab showed NO data until he opened something — it was a menu, not a
+    screen, which is most of why it felt like it was failing;
+  · delete buttons 26px tall and filter chips 30px, both under the thumb
+    minimum;
+  · an emoji standing in for an icon on Run Weekly Review;
+  · Measurements had no title span, so its wrapper fell back to the raw key.
+
+Fixed, without moving a single feature:
+
+  · THREE NUMBERS ABOVE THE FOLD. Weight and which way it is going, sessions
+    in the last seven days with the run, and the best 500m split. Each is a
+    real figure or an honest dash — never a zero standing in for "no data",
+    which reads as failure rather than as an empty record.
+  · THREE GROUPS. Your body (bodyweight, photos, then & now, measurements),
+    Your training (rowing, programme, lifts, history), Your plan (the plan,
+    week in review, athletic, coach's read). Group order is fixed; the order
+    WITHIN a group is still his, so a card he drags stays where he puts it and
+    simply cannot end up orphaned between two groups.
+  · PROXIMITY. 8px between cards inside a group, 32px above a group heading.
+    That gap is the entire reason it now reads as three things instead of
+    twelve.
+  · Tap targets: the delete button keeps the size it looks and gains a 44px
+    touch area behind it; chips are 40px.
+  · The review button takes an inline SVG instead of an emoji.
+
+CAUGHT BY LOOKING AT MY OWN WORK
+---------------------------------
+The first build shipped three faults that only a screenshot shows:
+
+  · the strip clipped its own units — "83.4kg" cut to "83.4k", "2:12.5/500m"
+    cut mid-unit. The unit moved into the label, where it has room, leaving
+    the figure to be a figure.
+  · the weight itself was coloured green. My own rule from v223 is that the
+    colour goes on the CHANGE, never on the weight. Moved.
+  · the third group was called "The long game", which is the page's own
+    eyebrow two lines above it. Renamed "Your plan".
+
+Verified at 320, 360, 390 and 430px: no horizontal overflow, no clipped
+values, three equal-height cells at every width. Sweep clean: verify16 16/16,
+journey, audit173 at 390 and 360, prog224, his224, cmp223.
+
 AMIR PT — v224 · 27/09/2026
 ===========================
 
