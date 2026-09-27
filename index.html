@@ -679,6 +679,8 @@ details.sec2[open] .secsum2:after{content:"\2212";}
 .btnicon svg{flex:0 0 auto;opacity:.85;}
 /* v229 — a quiet disclosure inside a card: present when he wants it, silent
    when he does not. */
+.wsub{font-size:10.5px;font-weight:800;text-transform:uppercase;letter-spacing:1px;
+  color:var(--label);margin:0 2px 7px;}
 .tinysec{border-top:1px solid var(--hair);padding-top:10px;}
 .tinysec>summary{list-style:none;cursor:pointer;font-size:12px;font-weight:800;
   text-transform:uppercase;letter-spacing:.7px;color:var(--label);padding:6px 0;
@@ -1279,9 +1281,10 @@ a{color:var(--orange);}
       </div>
       <!-- v223 — the scale's then & now, which needs no photographs. -->
       <div id="cmpWeight"></div>
-      <div class="mgrid mt">
-        <div class="field"><label>Then <span class="hint">photo</span></label><select class="txtin" id="cmpA" onchange="setCmp('a',this.value)"></select></div>
-        <div class="field"><label>Now <span class="hint">photo</span></label><select class="txtin" id="cmpB" onchange="setCmp('b',this.value)"></select></div>
+      <div class="wsub mt">In the mirror</div>
+      <div class="mgrid">
+        <div class="field"><label>Then</label><select class="txtin" id="cmpA" onchange="setCmp('a',this.value)"></select></div>
+        <div class="field"><label>Now</label><select class="txtin" id="cmpB" onchange="setCmp('b',this.value)"></select></div>
       </div>
       <div id="compareOut"></div>
       <button class="btn sec mt" onclick="aiCompare()">🔍 Ask coach what's changed</button>
@@ -8602,6 +8605,19 @@ async function checkForUpdate(manual){
       const v=document.getElementById('updV');
       if(v) v.textContent="v"+live;
       if(b) b.classList.add('show');
+      /* ===== v232 · A BANNER HE HAS TO NOTICE IS NOT A DELIVERY =========
+         An installed iOS PWA is RESUMED, not reloaded: tap the icon and the
+         same page from days ago carries on running. So a fix only reaches him
+         when he happens to see this bar and tap it — and three rounds of
+         "still broken" in a row turned out to be him reading v230 while I was
+         describing v231.
+
+         So it reloads itself, but only when reloading costs him nothing: no
+         set logged in this session, no clock running, no unsaved typing, and
+         the page in the background. Otherwise the bar waits, as before.
+         Losing a set to a surprise reload would be far worse than a late
+         update. */
+      try{ maybeAutoUpdate(); }catch(e){}
     }
   }catch(e){}
 }
@@ -8664,6 +8680,30 @@ async function renderVersionBox(){
     (live&&live>mine ? "<span style='color:var(--gold)'>There is a newer version. Tap Force update.</span>"
      : live&&live===mine ? "<span style='color:var(--green)'>Up to date.</span>"
      : live&&live<mine ? "This phone is ahead of the server." : "");
+}
+/* Is it safe to reload underneath him right now? */
+function updateIsSafeNow(){
+  try{
+    if(!document.hidden) return false;              /* only while backgrounded */
+    if(typeof sessRunning==="function" && sessRunning()) return false;
+    if(typeof restActive!=="undefined" && restActive) return false;
+    if(typeof holdIdx!=="undefined" && holdIdx>=0) return false;
+    const el=document.activeElement;
+    if(el && /^(INPUT|TEXTAREA|SELECT)$/.test(el.tagName)) return false;
+    if(typeof liveSession==="function" && liveSession()>0) return false;
+    const t=today();
+    if((DB.mobility||[]).some(m=>m&&m.d===t)) return false;
+    return true;
+  }catch(e){ return false; }
+}
+let _autoUpdTried=false;
+function maybeAutoUpdate(){
+  if(_autoUpdTried) return;
+  if(!updateIsSafeNow()) return;
+  _autoUpdTried=true;
+  try{ save(); }catch(e){}
+  try{ if(DB.cloud&&DB.cloud.on) cloudFlush("update"); }catch(e){}
+  setTimeout(()=>{ try{ location.reload(); }catch(e){} },400);
 }
 function applyUpdate(){
   try{ save(); }catch(e){}
@@ -15059,7 +15099,11 @@ function renderWeightCompare(){
   const d=pr.now.w-pr.then.w;
   const dir=Math.abs(d)<0.05? "level" : (d<0? "down":"up");
   const col=Math.abs(d)<0.05? "var(--muted)" : (d<0? "var(--green)":"var(--gold)");
+  /* v232 — this row is the SCALE. The photographs below are their own thing
+     and carry their own weights, and with nothing saying so the two read as
+     one claim that disagreed with itself. */
   el.innerHTML=
+    "<div class='wsub'>On the scale</div>"+
     "<div class='wcmp'>"+
       "<div class='wc'><b>Then</b><span>"+pr.then.w.toFixed(1)+" kg</span><em>"+ukDate(pr.then.date)+"</em></div>"+
       "<div class='wc'><b>Now</b><span>"+pr.now.w.toFixed(1)+" kg</span><em>"+ukDate(pr.now.date)+"</em></div>"+
@@ -15108,48 +15152,67 @@ function renderCompareControls(){
    front shot. Which angle gets used is decided by which one actually has the
    history to cover the gap he asked for — not by whichever he happened to add
    last, which was arbitrary when he shoots three angles in one go. */
-/* ===== v231 · "I WANT THE FOTO WHERE I WAS FATTEST" =================
-   v230 read that as "the photo with the heaviest weight attached to it", and
-   photoWeight() only attaches a weigh-in within ten days of a shot. His
-   heaviest day is 88.0 kg on 25 August and he has NO photograph inside that
-   window — his nearest is the 14th. So every photo he owns carries a weight
-   between 83 and 85 kg, the heaviest of those is 84.8 kg on 21 September, and
-   the card paired it against the 25th: four days apart, and looking for all
-   the world like it had picked at random.
+/* ===== v232 · THE FATTEST PHOTO IS THE ONE HE WEIGHED MOST IN =======
+   "This is still disastrous. Fix this properly. Don’t patch."
 
-   It had not picked at random. It had answered a question he did not ask. The
-   photo where he was fattest is the one nearest THE DAY THE SCALE WAS HIGHEST
-   — which needs no weigh-in near the photo at all, because it looks the
-   relationship up the other way round. */
+   Fair. Here is what is actually true of his data, measured rather than
+   assumed:
+
+     his ten photos      6 Aug, 7 Aug x2, 14 Aug, 21 Sep x2, 24 Sep x2, 25 Sep x2
+     what he weighed     83.7, 83.3, 83.3, 83.5,  84.8,      83.9,      83.6
+     his heaviest DAY    88.0 kg on 25 August
+
+   He has NO photograph from his heavy fortnight. The camera roll jumps from
+   14 August to 21 September, and the spike to 88 kg sits in the gap. No rule
+   can produce a picture of him at 88 kg, because he did not take one.
+
+   So of the photographs that exist, the one where he was fattest is the
+   21 September shot at 84.8 kg. v230 had that right. v231 then "fixed" it to
+   the photo NEAREST his heaviest day — 14 August — where he weighed 83.5 kg,
+   which is LEANER than the one it replaced. That made it worse, and it is
+   reverted here.
+
+   The rule is the plain reading of his sentence: the photo he weighed the
+   most in. The only time the date is consulted is when not one photograph has
+   a weigh-in anywhere near it, and there is nothing else to go on. */
 function heaviestDay(){
   const e=weightEntries();                       /* newest first */
   if(!e.length) return null;
   return e.reduce((b,x)=>(!b||x.w>b.w)? x : b, null);
 }
+/* The photo he weighed the most in. */
 function fattestPhoto(){
   const all=photosSorted();
   if(!all.length) return null;
+  const weighed=all.map(p=>{ const w=photoWeight(p); return w? {p, w:w.w} : null; }).filter(Boolean);
+  if(weighed.length){
+    /* Heaviest wins; a tie goes to the EARLIER shot, because "then" should be
+       as far back as the evidence allows. */
+    const best=weighed.reduce((b,x)=>(!b || x.w>b.w || (x.w===b.w && x.p.t<b.p.t))? x : b, null);
+    return best? best.p : null;
+  }
+  /* Nothing has a weigh-in near it. Fall back to the shot nearest his
+     heaviest day — the only signal left. */
+  const hd=heaviestDay(); if(!hd) return all[0];
+  const target=new Date(hd.date+"T12:00:00").getTime();
+  if(isNaN(target)) return all[0];
+  return all.reduce((b,p)=>(!b || Math.abs(p.t-target)<Math.abs(b.t-target))? p : b, null);
+}
+/* Is there a photograph anywhere near the day the scale was highest? When
+   there is not, the card says so rather than letting him think the app picked
+   the wrong picture. */
+function heaviestDayGap(){
   const hd=heaviestDay(); if(!hd) return null;
+  const all=photosSorted(); if(!all.length) return null;
   const target=new Date(hd.date+"T12:00:00").getTime();
   if(isNaN(target)) return null;
-  /* Nearest in time to that day, measured in DAYS — two shots from the same
-     morning are the same distance away, and which of them is a few seconds
-     closer is noise. A tie goes to the front-on, because that is the angle a
-     physique comparison is read in. */
-  const dayOff=p=>Math.round(Math.abs(p.t-target)/864e5);
-  let best=null;
-  all.forEach(p=>{
-    if(!best){ best=p; return; }
-    const a=dayOff(p), b=dayOff(best);
-    if(a<b){ best=p; return; }
-    if(a===b && /front/i.test(p.pose||"") && !/front/i.test(best.pose||"")) best=p;
-  });
-  return best;
+  const near=all.reduce((b,p)=>(!b || Math.abs(p.t-target)<Math.abs(b.t-target))? p : b, null);
+  return {day:hd, nearest:near, days:Math.round(Math.abs(near.t-target)/864e5)};
 }
-/* That photo, against the latest shot AT THE SAME ANGLE. A heavy side-on next
-   to a lean front-on tells him nothing, so the same angle is preferred; when
-   there is none it falls back to the latest of any angle rather than giving
-   up, and renderCompare already warns about a mismatched pair. */
+/* The fattest photo against the latest shot AT THE SAME ANGLE. A heavy
+   side-on next to a lean front-on tells him nothing, so the same angle is
+   preferred; with none it falls back to the latest of any angle, and
+   renderCompare warns about the mismatch. */
 function heaviestPair(){
   const all=photosSorted();
   if(all.length<2) return null;
@@ -15160,6 +15223,31 @@ function heaviestPair(){
   const pool=same.length? same : any;
   if(!pool.length) return null;
   return {then, now:pool[pool.length-1]};
+}
+/* The earliest shot against the latest, same angle — the widest span he has.
+   Offered when the fattest photo turns out to sit right next to the latest
+   one, because two pictures four days apart are not a comparison. */
+function widestPair(){
+  const all=photosSorted();
+  if(all.length<2) return null;
+  const first=all[0];
+  const pose=first.pose||"";
+  const same=all.filter(p=>(p.pose||"")===pose && p!==first);
+  const pool=same.length? same : all.slice(1);
+  if(!pool.length) return null;
+  return {then:first, now:pool[pool.length-1]};
+}
+function useWidestPair(){
+  const d=widestPair(); if(!d) return;
+  _cmpUser=true; _cmpA=pkey(d.then); _cmpB=pkey(d.now);
+  renderCompare();
+  toast("Showing your first photo against your latest");
+}
+function useFattestPair(){
+  const d=heaviestPair(); if(!d) return;
+  _cmpUser=true; _cmpA=pkey(d.then); _cmpB=pkey(d.now);
+  renderCompare();
+  toast("Showing the photo you weighed most in");
 }
 function bestPair(daysBack){
   const all=photosSorted();
@@ -15219,24 +15307,45 @@ function renderCompare(){
       (kg? "<div class='cmpkg'>"+escapeHtml(kg.text)+"</div>" : "")+
       "<div class='when'>"+photoWhen(P)+"<span> · "+photoAgo(P)+(P.pose?" · "+escapeHtml(P.pose):"")+"</span></div></div>";
   };
-  /* v231 — say WHY these two. A default that explains itself cannot look
-     like a random pick, and when the nearest photo to his heaviest day is a
-     fortnight off that is worth knowing rather than hiding. */
+  /* ===== v232 · ONE CARD WAS TELLING TWO STORIES ====================
+     The figures at the top are his WEIGH-INS: heaviest ever against latest,
+     88.0 → 83.3. The pictures underneath are his PHOTOS: the one he weighed
+     most in, 84.8, against the latest. Both are true and they are different
+     events, but stacked with no labels it reads as the app having picked the
+     wrong photograph for the number above it.
+
+     So the photo half says what it is, in its own words, and says out loud
+     when there is no photograph near his heaviest day — because that is the
+     real answer to "where is the fat one", and no algorithm can fix it. */
   let picked="";
-  if(!_cmpUser){
-    const f=fattestPhoto(), hd=heaviestDay();
-    if(f && hd && pkey(f)===_cmpA){
-      const off=Math.round(Math.abs(f.t-new Date(hd.date+"T12:00:00").getTime())/864e5);
-      picked="<div class='hint mt' style='text-align:center'>\u201cThen\u201d is your photo nearest your heaviest day \u2014 "+
-        fmtNum(hd.w)+" kg on "+ukDate(hd.date)+
-        (off>1? (", and this shot is the closest one to it, "+off+" days "+(f.t<new Date(hd.date+"T12:00:00").getTime()?"before":"after")+".") : ".")+
-        "</div>";
-    }
+  if(pkey(photoByKey(_cmpA)||{})===_cmpA && fattestPhoto() && pkey(fattestPhoto())===_cmpA){
+    const gap=heaviestDayGap();
+    const kg=photoWeight(A);
+    const bits=[];
+    bits.push("<b>\u201cThen\u201d is the photo you weighed most in</b>"+(kg? " \u2014 "+fmtNum(kg.w)+" kg" : "")+".");
+    if(gap && gap.days>10)
+      bits.push("Your heaviest day was "+fmtNum(gap.day.w)+" kg on "+ukDate(gap.day.date)+
+                ", and you have no photograph within "+gap.days+" days of it \u2014 so this is the heaviest you have on camera.");
+    picked="<div class='hint mt' style='text-align:center;line-height:1.55'>"+bits.join(" ")+"</div>";
+  }
+  /* Two pictures a few days apart are not a comparison, whatever the rule
+     that chose them. Say so, and offer the one that is. */
+  let tooClose="";
+  const spanDays=Math.round(Math.abs(B.t-A.t)/864e5);
+  if(spanDays<21){
+    const w=widestPair();
+    if(w && Math.round(Math.abs(w.now.t-w.then.t)/864e5)>spanDays)
+      tooClose="<div class='notebox mt'>These two are only "+spanDays+" day"+(spanDays===1?"":"s")+
+        " apart, which will not show much. Your widest gap is "+
+        Math.round(Math.abs(w.now.t-w.then.t)/864e5)+" days."+
+        "<div class='posebtns mt'><button class='btn sec' onclick='useWidestPair()'>Show first photo vs latest</button></div></div>";
+  } else if(_cmpUser){
+    tooClose="<div class='hint mt' style='text-align:center'><button class='swapbtn' onclick='useFattestPair()'>Back to the fattest photo</button></div>";
   }
   out.innerHTML="<div class='cmpwrap'>"+side(A,"Then","a")+side(B,"Now","b")+"</div>"+
     "<div class='cmpgap'>"+gapWords(B.t-A.t)+"</div>"+
     (mismatch? "<div class='hint mt' style='text-align:center'>These are different angles — comparing the same pose reads far more honestly.</div>":"")+
-    picked+
+    picked+tooClose+
     weightBetween(A.t,B.t);
 }
 /* ===== v192 · WHAT HE WEIGHED IN THAT PHOTO ============================
@@ -15886,7 +15995,7 @@ function scheduleInApp(){
    v18 ADDITIONS — draggable rest timer · weekly training memory · AI planner
    · Firestore sync
    ========================================================================== */
-const APP_VERSION="v231 · 27/09/2026";
+const APP_VERSION="v232 · 27/09/2026";
 
 /* ===== 1. REST TIMER — drag it anywhere so it never blocks the chat box ===== */
 let _rtDrag=null;

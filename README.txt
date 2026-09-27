@@ -1,3 +1,69 @@
+AMIR PT — v232 · 27/09/2026
+===========================
+
+"This is still disastrous. Fix this properly. Dont patch. Find out the problem
+and fix it."
+
+Fair. I patched this three times. Here is what is actually true, measured
+against his real data rather than assumed.
+
+WHAT HIS DATA ACTUALLY CONTAINS
+--------------------------------
+  his ten photos    6 Aug, 7 Aug x2, 14 Aug, 21 Sep x2, 24 Sep x2, 25 Sep x2
+  weighed in them   83.7, 83.3, 83.3, 83.5, 84.8, 83.9, 83.6
+  his heaviest DAY  88.0 kg, 25 August
+
+HE HAS NO PHOTOGRAPH FROM HIS HEAVY FORTNIGHT. The camera roll jumps from
+14 August to 21 September and the spike to 88 kg sits in the gap. No rule can
+produce a picture of him at 88 kg, because he did not take one. Everything
+that has looked broken follows from that one fact.
+
+THREE REAL FAULTS
+------------------
+1 · v231 MADE IT WORSE. It changed "fattest" from "the photo he weighed most
+in" (21 Sep, 84.8 kg) to "the photo nearest his heaviest day" (14 Aug, 83.5
+kg) — a LEANER photo. Reverted. The rule is the plain reading of his sentence:
+the photo he weighed the most in. The date is consulted only when not one
+photo has a weigh-in anywhere near it.
+
+2 · ONE CARD WAS TELLING TWO STORIES. The figures at the top are his
+WEIGH-INS, 88.0 → 83.3. The pictures underneath are his PHOTOS, 84.8 → 83.6.
+Both true, different events, stacked with no labels — so it read as the app
+having chosen the wrong photograph for the number above it. They are now
+headed "On the scale" and "In the mirror", and the photo half states in its
+own words what it picked and why:
+
+  “Then” is the photo you weighed most in — 84.8 kg. Your heaviest day was
+  88 kg on 25/08/2026, and you have no photograph within 11 days of it — so
+  this is the heaviest you have on camera.
+
+3 · FOUR DAYS APART IS NOT A COMPARISON. His fattest photo (21 Sep) sits four
+days before his latest (25 Sep). Correct by the rule, useless to look at. The
+card now says so and offers the pair that is worth seeing: "These two are only
+4 days apart, which will not show much. Your widest gap is 50 days." One tap
+switches to first-vs-latest, and one tap comes back.
+
+AND THE REASON THIS TOOK FOUR ROUNDS
+-------------------------------------
+His screenshot was v230 while I was describing v231. An installed iOS PWA is
+RESUMED, not reloaded: he taps the icon and the same page from hours ago
+carries on running. The update bar only helps if he notices it and taps it. So
+a fix did not reach him, he reported it still broken, and I "fixed" something
+that was already fixed — twice.
+
+The app now reloads itself when a newer version exists AND reloading costs
+nothing: page backgrounded, no set logged this session, no clock running, no
+rest timer, no hold timer, nothing focused in a text field, no flow movement
+ticked today. Otherwise the bar waits, exactly as before. Losing a logged set
+to a surprise reload would be far worse than a late update.
+
+Verified against his real ten photos and seventeen weigh-ins: Then resolves to
+21 Sep at 84.8 kg; the explanation names the 88 kg day and the 11-day gap; the
+too-close note reads 4 days against a 50-day widest; both switch buttons work
+and return; a pair he chooses survives new photos arriving. Sweep clean:
+verify16 16/16, journey, audit173 at 390 and 360, pose230, ph226, cmp223,
+auto228, prog224.
+
 AMIR PT — v231 · 27/09/2026
 ===========================
 
