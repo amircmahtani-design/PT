@@ -1157,6 +1157,27 @@ a{color:var(--orange);}
       <div class="hint mt">Missed a morning? Set the date back and log it here — this and the check-in write to the same record.</div>
       <div id="wgLog"></div>
     </div>
+    <!-- v222 — the rowing card. renderRowing() and renderRowingLog() have
+         existed for a long time and both open with `if(!el) return`, so with
+         no markup to write into they have been quietly doing nothing: no PBs,
+         no log, and nowhere for the pace chart to go. -->
+    <div class="card" data-sk="rowing">
+      <div class="card-title"><span>Rowing</span><span class="itin-edit">how fast, week by week</span></div>
+      <div id="rowPace"></div>
+      <div class="hint mt" style="font-weight:800;text-transform:uppercase;letter-spacing:.5px">Personal bests</div>
+      <div id="rowingPBs"></div>
+      <div class="mgrid mt">
+        <div class="field"><label>Distance</label>
+          <select class="txtin" id="rowDist">
+            <option>500m</option><option>1000m</option><option selected>2000m</option>
+            <option>5000m</option><option>10000m</option>
+          </select></div>
+        <div class="field"><label>Time <span class="hint">mm:ss</span></label>
+          <input class="txtin" id="rowTime" inputmode="text" placeholder="e.g. 8:42" /></div>
+      </div>
+      <button class="btn green mt" onclick="addRowing()">Log this row</button>
+      <div id="rowingLog" class="mt"></div>
+    </div>
     <div class="card" data-sk="programme"><div class="card-title"><span>Your programme</span><span class="itin-edit">the block you're in</span></div><div id="progBlock"></div></div>
     <div class="card" data-sk="lifts"><div class="card-title"><span>Your lifts</span><span class="itin-edit">tap one for its chart</span></div><div id="strengthPBs"></div></div>
     <div class="card" data-sk="photos">
@@ -2432,7 +2453,9 @@ function go(s){
   }
   if(s==='checkin'){ syncCheckinLoc(); try{ prefillCheckin(); }catch(e){} }
   if(s==='coach') renderChat();
-  if(s==='progress'){ drawChart(); renderRowingLog(); try{ renderWeightLog(); }catch(e){} }
+  if(s==='progress'){ try{ drawChart(); }catch(e){}
+    try{ renderRowing(); renderRowPace(); renderRowingLog(); }catch(e){}
+    try{ renderWeightLog(); }catch(e){} }
   if(s==='progress'){ try{ renderHistory(); }catch(e){} }
   if(s==='workout'){ ensureWorkout(); renderReadiness(); }
   if(s==='today'){ renderWeek(); renderReadiness(); renderFirstRun(); renderTomorrow(); }
@@ -7143,7 +7166,7 @@ function delTodayRow(i){
   const r=(DB.rowing||[])[i]; if(!r) return;
   if(!confirm("Delete this row?\n\n"+(r.dist||"")+" · "+(r.time||""))) return;
   DB.rowing.splice(i,1); save();
-  try{ renderRowing(); renderRowingLog(); }catch(e){}
+  try{ renderRowing(); renderRowPace(); renderRowingLog(); }catch(e){}
   try{ refreshRowBlock(); }catch(e){}
   toast("Deleted");
 }
@@ -7206,7 +7229,7 @@ function toggleRowClock(){
 function addWarmupRow(travel){
   const dist=travel?"1000m":"2000m"; const time=(val('warmRowTime')||"").trim();
   if(isNaN(timeToSec(time))){ toast("Use mm:ss  e.g. 9:20"); return; }
-  autoStartSession(); DB.rowing.push({dist,time,date:today()}); markSession(); save(); renderRowing(); renderRowingLog();
+  autoStartSession(); DB.rowing.push({dist,time,date:today()}); markSession(); save(); renderRowing(); renderRowPace(); renderRowingLog();
   /* v186 — redraw the block from storage rather than writing a note into it,
      so it is still there after the next render. */
   try{ refreshRowBlock(); }catch(e){}
@@ -12364,7 +12387,7 @@ function coachLogRow(a){
   DB.rowing.push({dist,time,name:parts[2]||"",date:today()});
   try{ markSession(); }catch(e){}
   save();
-  try{ renderRowing(); renderRowingLog(); }catch(e){}
+  try{ renderRowing(); renderRowPace(); renderRowingLog(); }catch(e){}
   return dist+(time?" in "+time:"");
 }
 /* ===== v65 · THE FIVE CLUSTERS THAT WERE COMPLETELY ABSENT ==============
@@ -14182,9 +14205,22 @@ function splitColour(split){ return splitInfo(split).col; }
 function splitDot(split){ return "<i class='sdot' style='background:"+splitColour(split)+"'></i>"; }
 function splitPill(split){ return splitInfo(split).key; }
 
+/* ===== v222 · THE CHART AND THE LIST UNDER IT DISAGREED ==============
+   "I have lost my graph to see weight track." His screenshot showed five
+   weights in the table and, directly above them, the card saying two entries
+   and the trend appears here.
+
+   Two functions answer "what has he weighed": weightEntries(), which the
+   table under the chart renders, and weightSeries(), which the chart read.
+   They filter differently — one on `c.weight` being truthy, the other on it
+   being neither null nor blank — and they fall back differently. One rule,
+   two implementations, and the chart was reading the other one. I could not
+   reproduce the exact shape of his data that splits them, so I have not
+   guessed at a patch: the chart now reads the list it sits above, and the two
+   can never disagree again whatever is in the record. */
 function drawChart(){
   const wrap=document.getElementById('wtWrap'); if(!wrap) return;
-  const ser=weightSeries().slice(-40);
+  const ser=weightEntries().slice().reverse().slice(-40);   /* oldest first */
   if(ser.length<2){ wrap.innerHTML="<div class='muted' style='font-size:14px'>Add your bodyweight below, or on the morning check-in \u2014 two entries and the trend appears here.</div>"; return; }
   /* v128 — the readout wants a real date, not the axis's short one. */
   const pts=ser.map(x=>({x:shortDate(x.date), y:x.w, full:x.date? ukDate(x.date):""}));
@@ -14331,6 +14367,105 @@ function renderStrengthPBs(){
   }).join('');
 }
 function timeToSec(t){ const m=t.split(":"); if(m.length!==2) return NaN; return parseInt(m[0])*60+parseFloat(m[1]); }
+/* ===== v222 · ROWING PACE OVER THE WEEKS ============================
+   "I want to see my rowing timings over the weeks and see a graph based on
+   how fast."
+
+   The measure of how fast a row was is the SPLIT — time per 500m — which is
+   what a Concept2 shows and what every rower reads. A raw finish time only
+   compares against the same distance, and one week's 2km against another's
+   500m is meaningless, so the chart takes one distance at a time.
+
+   One point per week, his best split that week, because a chart with every
+   row on it shows the noise rather than the direction. LOWER IS FASTER: the
+   axis is a clock, not a score, and the foot line says so in words so the
+   direction is never in question. */
+function fmtSplit(sec){
+  if(sec==null||isNaN(sec)) return "\u2014";
+  const s=Math.max(0,Math.round(sec*10)/10);
+  const m=Math.floor(s/60), r=s-m*60;
+  return m+":"+(r<10?"0":"")+(Math.round(r*10)/10).toFixed(1).replace(/\.0$/,"");
+}
+function distMetres(d){
+  const m=String(d||"").match(/([\d.]+)\s*(k|km|m)?/i);
+  if(!m) return 0;
+  let n=parseFloat(m[1]); if(isNaN(n)) return 0;
+  if(/^k/i.test(m[2]||"")) n*=1000;
+  return n;
+}
+/* Monday-first ISO-ish week key, because his week starts on Monday. */
+function weekKey(iso){
+  const d=new Date(String(iso)+"T12:00:00");
+  if(isNaN(d)) return null;
+  const dow=(d.getDay()+6)%7;                 /* Mon=0 */
+  d.setDate(d.getDate()-dow);
+  return d.toISOString().slice(0,10);
+}
+function rowSplits(dist){
+  return (DB.rowing||[]).map(r=>{
+    if(dist && String(r.dist)!==String(dist)) return null;
+    const sec=timeToSec(String(r.time||""));
+    const m=distMetres(r.dist);
+    if(isNaN(sec) || !m || !r.date || r.date==="prev") return null;
+    return {date:r.date, split:sec/(m/500), sec, dist:r.dist};
+  }).filter(Boolean).sort((a,b)=>String(a.date).localeCompare(String(b.date)));
+}
+/* Which distances he actually rows, commonest first — the chips, and the
+   default the chart opens on. */
+function rowDistances(){
+  const n={};
+  (DB.rowing||[]).forEach(r=>{ if(r&&r.dist&&!isNaN(timeToSec(String(r.time||"")))) n[r.dist]=(n[r.dist]||0)+1; });
+  return Object.keys(n).sort((a,b)=>(n[b]-n[a]) || (distMetres(a)-distMetres(b)));
+}
+let _rowDist=null;
+function rowPaceWeeks(dist){
+  const byWeek={};
+  rowSplits(dist).forEach(x=>{
+    const k=weekKey(x.date); if(!k) return;
+    if(!byWeek[k] || x.split<byWeek[k].split) byWeek[k]=x;
+  });
+  return Object.keys(byWeek).sort().map(k=>({week:k, best:byWeek[k]}));
+}
+function setRowDist(d){ _rowDist=d; renderRowPace(); }
+function renderRowPace(){
+  const el=document.getElementById('rowPace'); if(!el) return;
+  const dists=rowDistances();
+  if(!dists.length){
+    el.innerHTML="<div class='muted' style='font-size:14px'>Log a row and your pace over the weeks appears here.</div>";
+    return;
+  }
+  if(!_rowDist || dists.indexOf(_rowDist)<0) _rowDist=dists[0];
+  const chips=dists.length>1
+    ? "<div class='poseseg' style='margin-bottom:10px'>"+dists.map(d=>
+        "<button class='"+(d===_rowDist?"on":"")+"' onclick=\"setRowDist('"+jsAttr(d)+"')\">"+escapeHtml(d)+"</button>").join("")+"</div>"
+    : "";
+  const weeks=rowPaceWeeks(_rowDist);
+  if(weeks.length<2){
+    const one=weeks[0];
+    el.innerHTML=chips+"<div class='muted' style='font-size:14px'>"+
+      (one? ("One week logged at "+escapeHtml(_rowDist)+" \u2014 best split "+fmtSplit(one.best.split)+
+             " /500m. Row it again next week and the trend appears here.")
+          : ("Nothing logged at "+escapeHtml(_rowDist)+" yet."))+"</div>";
+    return;
+  }
+  const pts=weeks.map(w=>({x:shortDate(w.week), y:Math.round(w.best.split*10)/10,
+                           full:"week of "+ukDate(w.week),
+                           t:(w.best.time? (w.best.time+" for "+w.best.dist) : "")}));
+  const first=weeks[0].best.split, last=weeks[weeks.length-1].best.split;
+  const best=weeks.reduce((a,w)=>Math.min(a,w.best.split),Infinity);
+  const d=first-last;                         /* positive = he got faster */
+  /* A gap is a duration, not a clock time: eight seconds reads "8s", not
+     "0:08" and certainly not "08". */
+  const gap=x=>{ const v=Math.round(Math.abs(x)*10)/10;
+    return v<60? (v%1? v.toFixed(1) : v)+"s" : fmtSplit(v); };
+  const trend = Math.abs(d)<0.5? "about the same as your first week"
+              : (d>0? (gap(d)+" per 500m faster than week one")
+                    : (gap(d)+" per 500m slower than week one"));
+  el.innerHTML=chips+chartSVG(pts,{unit:" /500m",color:"#4a9dff",fmt:"split"})+
+    "<div class='chartfoot'><span>"+weeks.length+" week"+(weeks.length===1?"":"s")+" \u00b7 "+escapeHtml(_rowDist)+"</span>"+
+    "<span>best "+fmtSplit(best)+"</span><span>"+trend+"</span></div>"+
+    "<div class='hint mt'>Each point is your fastest 500m split that week. Lower is faster.</div>";
+}
 function renderRowing(){
   const best={}; DB.rowing.forEach(r=>{ const s=timeToSec(r.time); if(isNaN(s))return; if(!(r.dist in best)||s<best[r.dist].s) best[r.dist]={time:r.time,s}; });
   const order=["500m","1000m","2000m","5000m","10000m"]; const rows=order.filter(d=>best[d]).map(d=>"<div class='pb'><span class='n'>"+d+"</span><span class='p'>"+best[d].time+"</span></div>").join('');
@@ -14344,9 +14479,9 @@ function renderRowingLog(){
 function addRowing(){
   const dist=val('rowDist'), time=val('rowTime').trim();
   if(isNaN(timeToSec(time))){ toast("Use mm:ss.s  e.g. 7:42.3"); return; }
-  DB.rowing.push({dist,time,date:today()}); save(); renderRowing(); renderRowingLog(); document.getElementById('rowTime').value=""; toast("Row logged 🚣");
+  DB.rowing.push({dist,time,date:today()}); save(); renderRowing(); renderRowPace(); renderRowingLog(); document.getElementById('rowTime').value=""; toast("Row logged 🚣");
 }
-function delRow(i){ DB.rowing.splice(i,1); save(); renderRowing(); renderRowingLog(); toast("Deleted"); }
+function delRow(i){ DB.rowing.splice(i,1); save(); renderRowing(); renderRowPace(); renderRowingLog(); toast("Deleted"); }
 function delStrength(ex,date){ if(!DB.strength[ex])return; DB.strength[ex]=DB.strength[ex].filter(s=>s.date!==date); if(!DB.strength[ex].length) delete DB.strength[ex]; save(); renderStrengthPBs(); renderHistory(); toast("Deleted"); }
 /* ===== v61 · PHOTOS: A TIMELINE, NOT A PILE =====
    Every shot now carries a real timestamp and a pose label, so they group into
@@ -15394,7 +15529,7 @@ function scheduleInApp(){
    v18 ADDITIONS — draggable rest timer · weekly training memory · AI planner
    · Firestore sync
    ========================================================================== */
-const APP_VERSION="v221 · 26/09/2026";
+const APP_VERSION="v222 · 27/09/2026";
 
 /* ===== 1. REST TIMER — drag it anywhere so it never blocks the chat box ===== */
 let _rtDrag=null;
@@ -16113,6 +16248,14 @@ function shortDate(d){
   if(isNaN(x)) return String(d);
   return x.toLocaleDateString('en-GB',{day:'numeric',month:'short'});
 }
+/* v222 — a chart axis is not always a number. A rowing split is mm:ss, and
+   "125.5" on the axis of a pace chart is unreadable. The formatter is passed
+   by NAME rather than as a function, because the tap-to-read handler reads it
+   back off the DOM and a closure cannot survive that trip. */
+function chartFmt(kind,v){
+  if(kind==="split") return fmtSplit(v);
+  return fmtNum(v);
+}
 function chartSVG(pts,opt){
   opt=opt||{}; if(!pts||!pts.length) return "";
   const W=520,H=opt.h||180,pl=46,pr=16,ptop=14,pbot=26;
@@ -16127,11 +16270,11 @@ function chartSVG(pts,opt){
   for(let g=0;g<=3;g++){
     const v=max-(max-min)*g/3, y=Y(v);
     grid+="<line x1='"+pl+"' y1='"+y.toFixed(1)+"' x2='"+(W-pr)+"' y2='"+y.toFixed(1)+"' stroke='#2c2318' stroke-width='1'/>";
-    lab+="<text x='"+(pl-7)+"' y='"+(y+3.5).toFixed(1)+"' fill='#71614e' font-size='11' font-weight='700' text-anchor='end'>"+fmtNum(v)+"</text>";
+    lab+="<text x='"+(pl-7)+"' y='"+(y+3.5).toFixed(1)+"' fill='#71614e' font-size='11' font-weight='700' text-anchor='end'>"+chartFmt(opt.fmt,v)+"</text>";
   }
   const line=pts.map((p,i)=>(i?"L":"M")+X(i).toFixed(1)+" "+Y(p.y).toFixed(1)).join(" ");
   const area=line+" L"+X(pts.length-1).toFixed(1)+" "+(H-pbot)+" L"+X(0).toFixed(1)+" "+(H-pbot)+" Z";
-  const dots=pts.map((p,i)=>"<circle cx='"+X(i).toFixed(1)+"' cy='"+Y(p.y).toFixed(1)+"' r='"+(p.c?4.4:3.4)+"' fill='"+(p.c||"#ffd9a3")+"'"+(p.c?" stroke='#12100d' stroke-width='1.2'":"")+"><title>"+attrEsc((p.x||"")+": "+fmtNum(p.y)+(opt.unit||"")+(p.t?" \u00b7 "+p.t:""))+"</title></circle>").join("");
+  const dots=pts.map((p,i)=>"<circle cx='"+X(i).toFixed(1)+"' cy='"+Y(p.y).toFixed(1)+"' r='"+(p.c?4.4:3.4)+"' fill='"+(p.c||"#ffd9a3")+"'"+(p.c?" stroke='#12100d' stroke-width='1.2'":"")+"><title>"+attrEsc((p.x||"")+": "+chartFmt(opt.fmt,p.y)+(opt.unit||"")+(p.t?" \u00b7 "+p.t:""))+"</title></circle>").join("");
   let xl="";
   if(pts.length>1 && pts[0].x){
     xl="<text x='"+pl+"' y='"+(H-5)+"' fill='#71614e' font-size='11' font-weight='700'>"+attrEsc(pts[0].x)+"</text>"+
@@ -16152,7 +16295,7 @@ function chartSVG(pts,opt){
                               v:p.y, lab:(p.full||p.x||""), t:p.t||""}));
   const last=read[read.length-1];
   const box="<div class='chartread'><i style='background:"+col+"'></i>"+
-      "<b class='crv'>"+fmtNum(last.v)+(opt.unit||"")+"</b>"+
+      "<b class='crv'>"+chartFmt(opt.fmt,last.v)+(opt.unit||"")+"</b>"+
       "<span class='crd'>"+attrEsc(last.lab)+(last.t? " \u00b7 "+attrEsc(last.t):"")+"</span>"+
       "<span class='crh'>tap the chart</span></div>";
   const svg="<svg viewBox='0 0 "+W+" "+H+"' style='display:block;width:100%;height:auto' xmlns='http://www.w3.org/2000/svg'>"+
@@ -16167,7 +16310,7 @@ function chartSVG(pts,opt){
     "</g>"+
     "<rect class='hit' x='"+pl+"' y='0' width='"+(W-pl-pr)+"' height='"+H+"' fill='transparent' style='touch-action:pan-y'/>"+
     "</svg>";
-  return "<div class='chartbox' data-unit='"+attrEsc(opt.unit||"")+"' data-pts='"+
+  return "<div class='chartbox' data-unit='"+attrEsc(opt.unit||"")+"' data-fmt='"+attrEsc(opt.fmt||"")+"' data-pts='"+
     attrEsc(JSON.stringify(read))+"' data-vw='"+W+"'>"+box+svg+"</div>";
 }
 /* One delegated handler for every chart on the page, bound once. */
@@ -16190,7 +16333,7 @@ function chartRead(box, clientX){
     }
     const unit=box.getAttribute('data-unit')||"";
     const v=box.querySelector('.crv'), d=box.querySelector('.crd'), h=box.querySelector('.crh');
-    if(v) v.textContent=fmtNum(p.v)+unit;
+    if(v) v.textContent=chartFmt(box.getAttribute('data-fmt')||"",p.v)+unit;
     if(d) d.textContent=p.lab+(p.t? " \u00b7 "+p.t : "");
     if(h) h.remove();
   }catch(e){}
@@ -23379,7 +23522,7 @@ function boot(){
     if(inj && !inj.value) inj.value=DB.profile.injuries||injuryText(); }
   try{ prefillCheckin(); }catch(e){}
   document.querySelectorAll('#provSeg button').forEach(b=>b.classList.toggle('on',b.dataset.v===DB.ai.provider));
-  renderMetrics(); renderItin(); renderStrengthPBs(); renderRowing(); renderRowingLog(); renderPhotos(); renderIntegrations(); updateStreak();
+  renderMetrics(); renderItin(); renderStrengthPBs(); renderRowing(); renderRowPace(); renderRowingLog(); renderPhotos(); renderIntegrations(); updateStreak();
   try{ renderMeasures(); }catch(e){}
   try{ renderAthletic(); }catch(e){}
   try{ renderObjective(); }catch(e){}

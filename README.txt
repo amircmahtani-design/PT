@@ -1,3 +1,61 @@
+AMIR PT — v222 · 27/09/2026
+===========================
+
+"I have lost my graph to see weight track and also I want to see my rowing
+timings over the weeks and see a graph based on how fast please."
+
+THE CHART AND THE LIST UNDERNEATH IT DISAGREED
+-----------------------------------------------
+His screenshot showed five weights in the table and, directly above them, the
+card saying "two entries and the trend appears here".
+
+Two functions answer "what has he weighed". weightEntries() renders the table.
+weightSeries() fed the chart. They filter differently — one on `c.weight`
+being truthy, the other on it being neither null nor blank — and they fall
+back to different places when there is no check-in data.
+
+I could NOT reproduce the exact data shape that splits them. I tried plain
+numbers, strings, zeroes, comma decimals, the legacy "prev" date and the flat
+DB.weights fallback: three of those make the two functions disagree, but none
+of them produces his symptom of a full table under an empty chart. So I have
+not guessed at a patch for a cause I cannot show. Instead the divergence is
+gone: the chart now reads weightEntries(), the same list it sits above, and
+the two can never contradict each other again whatever is in the record.
+
+ROWING PACE, WEEK BY WEEK
+--------------------------
+First, the reason he had nothing: renderRowing() and renderRowingLog() have
+existed for a long time and both open with `if(!el) return`. There was NO
+rowing markup anywhere in the app, so both have been quietly doing nothing.
+No PBs, no log, nowhere for a chart to go. The card is now in Progress.
+
+The measure of how fast a row was is the SPLIT — time per 500m — which is
+what the Concept2 shows and what every rower reads. A finish time only
+compares against the same distance, so the chart takes one distance at a time
+with a chip for each distance he actually rows, commonest first.
+
+  · One point per week, his best split that week. Every row on one chart
+    shows noise; the weekly best shows direction.
+  · The axis is a clock, not a number: chartSVG takes a formatter BY NAME
+    (data-fmt on the box) so the axis, the tooltip and the tap-to-read
+    handler all print mm:ss. The name rather than a function because the read
+    handler pulls it back off the DOM, and a closure cannot make that trip.
+  · Lower is faster, so the foot line says the direction in words — "8s per
+    500m faster than week one" — and the hint under it says it again.
+  · A single week's data says so and names the split rather than drawing a
+    one-point line.
+
+Also in the card: the PB table and the full entry list, which were already
+written and had nowhere to render, plus a distance/time form to log a row.
+
+Verified in headless Chromium: his five weights draw a five-point chart
+reading "5 check-ins · now 83.3kg · -1.3kg over the block"; eight weeks of 2k
+rows draw eight points with the axis in mm:ss (2:18.7 down to 2:08.3), the
+foot reading "8 weeks · 2000m · best 2:09.5 · 8s per 500m faster than week
+one", and the split maths checked by hand (9:10 over 2000m = 2:17.5 per 500m);
+the distance chips switch the series; PBs and the log render. Sweep clean:
+verify16 16/16, journey, audit173 at 390 and 360.
+
 AMIR PT — v221 · 26/09/2026
 ===========================
 
