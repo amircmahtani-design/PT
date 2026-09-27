@@ -14645,11 +14645,20 @@ function renderPhotos(){
   const total=(DB.photos||[]).length;
   if(cnt) cnt.textContent = total? (total+" shot"+(total===1?"":"s")) : "";
   if(!wrap) return;
+  /* v226 — a recovered photo kept its date (it was in its own id) but its
+     angle could not be known, so it is labelled Front and says so until he
+     corrects it. Silently guessing would be worse than asking. */
+  const rec=(DB.photos||[]).filter(p=>p&&p.recovered).length;
+  const recNote=rec? "<div class='notebox mb'><b>"+rec+" photo"+(rec===1?"":"s")+" recovered.</b> "+
+    "The images and their dates came back intact. I could not tell front from side, so they are "+
+    "all labelled Front — tap any one to set its angle." +
+    "</div>" : "";
   const list=photosFiltered();
   if(!list.length){
     wrap.innerHTML="<div class='muted' style='font-size:14px;padding:8px 0'>"+
       (total? "Nothing labelled "+escapeHtml(_poseFilter)+" yet. Tap a photo to label it."
             : "No photos yet — take a front, a side and a back shot today and you've got your baseline.")+"</div>";
+    if(recNote) wrap.innerHTML=recNote+wrap.innerHTML;
     renderCompareControls(); return;
   }
   /* Newest month first, but within a month oldest → newest, so a row reads
@@ -14661,7 +14670,7 @@ function renderPhotos(){
     (groups[k]=groups[k]||[]).push(p);
   });
   const keys=Object.keys(groups).sort().reverse();
-  wrap.innerHTML=keys.map(k=>{
+  wrap.innerHTML=recNote+keys.map(k=>{
     const arr=groups[k];
     const label=new Date(arr[0].t).toLocaleDateString('en-GB',{month:'long',year:'numeric'});
     const cells=arr.map(p=>{
@@ -14967,8 +14976,10 @@ function quickCompareWeight(which){
    comparison is its own thing now: same chips, real numbers, and it works
    with nothing but the scale. The photographs remain the better evidence and
    the card still says so — but it no longer holds the numbers hostage. */
+/* v226 — "make then be my fattest vs now whichever is my latest weight."
+   So that is the default the card opens on, not first-vs-latest. */
 let _cmpMode=0;                      /* days back; 0 = first vs latest */
-let _cmpWhich=null;                  /* "max" | "min", when a chip picked one */
+let _cmpWhich="max";                 /* "max" | "min" | null */
 function weightPair(mode,which){
   const all=weightEntries().slice().reverse();          /* oldest first */
   if(all.length<2) return null;
@@ -15759,7 +15770,7 @@ function scheduleInApp(){
    v18 ADDITIONS — draggable rest timer · weekly training memory · AI planner
    · Firestore sync
    ========================================================================== */
-const APP_VERSION="v225 · 27/09/2026";
+const APP_VERSION="v226 · 27/09/2026";
 
 /* ===== 1. REST TIMER — drag it anywhere so it never blocks the chat box ===== */
 let _rtDrag=null;
@@ -16361,6 +16372,46 @@ function clearSaveFailure(){
 const PHOTO_KEY="amirpt_photos";
 let PHOTOS={};
 async function savePhotos(){ try{ await idbSet(JSON.stringify(PHOTOS),PHOTO_KEY); }catch(e){ console.warn("photo save",e); } }
+/* ===== v226 · GETTING HIS PHOTOS BACK ================================
+   "Where are all my fotos. I took many and they should be there."
+
+   A photo is stored in TWO places. The image itself goes to IndexedDB, keyed
+   by id, because a phone photo as base64 is megabytes and would blow the
+   localStorage quota and take his whole training history with it. The
+   METADATA — id, timestamp, date, pose — lives in the main DB blob.
+
+   Rendering walks DB.photos. So if that list is lost while IndexedDB is not,
+   every image is still on the device and NONE of them is visible: orphaned
+   bytes with nothing pointing at them. DB.photos has had at least one route
+   to being wiped — an undo restored a whole-DB snapshot and photos were not
+   on the carry list until v217 — and cloud sync deliberately never carried
+   photos either, so a restore brought back a DB with no photo list in it.
+
+   The id is "ph" + Date.now() + four random characters. The timestamp is IN
+   the id. So a lost photo can be recovered completely: the bytes from
+   IndexedDB, the date from its own key. Only the pose cannot be known, and
+   that is one tap to change.
+
+   This runs on every load, so the two can never drift apart again for long:
+   whatever happens to DB.photos, the next start puts it back. */
+function photoIdTime(id){
+  const m=String(id||"").match(/^ph(\d{13})/);
+  const t=m? +m[1] : 0;
+  return (t>1262304000000 && t<Date.now()+864e5)? t : 0;   /* sane epoch only */
+}
+function reclaimPhotos(){
+  DB.photos=DB.photos||[];
+  const known=new Set(DB.photos.map(p=>p&&p.id).filter(Boolean));
+  const lost=Object.keys(PHOTOS).filter(id=>!known.has(id));
+  if(!lost.length) return 0;
+  lost.forEach(id=>{
+    const t=photoIdTime(id) || Date.now();
+    DB.photos.push({id, t, d:new Date(t).toISOString().slice(0,10), pose:"Front", recovered:true});
+  });
+  DB.photos.sort((a,b)=>(a.t||0)-(b.t||0));
+  save();
+  return lost.length;
+}
 async function loadPhotos(){
   try{
     const raw=await idbGet(PHOTO_KEY);
@@ -16375,7 +16426,13 @@ async function loadPhotos(){
     }
   });
   if(moved){ await savePhotos(); save(); }
+  let back=0;
+  try{ back=reclaimPhotos(); }catch(e){}
   renderPhotos();
+  /* Photos load after boot, so everything that reads them — the timeline, the
+     Then & now pickers, the physique read — has to be told. */
+  try{ renderProgress(); }catch(e){}
+  if(back) toast(back+" photo"+(back===1?"":"s")+" recovered \uD83D\uDCF7");
 }
 function photoSrc(p){ return (p&&p.id&&PHOTOS[p.id]) || (p&&p.src) || ""; }
 /* Shrink before storing: a 4000px camera photo is pointless for a physique check. */

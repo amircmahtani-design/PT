@@ -1,3 +1,59 @@
+AMIR PT — v226 · 27/09/2026
+===========================
+
+"First of all make then be my fattest vs now whichever is my latest weight.
+Also where are all my fotos. I took many and they should be there."
+
+THE PHOTOS ARE PROBABLY STILL ON HIS PHONE
+-------------------------------------------
+A photo is stored in TWO places. The IMAGE goes to IndexedDB keyed by id,
+because a phone photo as base64 is megabytes and would blow the localStorage
+quota and take his whole training history with it. The METADATA — id,
+timestamp, date, pose — lives in the main DB blob.
+
+Rendering walks DB.photos. So if that list is lost while IndexedDB is not,
+every image is still on the device and NONE of them is visible: orphaned bytes
+with nothing pointing at them. DB.photos has had at least one route to being
+wiped — an undo restores a whole-DB snapshot, and photos were not on the carry
+list until v217 — and cloud sync deliberately never carried photos either, so a
+restore brought back a DB with no photo list in it at all.
+
+The recovery is complete, because the id is "ph" + Date.now() + four random
+characters. THE TIMESTAMP IS IN THE ID. So a lost photo gets its bytes back
+from IndexedDB and its date back from its own key.
+
+  · reclaimPhotos() runs inside loadPhotos(), on every start and after every
+    restore. Anything in IndexedDB with no entry in DB.photos is put back,
+    dated from its id, sorted into place and flagged recovered.
+  · The one thing that cannot be known is the angle, so they are labelled
+    Front and the timeline says so in a note: the images and dates came back
+    intact, tap any one to set its angle. Silently guessing would be worse
+    than asking.
+  · Because it runs on every load, the two stores cannot drift apart again
+    for long. Whatever happens to DB.photos, the next start puts it back.
+  · loadPhotos() is async and finishes after boot, so it now calls
+    renderProgress() — the timeline, the Then & now pickers and the physique
+    read all read photos and all needed telling.
+
+If his photos are NOT in IndexedDB — a browser data wipe, a reinstall, a new
+device — nothing can bring them back, because they were never in the cloud.
+That is worth saying plainly rather than promising a recovery that may find
+nothing.
+
+FATTEST VS LATEST, AS THE DEFAULT
+----------------------------------
+Then & now opened on first-vs-latest. It opens on heaviest-vs-latest now,
+which is what he asked for and what he asked for back in v210 too. The chips
+still switch to first, lightest, 1/3/6 months.
+
+Verified in headless Chromium: six photos written to IndexedDB, DB.photos
+emptied exactly as an undo would leave it, then a full reload — all six come
+back with the right dates read out of their ids, all six render, every one
+resolves to real image data. The comparison opens on 86.9 kg (the heaviest,
+which is deliberately NOT the first entry) against 83.3 kg latest, down 3.6 kg,
+and first/lightest/heaviest still switch correctly. Sweep clean: verify16
+16/16, journey, audit173 at 390 and 360, prog224, cmp223.
+
 AMIR PT — v225 · 27/09/2026
 ===========================
 
