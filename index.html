@@ -6772,11 +6772,63 @@ function moveMinutes(name){
 }
 /* Which apparatus this Pilates day uses. Rotates by block week, and falls back
    to the mat wherever the apparatus is not in the room. */
+/* ===== v238 · PICKING THE APPARATUS, NOT WAITING FOR THE ROTATION =====
+   "Also make today only reformer."
+
+   Today already resolved to the reformer — block week 1, and the rotation
+   starts there — but that is luck, not control. The rotation decides which
+   apparatus a Pilates day uses, and when he wants a particular one he should
+   not have to work out which week the block is in and hope.
+
+   So the apparatus is pickable, TODAY ONLY, on the same principle as v220:
+   choosing what he does this morning must never quietly rewrite the pattern.
+   Tomorrow the rotation carries on exactly where it was. */
 function pilatesApparatusOn(iso){
-  let wk=1; try{ wk=blockWeekOn(iso||today()); }catch(e){}
+  const d=iso||today();
+  /* His own choice for today wins over everything. */
+  try{
+    const o=DB.pilApp;
+    if(o && o.date===d && o.app){
+      if(o.app==="mat" || apparatusHere(o.app)) return o.app;
+    }
+  }catch(e){}
+  let wk=1; try{ wk=blockWeekOn(d); }catch(e){}
   const want=PILATES_ROTATION[(wk-1)%PILATES_ROTATION.length] || "mat";
   if(want==="mat") return "mat";
   try{ return apparatusHere(want)? want : "mat"; }catch(e){ return "mat"; }
+}
+/* Which apparatus the rotation would have chosen, so the card can say when he
+   has stepped off it. */
+function pilatesRotationOn(iso){
+  let wk=1; try{ wk=blockWeekOn(iso||today()); }catch(e){}
+  const want=PILATES_ROTATION[(wk-1)%PILATES_ROTATION.length] || "mat";
+  try{ return (want==="mat"||apparatusHere(want))? want : "mat"; }catch(e){ return "mat"; }
+}
+function setPilatesApparatus(app){
+  if(!app) return;
+  if(app!=="mat" && !apparatusHere(app)){ toast("No "+(FOCUS_LABEL[app]||app).toLowerCase()+" where you are"); return; }
+  DB.pilApp={date:today(), app};
+  DB.workout=null;
+  try{ ensureWorkout(); }catch(e){}
+  save();
+  try{ renderWorkoutSheet(DB.workout); }catch(e){}
+  const b=buildApparatusSession(app);
+  toast((FOCUS_LABEL[app]||"Mat")+" \u00b7 "+b.n+" movements \u00b7 about "+b.mins+" min");
+}
+/* The row of apparatus chips on a Pilates day. */
+function pilatesPickHTML(){
+  const now=pilatesApparatusOn(today());
+  const rot=pilatesRotationOn(today());
+  const opts=[["ref","Reformer"],["chair","Chair"],["mat","Mat"]]
+    .filter(([k])=>k==="mat"||apparatusHere(k));
+  if(opts.length<2) return "";
+  return "<div class='poseseg' style='margin:2px 0 4px'>"+
+    opts.map(([k,lab])=>"<button class='"+(k===now?"on":"")+"' onclick=\"setPilatesApparatus('"+k+"')\">"+lab+"</button>").join("")+
+    "</div>"+
+    "<div class='hint' style='margin-bottom:8px'>"+
+      (now===rot? "This week\u2019s apparatus. Tap another for today only \u2014 the rotation carries on tomorrow."
+                : "Your pick for today. The rotation had "+(FOCUS_LABEL[rot]||"the mat").toLowerCase()+" this week and goes back to it tomorrow.")+
+    "</div>";
 }
 /* A whole class on one apparatus, built to the minute target. */
 function buildApparatusSession(app){
@@ -7914,7 +7966,14 @@ function _renderSheetInner(w){
        wants to know how long it took. The clock was only ever on the lifting
        sheet, so a flow day had no start, no finish and nothing on the record
        but the time he pressed the button. */
-    host.innerHTML="<div class='sheet'>"+wkHeaderHTML(w)+"</div><div id='wkMenu' data-open='0'></div><div class='sheet-sec'><div class='recovery'>"+w.note+"</div></div>"+
+    /* v238 — on a Pilates day the apparatus is his to pick, so the chips sit
+       with the session rather than in a setting somewhere. */
+    const pick=(function(){ try{
+      return (/pilates/i.test(String(w.title||"")) && !/mobility/i.test(String(w.title||"")))? pilatesPickHTML() : "";
+    }catch(e){ return ""; } })();
+    host.innerHTML="<div class='sheet'>"+wkHeaderHTML(w)+"</div><div id='wkMenu' data-open='0'></div>"+
+      (pick? "<div class='sheet-sec'>"+pick+"</div>" : "")+
+      "<div class='sheet-sec'><div class='recovery'>"+w.note+"</div></div>"+
       sessBarHTML()+
       sheetSec("mob",flowSecTitle(w),moveCount(w.cooldown),coolBodyHTML(w.cooldown),true)+
       flowDoneHTML(w)+"</div>";
@@ -16247,7 +16306,7 @@ function scheduleInApp(){
    v18 ADDITIONS — draggable rest timer · weekly training memory · AI planner
    · Firestore sync
    ========================================================================== */
-const APP_VERSION="v237 · 28/09/2026";
+const APP_VERSION="v238 · 28/09/2026";
 
 /* ===== 1. REST TIMER — drag it anywhere so it never blocks the chat box ===== */
 let _rtDrag=null;
@@ -20437,7 +20496,7 @@ function actSnapshot(label,meta){
    not part of any plan change and is never the app's to roll back. */
 const UNDO_CARRY=["chat","chatCtx","undo","memory",
                   "strength","session","rowing","mobility","completed",
-                  "measures","checkins","photos","rhr","weights","diag"];
+                  "measures","checkins","photos","rhr","weights","diag","pilApp"];
 function undoTo(id){
   const s=SNAPS[id];
   if(!s||!s.before) return null;

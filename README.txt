@@ -1,3 +1,41 @@
+AMIR PT — v238 · 28/09/2026
+===========================
+
+"Also make today only reformer."
+
+Today already WAS the reformer — Monday, block week 1, and the rotation starts
+there. But that is luck rather than control, and he should not have to work out
+which week the block is in and hope it lands where he wants.
+
+THE APPARATUS IS PICKABLE NOW
+------------------------------
+Three chips at the top of a Pilates day: Reformer, Chair, Mat. The one in use
+is lit, and tapping another rebuilds the session on that apparatus — a full
+class of it, 45-60 minutes, not a fragment.
+
+TODAY ONLY, on the same principle as v220: choosing what he does this morning
+never quietly rewrites the pattern. DB.pilApp is stamped with today's date, so
+tomorrow the rotation carries on exactly where it was. The line under the chips
+says which he is on:
+
+  This week's apparatus. Tap another for today only — the rotation carries on
+  tomorrow.
+
+  Your pick for today. The rotation had reformer this week and goes back to it
+  tomorrow.
+
+Kit-aware: away from Dubai there is no reformer and no chair, so the chips do
+not appear at all rather than offering him something that is not in the room.
+And pilApp is on UNDO_CARRY, so an undo cannot take the choice with it.
+
+Verified in headless Chromium: today resolves to the reformer and the chip is
+lit; tapping Chair rebuilds to 16 chair movements / 51 min and the note changes
+to say the rotation had reformer; tapping Reformer returns a session that is
+entirely reformer movements; tomorrow still resolves to the rotation's answer
+rather than his pick; in Greece there are no chips and it is the mat. Sweep
+clean: verify16 16/16, journey, audit173 at 390 and 360, pil236, wed236,
+img237 (every movement illustrated, 18 images on the sheet, none broken).
+
 AMIR PT — v236 · 28/09/2026
 ===========================
 
