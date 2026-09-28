@@ -1,77 +1,12 @@
-PILATES PHOTO SHOOT LIST — generated for v236, 28/09/2026
+PILATES PHOTO SHOOT LIST — updated v237, 28/09/2026
 ==============================================================
 
-HOW TO SHOOT THEM
---------------------------------------------------------------
-One WebP per movement, filename exactly as given below, dropped into
-/demos/. The app already looks for these names — nothing else to do.
+LEVEL 1 IS COMPLETE. All 42 arrived on 28/09 and are installed — every
+movement in a reformer, chair or mat class now has a picture.
 
-  · Landscape, phone on a tripod or a shelf, whole body and the whole
-    apparatus in frame. A reformer shot that crops the footbar is no
-    use for showing where the feet go.
-  · Shoot the position that shows what the movement IS — usually the
-    working end of it, not the start. Footwork means feet on the bar
-    with the carriage out; Chest Expansion means arms already back.
-  · Same room, same light, same clothes across a batch. They sit next
-    to each other on screen.
-  · Until a photo exists the app shows NO image rather than a wrong one,
-    so there is no harm in doing these in batches.
+WHAT IS LEFT, and none of it is needed until it unlocks:
 
-PRIORITY — these are the ones you will actually see at level 1.
-Levels 2 and 3 are listed after, and can wait until they unlock.
-
-LEVEL 1 — SHOOT THESE FIRST
---------------------------------------------------------------
-
-  REFORMER (18)
-    arms-in-straps-supine-series.webp        Arms in Straps (Supine Series)  — ×8 each
-    chest-expansion.webp                     Chest Expansion  — ×6
-    coordination.webp                        Coordination  — ×6
-    elephant.webp                            Elephant  — ×8
-    feet-in-straps-openings.webp             Feet in Straps: Openings  — ×8
-    footwork-on-the-reformer.webp            Footwork on the Reformer  — ×10 each position
-    frog-and-leg-circles.webp                Frog and Leg Circles  — ×8 then ×5 each way
-    hamstring-curls-in-straps.webp           Hamstring Curls in Straps  — ×10
-    hip-rolls.webp                           Hip Rolls  — ×6
-    kneeling-arm-circles.webp                Kneeling Arm Circles  — ×5 each way
-    mermaid-on-the-reformer.webp             Mermaid on the Reformer  — 45s each side
-    pelvic-lift.webp                         Pelvic Lift  — ×8
-    running.webp                             Running  — ×10 each side
-    seated-cat-stretch.webp                  Seated Cat Stretch  — ×6
-    side-lying-leg-press.webp                Side-Lying Leg Press  — ×10 each side
-    single-leg-footwork.webp                 Single Leg Footwork  — ×8 each leg
-    supine-leg-lowers-in-straps.webp         Supine Leg Lowers in Straps  — ×8
-    the-hundred-on-the-reformer.webp         The Hundred on the Reformer  — 10 breaths · 100 pumps
-
-  PILATES CHAIR (16)
-    calf-raises-on-the-pedal.webp            Calf Raises on the Pedal  — ×12
-    footwork-on-the-chair.webp               Footwork on the Chair  — ×10 each position
-    frog-front.webp                          Frog Front  — ×8
-    hamstring-stretch-on-the-chair.webp      Hamstring Stretch on the Chair  — 45s each leg
-    kneeling-side-stretch.webp               Kneeling Side Stretch  — 45s each side
-    pumping-both-legs-standing.webp          Pumping Both Legs Standing  — ×12
-    pumping-one-leg.webp                     Pumping One Leg  — ×10 each side
-    seated-chest-expansion.webp              Seated Chest Expansion  — ×6
-    seated-mermaid-on-the-chair.webp         Seated Mermaid on the Chair  — 45s each side
-    seated-pumping-both-legs.webp            Seated Pumping — Both Legs  — ×12
-    seated-spine-twist-on-the-chair.webp     Seated Spine Twist on the Chair  — ×5 each way
-    side-stretch-on-the-chair.webp           Side Stretch on the Chair  — ×5 each side
-    spine-stretch-forward-on-the-chair.webp  Spine Stretch Forward on the Chair  — ×6
-    standing-pumping-one-leg.webp            Standing Pumping — One Leg  — ×10 each side
-    standing-side-pumping.webp               Standing Side Pumping  — ×10 each side
-    supine-leg-press-on-the-chair.webp       Supine Leg Press on the Chair  — ×8
-
-  MAT (8) — the other mat movements already have photos
-    pelvic-curl.webp                         Pelvic Curl
-    chest-lift.webp                          Chest Lift
-    leg-lowers.webp                          Leg Lowers
-    double-straight-leg-lower.webp           Double Straight Leg Lower
-    breast-stroke-prep.webp                  Breast Stroke Prep
-    clam.webp                                Clam
-    heel-beats.webp                          Heel Beats
-    standing-roll-down.webp                  Standing Roll Down
-
-LEVEL 2 — later
+LEVEL 2 — unlocks at 5 sessions
 --------------------------------------------------------------
 
   REFORMER (7)
@@ -89,7 +24,7 @@ LEVEL 2 — later
     tendon-stretch-on-the-chair.webp         Tendon Stretch on the Chair  — ×6
     washerwoman.webp                         Washerwoman  — ×8
 
-LEVEL 3 — later still
+LEVEL 3 — unlocks at 11 sessions
 --------------------------------------------------------------
 
   REFORMER (5)
@@ -105,5 +40,7 @@ LEVEL 3 — later still
     pull-up-on-the-chair.webp                Pull Up on the Chair  — ×5
     teaser-on-the-chair.webp                 Teaser on the Chair  — ×5
 
-TOTAL OUTSTANDING: 62
-  level 1 only: 42 — that is the set that matters now
+Same spec as before: one WebP per movement, landscape, whole body and
+whole apparatus in frame, the working end of the movement.
+
+TOTAL OUTSTANDING: 20 (all level 2 and 3)

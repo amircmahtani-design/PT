@@ -3149,7 +3149,7 @@ const PILATES_APPARATUS_LIB={
  "Feet in Straps: Openings":{app:"ref",lvl:1,m:["legs"],eq:"ref",d:"×8",min:3,
    cue:"Legs long in the straps, open to the width of the mat and close. The movement is from the inner thigh; the pelvis does not rock."},
  "Hamstring Curls in Straps":{app:"ref",lvl:1,m:["legs"],eq:"ref",d:"×10",min:3,
-   cue:"Heels in the straps, bend the knees to draw the carriage in, press long to return. Slow on the way out."},
+   cue:"Face down on the long box, feet in the straps. Curl the heels towards you and lengthen back out slowly. The pelvis stays heavy on the box — the hamstrings do it, not the low back."},
  "Supine Leg Lowers in Straps":{app:"ref",lvl:1,m:["core","legs"],eq:"ref",d:"×8",min:3,
    cue:"Legs straight to the ceiling, lower as far as the low back stays down, lift back. The ribs stay closed."},
  "Chest Expansion":{app:"ref",lvl:1,m:["back","shoulders"],eq:"ref",d:"×6",min:3,
@@ -3194,7 +3194,7 @@ const PILATES_APPARATUS_LIB={
  "Pumping One Leg":{app:"chair",lvl:1,m:["legs"],eq:"chair",d:"×10 each side",
    cue:"One foot on the pedal, the other planted. The hips stay square and level — the leg does the work, not the side of the body."},
  "Spine Stretch Forward on the Chair":{app:"chair",lvl:1,m:["core","back"],eq:"chair",d:"×6",
-   cue:"Sat in front of the chair, hands on the pedal. Curl forward over an imaginary ball and press the pedal down with the exhale."},
+   cue:"Sat on the chair, legs long to the pedal, reach forward over an imaginary ball. Grow tall first, then curl — the stretch is in the spine, not the shoulders."},
  "Seated Mermaid on the Chair":{app:"chair",lvl:1,m:["core","back"],eq:"chair",d:"45s each side",
    cue:"Sat on the chair, one hand on the pedal, reach the other up and over. Lift tall out of the waist first, then bend."},
  "Frog Front":{app:"chair",lvl:1,m:["legs","core"],eq:"chair",d:"×8",
@@ -3664,7 +3664,21 @@ const LOCAL_WEBP=new Set([
      same picture to the eye, so the card flickered between identical photos.
      One file, legs straight, no toggle. */
   "the-hundred",
-  "wrist-circles-and-gentle-flexor-stretch", "wrist-flexor-and-extensor-stretch"
+  "wrist-circles-and-gentle-flexor-stretch", "wrist-flexor-and-extensor-stretch",
+
+  /* v237 — the 42 level-1 Pilates visuals he shot: 18 reformer, 16 chair,
+     8 mat. Kept in step with DEMOS_WEBP in sw.js. */
+  "arms-in-straps-supine-series", "breast-stroke-prep", "calf-raises-on-the-pedal", "chest-expansion",
+  "chest-lift", "clam", "coordination", "double-straight-leg-lower",
+  "elephant", "feet-in-straps-openings", "footwork-on-the-chair", "footwork-on-the-reformer",
+  "frog-and-leg-circles", "frog-front", "hamstring-curls-in-straps", "hamstring-stretch-on-the-chair",
+  "heel-beats", "hip-rolls", "kneeling-arm-circles", "kneeling-side-stretch",
+  "leg-lowers", "mermaid-on-the-reformer", "pelvic-curl", "pelvic-lift",
+  "pumping-both-legs-standing", "pumping-one-leg", "running", "seated-cat-stretch",
+  "seated-chest-expansion", "seated-mermaid-on-the-chair", "seated-pumping-both-legs", "seated-spine-twist-on-the-chair",
+  "side-lying-leg-press", "side-stretch-on-the-chair", "single-leg-footwork", "spine-stretch-forward-on-the-chair",
+  "standing-pumping-one-leg", "standing-roll-down", "standing-side-pumping", "supine-leg-lowers-in-straps",
+  "supine-leg-press-on-the-chair", "the-hundred-on-the-reformer",
 ]);
 /* v134 — child-s-pose is his own photograph of the movement the free pack
    could not supply. Keep this list and DEMOS in sw.js in step. */
@@ -16233,7 +16247,7 @@ function scheduleInApp(){
    v18 ADDITIONS — draggable rest timer · weekly training memory · AI planner
    · Firestore sync
    ========================================================================== */
-const APP_VERSION="v236 · 28/09/2026";
+const APP_VERSION="v237 · 28/09/2026";
 
 /* ===== 1. REST TIMER — drag it anywhere so it never blocks the chat box ===== */
 let _rtDrag=null;

@@ -2,7 +2,7 @@
    Network-first for the app itself, so a redeploy is ALWAYS picked up
    (the version stamp in Settings stays a reliable check).
    Cache-first for third-party assets, so the app opens with no signal. */
-const CACHE = "amirpt-v236";
+const CACHE = "amirpt-v237";
 const SHELL = ["./", "./index.html", "./manifest.json"];
 /* v123 — his own demo photographs. Pre-cached one at a time rather than with
    addAll, because addAll is atomic: a single 404 would throw away the whole
@@ -65,7 +65,20 @@ const DEMOS_WEBP = [
   "standing-hamstring-stretch", "superman-hold", "triceps-pushdown", "tuck-jump",
   "v-up", "walking-lunge", "wide-push-up", "world-s-greatest-stretch",
   "the-hundred",
-  "wrist-circles-and-gentle-flexor-stretch", "wrist-flexor-and-extensor-stretch"
+  "wrist-circles-and-gentle-flexor-stretch", "wrist-flexor-and-extensor-stretch",
+
+  /* v237 — level-1 Pilates */
+  "arms-in-straps-supine-series", "breast-stroke-prep", "calf-raises-on-the-pedal", "chest-expansion",
+  "chest-lift", "clam", "coordination", "double-straight-leg-lower",
+  "elephant", "feet-in-straps-openings", "footwork-on-the-chair", "footwork-on-the-reformer",
+  "frog-and-leg-circles", "frog-front", "hamstring-curls-in-straps", "hamstring-stretch-on-the-chair",
+  "heel-beats", "hip-rolls", "kneeling-arm-circles", "kneeling-side-stretch",
+  "leg-lowers", "mermaid-on-the-reformer", "pelvic-curl", "pelvic-lift",
+  "pumping-both-legs-standing", "pumping-one-leg", "running", "seated-cat-stretch",
+  "seated-chest-expansion", "seated-mermaid-on-the-chair", "seated-pumping-both-legs", "seated-spine-twist-on-the-chair",
+  "side-lying-leg-press", "side-stretch-on-the-chair", "single-leg-footwork", "spine-stretch-forward-on-the-chair",
+  "standing-pumping-one-leg", "standing-roll-down", "standing-side-pumping", "supine-leg-lowers-in-straps",
+  "supine-leg-press-on-the-chair", "the-hundred-on-the-reformer",
 ];
 const DEMO_FILES = DEMOS
   .reduce((a, s) => a.concat(["demos/" + s + "-1.jpg", "demos/" + s + "-2.jpg"]), [])
