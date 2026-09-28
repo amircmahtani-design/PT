@@ -3066,6 +3066,17 @@ const BAND_LIB={
   "Band Wrist Extension":{m:["arms"],eq:"band",cue:"Forearm supported, extend the wrist against the band. Directly for the TFCC.",wristAlt:"This IS the wrist work"}
 };
 const PILATES_LIB={
+ /* ---- MAT · level 1, added v236. A mat class that has to stand on its own
+      for 45-60 minutes needs the preparatory repertoire, not just the ten
+      headline exercises. ---- */
+ "Pelvic Curl":{m:["core","legs"],eq:"bw",d:"×8",min:3,cue:"Roll the spine up one bone at a time to a bridge, and down the same way. Ribs stay closed at the top.",wristAlt:"No wrist load — good"},
+ "Chest Lift":{m:["core"],eq:"bw",d:"×10",min:3,cue:"Hands behind the head, curl the head and chest up on the exhale. The low back stays down and the neck stays long.",wristAlt:"No wrist load — good"},
+ "Leg Lowers":{m:["core"],eq:"bw",d:"×8",min:3,cue:"Legs to the ceiling, lower as far as the low back stays on the mat, lift back. Range is earned, not forced.",wristAlt:"No wrist load — good"},
+ "Double Straight Leg Lower":{m:["core"],eq:"bw",d:"×6",min:3,cue:"Head and chest lifted, legs straight up, lower and lift together. Stop the moment the back peels away.",wristAlt:"No wrist load — good"},
+ "Breast Stroke Prep":{m:["back"],eq:"bw",d:"×8",min:3,cue:"Face down, lift the chest with the back rather than pushing with the hands. Long neck, eyes down.",wristAlt:"No wrist load — good"},
+ "Clam":{m:["legs"],eq:"bw",d:"×12 each side",min:3,cue:"Side lying, knees bent and stacked, open the top knee without rolling the pelvis back.",wristAlt:"No wrist load — good"},
+ "Heel Beats":{m:["back","legs"],eq:"bw",d:"×20",min:2,cue:"Face down, legs long and turned out, beat the heels together. The glutes work, the low back stays quiet.",wristAlt:"No wrist load — good"},
+ "Standing Roll Down":{m:["back","core"],eq:"bw",d:"×5",min:3,cue:"Standing tall, roll down through the spine one bone at a time and stack back up. The close of every mat class.",wristAlt:"No wrist load — good"},
  "The Hundred":{m:["core"],eq:"bw",d:"10 breaths · 100 pumps",cue:"Legs at tabletop or long, head and shoulders lifted, pump the arms. Breathe in for 5, out for 5, ten times.",timed:true,wristAlt:"No wrist load — good"},
  "Roll-Up":{m:["core"],eq:"bw",d:"×6",cue:"Peel the spine off the mat one vertebra at a time. Slow — no throwing yourself up.",wristAlt:"No wrist load — good"},
  "Roll Over":{m:["core"],eq:"bw",d:"×6",cue:"Legs over the head, control the spine down. Skip it if the neck complains.",wristAlt:"No wrist load — good"},
@@ -3130,6 +3141,27 @@ const PILATES_APPARATUS_LIB={
    cue:"Side sitting, one hand on the bar, reach up and over. Open the ribs on the stretched side and breathe into them."},
  "Elephant":{app:"ref",lvl:1,m:["core","legs"],eq:"ref",d:"×8",wrist:true,
    cue:"Standing on the carriage, hands on the bar, flat back, heels down. Push the carriage back from the belly. Weight through the heel of the hand — not the wrist joint."},
+ /* ---- REFORMER · level 1, added v236 so ONE apparatus can carry a whole
+      session. A 45-60 minute reformer class is roughly eighteen movements at
+      this level, and nine was half a class. ---- */
+ "Single Leg Footwork":{app:"ref",lvl:1,m:["legs"],eq:"ref",d:"×8 each leg",min:4,
+   cue:"One foot on the bar, the other knee drawn in. Press out without letting the pelvis tip towards the working side."},
+ "Feet in Straps: Openings":{app:"ref",lvl:1,m:["legs"],eq:"ref",d:"×8",min:3,
+   cue:"Legs long in the straps, open to the width of the mat and close. The movement is from the inner thigh; the pelvis does not rock."},
+ "Hamstring Curls in Straps":{app:"ref",lvl:1,m:["legs"],eq:"ref",d:"×10",min:3,
+   cue:"Heels in the straps, bend the knees to draw the carriage in, press long to return. Slow on the way out."},
+ "Supine Leg Lowers in Straps":{app:"ref",lvl:1,m:["core","legs"],eq:"ref",d:"×8",min:3,
+   cue:"Legs straight to the ceiling, lower as far as the low back stays down, lift back. The ribs stay closed."},
+ "Chest Expansion":{app:"ref",lvl:1,m:["back","shoulders"],eq:"ref",d:"×6",min:3,
+   cue:"Kneeling tall, straps in the hands, press the arms behind you and hold while you look one way, then the other. Neutral wrists throughout."},
+ "Kneeling Arm Circles":{app:"ref",lvl:1,m:["shoulders"],eq:"ref",d:"×5 each way",min:3,
+   cue:"Kneeling tall, circle the arms slowly with the straps. The shoulders stay down and the ribs stay closed — only the arms move."},
+ "Hip Rolls":{app:"ref",lvl:1,m:["core","legs"],eq:"ref",d:"×6",min:3,
+   cue:"Feet on the bar, roll the spine up one bone at a time and down the same way. The carriage does not move at all."},
+ "Side-Lying Leg Press":{app:"ref",lvl:1,m:["legs"],eq:"ref",d:"×10 each side",min:4,
+   cue:"Lying on your side, underneath foot on the bar. Press out and return with control. The waist stays long off the carriage."},
+ "Seated Cat Stretch":{app:"ref",lvl:1,m:["back","core"],eq:"ref",d:"×6",min:3,
+   cue:"Sat facing the bar, hands on it, round forward and push the carriage away, then draw it back as you stack up. A stretch, not a push."},
  /* ---- REFORMER · level 2 --------------------------------------------- */
  "Short Spine Massage":{app:"ref",lvl:2,m:["core","back"],eq:"ref",d:"×5",
    cue:"Feet in the straps, roll the hips over until the knees frame the ears, then lay the spine down one bone at a time. Never onto the neck."},
@@ -3169,6 +3201,27 @@ const PILATES_APPARATUS_LIB={
    cue:"Sat on the chair, feet on the pedal, heels together. Press out long and bend back in with control."},
  "Side Stretch on the Chair":{app:"chair",lvl:1,m:["core"],eq:"chair",d:"×5 each side",
    cue:"Standing side-on, one hand on the pedal. Press down through the side of the body, not the shoulder."},
+ /* ---- CHAIR · level 1, added v236 for the same reason. ---- */
+ "Pumping Both Legs Standing":{app:"chair",lvl:1,m:["legs"],eq:"chair",d:"×12",min:3,
+   cue:"Standing in front of the chair, both feet on the pedal, hands on the seat. Press down and let it rise slower than it fell."},
+ "Standing Pumping — One Leg":{app:"chair",lvl:1,m:["legs"],eq:"chair",d:"×10 each side",min:4,
+   cue:"One foot on the pedal, the other on the floor. The standing leg is the one working — stay level through the hips."},
+ "Calf Raises on the Pedal":{app:"chair",lvl:1,m:["legs"],eq:"chair",d:"×12",min:3,
+   cue:"Balls of the feet on the pedal, press down through the calves and lower under control. Full range, no bouncing."},
+ "Seated Chest Expansion":{app:"chair",lvl:1,m:["back","shoulders"],eq:"chair",d:"×6",min:3,
+   cue:"Sat tall on the chair, hands on the pedal behind you, press down and open the chest. The neck stays long."},
+ "Supine Leg Press on the Chair":{app:"chair",lvl:1,m:["legs","core"],eq:"chair",d:"×8",min:3,
+   cue:"Lying on your back with the feet on the pedal, press out long and bend back in. The low back stays where it started."},
+ "Seated Spine Twist on the Chair":{app:"chair",lvl:1,m:["core"],eq:"chair",d:"×5 each way",min:3,
+   cue:"Sat tall, one hand on the pedal, turn from the waist and let the pedal follow. Lift taller as you turn."},
+ "Kneeling Side Stretch":{app:"chair",lvl:1,m:["core","back"],eq:"chair",d:"45s each side",min:3,
+   cue:"Kneeling side-on, one hand on the pedal, reach the other up and over. Press through the side of the body, not the shoulder."},
+ "Hamstring Stretch on the Chair":{app:"chair",lvl:1,m:["legs"],eq:"chair",d:"45s each leg",min:3,
+   cue:"One heel on the seat, hinge forward from the hip with a long back. Breathe into the back of the thigh."},
+ "Standing Side Pumping":{app:"chair",lvl:1,m:["legs","core"],eq:"chair",d:"×10 each side",min:4,
+   cue:"Standing side-on to the chair, outside foot on the pedal. Press down without letting the hip hitch up."},
+ "Seated Pumping — Both Legs":{app:"chair",lvl:1,m:["legs"],eq:"chair",d:"×12",min:3,
+   cue:"Sat on the chair, both feet on the pedal, press down and release slowly. Sit tall the whole way — no rounding to push."},
  /* ---- CHAIR · level 2 ------------------------------------------------- */
  "Push Down":{app:"chair",lvl:2,m:["core","shoulders"],eq:"chair",d:"×6",wrist:true,
    cue:"Standing behind the chair, hands on the pedal, round down through the spine and press. Weight in the heels of the hands — stop the moment the wrist has anything to say."},
@@ -5209,20 +5262,17 @@ function buildCustomDay(name,ctx){
       recovery:"Hydrate well, refuel with protein + carbs. Great for recovery and the engine."};
   }
   if(kind==="pilates"){
-    /* v221 \u2014 a full studio session: reformer, chair, then mat. */
-    const flow=(dt.main&&dt.main.length)? dt.main.map(enrichMove) : buildStudioFlow();
+    /* v236 — one apparatus, a whole class, built to 45-60 minutes. */
+    const built=(function(){ try{ return buildApparatusSession(); }catch(e){ return {app:"mat",list:buildPilatesFlow(12),mins:30,n:12}; } })();
+    const flow=(dt.main&&dt.main.length)? dt.main.map(enrichMove) : built.list;
     const pl=(function(){ try{ return pilatesPlan(); }catch(e){ return null; } })();
-    const kit=(function(){ try{ return studioKit(); }catch(e){ return []; } })();
-    const kitWords=kit.length
-      ? kit.map(a=>FOCUS_LABEL[a].toLowerCase()).concat(["mat"]).join(", ").replace(/, ([^,]*)$/," and $1")
-      : "mat";
-    return {title:name, tag: LOC().tag+" \u00b7 Pilates", phase:DB.profile.phase, kind:"mobility", loc:locKey(),
-      flowTitle:"Pilates studio \u00b7 "+kitWords+(pl? " \u00b7 level "+pl.level+" of 3" : ""),
-      pilates: pl, studio:kit,
-      note: dt.note || ((kit.length
-        ? "The whole studio, in the order it is taught: "+kitWords+". "
-        : "Mat only here \u2014 no reformer and no chair, so the mat takes the whole session. ")+
-        "One round \u2014 do the movement, then move on. No sets, no weight: slow, controlled and breath-led."+
+    const label=(built.app==="mat")? "Pilates mat" : (FOCUS_LABEL[built.app]||"Pilates");
+    return {title:name, tag: LOC().tag+" \u00b7 "+label, phase:DB.profile.phase, kind:"mobility", loc:locKey(),
+      flowTitle:label+" \u00b7 "+built.n+" movements \u00b7 about "+built.mins+" min"+(pl? " \u00b7 level "+pl.level+" of 3" : ""),
+      pilates: pl, studio:[built.app], sessionMins:built.mins,
+      note: dt.note || ("A full "+label.toLowerCase()+" class, about "+built.mins+" minutes. "+
+        (built.app==="mat"? "" : "The apparatus changes week by week \u2014 reformer, chair, mat \u2014 so all three get used. ")+
+        "One round: do the movement, then move on. No sets, no weight: slow, controlled and breath-led."+
         (pl? " "+pl.note+(pl.toNext? " "+pl.toNext+" more session"+(pl.toNext===1?"":"s")+" and "+pl.adds.slice(0,3).join(", ")+" come in." : "") : "")),
       reps:"\u2014", sets:0, warmup:[], main:[], cooldown:flow,
       recovery:"Breathe, hydrate, and notice how much taller you stand. Mobility is training."};
@@ -5295,10 +5345,14 @@ function inferDayKind(name){ const s=String(name).toLowerCase();
 /* v60 — Pilates is a FLOW, not sets. One round: do the exercise, move on. A
    real mat class is 10-12 movements in the classical order, so that's what it
    builds — and it's rendered as a timed flow with no kg/reps boxes. */
-const PILATES_ORDER=["The Hundred","Roll-Up","Roll Over","Single Leg Circles","Rolling Like a Ball",
-  "Single Leg Stretch","Double Leg Stretch","Scissors","Criss-Cross","Spine Stretch Forward","Saw",
-  "Swan","Single Leg Kick","Shoulder Bridge","Spine Twist","Teaser","Swimming","Side Kick Series",
-  "Leg Pull Front","Mermaid Stretch"];
+/* v236 — the preparatory work sits where it is taught: warm the spine and the
+   centre first, the headline exercises next, the closers last. */
+const PILATES_ORDER=["Pelvic Curl","Chest Lift","Leg Lowers","The Hundred","Roll-Up","Roll Over",
+  "Single Leg Circles","Rolling Like a Ball","Single Leg Stretch","Double Leg Stretch",
+  "Double Straight Leg Lower","Scissors","Criss-Cross","Spine Stretch Forward","Saw",
+  "Breast Stroke Prep","Swan","Single Leg Kick","Heel Beats","Shoulder Bridge","Spine Twist",
+  "Teaser","Swimming","Clam","Side Kick Series","Leg Pull Front","Mermaid Stretch",
+  "Standing Roll Down"];
 /* ===== v126 · PILATES WITH A PLAN ======================================
    The mat repertoire was all here and the flow rotated so it varied, but
    every session was the same difficulty: day one handed him the Teaser and
@@ -5315,8 +5369,10 @@ const PILATES_ORDER=["The Hundred","Roll-Up","Roll Over","Single Leg Circles","R
    fundamentals build, and the Roll Over puts load through the neck and
    should never be anybody\u2019s first mat session. */
 const PILATES_LEVELS={
-  1:["The Hundred","Roll-Up","Single Leg Circles","Rolling Like a Ball","Single Leg Stretch",
-     "Double Leg Stretch","Spine Stretch Forward","Swan","Shoulder Bridge","Side Kick Series"],
+  1:["Pelvic Curl","Chest Lift","Leg Lowers","The Hundred","Roll-Up","Single Leg Circles",
+     "Rolling Like a Ball","Single Leg Stretch","Double Leg Stretch","Double Straight Leg Lower",
+     "Spine Stretch Forward","Breast Stroke Prep","Swan","Heel Beats","Shoulder Bridge","Clam",
+     "Side Kick Series","Standing Roll Down"],
   2:["Scissors","Criss-Cross","Saw","Single Leg Kick","Spine Twist","Swimming","Mermaid Stretch"],
   3:["Roll Over","Teaser","Leg Pull Front"]
 };
@@ -5369,10 +5425,13 @@ function pilatesBase(name){
 function buildPilatesFlow(total,skip){
   total=total||11;
   const done=new Set((skip||[]).map(pilatesBase).filter(Boolean));
-  /* The Hundred opens every class — it's the warm-up, never rotated out.
-     Unless the reformer has already done it, in which case the mat half picks
-     up where the apparatus left off. */
-  const opener=done.has(pilatesBase("The Hundred"))? null : "The Hundred";
+  /* v236 — The Hundred used to be pinned to the front as "the warm-up". Now
+     that the preparatory work is in the repertoire, the classical order itself
+     says what opens a class: Pelvic Curl, Chest Lift, Leg Lowers, THEN the
+     Hundred. PILATES_ORDER already encodes that, so nothing needs pinning —
+     and for a HALF session (Wednesday) the Hundred is still the first headline
+     movement it reaches. */
+  const opener=null;
   /* v126 — only what the level has unlocked, still in classical order. */
   let pool=PILATES_ORDER;
   try{ const pl=pilatesPlan(); if(pl.unlocked.length) pool=PILATES_ORDER.filter(n=>pl.unlocked.indexOf(n)>=0); }catch(e){}
@@ -6667,48 +6726,76 @@ function pilatesHalf(total){
   const fill=buildPilatesFlow(total-app.length, app.map(m=>m.t));
   return {focus, list:app.concat(fill), mat:fill.length};
 }
-/* ===== v221 · MONDAY IS A FULL PILATES STUDIO SESSION =================
-   "Let's make Monday a full Pilates workout day every Monday. Make sure it
-   uses my full equipment. I have reformer the chair and the mat."
+/* ===== v236 · ONE APPARATUS, A WHOLE SESSION =========================
+   "For Pilates days it's either reformer or chair or mat. However when you
+   give me one of them you have to give me something that should take me 45-60
+   mins to do."
 
-   Wednesday picks ONE apparatus and rotates it week by week, because it is
-   half a session — the mobility flow has the other half. Monday is the whole
-   session, so it is not a choice between them: reformer, then chair, then mat
-   to finish, which is the order a studio teaches them in and the order that
-   goes from most supported to least.
+   v221 built Monday as reformer THEN chair THEN mat, which is not how a class
+   is taught and is not what he wants. A Pilates session is one apparatus,
+   worked properly, for the length of a class.
 
-   Everything underneath is the machinery Wednesday already uses, so a level
-   he has not reached stays locked, a movement that loads the wrist is dropped
-   on a day he has reported wrist pain, and what he did last week is what gets
-   rotated out. Away from Dubai there is no reformer and no chair, so the mat
-   takes the whole session rather than the day quietly shrinking. */
-const STUDIO_BLOCKS=[{app:"ref",n:6},{app:"chair",n:4}];
-const STUDIO_MAT=4;
-function buildStudioFlow(){
-  const out=[];
-  let short=0;
-  STUDIO_BLOCKS.forEach(b=>{
-    const list=apparatusHere(b.app)? apparatusFlow(b.app,b.n) : [];
-    if(!list.length){ short+=b.n; return; }
-    if(list.length<b.n) short+=(b.n-list.length);
-    list[0].sect=FOCUS_LABEL[b.app]+" · "+list.length+" movement"+(list.length===1?"":"s");
-    list.forEach(m=>out.push(m));
-  });
-  /* The mat carries whatever the apparatus could not — a kit he does not
-     have here, or a level that has not unlocked enough of one yet. */
-  const mat=buildPilatesFlow(STUDIO_MAT+short, out.map(m=>m.t));
-  if(mat.length) mat[0].sect = out.length? "Pilates mat · to finish" : "Pilates mat · classical order";
-  mat.forEach(m=>out.push(m));
-  const close=applyCoolDefaults(FLOW_CLOSERS.map(pickItem));
-  if(close.length) close[0].sect="Close";
-  close.forEach(m=>out.push(m));
-  return out;
+   That needs repertoire, and the honest problem was that there was not enough
+   of it: nine reformer movements, six chair and ten mat at his level is half a
+   class each. v236 adds the preparatory work that a real level-1 class is
+   mostly made of — eighteen reformer, fourteen chair, eighteen mat — and
+   every movement now carries an honest MINUTE cost, so the session is built to
+   a duration rather than to a count.
+
+   The apparatus rotates week by week so all three get used, and the kit he
+   does not have in the room he is standing in is skipped rather than
+   pretended at. */
+const SESSION_MIN=52;              /* aim; 45-60 is the band he asked for */
+const PILATES_ROTATION=["ref","chair","mat","ref","chair","mat"];
+function moveMinutes(name){
+  const a=apparatusMove(name);
+  if(a && a.min) return a.min;
+  const m=PILATES_LIB[name];
+  if(m && m.min) return m.min;
+  /* Anything without an explicit cost: a classical movement done properly,
+     with the setting-up, is about two and a half minutes. */
+  return 2.5;
 }
-/* Which apparatus today's studio session actually has, for the title and the
-   note — asked without rebuilding the sheet, the way mobPilFocus is. */
+/* Which apparatus this Pilates day uses. Rotates by block week, and falls back
+   to the mat wherever the apparatus is not in the room. */
+function pilatesApparatusOn(iso){
+  let wk=1; try{ wk=blockWeekOn(iso||today()); }catch(e){}
+  const want=PILATES_ROTATION[(wk-1)%PILATES_ROTATION.length] || "mat";
+  if(want==="mat") return "mat";
+  try{ return apparatusHere(want)? want : "mat"; }catch(e){ return "mat"; }
+}
+/* A whole class on one apparatus, built to the minute target. */
+function buildApparatusSession(app){
+  app=app||pilatesApparatusOn(today());
+  const closers=applyCoolDefaults(FLOW_CLOSERS.map(pickItem));
+  const closeMin=closers.reduce((n,m)=>n+2,0);
+  const budget=Math.max(20,SESSION_MIN-closeMin);
+  let list;
+  if(app==="mat"){
+    /* Ask for plenty and trim to the clock — buildPilatesFlow keeps the
+       classical order, so trimming from the end never scrambles it. */
+    list=buildPilatesFlow(40);
+  } else {
+    list=apparatusFlow(app,40);
+    if(!list.length){ app="mat"; list=buildPilatesFlow(40); }
+  }
+  const out=[]; let mins=0;
+  for(const mv of list){
+    const c=moveMinutes(mv.t);
+    if(out.length && mins+c>budget) break;
+    out.push(mv); mins+=c;
+  }
+  if(out.length) out[0].sect=(app==="mat"? "Pilates mat" : FOCUS_LABEL[app])+" \u00b7 "+
+    out.length+" movements \u00b7 about "+Math.round(mins+closeMin)+" min";
+  if(closers.length) closers[0].sect="Close";
+  return {app, list:out.concat(closers), mins:Math.round(mins+closeMin), n:out.length};
+}
+/* What today's session is, without rebuilding it — for the title and the note. */
 function studioKit(){
-  return STUDIO_BLOCKS.filter(b=>apparatusHere(b.app) && apparatusFlow(b.app,b.n).length)
-                      .map(b=>b.app);
+  try{ return [pilatesApparatusOn(today())]; }catch(e){ return ["mat"]; }
+}
+function buildStudioFlow(){
+  try{ return buildApparatusSession().list; }catch(e){ return buildPilatesFlow(12); }
 }
 function buildMobPilFlow(){
   /* The Pilates half first, so the mobility half knows what to avoid \u2014 its
@@ -16146,7 +16233,7 @@ function scheduleInApp(){
    v18 ADDITIONS — draggable rest timer · weekly training memory · AI planner
    · Firestore sync
    ========================================================================== */
-const APP_VERSION="v235 · 27/09/2026";
+const APP_VERSION="v236 · 28/09/2026";
 
 /* ===== 1. REST TIMER — drag it anywhere so it never blocks the chat box ===== */
 let _rtDrag=null;

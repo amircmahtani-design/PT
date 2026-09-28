@@ -1,294 +1,109 @@
-=== v206 · THE SHOOT LIST FOR THE REFORMER AND THE CHAIR ===
+PILATES PHOTO SHOOT LIST — generated for v236, 28/09/2026
+==============================================================
 
-Nothing in this list has a photograph, and nothing in any remote pack shows
-these movements honestly — "Pull Up" in an exercise database is a bar pull-up,
-"Elephant" is not a movement it has heard of. So the app refuses to guess and
-these cards show the demo link instead. That is deliberate.
+HOW TO SHOOT THEM
+--------------------------------------------------------------
+One WebP per movement, filename exactly as given below, dropped into
+/demos/. The app already looks for these names — nothing else to do.
 
-HOW TO SHOOT THEM — the same recipe as the mat photographs you already have,
-which is why those work so well:
+  · Landscape, phone on a tripod or a shelf, whole body and the whole
+    apparatus in frame. A reformer shot that crops the footbar is no
+    use for showing where the feet go.
+  · Shoot the position that shows what the movement IS — usually the
+    working end of it, not the start. Footwork means feet on the bar
+    with the carriage out; Chest Expansion means arms already back.
+  · Same room, same light, same clothes across a batch. They sit next
+    to each other on screen.
+  · Until a photo exists the app shows NO image rather than a wrong one,
+    so there is no harm in doing these in batches.
 
-  • PORTRAIT, roughly 4:5 (the mat ones are 480x600). Phone held upright.
-  • SIDE ON to the apparatus, camera at about the height of the carriage or
-    the chair seat. The whole of you in frame — head to feet, nothing cropped.
-  • ONE FRAME IS ENOUGH per movement if the position tells the story (as with
-    The Hundred). TWO if the movement travels: -1 the start, -2 the finish.
-  • Plain background, the apparatus clearly visible. Fitted clothing so the
-    spine and the leg line read.
-  • Filename = the movement name in lowercase with hyphens, e.g.
-    footwork-on-the-reformer.jpg. Send them however is easiest; I will name,
-    crop and wire them.
+PRIORITY — these are the ones you will actually see at level 1.
+Levels 2 and 3 are listed after, and can wait until they unlock.
 
-Shoot in this order — the level 1 movements come up first and most often:
+LEVEL 1 — SHOOT THESE FIRST
+--------------------------------------------------------------
 
-REFORMER · level 1 (these appear on your very next reformer Wednesday)
-  footwork-on-the-reformer     sat/lying, feet on the bar. One frame, legs
-                               extended, is enough.
-  the-hundred-on-the-reformer  straps in hands, head and chest lifted.
-  coordination                 arms pressed down past the hips, legs open.
-  frog-and-leg-circles         feet in the straps, legs extended long. TWO
-                               frames: -1 bent (frog), -2 long.
-  arms-in-straps-supine-series supine, arms pressed down beside the hips.
-  running                      one heel pressed down, the other lifted.
-  pelvic-lift                  hips lifted, feet on the bar.
-  mermaid-on-the-reformer      side sitting, one arm reaching up and over.
-  elephant                     standing on the carriage, flat back, hands on
-                               the bar. Shoot from the side so the flat back
-                               and the wrist angle both read.
+  REFORMER (18)
+    arms-in-straps-supine-series.webp        Arms in Straps (Supine Series)  — ×8 each
+    chest-expansion.webp                     Chest Expansion  — ×6
+    coordination.webp                        Coordination  — ×6
+    elephant.webp                            Elephant  — ×8
+    feet-in-straps-openings.webp             Feet in Straps: Openings  — ×8
+    footwork-on-the-reformer.webp            Footwork on the Reformer  — ×10 each position
+    frog-and-leg-circles.webp                Frog and Leg Circles  — ×8 then ×5 each way
+    hamstring-curls-in-straps.webp           Hamstring Curls in Straps  — ×10
+    hip-rolls.webp                           Hip Rolls  — ×6
+    kneeling-arm-circles.webp                Kneeling Arm Circles  — ×5 each way
+    mermaid-on-the-reformer.webp             Mermaid on the Reformer  — 45s each side
+    pelvic-lift.webp                         Pelvic Lift  — ×8
+    running.webp                             Running  — ×10 each side
+    seated-cat-stretch.webp                  Seated Cat Stretch  — ×6
+    side-lying-leg-press.webp                Side-Lying Leg Press  — ×10 each side
+    single-leg-footwork.webp                 Single Leg Footwork  — ×8 each leg
+    supine-leg-lowers-in-straps.webp         Supine Leg Lowers in Straps  — ×8
+    the-hundred-on-the-reformer.webp         The Hundred on the Reformer  — 10 breaths · 100 pumps
 
-REFORMER · level 2 (unlocks at 5 Pilates sessions)
-  short-spine-massage, stomach-massage, long-stretch, knee-stretches,
-  short-box-series (round back is the one to shoot), pulling-straps,
-  swan-on-the-long-box
+  PILATES CHAIR (16)
+    calf-raises-on-the-pedal.webp            Calf Raises on the Pedal  — ×12
+    footwork-on-the-chair.webp               Footwork on the Chair  — ×10 each position
+    frog-front.webp                          Frog Front  — ×8
+    hamstring-stretch-on-the-chair.webp      Hamstring Stretch on the Chair  — 45s each leg
+    kneeling-side-stretch.webp               Kneeling Side Stretch  — 45s each side
+    pumping-both-legs-standing.webp          Pumping Both Legs Standing  — ×12
+    pumping-one-leg.webp                     Pumping One Leg  — ×10 each side
+    seated-chest-expansion.webp              Seated Chest Expansion  — ×6
+    seated-mermaid-on-the-chair.webp         Seated Mermaid on the Chair  — 45s each side
+    seated-pumping-both-legs.webp            Seated Pumping — Both Legs  — ×12
+    seated-spine-twist-on-the-chair.webp     Seated Spine Twist on the Chair  — ×5 each way
+    side-stretch-on-the-chair.webp           Side Stretch on the Chair  — ×5 each side
+    spine-stretch-forward-on-the-chair.webp  Spine Stretch Forward on the Chair  — ×6
+    standing-pumping-one-leg.webp            Standing Pumping — One Leg  — ×10 each side
+    standing-side-pumping.webp               Standing Side Pumping  — ×10 each side
+    supine-leg-press-on-the-chair.webp       Supine Leg Press on the Chair  — ×8
 
-REFORMER · level 3 (at 11 sessions)
-  up-stretch-and-down-stretch, rowing-series, long-spine, side-splits,
-  tendon-stretch-on-the-reformer
+  MAT (8) — the other mat movements already have photos
+    pelvic-curl.webp                         Pelvic Curl
+    chest-lift.webp                          Chest Lift
+    leg-lowers.webp                          Leg Lowers
+    double-straight-leg-lower.webp           Double Straight Leg Lower
+    breast-stroke-prep.webp                  Breast Stroke Prep
+    clam.webp                                Clam
+    heel-beats.webp                          Heel Beats
+    standing-roll-down.webp                  Standing Roll Down
 
-CHAIR · level 1 (these appear on your very next chair Wednesday)
-  footwork-on-the-chair        sat tall, both feet pressing the pedal down.
-  pumping-one-leg              one foot on the pedal, hips square.
-  spine-stretch-forward-on-the-chair   sat in front, hands on the pedal,
-                               spine curled forward.
-  seated-mermaid-on-the-chair  one hand on the pedal, other arm overhead.
-  frog-front                   sat on the chair, legs pressing out long.
-  side-stretch-on-the-chair    standing side on, one hand on the pedal.
+LEVEL 2 — later
+--------------------------------------------------------------
 
-CHAIR · level 2
-  push-down, swan-on-the-chair, washerwoman, tendon-stretch-on-the-chair
+  REFORMER (7)
+    knee-stretches.webp                      Knee Stretches  — ×8 round, ×8 flat
+    long-stretch.webp                        Long Stretch  — ×6
+    pulling-straps.webp                      Pulling Straps  — ×6
+    short-box-series.webp                    Short Box Series  — ×6 each
+    short-spine-massage.webp                 Short Spine Massage  — ×5
+    stomach-massage.webp                     Stomach Massage  — ×8 round, ×8 flat
+    swan-on-the-long-box.webp                Swan on the Long Box  — ×6
 
-CHAIR · level 3
-  pull-up-on-the-chair, going-up-front, mountain-climb, teaser-on-the-chair
+  PILATES CHAIR (4)
+    push-down.webp                           Push Down  — ×6
+    swan-on-the-chair.webp                   Swan on the Chair  — ×6
+    tendon-stretch-on-the-chair.webp         Tendon Stretch on the Chair  — ×6
+    washerwoman.webp                         Washerwoman  — ×8
 
-If you only shoot fifteen things, shoot the two level 1 lists — that is every
-movement the app can put in front of you until your fifth Pilates session.
+LEVEL 3 — later still
+--------------------------------------------------------------
 
-STILL OUTSTANDING FROM BEFORE
-  single-leg-kick   (see the v202 note below)
-  plank-hip-dips, single-arm-lat-pulldown, incline-db-curl
+  REFORMER (5)
+    long-spine.webp                          Long Spine  — ×5
+    rowing-series.webp                       Rowing Series  — ×5 each
+    side-splits.webp                         Side Splits  — ×6 each side
+    tendon-stretch-on-the-reformer.webp      Tendon Stretch on the Reformer  — ×6
+    up-stretch-and-down-stretch.webp         Up Stretch and Down Stretch  — ×6 each
 
-STILL NEEDED — as of v188 (20/09/2026)
-======================================
+  PILATES CHAIR (4)
+    going-up-front.webp                      Going Up Front  — ×5 each side
+    mountain-climb.webp                      Mountain Climb  — ×5 each side
+    pull-up-on-the-chair.webp                Pull Up on the Chair  — ×5
+    teaser-on-the-chair.webp                 Teaser on the Chair  — ×5
 
-  plank-hip-dips            — NEW. Forearm plank, hips rotating down to one
-                               side then the other. In weeks 1 and 3.
-  single-arm-lat-pulldown   — week 3 Pull Day
-  incline-db-curl           — week 3 Upper Body and week 3 Pull Day
-
-Side Plank already has one. Every other movement in the sixteen sessions has
-one too.
-
-STILL NEEDED — as of v177 (17/09/2026)
-======================================
-
-Three movements now IN the 4-week program have no photograph, so they show no
-image at all (never a wrong one):
-
-  single-arm-lat-pulldown   — week 3 Pull Day, the day's main vertical pull
-  incline-db-curl           — week 3 Upper Body and week 3 Pull Day
-  reverse-crunch            — weeks 2 and 4, Legs & Core and Pull Day
-
-Every other movement in all sixteen sessions has one.
-
-EVERY EXERCISE IN THE APP — AND WHAT IT SHOWS
-=============================================
-
-v148 · 16/09/2026
-
-Audited in full: every name the app can put on a card, resolved through the
-same code the cards use, and every one of your photographs looked at against
-the movement it is filed under.
-
-    219 names the app can program
-    214 show one of your photographs
-      5 show the ▶ Watch demo link
-      0 show the free pack
-      0 show an approximate match
-
-    210 photographs on file
-    209 show the movement they are named for
-      1 does not, and is blocked
-
-
-THE ONE THAT IS WRONG
-=====================
-
-    single-leg-kick
-
-Your photograph is a quadruped donkey kick — on hands and knees, one straight
-leg driven back and up. The Pilates Single Leg Kick is prone on the FOREARMS,
-chest lifted, bent knee pulsing the heel to the glute, which is what the cue
-on that same card tells you to do. Picture and instruction saying two
-different things is the thing you asked me to stop doing, so the photo is
-blocked and the card shows the Watch-demo link until you re-shoot it.
-
-
-THE MASTER PROGRAM — SEVEN NEW MOVEMENTS TO SHOOT
-==================================================
-
-v163 built his 4-week program into the app. Twenty-eight of its movements were
-already his own photographs. These seven are new to the catalogue and have no
-picture yet, so their cards show the Watch-demo link:
-
-    cable-curl.webp                     elbows pinned to the sides, cable curl
-    cable-pull-through.webp             rope between the legs, hinge then drive
-                                        the hips through
-    cable-straight-arm-pulldown.webp    arms long, bar to the thighs, no elbow
-                                        bend
-    single-arm-lat-pulldown.webp        one side, full stretch overhead then
-                                        pull down and in
-    single-arm-triceps-extension.webp   elbow high and still, extend from the
-                                        elbow only
-    incline-db-curl.webp                lying back on the incline, arms hanging
-                                        behind you
-    reverse-crunch.webp                 knees to chest, hips curling off the
-                                        floor
-
-Cable Curl, Cable Pull-Through, Cable Straight-arm Pulldown and Single-arm Lat
-Pulldown appear every week of the block, so those four are the ones worth doing
-first.
-
-
-THE NECK — THE ONE GAP IN THE NEW FULL-BODY FLOW
-=================================================
-
-v158 rebuilt the mobility session to run head to toe: neck, shoulders, chest,
-upper back, lats, lower back, hips, glutes, hamstrings, groin, calves and
-ankles, wrists. Every one of those areas gets a slot in every session, and
-every movement shows one of your own photographs except these two:
-
-    neck-circles.webp       slow and small, chin to chest, ear to shoulder,
-                            all the way round — shoot both directions
-    neck-side-bends.webp    ear towards the shoulder, opposite hand reaching
-                            down towards the floor, no hand on the head
-
-They are the first thing in the flow after the walk, so they are the two cards
-you will look at most. Shoot those and the whole session is yours.
-
-
-THE FOUR NEVER SHOT
-===================
-
-    Band Good Morning        band on the shoulders, hinge forward
-    Band Internal Rotation   elbow tucked, rotate in against the band
-    Band Squat               band across the shoulders, full depth
-    Band Upright Row         elbows lead, stop at chest height
-
-None of these is in any pool, so the app never programs them by itself — they
-only turn up if you or the coach ask for one by name. Shoot these four plus
-the single leg kick and the app is 219 of 219.
-
-
-ONE WORTH A LOOK
-================
-
-    chin-up
-
-Shot from behind at 418×627, and the grip direction is not legible at that
-size. The pull-up is shot from the front and is clearly overhand. If the
-chin-up was shot overhand too then it is a second pull-up and wants re-doing
-underhand — a chin-up is defined by the underhand grip.
-
-
-TWO FORMATS, BOTH WORKING
-=========================
-
-The first batch was pairs — demos/<slug>-1.jpg and -2.jpg — and the tile
-cross-fades between the start and the finish. The second batch is one
-WebP per movement with both positions already inside the frame, so those
-tiles show a single still and size themselves to the image instead of
-being letterboxed into a fixed box.
-
-    76 movements as a JPG pair
-    134 movements as a single WebP
-
-
-LIFTS AND CONDITIONING — 174
-============================
-
-  Ab Wheel, Archer Push-up, Band Anti-Rotation Hold, Band Calf Raise,
-  Band Chest Fly, Band Chest Press, Band Curl, Band Dead Bug, Band
-  External Rotation, Band Face Pull, Band Glute Bridge, Band Hammer
-  Curl, Band Kickback, Band Lat Pulldown, Band Lateral Walk, Band Leg
-  Curl, Band Monster Walk, Band Overhead Press, Band Overhead Triceps
-  Extension, Band Pallof Press, Band Pull-Apart, Band Push-up, Band
-  Reverse Fly, Band Romanian Deadlift, Band Row, Band Single-arm Row,
-  Band Straight-arm Pulldown, Band Triceps Pushdown, Band Woodchop,
-  Barbell Back Squat, Barbell Curl, Barbell Row, Bear Crawl, Bench
-  Dip, Bench Press, Bicycle Crunch, Bird Dog, Bodyweight Squat, Box
-  Jump, Broad Jump, Bulgarian Split Squat, Burpee, Cable Crunch, Cable
-  Fly, Cable Lateral Raise, Calf Raise, Chest-supported Row, Chin-up,
-  Close-grip Bench Press, Cossack Squat, Criss-Cross, Curtsy Lunge, DB
-  Arnold Press, DB Bench Press, DB Calf Raise, DB Chest Fly, DB Clean
-  and Press, DB Concentration Curl, DB Curl, DB Floor Press, DB Front
-  Raise, DB Front Squat, DB Kickback, DB Pullover, DB Push Press, DB
-  Reverse Fly, DB Romanian Deadlift, DB Row, DB Russian Twist, DB
-  Shoulder Press, DB Shrug, DB Side Bend, DB Single-arm Row, DB
-  Single-leg RDL, DB Skull Crusher, DB Suitcase Carry, DB Sumo
-  Deadlift, DB Swing, DB Thruster, DB Upright Row, DB Zottman Curl,
-  Dead Bug, Dead Hang, Deadlift, Decline Push-up, Diamond Push-up,
-  Dip, Double Leg Stretch, Face Pull, Farmer Carry, Flutter Kick,
-  Front Squat, Glute Bridge, Goblet Squat, Hammer Curl, Hanging Knee
-  Raise, High Knees, Hindu Push-up, Hip Abduction, Hip Thrust, Hollow
-  Hold, Hollow Rock, Incline Bench Press, Incline DB Press, Incline
-  Push-up, Inverted Row, Jump Squat, Jumping Jacks, Kettlebell Swing,
-  Landmine Press, Lat Pulldown, Lateral Lunge, Lateral Raise, Leg Pull
-  Front, Leg Raise, Mermaid Stretch, Mountain Climber, Nordic Curl,
-  Nordic Negative, Overhead Press, Overhead Triceps Extension, Pike
-  Push-up, Pistol Squat, Plank, Plank Shoulder Tap, Plank Up-Down,
-  Prone Swimmer, Prone Y-T-W Raise, Pull-up, Push-up, Renegade Row,
-  Reverse Lunge, Reverse Plank, Reverse Snow Angel, Reverse Snow Angel
-  Hold, Roll Over, Roll-Up, Rolling Like a Ball, Romanian Deadlift,
-  Russian Twist, Saw, Scissors, Seated Cable Row, Shadow Boxing,
-  Shoulder Bridge, Side Kick Series, Side Plank, Side Plank Rotation,
-  Single Leg Circles, Single Leg Kick, Single Leg Stretch, Single-leg
-  Calf Raise, Single-leg Glute Bridge, Skater Jump, Spine Stretch
-  Forward, Spine Twist, Split Squat, Sprawl, Squat Thrust, Step-up,
-  Superman Hold, Swan, Swimming, Teaser, The Hundred, Towel Row,
-  Triceps Pushdown, Tuck Jump, V-Up, Walking Lunge, Wall Angel, Wall
-  Sit, Wall Sit March, Wide Push-up
-
-
-MOBILITY, WARM-UP AND COOL-DOWN — 38
-====================================
-
-  Concept2 row — easy, Brisk walk or skipping, Arm circles, Band pull-
-  aparts, Wall slides, Doorway pec opener, Band shoulder dislocates,
-  Scapular push-ups, Scapular pull-ups, Cat-cow, Open-book rotations,
-  Dead hang, Prone Y-T-W raises, Leg swings — front to back, Leg
-  swings — side to side, World's greatest stretch, 90/90 hip switches,
-  Ankle rocks on a wall, Glute bridge, Bodyweight squat to depth,
-  Wrist circles & gentle flexor stretch, Light band curls & pushdowns,
-  Dead bug, Bird dog, Doorway pec stretch, Cross-body shoulder
-  stretch, Overhead triceps stretch, Lat stretch on a doorframe,
-  Child's pose with side reach, Cobra stretch, Couch stretch (hip
-  flexor), Standing hamstring stretch, Figure-4 glute stretch, Calf
-  stretch on a wall, Wrist flexor & extensor stretch, Supine spinal
-  twist, Child's pose, Box breathing
-
-
-PILATES — 20
-============
-
-  The Hundred, Roll-Up, Single Leg Circles, Rolling Like a Ball,
-  Single Leg Stretch, Double Leg Stretch, Spine Stretch Forward, Swan,
-  Shoulder Bridge, Side Kick Series, Scissors, Criss-Cross, Saw,
-  Single Leg Kick, Spine Twist, Swimming, Mermaid Stretch, Roll Over,
-  Teaser, Leg Pull Front
-
-
-IF ONE EVER LOOKS WRONG
-=======================
-
-Tell me the movement. A replacement is two files in demos/ named for its
-slug, or one WebP named for the slug, plus the slug added to LOCAL_DEMOS
-or LOCAL_WEBP in index.html and the matching list in sw.js so the
-service worker pre-caches it. Nothing else has to change — a local
-photograph outranks every remote source automatically.
-
-=== v202 · STILL NEEDED ===
-single-leg-kick  — Pilates Single Leg Kick. PRONE on the forearms, chest
-  lifted, one bent knee pulsing the heel towards the glute. NOT the quadruped
-  donkey kick: the stock photo is that movement, which is why the app shows no
-  picture for this one at all. Two frames: -1 leg extended, -2 heel pulsed in.
-  Files: demos/single-leg-kick-1.jpg and demos/single-leg-kick-2.jpg
+TOTAL OUTSTANDING: 62
+  level 1 only: 42 — that is the set that matters now

@@ -1,3 +1,65 @@
+AMIR PT — v236 · 28/09/2026
+===========================
+
+"For Pilates days it's either reformer or chair or mat. However when you give
+me one of them you have to give me something that should take me 45-60 mins to
+do. Also give me the list of images you need."
+
+ONE APPARATUS, A WHOLE CLASS
+-----------------------------
+v221 built Monday as reformer THEN chair THEN mat in one session, which is not
+how a class is taught and is not what he wanted. A Pilates session is one
+apparatus, worked properly, for the length of a class. It rotates week by week
+so all three get used.
+
+The honest obstacle was repertoire. Nine reformer movements, six chair and ten
+mat at level 1 is half a class each, and no amount of arranging makes half a
+class into 50 minutes. So the preparatory work a real level-1 class is mostly
+MADE of has been added:
+
+  reformer   9 → 18   Single Leg Footwork, Feet in Straps: Openings, Hamstring
+                       Curls, Supine Leg Lowers, Chest Expansion, Kneeling Arm
+                       Circles, Hip Rolls, Side-Lying Leg Press, Seated Cat
+  chair      6 → 16   Pumping Both Legs Standing, Standing Pumping One Leg,
+                       Standing Side Pumping, Seated Pumping, Calf Raises,
+                       Seated Chest Expansion, Supine Leg Press, Seated Spine
+                       Twist, Kneeling Side Stretch, Hamstring Stretch
+  mat       10 → 18   Pelvic Curl, Chest Lift, Leg Lowers, Double Straight Leg
+                       Lower, Breast Stroke Prep, Clam, Heel Beats, Standing
+                       Roll Down
+
+BUILT TO A CLOCK, NOT A COUNT
+------------------------------
+Every movement carries an honest minute cost — four for Single Leg Footwork,
+three for Hip Rolls, two for Heel Beats — and buildApparatusSession fills to a
+52-minute target including the closers, then stops. Measured: reformer 16
+movements / 49 min, chair 16 / 51 min, mat 18 / 52 min. All inside the 45-60 he
+asked for, and not one session mixes two apparatus.
+
+Away from Dubai there is no reformer and no chair, so it is the mat class, at
+the same length rather than a shortened something-else.
+
+THE MAT CLASS NOW OPENS THE WAY IT IS TAUGHT
+---------------------------------------------
+The Hundred used to be pinned to the front as "the warm-up". With the
+preparatory work in the repertoire the classical order says it properly:
+Pelvic Curl, Chest Lift, Leg Lowers, THEN the Hundred. Nothing needs pinning —
+PILATES_ORDER already encodes it, and Wednesday's half session still reaches
+the Hundred as its first headline movement.
+
+THE PHOTO LIST
+---------------
+EXERCISES.txt is regenerated: 62 movements have no demo, 42 of them at level 1,
+grouped by apparatus with the exact filename and the dose for each. Until a
+photo exists the app shows NO image rather than a wrong one — verified on the
+new movements, which all return kind:"link".
+
+Verified in headless Chromium: each apparatus builds a single-apparatus session
+inside the band with no mixing; the rotation runs ref, chair, mat across six
+block weeks; Greece falls back to a full mat class; Wednesday still builds
+mobility + Pilates with no duplicates. Sweep clean: verify16 16/16, journey,
+audit173 at 390 and 360, prog224.
+
 AMIR PT — v235 · 27/09/2026
 ===========================
 
