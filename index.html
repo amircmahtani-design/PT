@@ -1545,6 +1545,8 @@ a{color:var(--orange);}
     <div class="section-h">Profile and rules</div>
     <div class="card">
       <div class="field"><label>Name</label><input class="txtin" id="setName" value="Amir" /></div>
+      <div class="field"><label>Date of birth</label><input class="txtin" id="setDob" type="date" onchange="renderAgeHint()" />
+        <div class="hint mt" id="setAgeHint"></div></div>
       <div class="field"><label>Location</label>
         <div class="seg three" id="locSeg"><button class="on" data-v="dubai" onclick="segPick(this,'loc')">🏠 Dubai</button>
           <button data-v="madrid" onclick="segPick(this,'loc')">🇪🇸 Madrid</button>
@@ -1786,7 +1788,7 @@ EXCLUDE_116.exPrefs=()=>{ const o={}; EXCLUDE_116.forEach(x=>
   o[x.name.toLowerCase()]={never:true, why:x.why, substitute:x.sub}); return o; };
 
 const DEFAULTS = {
-  profile:{name:"Amir", location:"dubai", height:187, weightKg:83.7,
+  profile:{name:"Amir", location:"dubai", height:187, weightKg:83.7, dob:"1987-03-10",
     goal:"Three things at once: MOBILITY, STRENGTH and BUILDING — and I am building muscle WHILE I lose the weight, not after. Two stages, one date. STAGE 1: a flat stomach — the fat comes off while I add what I can on the bar. STAGE 2: build the shape — as close to Mario Casas, the Spanish actor, as possible: lean and defined rather than big, visible abs, shoulder-to-waist taper, obviously trained. NOT a bodybuilder and not bulky. As close to that as I can get by March 2027. Mobility is a real goal, not a warm-up: measurably more supple, held ranges every session. Judge progress by the mirror, photos, waist, the loads on the bar and the ranges I can hold — not by bodyweight.", phase:"Lean Recomp / mini-cut", coachTone:"",
     equip:{dubai:"",madrid:"",greece:""},
     equipment:"Adjustable dumbbells, barbell + plates, bench, pull-up bar, Concept2 rower, resistance bands",
@@ -2347,6 +2349,9 @@ function mergeDefaults(parsed){ let d={...structuredClone(DEFAULTS),...parsed};
     d.prefs.secOrder['s-today']=d.prefs.homeOrder.slice();
   }
   if(!d.profile.height) d.profile.height=187;
+  /* v240 — he told me: 39, turning 40 on 10 March. A plain string literal,
+     never a reference to anything declared later in this file — see v235. */
+  if(!d.profile.dob) d.profile.dob="1987-03-10";
   /* v69 — he showed me the target physique and confirmed he still wants to
      build. Replace the old vague goal, but never overwrite one he wrote. */
   if(!d.profile.goalV69 && /physique I want/i.test(d.profile.goal||"")){
@@ -2531,6 +2536,29 @@ async function restoreIfWiped(){ try{
 try{ if(navigator.storage&&navigator.storage.persist) navigator.storage.persist(); }catch(e){}
 let DB = load();
 function today(){ return new Date().toISOString().slice(0,10); }
+/* ===== v240 · THE APP KNOWS HOW OLD HE IS ============================
+   "Just for the app to know I'm 39 and will turn 40 March 10th."
+
+   It had been assuming 45 in the one place age mattered — the BMR behind the
+   energy read — which put his maintenance about 30 kcal/day low. Now it is a
+   stored date of birth, so it stays right on its own every March. */
+function ageOn(iso,dob){
+  const b=String(dob||(DB.profile&&DB.profile.dob)||"").match(/^(\d{4})-(\d{2})-(\d{2})/);
+  if(!b) return null;
+  const d=String(iso||today()).match(/^(\d{4})-(\d{2})-(\d{2})/);
+  if(!d) return null;
+  let a=(+d[1])-(+b[1]);
+  if((+d[2])<(+b[2]) || ((+d[2])===(+b[2]) && (+d[3])<(+b[3]))) a--;
+  return a;
+}
+function ageNow(){ const a=ageOn(); return (a==null||a<10||a>110)? 39 : a; }
+function nextBirthday(){
+  const b=String((DB.profile&&DB.profile.dob)||"").match(/^(\d{4})-(\d{2})-(\d{2})/);
+  const t=today().match(/^(\d{4})-(\d{2})-(\d{2})/);
+  if(!b||!t) return null;
+  const md=b[2]+"-"+b[3];
+  return ((md < (t[2]+"-"+t[3]))? (+t[1])+1 : +t[1])+"-"+md;
+}
 /* Day-first, for everything Amir actually reads: filenames, exports, labels.
    today() stays year-first because it is a SORT KEY the app compares as text —
    it is never shown on screen. See ukDate() for anything human-facing. */
@@ -11213,7 +11241,7 @@ function energyContext(){
   const kg=(DB.profile&&DB.profile.weightKg)||null;
   const cm=(DB.profile&&DB.profile.height)||null;
   if(!kcal||!kg||!cm) return null;
-  const bmr=10*kg+6.25*cm-5*45+5;
+  const bmr=10*kg+6.25*cm-5*ageNow()+5;
   const maint=Math.round(bmr*1.5);
   const gap=maint-kcal;
   return {kcal,maint,gap,pct:Math.round((gap/maint)*100),steep:(gap/maint)>=0.25};
@@ -11310,7 +11338,7 @@ function coachingDoctrine(){
   return "\n=== HOW YOU PROGRAM \u2014 THE METHODOLOGY, NOT VIBES ===\n"+
 "You are not a chatbot that suggests exercises. You are the coach responsible for this man's physique, and you work from a framework.\n\n"+
 "=== THE BODY HE IS ACTUALLY AFTER \u2014 IT HAS A NAME ===\n"+
-"187cm, "+((DB.profile&&DB.profile.weightKg)||"?")+"kg. The target is not a vibe and it is not yours to interpret: he wants to look like "+TARGET_LOOK.name+", "+TARGET_LOOK.who+", and he wants to be as close to it as he can get by "+monthYear(planDeadline())+".\n"+
+((DB.profile&&DB.profile.height)||187)+"cm, "+((DB.profile&&DB.profile.weightKg)||"?")+"kg, "+ageNow()+" years old. The target is not a vibe and it is not yours to interpret: he wants to look like "+TARGET_LOOK.name+", "+TARGET_LOOK.who+", and he wants to be as close to it as he can get by "+monthYear(planDeadline())+".\n"+
 "WHAT THAT BUILD ACTUALLY IS, in the terms you program in:\n"+
 TARGET_LOOK.reads.map(x=>"  \u2022 "+x).join("\n")+"\n"+
 "  \u2022 "+TARGET_LOOK.refuse+"\n"+
@@ -16236,8 +16264,23 @@ function renderEquipFields(){
   });
   document.querySelectorAll('#locSeg button').forEach(b=>b.classList.toggle('on',b.dataset.v===locKey()));
 }
+/* v240 — what the stored date means, in words, under the field, so a typo
+   in the year is visible immediately rather than quietly skewing the maths. */
+function renderAgeHint(){
+  const el=document.getElementById('setAgeHint'); if(!el) return;
+  const inp=document.getElementById('setDob');
+  const dob=((inp&&inp.value)||(DB.profile&&DB.profile.dob)||"");
+  const a=ageOn(null,dob);
+  if(a==null){ el.textContent="Used for the energy maths behind the coach's read. Without it the app assumes 39."; return; }
+  const b=dob.match(/^(\d{4})-(\d{2})-(\d{2})/), t=today().match(/^(\d{4})-(\d{2})-(\d{2})/);
+  const md=b[2]+"-"+b[3];
+  if(md===t[2]+"-"+t[3]){ el.innerHTML="<b>"+a+"</b> today \u2014 happy birthday."; return; }
+  const y=(md<(t[2]+"-"+t[3]))? (+t[1])+1 : +t[1];
+  el.innerHTML="<b>"+a+"</b> \u2014 turns <b>"+(a+1)+"</b> on "+escapeHtml(ukDate(y+"-"+md))+".";
+}
 function saveProfile(){
   DB.profile.name=val('setName'); DB.profile.goal=val('setGoal'); DB.profile.phase=val('setPhase');
+  { const dob=val('setDob'); if(/^\d{4}-\d{2}-\d{2}$/.test(dob)) DB.profile.dob=dob; }
   DB.plan=DB.plan||{};
   const tgt=val('setTarget').trim(); if(tgt) DB.plan.target=tgt;
   const dl=val('setDeadline').trim(); if(dl && !isNaN(dnum(dl))) DB.plan.deadline=dl;
@@ -16813,7 +16856,7 @@ function scheduleInApp(){
    v18 ADDITIONS — draggable rest timer · weekly training memory · AI planner
    · Firestore sync
    ========================================================================== */
-const APP_VERSION="v239 · 29/09/2026";
+const APP_VERSION="v240 · 29/09/2026";
 
 /* ===== 1. REST TIMER — drag it anywhere so it never blocks the chat box ===== */
 let _rtDrag=null;
@@ -25065,6 +25108,8 @@ function boot(){
   document.getElementById('setMemory').value=DB.memory||""; memInfo();
   document.getElementById('setRemindTime').value=DB.reminder||"07:00";
   document.getElementById('setName').value=DB.profile.name; document.getElementById('setGoal').value=DB.profile.goal; document.getElementById('setPhase').value=DB.profile.phase;
+  { const el=document.getElementById('setDob'); if(el) el.value=DB.profile.dob||""; }
+  try{ renderAgeHint(); }catch(e){}
   try{ document.getElementById('setTarget').value=planTargetName(); document.getElementById('setDeadline').value=planDeadline(); }catch(e){}
   document.getElementById('setInjuries').value=DB.profile.injuries; document.getElementById('setRules').value=DB.profile.rules;
   { const el=document.getElementById('setTone'); if(el) el.value=DB.profile.coachTone||""; }

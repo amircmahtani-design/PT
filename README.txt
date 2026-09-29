@@ -1,3 +1,50 @@
+AMIR PT — v240 · 29/09/2026
+===========================
+
+"Don't build it, but just for the app to know I'm 39 and will turn 40 March
+10th."
+
+No calorie feature — he decided against it after seeing how wide the error bar
+on a lifting burn estimate is. But the age is worth having on its own, because
+one part of the app was already using an age and it was making it up.
+
+IT WAS ASSUMING 45
+-------------------
+energyContext() computes his BMR to work out how steep the deficit his
+nutritionist has set actually is, and the Mifflin-St Jeor line read:
+
+  const bmr = 10*kg + 6.25*cm - 5*45 + 5;
+
+A hardcoded 45. At 39 that put his maintenance about 45 kcal/day low, which
+made every deficit the coach described very slightly steeper than it is. Now it
+reads -5*ageNow(), and ageNow() comes off a stored date of birth.
+
+WHAT IS STORED
+---------------
+  DB.profile.dob = "1987-03-10"
+
+A date, not a number, so it stays right on its own — he does not have to
+remember to edit it every March. ageOn(iso, dob) answers how old he was, or
+will be, on any date; ageNow() is that for today, and falls back to 39 if the
+date is ever missing or nonsense. nextBirthday() gives the next 10 March.
+
+The migration sets it beside the one that sets his height, and it is a plain
+string literal — never a reference to anything declared later in the file.
+That is the v235 rule and it is not being broken again.
+
+ON SCREEN
+----------
+Settings → Profile and rules now has a Date of birth field under Name, with a
+line beneath it that reads it back in words:
+
+  39 — turns 40 on 10/03/2027.
+
+So a mistyped year is visible immediately instead of quietly skewing the maths.
+On the day itself it says "40 today — happy birthday."
+
+The coach's read of him now opens "187cm, 83.7kg, 39 years old" instead of a
+hardcoded 187 and no age at all.
+
 AMIR PT — v239 · 29/09/2026
 ===========================
 
