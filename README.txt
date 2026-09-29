@@ -1,3 +1,60 @@
+AMIR PT — v239 · 29/09/2026
+===========================
+
+"I want to be able to export all my workouts into an excel sheet... I can see
+by workout days. Improvements. Weight increases."  Then, when the first cut
+came back with charts and analysis on it: "Sorry not my workouts I meant like
+my progress tab."  And: "I just want the raw data, I don't need visuals. Just
+names, weights and dates. E.g. leg day on Tuesday the 5th, these workouts for
+legs, these were the weights you did. Then next week Tuesday 12th, and see
+which weights were repeated, put them in the next column. Like that, so I can
+see the trend — but do this with all the things logged in my progress."
+
+So: no charts, no colour scales, no commentary. Exactly the shape he drew.
+
+EXPORT MY PROGRESS (.xlsx)
+---------------------------
+A new card at the bottom of Your training on the Progress tab, and the same
+button in Settings under Data and backup. It writes a real .xlsx on the phone,
+offline, with no library and nothing uploaded — an xlsx is a zip of XML, so the
+zip is written by hand (stored entries, CRC-32 by hand) and the XML generated
+from DB.
+
+ONE SHEET PER WORKOUT DAY. Push, Pull, Legs, Pilates, Mobility, Cardio — each
+one gets a sheet, with every session it has ever had as a column, oldest on the
+left, headed by the date as "Tue 25/08" and the name he gave the session.
+Movements run down the side. Two blocks:
+
+  Top weight (kg)          60   62.5   65   67.5   70
+  Every set — weight×reps  60×8,8,7   62.5×8,8,7   65×8,8,7 ...
+
+Read across a row and the trend is right there, which is the whole point. The
+first column and the date band are frozen, so scrolling never loses either.
+
+AND THE SAME SHAPE FOR EVERYTHING ELSE ON THAT TAB
+---------------------------------------------------
+  All lifts      every movement against every session, whatever day it was on
+  Every set      the flat log, one row per set, filterable
+  Sessions       one row per session: what, how long, how many sets
+  Bodyweight     every weigh-in, plus resting heart rate
+  Measurements   chest, waist, arm and the rest, one column per measuring day
+  Rowing         distance, time, and the split per 500 m
+  Photos         date, angle, and what he weighed nearest to it
+  Read me        what is on each sheet
+
+A Pilates or mobility day has no loads, so its grid holds the movements and the
+seconds held (or a tick where it was untimed). A cardio day holds the row times
+against the distance.
+
+WHAT IT DOES NOT DO
+--------------------
+It does not calculate, predict, rank or advise. Every cell is something he
+logged. A session he did not log is a session that is not in the file, and the
+Read me sheet says so.
+
+Nothing here writes to DB — the export is a pure read, so it cannot damage the
+history it describes.
+
 AMIR PT — v238 · 28/09/2026
 ===========================
 

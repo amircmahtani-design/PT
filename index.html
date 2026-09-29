@@ -1355,6 +1355,13 @@ a{color:var(--orange);}
       <div id="histBody"></div>
     </div>
 
+    <div class="card" data-sk="xlsx" data-grp="train" data-open="1">
+      <div class="card-title"><span>Export to Excel</span><span class="itin-edit">raw data, no charts</span></div>
+      <div class="hint" id="xlsxInfo"></div>
+      <div class="notebox mt">Your movements down the side, one column per session, oldest on the left — read across a row and you see what a weight has done week to week. Bodyweight, measurements, rowing and the photos get the same shape.</div>
+      <button class="btn sec btnicon mt" onclick="exportXLSX()"><svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><path d="M7 10l5 5 5-5"/><path d="M12 15V3"/></svg>Export my progress (.xlsx)</button>
+    </div>
+
     <div style="text-align:center;margin:14px 0 4px">
 
     </div>
@@ -1615,6 +1622,7 @@ a{color:var(--orange);}
     <div class="card">
       <div class="notebox mb">Your data is saved on this device and mirrored to a backup, so redeploying a new version won't wipe it. For total safety, export a backup file now and then — you can restore it on any device.</div>
       <button class="btn sec mb" onclick="exportData()">⬇ Export a backup (JSON)</button>
+      <button class="btn sec mb" onclick="exportXLSX()">⬇ Export my progress to Excel (.xlsx)</button>
       <label class="btn sec mb" style="cursor:pointer;display:block">⬆ Restore from a backup file
         <input type="file" accept=".json,application/json" style="display:none" onchange="importData(this)" /></label>
       <button class="btn ghost" onclick="resetAll()" style="color:var(--red);border-color:#5c1c17">Reset everything</button>
@@ -16073,6 +16081,7 @@ function renderProgress(){
   step(window.renderMeasures);
   step(window.renderPhaseCard);
   step(window.renderHistory);
+  step(window.renderXlsxCard);
 }
 function renderHistory(){
   const byDate={};
@@ -16239,6 +16248,504 @@ function saveProfile(){
   DB.profile.equipment=DB.profile.equip.dubai;
   DB.workout=null; save(); updateStatus(); document.getElementById('greetName').textContent=DB.profile.name; toast("Profile saved — coach updated");
 }
+/* ===== v239 · YOUR PROGRESS TAB, AS A SPREADSHEET =====================
+   "I just want the raw data, I don't need visuals. Names, weights and dates.
+   Leg day on Tuesday the 5th, these were the weights. Then Tuesday the 12th
+   in the next column, so I can see which weights were repeated. Like that,
+   with all the things logged in my progress."
+
+   So: no charts, no colour, no commentary. One grid per workout day —
+   exercises down the side, one column per session, oldest on the left — plus
+   the same shape for everything else the Progress tab holds: bodyweight,
+   measurements, rowing, mobility and the photos.
+
+   A real .xlsx built on the phone, offline, with no library: an xlsx is a zip
+   of XML, so the zip is written by hand (stored, uncompressed) and the XML is
+   generated below. Nothing here touches DB — it is a pure read. */
+
+/* ---------- ZIP ---------- */
+const _CRC_T=(()=>{ const t=new Uint32Array(256);
+  for(let n=0;n<256;n++){ let c=n; for(let k=0;k<8;k++) c=(c&1)?(0xEDB88320^(c>>>1)):(c>>>1); t[n]=c>>>0; }
+  return t; })();
+function crc32(b){ let c=0xFFFFFFFF; for(let i=0;i<b.length;i++) c=_CRC_T[(c^b[i])&0xFF]^(c>>>8); return (c^0xFFFFFFFF)>>>0; }
+function zipBlob(files){
+  const enc=new TextEncoder(), parts=[], cent=[]; let off=0, n=0;
+  files.forEach(f=>{
+    const nm=enc.encode(f.name);
+    const d=(f.data instanceof Uint8Array)? f.data : enc.encode(String(f.data));
+    const crc=crc32(d);
+    const lh=new Uint8Array(30+nm.length), lv=new DataView(lh.buffer);
+    lv.setUint32(0,0x04034b50,true); lv.setUint16(4,20,true); lv.setUint16(6,0,true);
+    lv.setUint16(8,0,true); lv.setUint16(10,0,true); lv.setUint16(12,0x2181,true);
+    lv.setUint32(14,crc,true); lv.setUint32(18,d.length,true); lv.setUint32(22,d.length,true);
+    lv.setUint16(26,nm.length,true); lv.setUint16(28,0,true);
+    lh.set(nm,30); parts.push(lh,d);
+    const ch=new Uint8Array(46+nm.length), cv=new DataView(ch.buffer);
+    cv.setUint32(0,0x02014b50,true); cv.setUint16(4,20,true); cv.setUint16(6,20,true);
+    cv.setUint16(8,0,true); cv.setUint16(10,0,true); cv.setUint16(12,0,true); cv.setUint16(14,0x2181,true);
+    cv.setUint32(16,crc,true); cv.setUint32(20,d.length,true); cv.setUint32(24,d.length,true);
+    cv.setUint16(28,nm.length,true); cv.setUint16(30,0,true); cv.setUint16(32,0,true);
+    cv.setUint16(34,0,true); cv.setUint16(36,0,true); cv.setUint32(38,0,true);
+    cv.setUint32(42,off,true); ch.set(nm,46); cent.push(ch);
+    off+=lh.length+d.length; n++;
+  });
+  let csize=0; cent.forEach(c=>csize+=c.length);
+  const eo=new Uint8Array(22), ev=new DataView(eo.buffer);
+  ev.setUint32(0,0x06054b50,true); ev.setUint16(4,0,true); ev.setUint16(6,0,true);
+  ev.setUint16(8,n,true); ev.setUint16(10,n,true);
+  ev.setUint32(12,csize,true); ev.setUint32(16,off,true); ev.setUint16(20,0,true);
+  return new Blob(parts.concat(cent,[eo]),{type:"application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"});
+}
+
+/* ---------- XML / CELLS ---------- */
+function xlEsc(s){ return String(s==null?"":s)
+  .replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;")
+  /* control characters are illegal in XML and would make Excel refuse the file */
+  .replace(/[\x00-\x08\x0B\x0C\x0E-\x1F]/g,""); }
+function xlCol(i){ let s=""; i=i+1; while(i>0){ const m=(i-1)%26; s=String.fromCharCode(65+m)+s; i=(i-m-1)/26; } return s; }
+function xlSerial(iso){
+  const m=String(iso||"").match(/^(\d{4})-(\d{2})-(\d{2})/); if(!m) return null;
+  return Math.round((Date.UTC(+m[1],+m[2]-1,+m[3])-Date.UTC(1899,11,30))/864e5);
+}
+/* Sheet names Excel will accept: 31 characters, none of []:*?/\ */
+function xlSafeName(s){ return String(s||"Sheet").replace(/[\[\]:*?\/\\]/g," ").replace(/\s+/g," ").trim().slice(0,31)||"Sheet"; }
+const S={ plain:0, bold:1, head:2, date:3, dec1:4, int:5, title:6, muted:7, sect:8, rowhd:9, dateHd:10, txt:11 };
+function xlCell(ref,c){
+  if(c==null||c==="") return "";
+  if(!Array.isArray(c)) c=[c,0,(typeof c==="number"?"n":"s")];
+  const v=c[0], st=c[1]||0, k=c[2]||(typeof v==="number"?"n":"s");
+  if(v==null||v==="") return st? "<c r=\""+ref+"\" s=\""+st+"\"/>" : "";
+  if(k==="d"){ const sr=xlSerial(v);
+    return sr==null? "<c r=\""+ref+"\" s=\""+st+"\" t=\"inlineStr\"><is><t>"+xlEsc(v)+"</t></is></c>"
+                   : "<c r=\""+ref+"\" s=\""+st+"\"><v>"+sr+"</v></c>"; }
+  if(k==="n"){ const num=+v; if(!isFinite(num)) return st? "<c r=\""+ref+"\" s=\""+st+"\"/>" : "";
+    return "<c r=\""+ref+"\" s=\""+st+"\"><v>"+(Math.round(num*1e6)/1e6)+"</v></c>"; }
+  return "<c r=\""+ref+"\" s=\""+st+"\" t=\"inlineStr\"><is><t xml:space=\"preserve\">"+xlEsc(v)+"</t></is></c>";
+}
+function xlSheetXml(o){
+  let sd="";
+  (o.rows||[]).forEach((r,ri)=>{
+    if(!r||!r.length) return;
+    let cells=""; r.forEach((c,ci)=>{ cells+=xlCell(xlCol(ci)+(ri+1),c); });
+    if(cells) sd+="<row r=\""+(ri+1)+"\">"+cells+"</row>";
+  });
+  const cols=(o.cols||[]).map((w,i)=>"<col min=\""+(i+1)+"\" max=\""+(i+1)+"\" width=\""+w+"\" customWidth=\"1\"/>").join("");
+  const fz=o.freeze;
+  const pane=fz? ((fz[0]&&fz[1])?"bottomRight":(fz[1]?"bottomLeft":"topRight")) : "";
+  const freeze=fz? "<pane "+(fz[0]?"xSplit=\""+fz[0]+"\" ":"")+(fz[1]?"ySplit=\""+fz[1]+"\" ":"")+
+    "topLeftCell=\""+xlCol(fz[0])+(fz[1]+1)+"\" activePane=\""+pane+"\" state=\"frozen\"/><selection pane=\""+pane+"\"/>" : "";
+  return "<?xml version=\"1.0\" encoding=\"UTF-8\" standalone=\"yes\"?>"+
+    "<worksheet xmlns=\"http://schemas.openxmlformats.org/spreadsheetml/2006/main\">"+
+    "<sheetViews><sheetView showGridLines=\"0\""+(o.first?" tabSelected=\"1\"":"")+" workbookViewId=\"0\">"+freeze+"</sheetView></sheetViews>"+
+    "<sheetFormatPr defaultRowHeight=\"15\"/>"+
+    (cols? "<cols>"+cols+"</cols>" : "")+
+    "<sheetData>"+sd+"</sheetData>"+
+    (o.filter? "<autoFilter ref=\""+o.filter+"\"/>" : "")+
+    "<pageMargins left=\"0.4\" right=\"0.4\" top=\"0.6\" bottom=\"0.6\" header=\"0.3\" footer=\"0.3\"/>"+
+    "</worksheet>";
+}
+function xlStylesXml(){
+  return "<?xml version=\"1.0\" encoding=\"UTF-8\" standalone=\"yes\"?>"+
+  "<styleSheet xmlns=\"http://schemas.openxmlformats.org/spreadsheetml/2006/main\">"+
+  "<numFmts count=\"4\">"+
+    "<numFmt numFmtId=\"164\" formatCode=\"dd/mm/yyyy\"/>"+
+    "<numFmt numFmtId=\"165\" formatCode=\"0.#####\"/>"+
+    "<numFmt numFmtId=\"166\" formatCode=\"#,##0\"/>"+
+    "<numFmt numFmtId=\"167\" formatCode=\"ddd dd/mm\"/>"+
+  "</numFmts>"+
+  "<fonts count=\"5\">"+
+    "<font><sz val=\"11\"/><color theme=\"1\"/><name val=\"Calibri\"/><family val=\"2\"/></font>"+
+    "<font><b/><sz val=\"11\"/><color theme=\"1\"/><name val=\"Calibri\"/><family val=\"2\"/></font>"+
+    "<font><b/><sz val=\"11\"/><color rgb=\"FFFFFFFF\"/><name val=\"Calibri\"/><family val=\"2\"/></font>"+
+    "<font><b/><sz val=\"16\"/><color rgb=\"FF16213E\"/><name val=\"Calibri\"/><family val=\"2\"/></font>"+
+    "<font><sz val=\"10\"/><color rgb=\"FF8A8F98\"/><name val=\"Calibri\"/><family val=\"2\"/></font>"+
+  "</fonts>"+
+  "<fills count=\"4\">"+
+    "<fill><patternFill patternType=\"none\"/></fill>"+
+    "<fill><patternFill patternType=\"gray125\"/></fill>"+
+    "<fill><patternFill patternType=\"solid\"><fgColor rgb=\"FF16213E\"/><bgColor indexed=\"64\"/></patternFill></fill>"+
+    "<fill><patternFill patternType=\"solid\"><fgColor rgb=\"FFEEF2F7\"/><bgColor indexed=\"64\"/></patternFill></fill>"+
+  "</fills>"+
+  "<borders count=\"2\">"+
+    "<border><left/><right/><top/><bottom/><diagonal/></border>"+
+    "<border><left/><right/><top/><bottom style=\"thin\"><color rgb=\"FFD9DEE6\"/></bottom><diagonal/></border>"+
+  "</borders>"+
+  "<cellStyleXfs count=\"1\"><xf numFmtId=\"0\" fontId=\"0\" fillId=\"0\" borderId=\"0\"/></cellStyleXfs>"+
+  "<cellXfs count=\"12\">"+
+    "<xf numFmtId=\"0\" fontId=\"0\" fillId=\"0\" borderId=\"0\" xfId=\"0\"/>"+                                                    /* 0 plain  */
+    "<xf numFmtId=\"0\" fontId=\"1\" fillId=\"0\" borderId=\"0\" xfId=\"0\" applyFont=\"1\"/>"+                                    /* 1 bold   */
+    "<xf numFmtId=\"0\" fontId=\"2\" fillId=\"2\" borderId=\"1\" xfId=\"0\" applyFont=\"1\" applyFill=\"1\" applyBorder=\"1\"/>"+  /* 2 head   */
+    "<xf numFmtId=\"164\" fontId=\"0\" fillId=\"0\" borderId=\"0\" xfId=\"0\" applyNumberFormat=\"1\"/>"+                          /* 3 date   */
+    "<xf numFmtId=\"165\" fontId=\"0\" fillId=\"0\" borderId=\"0\" xfId=\"0\" applyNumberFormat=\"1\"/>"+                          /* 4 dec1   */
+    "<xf numFmtId=\"166\" fontId=\"0\" fillId=\"0\" borderId=\"0\" xfId=\"0\" applyNumberFormat=\"1\"/>"+                          /* 5 int    */
+    "<xf numFmtId=\"0\" fontId=\"3\" fillId=\"0\" borderId=\"0\" xfId=\"0\" applyFont=\"1\"/>"+                                    /* 6 title  */
+    "<xf numFmtId=\"0\" fontId=\"4\" fillId=\"0\" borderId=\"0\" xfId=\"0\" applyFont=\"1\"/>"+                                    /* 7 muted  */
+    "<xf numFmtId=\"0\" fontId=\"1\" fillId=\"3\" borderId=\"1\" xfId=\"0\" applyFont=\"1\" applyFill=\"1\" applyBorder=\"1\"/>"+  /* 8 sect   */
+    "<xf numFmtId=\"0\" fontId=\"1\" fillId=\"0\" borderId=\"0\" xfId=\"0\" applyFont=\"1\" applyAlignment=\"1\"><alignment vertical=\"center\"/></xf>"+ /* 9 rowhd */
+    "<xf numFmtId=\"167\" fontId=\"2\" fillId=\"2\" borderId=\"1\" xfId=\"0\" applyNumberFormat=\"1\" applyFont=\"1\" applyFill=\"1\" applyBorder=\"1\" applyAlignment=\"1\"><alignment horizontal=\"center\"/></xf>"+ /* 10 dateHd */
+    "<xf numFmtId=\"0\" fontId=\"0\" fillId=\"0\" borderId=\"0\" xfId=\"0\" applyAlignment=\"1\"><alignment horizontal=\"center\"/></xf>"+ /* 11 txt */
+  "</cellXfs>"+
+  "<cellStyles count=\"1\"><cellStyle name=\"Normal\" xfId=\"0\" builtinId=\"0\"/></cellStyles>"+
+  "<dxfs count=\"0\"/><tableStyles count=\"0\"/></styleSheet>";
+}
+
+
+/* ---------- READING WHAT HE LOGGED ---------- */
+function xlDow(iso){
+  const m=String(iso||"").match(/^(\d{4})-(\d{2})-(\d{2})/); if(!m) return "";
+  return ["Sun","Mon","Tue","Wed","Thu","Fri","Sat"][new Date(Date.UTC(+m[1],+m[2]-1,+m[3])).getUTCDay()];
+}
+function xlCatOf(name){ try{ return catOf(name)||""; }catch(e){ return ""; } }
+function xlEffOf(s){ const e=(s&&s.e!=null)? s.e : (s&&s.rpe); return (e==null||isNaN(+e))? null : +e; }
+function xlSecsOf(t){ const m=String(t||"").match(/^(\d+):(\d{1,2})/); return m? (+m[1])*60+(+m[2]) : null; }
+function xlMetres(d){
+  const s=String(d||"").toLowerCase();
+  let m=s.match(/([\d.]+)\s*km/);   if(m) return Math.round(parseFloat(m[1])*1000);
+  m=s.match(/^\s*([\d.]+)\s*k\b/);  if(m) return Math.round(parseFloat(m[1])*1000);
+  m=s.match(/([\d.]+)\s*m/);        if(m) return Math.round(parseFloat(m[1]));
+  m=s.match(/(\d{3,6})/);           return m? +m[1] : null;
+}
+/* The same reading of a day that Session history uses, so the spreadsheet and
+   the app never disagree about what a day was. */
+function xlKindOf(g){
+  const t=String((g.done&&g.done.title)||"");
+  const cats=g.lifts.map(l=>xlCatOf(l.ex));
+  if(cats.indexOf("Push")>=0) return "Push";
+  if(cats.indexOf("Pull")>=0) return "Pull";
+  if(cats.indexOf("Legs")>=0) return "Legs";
+  if(!cats.length){
+    if(/pilates|barre/i.test(t))                    return "Pilates";
+    if(/push|chest/i.test(t))                       return "Push";
+    if(/pull|back/i.test(t))                        return "Pull";
+    if(/leg|lower|squat/i.test(t))                  return "Legs";
+    if(/mobil|stretch|yoga|flow|recovery/i.test(t)) return "Mobility";
+  }
+  if(g.done&&g.done.flow)    return /pilates|barre/i.test(t)? "Pilates" : "Mobility";
+  if(g.mob&&g.mob.length)    return "Mobility";
+  if(g.rows&&g.rows.length)  return "Cardio";
+  return "Other";
+}
+function xlSessions(){
+  const by={}, bucket=d=>(by[d]=by[d]||{lifts:[],rows:[]});
+  Object.entries(DB.strength||{}).forEach(([ex,arr])=>(arr||[]).forEach(s=>{
+    if(!s||!s.date||s.date==='prev'||!(s.sets||[]).length) return;
+    bucket(s.date).lifts.push({ex, sets:s.sets||[]});
+  }));
+  (DB.rowing||[]).forEach(r=>{ if(r&&r.date) bucket(r.date).rows.push(r); });
+  Object.entries(DB.completed||{}).forEach(([d,c])=>{ if(c) bucket(d).done=c; });
+  (DB.mobility||[]).forEach(m=>{ if(m&&m.d) bucket(m.d).mob=(by[m.d].mob||[]).concat([m]); });
+  return Object.keys(by).sort().map(d=>{
+    const g=by[d], c=g.done||null;
+    let sets=0, vol=0;
+    g.lifts.forEach(l=>(l.sets||[]).forEach(s=>{
+      sets++; if(!s.timed) vol+=(+s.w||0)*(+s.r||0);
+    }));
+    if(!sets && c){ sets=+c.sets||0; vol=+c.volume||0; }
+    const kind=xlKindOf(g);
+    return { date:d, dow:xlDow(d), kind,
+             title:(String((c&&c.title)||"").trim()||kind),
+             lifts:g.lifts, rows:g.rows||[], mob:g.mob||[], done:c,
+             names:((c&&c.names)||[]).slice(),
+             sets, vol:Math.round(vol),
+             mins:(c&&c.durMs)? Math.round(c.durMs/60000) : null };
+  });
+}
+/* "60×6,6,5" — the weight once, then the reps it was held for. A weight that
+   comes back at a different point in the session gets its own group, because
+   that is what he actually did. */
+function xlSetsText(sets){
+  const out=[]; let cur=null;
+  (sets||[]).forEach(s=>{
+    if(s&&s.timed){ out.push(String(+s.r||0)+"s"); cur=null; return; }
+    const w=+((s&&s.w))||0, r=+((s&&s.r))||0;
+    if(cur && cur.w===w) cur.reps.push(r);
+    else { cur={w,reps:[r]}; out.push(cur); }
+  });
+  return out.map(x=> (typeof x==="string")? x
+                   : (x.w? x.w+"×"+x.reps.join(",") : x.reps.join(",")+" reps")).join("  ·  ");
+}
+function xlTopWeight(sets){
+  let t=null; (sets||[]).forEach(s=>{ if(s&&!s.timed){ const w=+s.w||0; if(w>0&&(t==null||w>t)) t=w; } });
+  return t;
+}
+
+
+/* ---------- THE SHEETS ---------- */
+const XL_KIND_ORDER=["Push","Pull","Legs","Pilates","Mobility","Cardio","Other"];
+function xlMetaRows(list){
+  const rows=[];
+  const mk=(label,get,st,k)=>{ const r=[[label,S.head,"s"]]; list.forEach(s=>r.push([get(s),st,k])); rows.push(r); };
+  mk("Date",    s=>s.date,  S.dateHd, "d");
+  mk("Workout", s=>s.title, S.txt,    "s");
+  mk("Minutes", s=>s.mins,  S.txt,    "n");
+  return rows;
+}
+/* Exercises in the order he actually trains them: the newest session's order
+   first, then anything else he has done on this day, most used first. */
+function xlExOrder(list){
+  const seen={}, out=[], count={};
+  list.forEach(s=>s.lifts.forEach(l=>{ count[l.ex]=(count[l.ex]||0)+1; }));
+  const newest=list[list.length-1];
+  if(newest) newest.lifts.forEach(l=>{ if(!seen[l.ex]){ seen[l.ex]=1; out.push(l.ex); } });
+  Object.keys(count).filter(n=>!seen[n]).sort((a,b)=>count[b]-count[a]||a.localeCompare(b))
+        .forEach(n=>out.push(n));
+  return out;
+}
+function xlSetsOn(s,ex){ const l=s.lifts.filter(x=>x.ex===ex)[0]; return l? (l.sets||[]) : null; }
+function xlDaySheet(kind,list){
+  const rows=[];
+  rows.push([[kind+(kind==="Other"?" sessions":" days"),S.title,"s"]]);
+  rows.push([[list.length+" session"+(list.length===1?"":"s")+" · oldest on the left · read across a row to see what that movement has done week to week",S.muted,"s"]]);
+  rows.push([]);
+  xlMetaRows(list).forEach(r=>rows.push(r));
+  const exs=xlExOrder(list);
+  if(exs.length){
+    rows.push([]);
+    rows.push([["Top weight (kg)",S.sect,"s"]]);
+    exs.forEach(ex=>{
+      const r=[[ex,S.rowhd,"s"]];
+      list.forEach(s=>{ const st=xlSetsOn(s,ex); r.push([st? xlTopWeight(st) : null, S.dec1, "n"]); });
+      rows.push(r);
+    });
+    rows.push([]);
+    rows.push([["Every set — weight × reps",S.sect,"s"]]);
+    exs.forEach(ex=>{
+      const r=[[ex,S.rowhd,"s"]];
+      list.forEach(s=>{ const st=xlSetsOn(s,ex); r.push([st? xlSetsText(st) : "", S.txt, "s"]); });
+      rows.push(r);
+    });
+  }
+  /* Flow days log movements, not loads. */
+  const moves={};
+  list.forEach(s=>{ s.names.forEach(n=>{ if(n) moves[n]=1; }); (s.mob||[]).forEach(m=>{ if(m&&m.t) moves[String(m.t)]=1; }); });
+  const mv=Object.keys(moves).sort();
+  if(mv.length){
+    rows.push([]);
+    rows.push([["Movements — seconds held, or ✓ if it was done untimed",S.sect,"s"]]);
+    mv.forEach(n=>{
+      const r=[[n,S.rowhd,"s"]];
+      list.forEach(s=>{
+        const held=(s.mob||[]).filter(m=>String(m.t)===n).reduce((a,m)=>a+(+m.sec||0),0);
+        if(held) r.push([held,S.txt,"n"]);
+        else r.push([s.names.indexOf(n)>=0? "✓" : "", S.txt, "s"]);
+      });
+      rows.push(r);
+    });
+  }
+  /* Rowing sits on whatever day he did it. */
+  const dists={};
+  list.forEach(s=>(s.rows||[]).forEach(r=>{ if(r&&r.dist) dists[String(r.dist)]=1; }));
+  const dl=Object.keys(dists).sort();
+  if(dl.length){
+    rows.push([]);
+    rows.push([["Rowing — time for the distance",S.sect,"s"]]);
+    dl.forEach(d=>{
+      const r=[[d,S.rowhd,"s"]];
+      list.forEach(s=>{ const hit=(s.rows||[]).filter(x=>String(x.dist)===d)[0]; r.push([hit? String(hit.time||"") : "", S.txt, "s"]); });
+      rows.push(r);
+    });
+  }
+  return { rows, cols:[30].concat(list.map(()=>13)), freeze:[1,6] };
+}
+function xlAllLiftsSheet(sess){
+  const list=sess.filter(s=>s.lifts.length);
+  const rows=[];
+  rows.push([["Every lift you have logged",S.title,"s"]]);
+  rows.push([["One column per session, oldest on the left. The number is the heaviest set you did that day. The day sheets have every set.",S.muted,"s"]]);
+  rows.push([]);
+  const mk=(label,get,st,k)=>{ const r=[[label,S.head,"s"]]; list.forEach(s=>r.push([get(s),st,k])); rows.push(r); };
+  mk("Date",    s=>s.date,  S.dateHd, "d");
+  mk("Day",     s=>s.kind,  S.txt,    "s");
+  mk("Workout", s=>s.title, S.txt,    "s");
+  rows.push([]);
+  rows.push([["Top weight (kg)",S.sect,"s"]]);
+  const count={}; list.forEach(s=>s.lifts.forEach(l=>{ count[l.ex]=(count[l.ex]||0)+1; }));
+  Object.keys(count).sort((a,b)=>(xlCatOf(a)||"zz").localeCompare(xlCatOf(b)||"zz")||a.localeCompare(b)).forEach(ex=>{
+    const r=[[ex,S.rowhd,"s"]];
+    list.forEach(s=>{ const st=xlSetsOn(s,ex); r.push([st? xlTopWeight(st) : null, S.dec1, "n"]); });
+    rows.push(r);
+  });
+  return { rows, cols:[30].concat(list.map(()=>11)), freeze:[1,6] };
+}
+function xlMeasuresSheet(){
+  const ms=(DB.measures||[]).slice().sort((a,b)=>(a.t||0)-(b.t||0));
+  const rows=[];
+  rows.push([["Measurements",S.title,"s"]]);
+  rows.push([["Every set of measurements you have, oldest on the left. “Photo” means the coach read it off a picture; “you” means you measured it.",S.muted,"s"]]);
+  rows.push([]);
+  if(!ms.length){ rows.push([["Nothing measured yet.",S.muted,"s"]]); return {rows, cols:[24]}; }
+  const dr=[["Date",S.head,"s"]]; ms.forEach(m=>dr.push([String(m.d||"").slice(0,10),S.dateHd,"d"]));
+  rows.push(dr);
+  const sr=[["Measured by",S.head,"s"]]; ms.forEach(m=>sr.push([m.src==="ai"?"photo":(m.src==="manual"?"you":(m.src||"you")),S.txt,"s"]));
+  rows.push(sr);
+  rows.push([]);
+  const FIELDS=[["chest","Chest (cm)"],["waist","Waist (cm)"],["hips","Hips (cm)"],["shoulders","Shoulders (cm)"],
+                ["arm","Arm (cm)"],["thigh","Thigh (cm)"],["calf","Calf (cm)"],["neck","Neck (cm)"],["bf","Body fat (%)"]];
+  FIELDS.forEach(([k,label])=>{
+    if(!ms.some(m=>m&&m[k]!=null)) return;
+    const r=[[label,S.rowhd,"s"]];
+    ms.forEach(m=>r.push([(m&&m[k]!=null&&!isNaN(+m[k]))? +m[k] : null, S.dec1, "n"]));
+    rows.push(r);
+  });
+  return { rows, cols:[20].concat(ms.map(()=>11)), freeze:[1,5] };
+}
+function xlBuildWorkbook(){
+  const sess=xlSessions();
+  const sheets=[];
+  const add=(name,o)=>sheets.push({name:xlSafeName(name), xml:xlSheetXml(o)});
+
+  /* All lifts */
+  if(sess.some(s=>s.lifts.length)) add("All lifts", xlAllLiftsSheet(sess));
+
+  /* One sheet per kind of day */
+  const byKind={};
+  sess.forEach(s=>{ (byKind[s.kind]=byKind[s.kind]||[]).push(s); });
+  const kinds=XL_KIND_ORDER.filter(k=>byKind[k]&&byKind[k].length)
+    .concat(Object.keys(byKind).filter(k=>XL_KIND_ORDER.indexOf(k)<0));
+  kinds.forEach(k=>add(k, xlDaySheet(k, byKind[k])));
+
+  /* Every set, flat */
+  const setRows=[["Date","Day","Workout","Type","Exercise","Set","Weight (kg)","Reps","Effort"].map(x=>[x,S.head,"s"])];
+  sess.forEach(s=>s.lifts.forEach(l=>(l.sets||[]).forEach((x,i)=>{
+    setRows.push([[s.date,S.date,"d"],[s.dow,0,"s"],[s.title,0,"s"],[s.kind,0,"s"],[l.ex,0,"s"],
+      [i+1,S.int,"n"],[x&&x.timed? null : (+x.w||0),S.dec1,"n"],[+x.r||0,S.int,"n"],[xlEffOf(x),S.dec1,"n"]]);
+  })));
+  add("Every set", {rows:setRows, cols:[11,6,20,10,28,6,11,7,8], freeze:[0,1], filter:"A1:I"+setRows.length});
+
+  /* Sessions, flat */
+  const sRows=[["Date","Day","Workout","Type","Minutes","Exercises","Sets","Weight moved (kg)","Marked complete"].map(x=>[x,S.head,"s"])];
+  sess.slice().reverse().forEach(s=>{
+    sRows.push([[s.date,S.date,"d"],[s.dow,0,"s"],[s.title,0,"s"],[s.kind,0,"s"],[s.mins,S.int,"n"],
+      [s.lifts.length||s.names.length||((s.done&&s.done.exercises)||null),S.int,"n"],
+      [s.sets,S.int,"n"],[s.vol||null,S.int,"n"],[s.done?"yes":"",0,"s"]]);
+  });
+  add("Sessions", {rows:sRows, cols:[11,6,24,10,9,10,7,17,14], freeze:[0,1], filter:"A1:I"+sRows.length});
+
+  /* Bodyweight + resting heart rate */
+  const body=[]; const seen={};
+  (DB.checkins||[]).forEach(c=>{ if(c&&c.date&&c.weight!=null&&!isNaN(+c.weight)) seen[c.date]=+c.weight; });
+  Object.keys(seen).sort().forEach(d=>body.push({date:d,kg:seen[d]}));
+  const bodyRows=[[["Bodyweight",S.title,"s"]],
+                  [["Every weigh-in from your morning check-in, oldest first.",S.muted,"s"]],
+                  [],
+                  ["Date","Day","Weight (kg)"].map(x=>[x,S.head,"s"])];
+  body.forEach(b=>bodyRows.push([[b.date,S.date,"d"],[xlDow(b.date),0,"s"],[b.kg,S.dec1,"n"]]));
+  const rhr=(DB.rhr||[]).filter(x=>x&&x.d&&x.v!=null).slice().sort((a,b)=>String(a.d).localeCompare(String(b.d)));
+  if(rhr.length){
+    bodyRows.push([]);
+    bodyRows.push([["Resting heart rate",S.sect,"s"]]);
+    bodyRows.push(["Date","Day","bpm"].map(x=>[x,S.head,"s"]));
+    rhr.forEach(x=>bodyRows.push([[x.d,S.date,"d"],[xlDow(x.d),0,"s"],[+x.v,S.int,"n"]]));
+  }
+  add("Bodyweight", {rows:bodyRows, cols:[13,7,13], freeze:[0,4]});
+
+  /* Measurements */
+  add("Measurements", xlMeasuresSheet());
+
+  /* Rowing */
+  const rw=(DB.rowing||[]).filter(r=>r&&r.date&&r.time).slice().sort((a,b)=>String(a.date).localeCompare(String(b.date)));
+  const rRows=[["Date","Day","Distance","Metres","Time","Seconds","Split / 500 m (sec)"].map(x=>[x,S.head,"s"])];
+  rw.forEach(r=>{
+    const sec=xlSecsOf(r.time), m=xlMetres(r.dist);
+    rRows.push([[r.date,S.date,"d"],[xlDow(r.date),0,"s"],[String(r.dist||""),0,"s"],[m,S.int,"n"],
+      [String(r.time||""),S.txt,"s"],[sec,S.int,"n"],[(sec&&m)? Math.round(sec*500/m) : null,S.int,"n"]]);
+  });
+  add("Rowing", {rows:rRows, cols:[11,7,12,9,9,9,18], freeze:[0,1], filter:"A1:G"+rRows.length});
+
+  /* Photos */
+  const ph=(DB.photos||[]).filter(p=>p&&(p.d||p.t)).slice().sort((a,b)=>(a.t||0)-(b.t||0));
+  if(ph.length){
+    const pRows=[["Date","Day","Angle","Weight nearest that day (kg)"].map(x=>[x,S.head,"s"])];
+    ph.forEach(p=>{
+      const d=String(p.d||"").slice(0,10) || new Date(p.t||Date.now()).toISOString().slice(0,10);
+      let kg=null; try{ const w=photoWeight(p); if(w) kg=w.w; }catch(e){}
+      pRows.push([[d,S.date,"d"],[xlDow(d),0,"s"],[String(p.pose||""),0,"s"],[kg,S.dec1,"n"]]);
+    });
+    add("Photos", {rows:pRows, cols:[11,7,10,26], freeze:[0,1]});
+  }
+
+  /* Read me, first */
+  const rm=[[["Amir PT — your progress, as raw data",S.title,"s"]],
+            [["Built "+ukDate()+" · "+APP_VERSION+" · "+sess.length+" session"+(sess.length===1?"":"s")+" · everything here is what you logged, nothing is calculated or predicted.",S.muted,"s"]],
+            [],
+            ["Sheet","What is on it"].map(x=>[x,S.head,"s"])];
+  const blurb={
+    "All lifts":"Every movement down the side, one column per session, oldest on the left. The number is the heaviest set that day.",
+    "Push":"Every push session: top weight per movement, then every set as weight × reps.",
+    "Pull":"Every pull session: top weight per movement, then every set as weight × reps.",
+    "Legs":"Every leg session: top weight per movement, then every set as weight × reps.",
+    "Pilates":"Every Pilates session and the movements in it.",
+    "Mobility":"Every mobility session and the movements in it, with seconds held.",
+    "Cardio":"Every cardio day and what you rowed.",
+    "Other":"Sessions that did not fall into one of the day types above.",
+    "Every set":"The flat log — one row per set, filterable.",
+    "Sessions":"One row per session: what it was, how long, how many sets.",
+    "Bodyweight":"Every weigh-in, and resting heart rate if you logged it.",
+    "Measurements":"Chest, waist, arm and the rest — one column per measuring day.",
+    "Rowing":"Every row: distance, time and the split per 500 m.",
+    "Photos":"When each photo was taken, which angle, and what you weighed nearest to it."
+  };
+  sheets.forEach(s=>rm.push([[s.name,S.rowhd,"s"],[blurb[s.name]||"",0,"s"]]));
+  sheets.unshift({name:"Read me", xml:xlSheetXml({rows:rm, cols:[18,96], first:true})});
+
+  /* ---------- PACKAGE ---------- */
+  const files=[], ct=[];
+  sheets.forEach((s,i)=>{
+    files.push({name:"xl/worksheets/sheet"+(i+1)+".xml", data:s.xml});
+    ct.push("<Override PartName=\"/xl/worksheets/sheet"+(i+1)+".xml\" ContentType=\"application/vnd.openxmlformats-officedocument.spreadsheetml.worksheet+xml\"/>");
+  });
+  files.push({name:"xl/styles.xml", data:xlStylesXml()});
+  files.push({name:"xl/workbook.xml", data:
+    "<?xml version=\"1.0\" encoding=\"UTF-8\" standalone=\"yes\"?>"+
+    "<workbook xmlns=\"http://schemas.openxmlformats.org/spreadsheetml/2006/main\" xmlns:r=\"http://schemas.openxmlformats.org/officeDocument/2006/relationships\">"+
+    "<bookViews><workbookView activeTab=\"0\"/></bookViews><sheets>"+
+    sheets.map((s,i)=>"<sheet name=\""+xlEsc(s.name)+"\" sheetId=\""+(i+1)+"\" r:id=\"rId"+(i+1)+"\"/>").join("")+
+    "</sheets></workbook>"});
+  files.push({name:"xl/_rels/workbook.xml.rels", data:
+    "<?xml version=\"1.0\" encoding=\"UTF-8\" standalone=\"yes\"?><Relationships xmlns=\"http://schemas.openxmlformats.org/package/2006/relationships\">"+
+    sheets.map((s,i)=>"<Relationship Id=\"rId"+(i+1)+"\" Type=\"http://schemas.openxmlformats.org/officeDocument/2006/relationships/worksheet\" Target=\"worksheets/sheet"+(i+1)+".xml\"/>").join("")+
+    "<Relationship Id=\"rId"+(sheets.length+1)+"\" Type=\"http://schemas.openxmlformats.org/officeDocument/2006/relationships/styles\" Target=\"styles.xml\"/>"+
+    "</Relationships>"});
+  files.push({name:"_rels/.rels", data:
+    "<?xml version=\"1.0\" encoding=\"UTF-8\" standalone=\"yes\"?><Relationships xmlns=\"http://schemas.openxmlformats.org/package/2006/relationships\">"+
+    "<Relationship Id=\"rId1\" Type=\"http://schemas.openxmlformats.org/officeDocument/2006/relationships/officeDocument\" Target=\"xl/workbook.xml\"/></Relationships>"});
+  files.unshift({name:"[Content_Types].xml", data:
+    "<?xml version=\"1.0\" encoding=\"UTF-8\" standalone=\"yes\"?><Types xmlns=\"http://schemas.openxmlformats.org/package/2006/content-types\">"+
+    "<Default Extension=\"rels\" ContentType=\"application/vnd.openxmlformats-package.relationships+xml\"/>"+
+    "<Default Extension=\"xml\" ContentType=\"application/xml\"/>"+
+    "<Override PartName=\"/xl/workbook.xml\" ContentType=\"application/vnd.openxmlformats-officedocument.spreadsheetml.sheet.main+xml\"/>"+
+    ct.join("")+
+    "<Override PartName=\"/xl/styles.xml\" ContentType=\"application/vnd.openxmlformats-officedocument.spreadsheetml.styles+xml\"/>"+
+    "</Types>"});
+  return { files, sessions:sess.length, sheets:sheets.map(s=>s.name) };
+}
+
+/* ---------- THE BUTTON ---------- */
+function exportXLSX(){
+  let out;
+  try{ out=xlBuildWorkbook(); }
+  catch(e){ try{ console.error("xlsx build failed:",e); }catch(_){}
+    toast("Could not build the spreadsheet — "+((e&&e.message)||e)); return; }
+  if(!out.sessions){ toast("Nothing logged yet — there is no history to export"); return; }
+  try{
+    const a=document.createElement('a');
+    a.href=URL.createObjectURL(zipBlob(out.files));
+    a.download="Amir-PT-progress-"+ukFile()+".xlsx";
+    document.body.appendChild(a); a.click();
+    setTimeout(()=>{ try{ URL.revokeObjectURL(a.href); a.remove(); }catch(_){} },4000);
+    toast("Saved — "+out.sessions+" sessions across "+out.sheets.length+" sheets");
+  }catch(e){ try{ console.error("xlsx write failed:",e); }catch(_){}
+    toast("Could not save the file — "+((e&&e.message)||e)); }
+}
+function renderXlsxCard(){
+  const el=document.getElementById('xlsxInfo'); if(!el) return;
+  let n=0, sets=0, first="";
+  try{ const s=xlSessions(); n=s.length; sets=s.reduce((a,x)=>a+x.sets,0); first=s.length? ukDate(s[0].date) : ""; }catch(e){}
+  el.innerHTML = n
+    ? "<b>"+n+" session"+(n===1?"":"s")+"</b> and <b>"+sets+" set"+(sets===1?"":"s")+"</b>"+(first? ", back to "+first : "")+" — one sheet per workout day, one column per session."
+    : "Nothing logged yet — the export needs sessions to describe.";
+}
+
 function exportData(){
   const out=Object.assign({},DB,{photos:(DB.photos||[]).map(p=>Object.assign({},p,{src:photoSrc(p)}))});
   /* A readable header, so opening the file tells you what it is and when it was
@@ -16306,7 +16813,7 @@ function scheduleInApp(){
    v18 ADDITIONS — draggable rest timer · weekly training memory · AI planner
    · Firestore sync
    ========================================================================== */
-const APP_VERSION="v238 · 28/09/2026";
+const APP_VERSION="v239 · 29/09/2026";
 
 /* ===== 1. REST TIMER — drag it anywhere so it never blocks the chat box ===== */
 let _rtDrag=null;
