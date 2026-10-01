@@ -1,3 +1,63 @@
+AMIR PT — v242 · 01/10/2026
+===========================
+
+"I also did Pilates yesterday. Have a button where if I forget on homepage to
+log something in I can somehow."
+
+FORGOT TO LOG SOMETHING?
+-------------------------
+A quiet second button under Start check-in on Home. It opens a bottom sheet
+because this is a thirty-second job done standing up:
+
+  WHICH DAY     Today · Yesterday · then the six days before that, by name
+                ("Tue, 29 Sept"), or a date field for anything older.
+                Yesterday is selected when it opens, because the session he
+                forgot is almost never today's. Nothing in the future.
+
+  WHAT YOU DID  His own day types, read off his schedule and his dayTypes
+                rather than a hardcoded list — so Pilates, Legs & Core,
+                Mobility & Pilates, Pull Day, Push Day, Cardio, Mobility.
+                Whichever one his schedule actually had down for the day he
+                picked is marked "planned", so the right chip is obvious.
+
+  MINUTES       Optional.
+  2 KM ROW      Optional, mm:ss. addRowing() always stamps today, so a row he
+                did on Saturday had no way in until now.
+
+IT WRITES THE REAL RECORD, NOT A NOTE
+--------------------------------------
+The same object completeFlow() and completeWorkout() write, so everything
+downstream reads it as the session it was: the streak counts it, Session
+history shows it, lastDoneOf() stops saying "never", the Pilates rotation
+knows the week happened, and it appears in the spreadsheet on the right
+sheet under the right date. A flow day gets flow:true the way a real one
+does. The timestamp is midday — it sorts inside the day without inventing a
+time he never gave.
+
+One extra field: `backfilled:true`. A session logged after the fact is never
+passed off as one logged set by set at the time.
+
+GUARDS
+-------
+  · A day that already has a session says so, and offers "Remove that one
+    instead" rather than only letting him overwrite it.
+  · Replacing asks first.
+  · A future date is refused.
+  · A row time that is not mm:ss blocks the save rather than storing junk.
+  · markSession() is NOT called — it stamps today, which would be wrong for
+    a past day. updateStreak() reads the completion dates and gets there on
+    its own.
+
+AND ONE THING THAT WOULD HAVE READ BADLY
+-----------------------------------------
+A backfilled flow has no movement list, and Session history printed the move
+count — so it would have said "0 moves", which reads as if he did nothing.
+It now shows the duration if he gave one, and "logged later" if he didn't.
+
+Verified: 18 checks on the sheet itself, from the default day through to the
+record landing in the spreadsheet and surviving a reload. Layout and contrast
+clean at 375, 390 and 430. The v241 suite still passes.
+
 AMIR PT — v241 · 01/10/2026
 ===========================
 

@@ -595,6 +595,41 @@ details.sec2[open] .secsum2:after{content:"\2212";}
 .poseseg button{flex:0 0 auto;min-height:40px;padding:9px 14px;border-radius:12px;background:var(--pill);border:1px solid var(--line);
   color:var(--muted);font-size:12.5px;font-weight:700;}
 .poseseg button.on{background:#2a1c0e;border-color:var(--orange);color:var(--orange);}
+/* ===== v242 · LOG A SESSION HE FORGOT ==================================
+   "I also did Pilates yesterday. Have a button where if I forget on homepage
+   to log something in I can somehow."
+
+   A bottom sheet, because this is a thirty-second job done standing up: pick
+   the day, pick what it was, done. It writes exactly the record completeFlow
+   and completeWorkout write, so the streak, Session history, the programme's
+   rotation and the spreadsheet all see it as the session it was. */
+.bfsheet{position:fixed;inset:0;z-index:72;background:#050403cc;backdrop-filter:blur(6px);
+  -webkit-backdrop-filter:blur(6px);display:none;align-items:flex-end;}
+.bfsheet.show{display:flex;}
+.bfcard{width:100%;max-width:520px;margin:0 auto;background:var(--card);
+  border:1px solid var(--line);border-bottom:none;border-radius:20px 20px 0 0;
+  padding:18px 16px calc(18px + var(--safe-bot));max-height:88vh;overflow-y:auto;
+  animation:bfup .22s cubic-bezier(.23,1,.32,1);}
+@keyframes bfup{from{transform:translateY(16px);opacity:0}to{transform:translateY(0);opacity:1}}
+@media (prefers-reduced-motion:reduce){.bfcard{animation:none}}
+.bftop{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:4px;}
+.bftop .bft{font-size:17px;font-weight:800;color:var(--txt);}
+/* .lbx is scoped to the lightbox, so this one needs its own. */
+.bftop .lbx{background:var(--card2);border:1px solid var(--line);color:var(--muted);
+  border-radius:12px;min-width:44px;min-height:44px;font-weight:800;font-size:16px;line-height:1;}
+.bftop .lbx:active{transform:scale(.95);}
+.bflab{font-size:11px;font-weight:800;letter-spacing:.7px;text-transform:uppercase;
+  color:var(--label);margin:16px 0 8px;}
+.bfchips{display:flex;flex-wrap:wrap;gap:7px;}
+.bfchips button{position:relative;flex:0 0 auto;min-height:44px;padding:10px 13px;border-radius:12px;
+  background:var(--card2);border:1px solid var(--line);color:var(--muted);
+  font-size:13px;font-weight:700;transition:.15s;}
+.bfchips button.on{background:var(--orange);border-color:var(--orange);color:#2a1405;}
+.bfchips button:active{transform:scale(.97);}
+.bfchips button small{display:block;font-size:10.5px;font-weight:700;opacity:.75;margin-top:1px;}
+.bfhave{background:#1a120b;border:1px solid #3d2a15;border-radius:12px;padding:11px 13px;margin-top:14px;
+  font-size:13px;color:var(--muted);line-height:1.5;}
+.bfhave b{color:var(--gold);}
 .lbox{position:fixed;inset:0;z-index:70;background:#050403f2;backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px);
   display:none;flex-direction:column;padding:calc(10px + var(--safe-top)) 10px calc(10px + var(--safe-bot));}
 .lbox.show{display:flex;}
@@ -1143,6 +1178,7 @@ a{color:var(--orange);}
          rearrange arrows are gone, so this markup is the order. -->
     <div id="firstRun"></div>
     <button class="btn green mb" onclick="go('checkin')" style="font-size:16px;padding:16px">Start check-in</button>
+    <button class="btn ghost mb btnicon" onclick="openBackfill()" style="font-size:13.5px;padding:12px"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 3v5h5"/><path d="M3.05 13A9 9 0 1 0 6 5.3L3 8"/><path d="M12 7v5l3 2"/></svg>Forgot to log something?</button>
     <div id="readyToday"></div>
 
     <details class="hcard" data-hk="week" data-sk="week" open>
@@ -1702,6 +1738,29 @@ a{color:var(--orange);}
     <div id="mvDemoBody"></div>
     <div class="mvdemo-cue" id="mvDemoCue"></div>
     <a class="mvdemo-web" id="mvDemoWeb" href="#" target="_blank" rel="noopener">▶ Watch it on the web</a>
+  </div>
+</div>
+<div class="bfsheet" id="bfSheet" role="dialog" aria-modal="true" aria-label="Log a session you forgot" onclick="if(event.target===this)closeBackfill()">
+  <div class="bfcard">
+    <div class="bftop">
+      <div class="bft">Log a session you forgot</div>
+      <button class="lbx" onclick="closeBackfill()" aria-label="close">✕</button>
+    </div>
+    <div class="hint">It goes on your record exactly as if you had pressed Complete on the day.</div>
+    <div class="bflab">Which day</div>
+    <div class="bfchips" id="bfDays"></div>
+    <div class="field mt"><label>Or pick a date</label>
+      <input class="txtin" id="bfDate" type="date" onchange="bfSetDate(this.value)" aria-label="date of the session" /></div>
+    <div class="bflab">What you did</div>
+    <div class="bfchips" id="bfKinds"></div>
+    <div class="mgrid mt">
+      <div class="field"><label>Minutes <span class="hint">optional</span></label>
+        <input class="txtin" id="bfMins" inputmode="numeric" placeholder="e.g. 50" /></div>
+      <div class="field"><label>2 km row <span class="hint">optional, mm:ss</span></label>
+        <input class="txtin" id="bfRow" inputmode="text" placeholder="e.g. 8:20" /></div>
+    </div>
+    <div id="bfHave"></div>
+    <button class="btn green mt" onclick="saveBackfill()">Log it</button>
   </div>
 </div>
 <div class="lbox" id="lbox">
@@ -16238,8 +16297,14 @@ function renderHistory(){
         return m? "<span style='color:"+m.col+"' title='"+m.lab+"'>"+txt+"</span>" : txt; }).join(" ");
       return "<div class='hline'><span class='en'>"+l.ex+" <span class='muted' style='font-weight:600;font-size:12px'>"+reps+"</span></span><span class='ev'>"+top+"kg <button class='del' onclick=\"delStrength('"+l.ex.replace(/'/g,"\\'")+"','"+d+"')\">\u2715</button></span></div>"; }).join('');
     const rowLines=g.rows.map(r=>"<div class='hline'><span class='en'>\ud83d\udea3 Row "+r.dist+"</span><span class='ev'>"+r.time+"</span></div>").join('');
+    /* v242 — a session logged after the fact has no movement list, and
+       "0 moves" reads like he did nothing. Say what is actually known. */
+    const flowRight = g.flow
+      ? (g.flow.moves? g.flow.moves+" moves"
+         : (g.flow.durMs? fmtDurWords(g.flow.durMs) : "logged later"))
+      : "";
     const flowLine=g.flow? "<div class='hline'><span class='en'>\uD83E\uDDD8 "+escapeHtml(g.flow.title||"Mobility")+
-      "</span><span class='ev'>"+(g.flow.moves||0)+" moves</span></div>" : "";
+      "</span><span class='ev'>"+flowRight+"</span></div>" : "";
     /* v224 — a completed session with no set-by-set log still says what it
        was and what it added up to, rather than showing as an empty card. */
     const doneLine=(g.done && !g.lifts.length && !g.rows.length)
@@ -16913,7 +16978,7 @@ function scheduleInApp(){
    v18 ADDITIONS — draggable rest timer · weekly training memory · AI planner
    · Firestore sync
    ========================================================================== */
-const APP_VERSION="v241 · 01/10/2026";
+const APP_VERSION="v242 · 01/10/2026";
 
 /* ===== 1. REST TIMER — drag it anywhere so it never blocks the chat box ===== */
 let _rtDrag=null;
@@ -18387,6 +18452,127 @@ function flowDoneHTML(w){
     "<div class='donesub' style='margin-bottom:10px'>Move through it in your own time. Tap this when you're done and it goes on your record.</div>"+
     "<button class='btn green' onclick='completeFlow()' style='font-size:16px;padding:16px'>Flow complete</button>"+
     "<div class='syncdot'></div></div>";
+}
+/* ===== v242 · THE SESSION HE FORGOT TO PRESS COMPLETE ON ==============
+   "I also did Pilates yesterday. Have a button where if I forget on homepage
+   to log something in I can somehow."
+
+   Nothing here invents anything. It writes the SAME record completeFlow and
+   completeWorkout write, so the streak, Session history, lastDoneOf, the
+   programme's rotation and the spreadsheet all read it as what it was — with
+   one extra flag, `backfilled`, so a session logged after the fact is never
+   passed off as one logged set by set at the time. */
+let _bfDate=null, _bfKind=null;
+function bfDays(){
+  const out=[]; const t=dnum(today());
+  for(let i=0;i<8;i++) out.push(isoDay(t-i*864e5));
+  return out;
+}
+function bfDayLabel(iso){
+  const n=daysSince(iso);
+  if(n===0) return "Today";
+  if(n===1) return "Yesterday";
+  return new Date(iso+"T12:00:00").toLocaleDateString('en-GB',{weekday:'short',day:'numeric',month:'short'});
+}
+/* The days he actually trains, in the order his own week uses them. */
+function bfKinds(){
+  const out=[];
+  const add=x=>{ const v=String(x||"").trim(); if(v && v!=="Rest" && out.indexOf(v)<0) out.push(v); };
+  Object.values(DB.schedule||{}).forEach(add);
+  Object.keys(DB.dayTypes||{}).forEach(add);
+  ["Push Day","Pull Day","Legs & Core","Pilates","Mobility","Cardio"].forEach(add);
+  return out;
+}
+function bfIsFlow(name){
+  let k=""; try{ k=splitKindOf(name); }catch(e){}
+  return k==="pilates"||k==="mobility"||k==="mobpil"||k==="yoga"||k==="recovery";
+}
+function openBackfill(){
+  /* Yesterday by default: the session he forgot is almost never today's. */
+  _bfDate=isoDay(dnum(today())-864e5);
+  _bfKind=null;
+  try{ const d=document.getElementById('bfDate'); if(d){ d.value=_bfDate; d.max=today(); } }catch(e){}
+  ["bfMins","bfRow"].forEach(id=>{ const e=document.getElementById(id); if(e) e.value=""; });
+  bfRender();
+  const sh=document.getElementById('bfSheet'); if(sh) sh.classList.add('show');
+}
+function closeBackfill(){ const sh=document.getElementById('bfSheet'); if(sh) sh.classList.remove('show'); }
+function bfSetDate(v){
+  if(!/^\d{4}-\d{2}-\d{2}$/.test(String(v||""))) return;
+  if(v>today()){ toast("That day hasn't happened yet"); const d=document.getElementById('bfDate'); if(d) d.value=_bfDate; return; }
+  _bfDate=v; bfRender();
+}
+function bfPickDay(iso){ _bfDate=iso; const d=document.getElementById('bfDate'); if(d) d.value=iso; bfRender(); }
+function bfPickKind(k){ _bfKind=k; bfRender(); }
+function bfRender(){
+  const dh=document.getElementById('bfDays');
+  if(dh) dh.innerHTML=bfDays().map(d=>
+    "<button class='"+(d===_bfDate?"on":"")+"' onclick=\"bfPickDay('"+d+"')\">"+escapeHtml(bfDayLabel(d))+"</button>").join("");
+  const kh=document.getElementById('bfKinds');
+  if(kh) kh.innerHTML=bfKinds().map(k=>{
+    /* what his own schedule had down for that day, so the right chip is obvious */
+    let hint="";
+    try{ const dow=new Date(_bfDate+"T12:00:00").getDay();
+         if(String((DB.schedule||{})[dow]||"")===k) hint="<small>planned</small>"; }catch(e){}
+    return "<button class='"+(k===_bfKind?"on":"")+"' onclick=\"bfPickKind('"+k.replace(/'/g,"\\'")+"')\">"+escapeHtml(k)+hint+"</button>";
+  }).join("");
+  const have=document.getElementById('bfHave');
+  if(have){
+    const c=(DB.completed||{})[_bfDate];
+    have.innerHTML = c
+      ? "<div class='bfhave'><b>"+escapeHtml(c.title||"A session")+"</b> is already on "+escapeHtml(ukDate(_bfDate))+
+        ". Logging again replaces it." +
+        "<br><button class='swapbtn' onclick=\"bfRemove()\">Remove that one instead</button></div>"
+      : "";
+  }
+}
+function bfRemove(){
+  if(!_bfDate) return;
+  const c=(DB.completed||{})[_bfDate]; if(!c) return;
+  if(!confirm("Remove \""+(c.title||"that session")+"\" from "+ukDate(_bfDate)+"?")) return;
+  delete DB.completed[_bfDate];
+  save(); updateStreak(); bfRender(); bfRefresh();
+  toast("Removed · "+ukDate(_bfDate));
+}
+function bfRefresh(){
+  try{ renderWeek(); }catch(e){}
+  try{ renderReadiness(); }catch(e){}
+  try{ renderHistory(); }catch(e){}
+  try{ renderItin(); }catch(e){}
+  try{ renderProgStrip(); }catch(e){}
+  try{ const el=document.getElementById('streakNum'); if(el) el.textContent=DB.streak||0; }catch(e){}
+}
+function saveBackfill(){
+  if(!_bfDate){ toast("Pick the day"); return; }
+  if(!_bfKind){ toast("Pick what you did"); return; }
+  if(_bfDate>today()){ toast("That day hasn't happened yet"); return; }
+  const rt=String(val('bfRow')||"").trim();
+  if(rt && isNaN(timeToSec(rt))){ toast("Row time as mm:ss — e.g. 8:20"); return; }
+  const old=(DB.completed||{})[_bfDate];
+  if(old && !confirm("Replace \""+(old.title||"the session")+"\" on "+ukDate(_bfDate)+"?")) return;
+  const mins=parseInt(String(val('bfMins')||"").replace(/[^0-9]/g,""),10);
+  const rec={
+    /* midday, so it sorts inside the day without claiming a time he didn't give */
+    at:new Date(_bfDate+"T12:00:00").toISOString(),
+    title:_bfKind, loc:locKey(),
+    exercises:0, planned:0, sets:0, volume:0, secs:0, skipped:[], avgEff:null,
+    durMs:(mins>0 && mins<600)? mins*60000 : 0,
+    backfilled:true
+  };
+  if(bfIsFlow(_bfKind)){ rec.flow=true; rec.moves=0; rec.names=[]; }
+  DB.completed=DB.completed||{};
+  DB.completed[_bfDate]=rec;
+  if(rt){
+    DB.rowing=DB.rowing||[];
+    DB.rowing.push({dist:"2000m", time:rt, date:_bfDate});
+  }
+  save(); updateStreak();
+  bfRefresh();
+  try{ renderRowing(); renderRowPace(); renderRowingLog(); }catch(e){}
+  try{ if(DB.cloud&&DB.cloud.on){ _cloudDirty=true; cloudFlush("backfill"); } }catch(e){}
+  try{ celebrate(); }catch(e){}
+  toast(escapeHtml(_bfKind)+" logged on "+ukDate(_bfDate)+" ✅");
+  closeBackfill();
 }
 function completeFlow(){
   const w=DB.workout||{};
