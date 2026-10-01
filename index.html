@@ -1888,7 +1888,7 @@ const DEFAULTS = {
      Wednesday mobility, Thursday pull, Friday push, sat sun rest". The old
      default was six lifting days with one rest and no cardio or mobility in
      it anywhere, which is not a week he has ever actually trained. */
-  schedule:{0:"Rest",1:"Pilates",2:"Legs & Core",3:"Mobility & Pilates",4:"Pull Day",5:"Push Day",6:"Rest"},
+  schedule:{0:"Rest",1:"Pilates",2:"Legs & Core",3:"Pilates",4:"Pull Day",5:"Push Day",6:"Rest"},
   /* v205 — Wednesday is Mobility AND Pilates in one session, every week.
      DB.alt still exists for any day he wants to alternate; nothing uses it. */
   alt:{},
@@ -2321,6 +2321,32 @@ function mergeDefaults(parsed){ let d={...structuredClone(DEFAULTS),...parsed};
         }
       }catch(e){}
     }
+  }
+  /* ===== v243 · THE WEEK HE ACTUALLY TRAINS ========================
+     "The training sessions have all got muddled up. Monday and Wednesday
+     Pilates, Tuesday legs, Thursday pull and biceps, Friday push and triceps
+     and shoulders."
+
+     Three older migrations each asserted a week (v160 and v172 put Upper Body
+     on Monday; v221 moved it to Pilates), and between them, the coach and his
+     own edits the saved schedule had drifted off the one the master program is
+     written against. This asserts it once more, to what he just said it is.
+     Fires once; after this the week is his to move again.
+
+     Plain string literals only — nothing here may reference anything declared
+     later in this file. That is the v235 rule and it is not being broken. */
+  if(!d.weekV243){
+    d.weekV243=1;
+    d.dayTypes=d.dayTypes||{};
+    if(!d.dayTypes["Pilates"]) d.dayTypes["Pilates"]={kind:"pilates",main:[],note:""};
+    d.schedule={0:"Rest",1:"Pilates",2:"Legs & Core",3:"Pilates",4:"Pull Day",5:"Push Day",6:"Rest"};
+    if(d.alt){ delete d.alt[1]; delete d.alt[3]; }
+    /* Today's sheet is rebuilt only if the app built it and he has not begun
+       moving through it — a session he has shaped or started is never
+       rewritten behind him. */
+    try{
+      if(!d.session || !d.session.start) d.workout=null;
+    }catch(e){}
   }
   /* ===== v221 · MONDAY IS A PILATES DAY =============================
      "Let's make Monday a full Pilates workout day every Monday."
@@ -4996,13 +5022,14 @@ const PROGRAM={
                   ["Seated Cable Row",3,"10"],["Lateral Raise",3,"12\u201315"],
                   ["Leg Raise",2,"12\u201315"],["Plank",2,"45s"]],
     "Legs & Core":[["Romanian Deadlift",3,"8\u201310"],["Bulgarian Split Squat",3,"8 each leg"],
-                  ["Calf Raise",3,"12\u201315"],["DB Curl",3,"10\u201312"],
+                  ["Calf Raise",3,"12\u201315"],["Goblet Squat",3,"10\u201312"],
                   ["Cable Crunch",2,"12"],["Side Plank",2,"40s each side"]],
     "Pull Day":[["Lat Pulldown",3,"8\u201310"],["Chest-supported Row",3,"10"],
                   ["Face Pull",3,"12\u201315"],["Hammer Curl",3,"10\u201312"],
                   ["Side Plank",2,"40s each side"],["Hanging Knee Raise",2,"12"]],
     "Push Day":[["Incline DB Press",3,"8\u201310"],["Bench Press",3,"8\u201310"],
                   ["DB Shoulder Press",3,"8\u201310"],["Lateral Raise",3,"12\u201315"],
+                  ["Triceps Pushdown",3,"10\u201312"],
                   ["Dead Bug",2,"10 each side"],["V-Up",2,"12"]]
   },
   2:{
@@ -5010,13 +5037,14 @@ const PROGRAM={
                   ["DB Single-arm Row",3,"10 each side"],["Cable Lateral Raise",3,"12\u201315"],
                   ["Hanging Knee Raise",2,"10\u201312"],["Band Dead Bug",2,"12 each side"]],
     "Legs & Core":[["Romanian Deadlift",3,"8"],["Goblet Squat",3,"10\u201312"],
-                  ["Calf Raise",3,"15"],["Triceps Pushdown",3,"10\u201312"],
+                  ["Calf Raise",3,"15"],["Step-up",3,"10 each leg"],
                   ["V-Up",2,"12"],["Band Pallof Press",2,"12 each side"]],
     "Pull Day":[["Lat Pulldown",3,"8"],["Seated Cable Row",3,"10"],
                   ["DB Reverse Fly",3,"12\u201315"],["DB Curl",3,"10"],
                   ["Bicycle Crunch",2,"20 each side"],["Flutter Kick",2,"30s"]],
     "Push Day":[["Incline DB Press",3,"8"],["Close-grip Bench Press",3,"8\u201310"],
                   ["DB Shoulder Press",3,"8\u201310"],["Lateral Raise",3,"12\u201315"],
+                  ["Overhead Triceps Extension",3,"10\u201312"],
                   ["Plank",2,"45s"],["Cable Crunch",2,"15"]]
   },
   3:{
@@ -5024,13 +5052,14 @@ const PROGRAM={
                   ["Chest-supported Row",3,"10"],["Cable Lateral Raise",3,"12\u201315"],
                   ["Flutter Kick",2,"30s"],["Dead Bug",2,"12 each side"]],
     "Legs & Core":[["Romanian Deadlift",3,"8"],["Bulgarian Split Squat",3,"8 each leg"],
-                  ["Calf Raise",3,"15\u201320"],["Hammer Curl",3,"10\u201312"],
+                  ["Calf Raise",3,"15\u201320"],["Barbell Back Squat",3,"6\u20138"],
                   ["Cable Crunch",2,"12\u201315"],["Plank Hip Dips",2,"12 each side"]],
     "Pull Day":[["Single-arm Lat Pulldown",3,"10 each side"],["Chest-supported Row",3,"10"],
                   ["Face Pull",3,"12\u201315"],["Incline DB Curl",3,"10"],
                   ["Plank Hip Dips",2,"12 each side"],["Leg Raise",2,"15"]],
     "Push Day":[["Incline DB Press",3,"8"],["Bench Press",3,"8\u201310"],
-                  ["DB Shoulder Press",3,"8"],["Lateral Raise",3,"12\u201315"],
+                  ["DB Shoulder Press",3,"8"],["Cable Lateral Raise",3,"12\u201315"],
+                  ["Triceps Pushdown",3,"10"],
                   ["Hollow Hold",2,"30s"],["V-Up",2,"15"]]
   },
   /* Week 4 is the deload and is written as one: the same movements, a rep
@@ -5041,13 +5070,14 @@ const PROGRAM={
                   ["Seated Cable Row",3,"12"],["Lateral Raise",3,"15"],
                   ["Leg Raise",2,"12"],["Band Dead Bug",2,"10 each side"]],
     "Legs & Core":[["Romanian Deadlift",3,"10"],["Goblet Squat",3,"12"],
-                  ["Calf Raise",3,"15"],["Triceps Pushdown",3,"12"],
+                  ["Calf Raise",3,"15"],["Walking Lunge",3,"12 each leg"],
                   ["V-Up",2,"12"],["Side Plank",2,"30s each side"]],
     "Pull Day":[["Lat Pulldown",3,"10"],["Seated Cable Row",3,"12"],
                   ["Face Pull",3,"15"],["Hammer Curl",3,"12"],
                   ["Band Pallof Press",2,"12 each side"],["Hanging Knee Raise",2,"10"]],
     "Push Day":[["Incline DB Press",3,"10"],["Bench Press",3,"10"],
                   ["DB Shoulder Press",3,"10"],["Lateral Raise",3,"15"],
+                  ["Overhead Triceps Extension",3,"12"],
                   ["Band Dead Bug",2,"12 each side"],["Cable Crunch",2,"12"]]
   }
 };
@@ -6884,7 +6914,21 @@ function pilatesHalf(total){
    does not have in the room he is standing in is skipped rather than
    pretended at. */
 const SESSION_MIN=52;              /* aim; 45-60 is the band he asked for */
-const PILATES_ROTATION=["ref","chair","mat","ref","chair","mat"];
+/* v243 — Monday AND Wednesday are Pilates now. Indexing this by block week
+   alone gave both days the same apparatus, so he would have done reformer
+   twice in a week and not seen the chair or the mat for a fortnight. The
+   rotation advances per SESSION: Monday takes the week's first slot and
+   Wednesday the second, so all three come round every three sessions. */
+const PILATES_ROTATION=["ref","chair","mat"];
+function pilatesSlotOn(iso){
+  let wk=1; try{ wk=blockWeekOn(iso||today()); }catch(e){}
+  let dow=1; try{ dow=new Date(String(iso||today())+"T12:00:00").getDay(); }catch(e){}
+  /* Monday is the week's first Pilates day, anything later is its second. */
+  return (wk-1)*2 + (dow>=3? 1 : 0);
+}
+function pilatesWant(iso){
+  return PILATES_ROTATION[pilatesSlotOn(iso) % PILATES_ROTATION.length] || "mat";
+}
 function moveMinutes(name){
   const a=apparatusMove(name);
   if(a && a.min) return a.min;
@@ -6916,16 +6960,14 @@ function pilatesApparatusOn(iso){
       if(o.app==="mat" || apparatusHere(o.app)) return o.app;
     }
   }catch(e){}
-  let wk=1; try{ wk=blockWeekOn(d); }catch(e){}
-  const want=PILATES_ROTATION[(wk-1)%PILATES_ROTATION.length] || "mat";
+  const want=pilatesWant(d);
   if(want==="mat") return "mat";
   try{ return apparatusHere(want)? want : "mat"; }catch(e){ return "mat"; }
 }
 /* Which apparatus the rotation would have chosen, so the card can say when he
    has stepped off it. */
 function pilatesRotationOn(iso){
-  let wk=1; try{ wk=blockWeekOn(iso||today()); }catch(e){}
-  const want=PILATES_ROTATION[(wk-1)%PILATES_ROTATION.length] || "mat";
+  const want=pilatesWant(iso||today());
   try{ return (want==="mat"||apparatusHere(want))? want : "mat"; }catch(e){ return "mat"; }
 }
 function setPilatesApparatus(app){
@@ -16978,7 +17020,7 @@ function scheduleInApp(){
    v18 ADDITIONS — draggable rest timer · weekly training memory · AI planner
    · Firestore sync
    ========================================================================== */
-const APP_VERSION="v242 · 01/10/2026";
+const APP_VERSION="v243 · 01/10/2026";
 
 /* ===== 1. REST TIMER — drag it anywhere so it never blocks the chat box ===== */
 let _rtDrag=null;

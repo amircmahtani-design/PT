@@ -1,3 +1,87 @@
+AMIR PT — v243 · 01/10/2026
+===========================
+
+"The training sessions have all got muddled up. Monday and Wednesday Pilates,
+Tuesday legs, Thursday pull and biceps, Friday push and triceps and
+shoulders."
+
+He was right twice over: the saved week had drifted, and the program itself
+had arms in the wrong place.
+
+THE WEEK, ASSERTED ONCE MORE
+-----------------------------
+Three older migrations each asserted a week — v160 and v172 put Upper Body on
+Monday, v221 moved it to Pilates — and between those, the coach and his own
+edits the saved schedule had wandered off the one the master program is
+written against. v243 sets it to what he just said it is:
+
+  Mon  Pilates      Tue  Legs      Wed  Pilates
+  Thu  Pull         Fri  Push      Sat/Sun  Rest
+
+Fires once. A change he makes after it stands — verified against a schedule
+with Monday still on Upper Body, against a completely shuffled week, and
+against one that was already right.
+
+ARMS WERE ON LEG DAY, AND FRIDAY HAD NO TRICEPS
+------------------------------------------------
+This is the muddle he could feel. Reading the program as written:
+
+  Tuesday  RDL · Bulgarian Split Squat · Calf Raise · DB CURL
+  Friday   Incline DB Press · Bench · DB Shoulder Press · Lateral Raise
+
+Every single week leg day carried an arm movement — DB Curl, Hammer Curl or
+Triceps Pushdown depending on the week — and Friday had no triceps movement
+at all in three weeks out of four. v198 had taken the arm slots to make room
+for the abs finishers and parked what was left wherever a slot was free.
+
+Now:
+
+  Tuesday  hinge · squat · calf · a second leg movement. No arms.
+  Thursday unchanged — it already had a curl every week.
+  Friday   chest · chest · shoulders · side delts · A TRICEPS MOVEMENT.
+
+Friday gains a fifth lift rather than losing a press, because the app's own
+estimator puts it at 63 minutes of his 65 — measured, not assumed. Two
+triceps movements would have been 70, so there is one.
+
+THE APP CAUGHT MY FIRST ATTEMPT
+--------------------------------
+auditProgram() runs over the written program at boot and shouted:
+
+  week 1 Legs & Core: Bulgarian Split Squat + Walking Lunge
+  week 3 Legs & Core: Bulgarian Split Squat + Reverse Lunge
+
+Both of those are the same family — single-leg knee. The fourth slot now
+takes a squat pattern beside the split squat instead of a second lunge:
+Goblet Squat in week 1, Barbell Back Squat in week 3.
+
+TWO PILATES DAYS MEANS THE APPARATUS HAS TO ROTATE TWICE
+----------------------------------------------------------
+pilatesApparatusOn() indexed the rotation by block week alone. With Pilates
+on both Monday and Wednesday that gave the two days the SAME apparatus — he
+would have done the reformer twice in a week and not seen the chair or the
+mat for a fortnight. It advances per session now: Monday takes the week's
+first slot, Wednesday the second.
+
+  wk1  Mon reformer · Wed chair      wk2  Mon mat · Wed reformer
+  wk3  Mon chair · Wed mat           wk4  Mon reformer · Wed chair
+
+All three come round every three sessions. Both days build a full class —
+18 movements, about 52 minutes.
+
+WHERE THAT LEAVES THE WEEK
+---------------------------
+  back 9 · shoulders 12 · legs 12 · core 15 — all in band
+  arms 10.5 against a ceiling of 10 — half a set over, which is what putting
+    the triceps where he asked for them costs
+  chest 6 against a band of 8-12 — still UNDER, unchanged by any of this.
+    Monday became Pilates in v221 and Friday is the only chest day left.
+    Fixing it needs a second chest movement on Friday (which would take it to
+    about 70 minutes) or chest work somewhere else. Not changed on my own.
+
+Sessions: Legs 57 min · Pull 56 min · Push 63 min. verify16 still matches the
+program exactly on all 16 sessions.
+
 AMIR PT — v242 · 01/10/2026
 ===========================
 
