@@ -1194,7 +1194,12 @@ a{color:var(--orange);}
       <summary class="hsum"><span class="t">Streak</span><span class="chev">›</span></summary>
       <div class="hbody">
       <div class="powerbox"><div class="num" id="streakNum">0</div>
-        <div><div class="lab">Training Day Run</div><div style="font-size:13px;font-weight:600;color:var(--muted);margin-top:3px">Rest days don't break it — three days off does </div></div></div>
+        <div><div class="lab">Sessions in this run</div>
+          <div id="streakSub" style="font-size:13px;font-weight:600;color:var(--muted);margin-top:3px"></div></div></div>
+      <details class="tinysec mt">
+        <summary>Show me the days</summary>
+        <div id="streakList"></div>
+      </details>
       </div>
     </details>
   </section>
@@ -2745,7 +2750,7 @@ function go(s){
   document.querySelectorAll('.tab').forEach(t=>t.classList.toggle('active',t.dataset.s===s));
   document.getElementById('chatBar').style.display = s==='coach'?'flex':'none';
   const rt=document.getElementById('restTimer'); if(rt) rt.classList.toggle('overchat', s==='coach');
-  if(s==='today'){ try{ bindSections('s-today'); }catch(e){} }
+  if(s==='today'){ try{ bindSections('s-today'); }catch(e){} try{ renderStreakCard(); }catch(e){} }
   if(s==='progress'){ try{ bindSections('s-progress'); }catch(e){} }
   try{ updateJumpBtn(); }catch(e){}
   if(s==='browse') renderBrowse();
@@ -14529,6 +14534,7 @@ function updateStreak(){
   let n=0; try{ n=computeStreak(); }catch(e){ n=DB.streak||0; }
   if(n!==DB.streak){ DB.streak=n; try{ localStorage.setItem(STORE_KEY,JSON.stringify(DB)); }catch(e){} }
   const el=document.getElementById('streakNum'); if(el) el.textContent=n;
+  try{ renderStreakCard(); }catch(e){}
 }
 function renderItin(){
   const el=document.getElementById('itinList'); if(!el) return;
@@ -17033,7 +17039,7 @@ function scheduleInApp(){
    v18 ADDITIONS — draggable rest timer · weekly training memory · AI planner
    · Firestore sync
    ========================================================================== */
-const APP_VERSION="v244 · 01/10/2026";
+const APP_VERSION="v245 · 01/10/2026";
 
 /* ===== 1. REST TIMER — drag it anywhere so it never blocks the chat box ===== */
 let _rtDrag=null;
@@ -17935,18 +17941,85 @@ function plannedRestOn(iso,dow){
          return isRestDay((DB.schedule||{})[d]); }catch(e2){ return false; }
   }
 }
-function computeStreak(){
-  const dates=showedUpDates(); if(!dates.size) return 0;
-  let t=dnum(today()), streak=0, gap=0;
+/* ===== v245 \u00b7 THE STREAK HAD TO SHOW ITS WORKING ====================
+   "I haven't done 35 days streak. It's around 15 or so."
+
+   He was reading a bare 35 under the words "Training Day Run" \u2014 so, 35 days.
+   It was never days. It counts the SESSIONS inside the current run, and the
+   run stretches back as far as it can without three missed training days in a
+   row, so seven consistent weeks at five a week is 35 and keeps climbing.
+
+   Two things were wrong with that. The label invited exactly his reading, and
+   there was no way to see WHICH days it was counting \u2014 so if one of them was
+   not real (a stray completion, a sync that brought back a day from another
+   device, a tap by accident) he had no way to find it, let alone take it off.
+
+   The maths is unchanged. It is the same walk back through the same days; it
+   just returns the days as well as the count now, so the card can list them
+   and he can delete one that never happened. */
+function streakDetail(){
+  const out={days:[], start:"", sessions:0, span:0};
+  const dates=showedUpDates(); if(!dates.size) return out;
+  let t=dnum(today()), gap=0;
   if(!dates.has(isoDay(t))) t-=864e5;          // today hasn't happened yet — that's fine
   for(let i=0;i<400;i++){
     const iso=isoDay(t);
-    if(dates.has(iso)){ streak++; gap=0; }
+    if(dates.has(iso)){ out.days.push(iso); gap=0; }
     else if(plannedRestOn(iso)){ /* a rest day he planned — step over it */ }
     else { gap++; if(gap>2) break; }           // up to 2 unplanned misses is still the same run
     t-=864e5;
   }
-  return streak;
+  out.sessions=out.days.length;
+  out.start=out.days.length? out.days[out.days.length-1] : "";
+  try{ out.span=out.start? (daysSince(out.start)+1) : 0; }catch(e){ out.span=0; }
+  return out;
+}
+function computeStreak(){ return streakDetail().sessions; }
+/* What that day actually was, and whether it is safe to take off. A day with
+   logged sets or a logged row is real training \u2014 removing it would throw away
+   the numbers too, so that is done in Progress, not here. */
+function streakWhat(iso){
+  const bits=[]; let sets=0;
+  const c=(DB.completed||{})[iso];
+  if(c && c.title) bits.push(String(c.title));
+  try{ Object.values(DB.strength||{}).forEach(arr=>(arr||[]).forEach(x=>{
+    if(x && x.date===iso) sets+=(x.sets||[]).length; })); }catch(e){}
+  const rows=(DB.rowing||[]).filter(r=>r&&r.date===iso).length;
+  if(sets) bits.push(sets+" set"+(sets===1?"":"s"));
+  if(rows) bits.push(rows+" row"+(rows===1?"":"s"));
+  if(!bits.length) bits.push("marked done");
+  return {text:bits.join(" \u00b7 "), removable:(sets===0 && rows===0 && !!c), backfilled:!!(c&&c.backfilled)};
+}
+function removeStreakDay(iso){
+  const w=streakWhat(iso);
+  if(!w.removable){ toast("That day has sets or a row logged \u2014 delete those in Progress"); return; }
+  const c=(DB.completed||{})[iso]||{};
+  if(!confirm("Take "+ukDate(iso)+" off your record?\n\n"+(c.title||"That session")+
+              "\n\nIt only removes the tick for that day. Nothing else is touched.")) return;
+  delete DB.completed[iso];
+  save(); updateStreak();
+  try{ renderStreakCard(); }catch(e){}
+  try{ renderHistory(); renderWeek(); renderProgStrip(); renderItin(); }catch(e){}
+  toast("Removed "+ukDate(iso));
+}
+function renderStreakCard(){
+  const d=streakDetail();
+  const n=document.getElementById('streakNum'); if(n) n.textContent=d.sessions;
+  const sub=document.getElementById('streakSub');
+  if(sub) sub.innerHTML = d.sessions
+    ? "since "+escapeHtml(ukDate(d.start))+" \u2014 "+d.span+" day"+(d.span===1?"":"s")+
+      ".<br>Rest days don't break it; three days off does."
+    : "Nothing counting yet.";
+  const el=document.getElementById('streakList'); if(!el) return;
+  el.innerHTML = d.days.length
+    ? "<div class='hint' style='margin:2px 0 8px'>Every day counting toward it, newest first. If one of these never happened, take it off.</div>"+
+      d.days.map(iso=>{ const w=streakWhat(iso);
+        return "<div class='hline'><span class='en'>"+escapeHtml(ukDate(iso))+
+          " <span class='muted' style='font-weight:600;font-size:12px'>"+escapeHtml(w.text)+
+          (w.backfilled? " \u00b7 logged later" : "")+"</span></span>"+
+          (w.removable? "<button class='del' onclick=\"removeStreakDay('"+iso+"')\">\u2715</button>"
+                      : "<span class='muted' style='font-size:11px'>logged</span>")+"</div>"; }).join("")
+    : "";
 }
 
 /* ===== D. CHARTS — the numbers you actually care about ===== */

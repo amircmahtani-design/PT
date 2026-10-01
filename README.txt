@@ -1,3 +1,60 @@
+AMIR PT — v245 · 01/10/2026
+===========================
+
+"I haven't done 35 days streak. It's around 15 or so."
+
+He was reading a bare 35 under the words "Training Day Run". So: 35 days. It
+was never days.
+
+WHAT THE NUMBER ACTUALLY WAS
+-----------------------------
+It counts the SESSIONS inside the current run, and the run reaches back as
+far as it can without three missed training days in a row \u2014 rest days are
+stepped over, not counted against him. Seven consistent weeks at five
+sessions a week is 35, and it keeps climbing. The number was not wrong. The
+word under it was.
+
+Two things were wrong with that. The label invited exactly his reading. And
+there was no way to see WHICH days it was counting \u2014 so if one of them was
+not real (a stray completion, a sync that brought a day back from another
+device, a tap by accident) he had no way to find it, let alone take it off.
+
+WHAT THE CARD SAYS NOW
+-----------------------
+  26  SESSIONS IN THIS RUN
+      since 20/08/2026 \u2014 43 days.
+      Rest days don't break it; three days off does.
+
+Sessions and days are both there and neither can be mistaken for the other.
+
+SHOW ME THE DAYS
+-----------------
+Under it, every single day counting toward the run, newest first, with what
+that day actually was:
+
+  29/09/2026  1 row                        logged
+  28/09/2026  Pull Day \u00b7 9 sets            logged
+  25/09/2026  Pilates \u2014 Reformer            \u2715
+
+A day with logged sets or a logged row says "logged" and has no \u2715 \u2014 that is
+real training and removing it would throw the numbers away with it; those are
+deleted in Progress. A day that is only a tick \u2014 a Pilates class, a mobility
+day, anything backfilled \u2014 gets an \u2715, because a tick is the only thing it is
+and the only thing being removed. Backfilled days say "logged later".
+
+Taking one off recomputes the streak, the week and the history on the spot.
+
+THE MATHS IS UNCHANGED
+-----------------------
+computeStreak() is now one line: streakDetail().sessions. It is the same walk
+back through the same days as before; it returns the days as well as the
+count, so the card can list them and the two can never disagree. Verified:
+the detail, the stored DB.streak, the card and computeStreak() all give the
+same number, and it survives a reload.
+
+If 26 is still too many when he looks at his own list, the days that are
+wrong are now in front of him with a button next to each one.
+
 AMIR PT — v244 · 01/10/2026
 ===========================
 
