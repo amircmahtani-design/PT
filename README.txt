@@ -1,3 +1,60 @@
+AMIR PT — v246 · 01/10/2026
+===========================
+
+"I also logged in my rowing but it didn't appear."
+
+It had appeared. Reproduced in a minute: log a 2000m, the entry is written,
+the count goes up — and it lands at the BOTTOM of ALL ENTRIES, underneath
+seven weeks of older rows.
+
+NEWEST FIRST
+-------------
+That list ran oldest-first. It was the only list in the app that did —
+Session history, the photo timeline and the weight table are all newest-first
+— so the row he had just logged went where he would never look, and the chart
+above it had not moved either. Of course it looked like nothing had saved.
+
+It now reads ALL ENTRIES · NEWEST FIRST, and each row carries its split:
+
+  2000m · 8:15   29/09/2026 · 2:03.8/500m
+  2000m · 8:24   22/09/2026 · 2:06/500m
+
+(delRow still splices by position, so each row keeps its real index rather
+than its position in the sorted view.)
+
+AND THE CHART HAD NOT MOVED, FOR A GOOD REASON
+-----------------------------------------------
+Each point is that week's FASTEST split. A row slower than one he had already
+done that week changes nothing on it. That is right, and nothing said so —
+the toast was "Row logged 🚣". It now says what the row was worth:
+
+  2000m 8:40 · 2:10/500m · 6s off this week's best, so the chart holds
+  2000m 7:30 · 1:52.5/500m · personal best 🏆
+  2000m 8:05 · 2:01.3/500m · fastest this week
+
+A ROW CAN COUNT FOR A PB AND BE INVISIBLE ON THE CHART
+--------------------------------------------------------
+His screenshot had a 2000m personal best of 7:42.3 — 1:55.6 per 500m — above
+a chart whose best week read 1:58. Both were honest, and they disagreed,
+because they do not filter the same way: the PB table needs only a readable
+time, while the chart needs a date AND a distance it can turn into metres. A
+row missing either counts for one and is invisible to the other, silently.
+
+The list now says which, and why, on the row itself:
+
+  2000m · 7:42.3 · 1:55.6/500m · NO DATE
+  "1 of these is not on the chart above — the reason is on the row."
+
+Three reasons it can give: no date, no distance, time unreadable. Rows like
+that arrive from a cloud merge off another device or from an older schema,
+which is why they had never been noticed.
+
+Verified, 8 checks: a new row is top of the list, says what it was worth,
+shows its split; a PB says so; a dateless row is flagged and counted in the
+warning; delete still removes the right one; it survives a reload. Layout,
+contrast and day-first dates clean, round2 14/14, streak 8/8, backfill 18/18,
+verify16 16/16, journey clean, no page or console errors.
+
 AMIR PT — v245 · 01/10/2026
 ===========================
 

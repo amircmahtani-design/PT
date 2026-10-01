@@ -15044,15 +15044,76 @@ function renderRowing(){
   const order=["500m","1000m","2000m","5000m","10000m"]; const rows=order.filter(d=>best[d]).map(d=>"<div class='pb'><span class='n'>"+d+"</span><span class='p'>"+best[d].time+"</span></div>").join('');
   const el=document.getElementById('rowingPBs'); if(el) el.innerHTML=rows||"<div class='muted' style='font-size:14px'>No rows logged yet.</div>";
 }
+/* ===== v246 · "I LOGGED MY ROWING BUT IT DIDN'T APPEAR" ==============
+   It had appeared. It was at the BOTTOM of a list that ran oldest-first — the
+   only list in the app that did; history, photos and the weight table are all
+   newest-first — so a row he had just logged went underneath seven weeks of
+   older ones and looked like it had never saved.
+
+   And the chart plots each week's FASTEST split, so a row slower than one he
+   had already done that week moves nothing on it. Nothing said so; the toast
+   just said "Row logged". It now says what the row was actually worth. */
+function rowSplitOf(r){
+  const sec=timeToSec(String((r&&r.time)||""));
+  const m=distMetres(r&&r.dist);
+  if(isNaN(sec) || !m) return null;
+  return sec/(m/500);
+}
+/* A row can count towards a personal best and still be invisible on the chart:
+   the PB table needs only a readable time, the chart needs a date and a
+   distance it can turn into metres. That silent disagreement is how a best of
+   7:42.3 ends up under a chart whose best week reads 1:58. Say which, and why. */
+function rowWhyNotCharted(r){
+  if(!r) return "";
+  if(isNaN(timeToSec(String(r.time||"")))) return "time unreadable";
+  if(!distMetres(r.dist))                  return "no distance";
+  if(!r.date || r.date==="prev")           return "no date";
+  return "";
+}
 function renderRowingLog(){
   const el=document.getElementById('rowingLog'); if(!el) return;
   if(!DB.rowing.length){ el.innerHTML=""; return; }
-  el.innerHTML="<div class='muted' style='font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;margin-bottom:4px'>All entries</div>"+DB.rowing.map((r,i)=>"<div class='pb'><span class='n'>"+r.dist+" · "+r.time+"<span class='muted' style='font-weight:600;font-size:12px'> "+(r.date? ukDate(r.date) : '')+"</span></span><button class='del' onclick='delRow("+i+")'>✕</button></div>").join('');
+  /* Keep each row's real index — delRow() splices DB.rowing by position. */
+  const list=(DB.rowing||[]).map((r,i)=>({r,i}))
+    .sort((a,b)=>String(b.r.date||"").localeCompare(String(a.r.date||"")) || (b.i-a.i));
+  const off=list.filter(x=>rowWhyNotCharted(x.r)).length;
+  el.innerHTML="<div class='muted' style='font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;margin-bottom:4px'>All entries · newest first</div>"+
+    (off? "<div class='hint' style='margin:0 0 8px'>"+off+" of these "+(off===1?"is":"are")+
+          " not on the chart above — the reason is on the row.</div>" : "")+
+    list.map(function(x){
+      const r=x.r, i=x.i, sp=rowSplitOf(r), why=rowWhyNotCharted(r);
+      return "<div class='pb'><span class='n'>"+escapeHtml(String(r.dist||""))+" · "+escapeHtml(String(r.time||""))+
+        "<span class='muted' style='font-weight:600;font-size:12px'> "+(r.date? escapeHtml(ukDate(r.date)) : "")+
+        (sp!=null? " · "+fmtSplit(sp)+"/500m" : "")+
+        (why? " · <b style='color:var(--gold)'>"+why+"</b>" : "")+
+        "</span></span><button class='del' onclick='delRow("+i+")'>✕</button></div>";
+    }).join('');
+}
+/* What that row was worth, said out loud, so a chart that does not move is
+   never mistaken for a row that did not save. */
+function rowLoggedLine(rec){
+  const sp=rowSplitOf(rec);
+  const head=String(rec.dist||"")+" "+String(rec.time||"")+(sp!=null? " · "+fmtSplit(sp)+"/500m" : "");
+  if(sp==null) return head+" logged";
+  try{
+    const others=(DB.rowing||[]).filter(r=>r && r!==rec && String(r.dist)===String(rec.dist));
+    const allBest=others.map(rowSplitOf).filter(x=>x!=null).sort((a,b)=>a-b)[0];
+    if(allBest==null || sp<allBest) return head+" · personal best 🏆";
+    const wk=weekKey(rec.date);
+    const wkBest=others.filter(r=>weekKey(r.date)===wk).map(rowSplitOf).filter(x=>x!=null).sort((a,b)=>a-b)[0];
+    if(wkBest==null || sp<=wkBest) return head+" · fastest this week";
+    return head+" · "+Math.round(sp-wkBest)+"s off this week's best, so the chart holds";
+  }catch(e){}
+  return head+" logged";
 }
 function addRowing(){
   const dist=val('rowDist'), time=val('rowTime').trim();
   if(isNaN(timeToSec(time))){ toast("Use mm:ss \u2014 e.g. 8:42"); return; }
-  DB.rowing.push({dist,time,date:today()}); save(); renderRowing(); renderRowPace(); renderRowingLog(); document.getElementById('rowTime').value=""; toast("Row logged 🚣");
+  const rec={dist,time,date:today()};
+  DB.rowing.push(rec); save();
+  renderRowing(); renderRowPace(); renderRowingLog();
+  const inp=document.getElementById('rowTime'); if(inp) inp.value="";
+  toast(rowLoggedLine(rec));
 }
 function delRow(i){ DB.rowing.splice(i,1); save(); renderRowing(); renderRowPace(); renderRowingLog(); toast("Deleted"); }
 function delStrength(ex,date){ if(!DB.strength[ex])return; DB.strength[ex]=DB.strength[ex].filter(s=>s.date!==date); if(!DB.strength[ex].length) delete DB.strength[ex]; save(); renderStrengthPBs(); renderHistory(); toast("Deleted"); }
@@ -17039,7 +17100,7 @@ function scheduleInApp(){
    v18 ADDITIONS — draggable rest timer · weekly training memory · AI planner
    · Firestore sync
    ========================================================================== */
-const APP_VERSION="v245 · 01/10/2026";
+const APP_VERSION="v246 · 01/10/2026";
 
 /* ===== 1. REST TIMER — drag it anywhere so it never blocks the chat box ===== */
 let _rtDrag=null;
