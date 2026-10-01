@@ -5430,20 +5430,30 @@ function buildCustomDay(name,ctx){
       recovery:"Hydrate well, refuel with protein + carbs. Great for recovery and the engine."};
   }
   if(kind==="pilates"){
-    /* v236 — one apparatus, a whole class, built to 45-60 minutes. */
-    const built=(function(){ try{ return buildApparatusSession(); }catch(e){ return {app:"mat",list:buildPilatesFlow(12),mins:30,n:12}; } })();
-    const flow=(dt.main&&dt.main.length)? dt.main.map(enrichMove) : built.list;
-    const pl=(function(){ try{ return pilatesPlan(); }catch(e){ return null; } })();
-    const label=(built.app==="mat")? "Pilates mat" : (FOCUS_LABEL[built.app]||"Pilates");
-    return {title:name, tag: LOC().tag+" \u00b7 "+label, phase:DB.profile.phase, kind:"mobility", loc:locKey(),
-      flowTitle:label+" \u00b7 "+built.n+" movements \u00b7 about "+built.mins+" min"+(pl? " \u00b7 level "+pl.level+" of 3" : ""),
-      pilates: pl, studio:[built.app], sessionMins:built.mins,
-      note: dt.note || ("A full "+label.toLowerCase()+" class, about "+built.mins+" minutes. "+
-        (built.app==="mat"? "" : "The apparatus changes week by week \u2014 reformer, chair, mat \u2014 so all three get used. ")+
-        "One round: do the movement, then move on. No sets, no weight: slow, controlled and breath-led."+
-        (pl? " "+pl.note+(pl.toNext? " "+pl.toNext+" more session"+(pl.toNext===1?"":"s")+" and "+pl.adds.slice(0,3).join(", ")+" come in." : "") : "")),
-      reps:"\u2014", sets:0, warmup:[], main:[], cooldown:flow,
-      recovery:"Breathe, hydrate, and notice how much taller you stand. Mobility is training."};
+    /* ===== v244 \u00b7 HE HAS A TEACHER =====================================
+       "You don't need to worry about Pilates build workouts because I have a
+       teacher. It just a button that says workout done."
+
+       So the app stops writing a class he was never going to read off a
+       phone. The day keeps its name, its place in the week, its clock and
+       its line on the record \u2014 the sheet is one button.
+
+       Nothing is deleted: the apparatus library, the levels and the mat
+       order are all still there, and Mobility & Pilates still uses them.
+       A day type he picks himself with its own movements (dt.main) is still
+       honoured, because that is him asking for a list. */
+    if(dt.main && dt.main.length){
+      return {title:name, tag: LOC().tag+" \u00b7 Pilates", phase:DB.profile.phase, kind:"mobility", loc:locKey(),
+        flowTitle:"Pilates \u00b7 your list",
+        note: dt.note || "Your own list, in your own time.",
+        reps:"\u2014", sets:0, warmup:[], main:[], cooldown:dt.main.map(enrichMove),
+        recovery:"Breathe, hydrate, and notice how much taller you stand."};
+    }
+    return {title:name, tag: LOC().tag+" \u00b7 Pilates", phase:DB.profile.phase, kind:"mobility", loc:locKey(),
+      teacherLed:true,
+      note: dt.note || "Your class, with your teacher. Start the clock when you begin, and tap Workout done at the end \u2014 that is all this day needs.",
+      reps:"\u2014", sets:0, warmup:[], main:[], cooldown:[],
+      recovery:"Breathe, hydrate, and notice how much taller you stand."};
   }
   if(kind==="mobpil"){
     const flow=(dt.main&&dt.main.length)? dt.main.map(enrichMove) : buildMobPilFlow();
@@ -8134,14 +8144,17 @@ function _renderSheetInner(w){
        but the time he pressed the button. */
     /* v238 — on a Pilates day the apparatus is his to pick, so the chips sit
        with the session rather than in a setting somewhere. */
+    /* v244 — a teacher-led day has no list to draw and no apparatus to pick:
+       the clock and the button are the whole sheet. */
     const pick=(function(){ try{
+      if(w.teacherLed) return "";
       return (/pilates/i.test(String(w.title||"")) && !/mobility/i.test(String(w.title||"")))? pilatesPickHTML() : "";
     }catch(e){ return ""; } })();
     host.innerHTML="<div class='sheet'>"+wkHeaderHTML(w)+"</div><div id='wkMenu' data-open='0'></div>"+
       (pick? "<div class='sheet-sec'>"+pick+"</div>" : "")+
       "<div class='sheet-sec'><div class='recovery'>"+w.note+"</div></div>"+
       sessBarHTML()+
-      sheetSec("mob",flowSecTitle(w),moveCount(w.cooldown),coolBodyHTML(w.cooldown),true)+
+      (w.teacherLed? "" : sheetSec("mob",flowSecTitle(w),moveCount(w.cooldown),coolBodyHTML(w.cooldown),true))+
       flowDoneHTML(w)+"</div>";
     try{ bindSheetSecs(); }catch(e){}
     try{ renderTrainDayPick(); }catch(e){}
@@ -17020,7 +17033,7 @@ function scheduleInApp(){
    v18 ADDITIONS — draggable rest timer · weekly training memory · AI planner
    · Firestore sync
    ========================================================================== */
-const APP_VERSION="v243 · 01/10/2026";
+const APP_VERSION="v244 · 01/10/2026";
 
 /* ===== 1. REST TIMER — drag it anywhere so it never blocks the chat box ===== */
 let _rtDrag=null;
@@ -18476,6 +18489,7 @@ function fmtVol(v){ return v>=1000? (Math.round(v/100)/10)+"t" : Math.round(v)+"
 function flowDoneHTML(w){
   const c=completionOf();
   const n=moveCount((w&&w.cooldown)||[]);
+  const teach=!!(w&&w.teacherLed);
   if(c){
     /* v219 — the two stamps, same as the lifting card. */
     const st=sessStartClock(), en=sessEndClock();
@@ -18483,16 +18497,21 @@ function flowDoneHTML(w){
                        : new Date(c.at).toLocaleTimeString('en-GB',{hour:'2-digit',minute:'2-digit'});
     const dur=c.durMs? (" \u00b7 "+fmtDurWords(c.durMs)) : "";
     return "<div class='sheet-sec donewrap' id='doneCard'><div class='donecard'>"+
-      "<div class='donehd'>\u2705 Flow complete</div>"+
-      "<div class='donestat'>"+escapeHtml(c.title||"Mobility")+" \u00b7 "+n+"</div>"+
+      "<div class='donehd'>\u2705 "+(teach? "Workout done" : "Flow complete")+"</div>"+
+      /* v244 — a teacher-led day has no movement count, and "0" read as if he
+         had done nothing. The title alone is the whole truth about it. */
+      "<div class='donestat'>"+escapeHtml(c.title||"Mobility")+(teach? "" : " \u00b7 "+n)+"</div>"+
       "<div class='donesub'>"+((st&&en)?"":"finished ")+when+dur+"</div>"+
       "<div class='donerun'>"+(DB.streak||1)+" day run \uD83D\uDD25</div>"+
       "<button class='btn ghost mt' onclick='undoComplete()'>\u21a9 Not finished after all</button>"+
       "<div class='syncdot'></div></div></div>";
   }
   return "<div class='sheet-sec donewrap' id='doneCard'>"+
-    "<div class='donesub' style='margin-bottom:10px'>Move through it in your own time. Tap this when you're done and it goes on your record.</div>"+
-    "<button class='btn green' onclick='completeFlow()' style='font-size:16px;padding:16px'>Flow complete</button>"+
+    "<div class='donesub' style='margin-bottom:10px'>"+
+      (teach? "Tap this when your class is finished and it goes on your record."
+            : "Move through it in your own time. Tap this when you're done and it goes on your record.")+"</div>"+
+    "<button class='btn green' onclick='completeFlow()' style='font-size:16px;padding:16px'>"+
+      (teach? "Workout done" : "Flow complete")+"</button>"+
     "<div class='syncdot'></div></div>";
 }
 /* ===== v242 · THE SESSION HE FORGOT TO PRESS COMPLETE ON ==============

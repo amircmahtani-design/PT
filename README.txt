@@ -1,3 +1,52 @@
+AMIR PT — v244 · 01/10/2026
+===========================
+
+"You don't need to worry about Pilates build workouts because I have a
+teacher. It just a button that says workout done. And if I forget, a button
+somewhere on homepage that lets me say I did it day before."
+
+A PILATES DAY IS ONE BUTTON NOW
+--------------------------------
+The app was writing him an eighteen-movement class with an apparatus picker,
+a level, a timed flow and a movement list, for a session run by a teacher
+standing in front of him. He was never going to read it off a phone. It is
+gone. A Pilates day is now:
+
+  the day's name
+  one line: your class, with your teacher
+  the session clock — start when you begin, stop at the end (v219)
+  WORKOUT DONE
+
+That is the whole sheet. It fits on one screen with nothing to scroll.
+
+NOTHING WAS DELETED
+--------------------
+The apparatus library, the 42 level-1 images, the mat order, the levels and
+the 45-60 minute builder are all still there, and Mobility & Pilates still
+uses them — verified: it still builds its 23-movement flow. Two ways back in
+if he ever wants one:
+
+  · switch the day to Mobility & Pilates in the dropdown
+  · give the Pilates day type its own movements, which the builder still
+    honours, because a list he asked for is a list he gets
+
+WHAT IT STILL RECORDS
+----------------------
+Everything it recorded before except the movement names: one tap writes the
+same completion the full flow wrote, so the streak counts it, it shows in
+Session history, lastDoneOf stops saying "never", and it lands in the
+spreadsheet under the right date with its minutes. Verified end to end.
+
+The done card used to print the movement count. On a teacher-led day that
+would have read "Pilates · 0" — as if he had turned up and done nothing. It
+shows the title and the two clock stamps and nothing else.
+
+AND THE ONE ON THE HOMEPAGE
+----------------------------
+That is already there — v242, under Start check-in: "Forgot to log
+something?" Yesterday is selected when it opens. Pick Pilates, tap Log it.
+Still passing all 18 of its checks after this change.
+
 AMIR PT — v243 · 01/10/2026
 ===========================
 
