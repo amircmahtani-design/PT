@@ -1,0 +1,38 @@
+# PT app — QA log (iPhone)
+Harness: headless Chromium, real iPhone UA/viewport/touch, seed → reload → test.
+Sizes: SE 375x667, iPhone 13 390x844, 15 Pro Max 430x932.
+
+## Round 1 — found, fixed in v241
+| # | Sev | Issue | Fix | Retest |
+|---|-----|-------|-----|--------|
+| 1 | HIGH | Weight/reps/row-time inputs on Train rendered as raw white browser inputs (black text, grey inset border, 0 radius) in a black app. `.logrow input` had no colour rule. 10+ visible at once on the most-used screen. | gave `.logrow input` the app's dark field styling + focus ring + placeholder | PASS |
+| 2 | HIGH | `<span id="lbDate">` and `<input id="lbDate" type="date">` shared one id. `getElementById` returned the span, so `dt.value=` did nothing and the photo-date field was always blank — the one control for checking a photo's date. | renamed the input to `lbDateIn`, updated the setter | PASS |
+| 3 | MED | `lastDoneOf()` returned "last time: never" for every flow day. The fallback only reads strength logs, and a flow day logs none. Wrong on Pilates and Mobility & Pilates — 2 of 5 training days — every week. | match flow days on `completed[].flow` + `DB.mobility`; covers the `mobpil` kind too | PASS |
+| 4 | MED | Second `Run Weekly Review` button + second `<div id="reviewOut">` at the foot of Progress. Duplicate id meant its output rendered into the card above; pressing it looked like nothing happened. | removed the orphan button + div | PASS |
+| 5 | MED | Then & now: `.quickcmp` was `overflow-x:auto`; 3 of 6 buttons sat off a 390px screen with no affordance — including Heaviest and Lightest, the two he asked for. | `flex-wrap:wrap` | PASS |
+| 6 | MED | `--dim` / `--label` `#71614e` failed WCAG AA app-wide (3.1–3.35:1, needs 4.5). Every section label, hint, "last time" line and muscle-group line. | raised to `#9b8873` (same hue), 5.2–5.9:1 | PASS |
+| 7 | MED | Check-in sleep/energy sliders: the input box was 9px tall, so 9px was the entire grab area. | track stays 9px, input box is 36px of transparent reach | PASS |
+| 8 | LOW | Sub-44px tap targets: `.del` ✕ 32×26, `.wkx` × 34×34, `.switch` 52×30, `.mchip` 30, quick-compare 30. | transparent 44px hit box centred on each, nothing moves or grows | PASS |
+| 9 | LOW | Photos empty state said "take a front, a side and a back shot" — there is no Back pose, only Front and Side. | copy corrected | PASS |
+| 10 | LOW | The Progress collapsible clones a card title into its `<summary>` **including ids**, duplicating `photoCount`, `phaseTag`, `objChipTop`. | strip ids from the hidden original | PASS |
+
+## Round 2 — found, fixed in v241
+| # | Sev | Issue | Fix | Retest |
+|---|-----|-------|-----|--------|
+| 11 | LOW | Rowing log printed raw ISO dates ("2000m · 8:42 2026-08-25") — the only place in the app breaking its own day-first rule. | `ukDate(r.date)` | PASS |
+| 12 | LOW | Rowing error said "Use mm:ss.s e.g. 7:42.3" beside a field labelled mm:ss. | copy corrected | PASS |
+| 13 | LOW | (self-inflicted) Wrapping the quick-compare row left the next heading sitting on the buttons. | 12px under the row | PASS |
+
+## Checked, not defects
+- `--dim` on gradient-filled buttons: dark text on bright orange/green reads fine; my first checker ignored gradients and cried wolf.
+- `SUMMARY "FIX AN ENTRY"` scrollWidth > clientWidth: `overflow:visible`, nothing is cut.
+- `input[type=date]` showing 10/01/2026: native control follows the BROWSER locale, not the page. Day-first on his phone.
+- `registerSW()` only registering over https: deliberate, and correct. Verified offline works by serving the app over real TLS.
+- 37–38px segmented buttons and log-type chips: above the practical floor, wide, and raising them all would change the design for no real gain. Deliberate stop.
+
+## Harness notes (things that fooled me, recorded so they don't again)
+- Seeding without a reload leaves stale renders: the streak pill said 24 while the card said 0. Always seed → `save()` → reload.
+- Date collisions in seed data produced a fake "Push Day 19d ago". Generated dates must not overlap.
+- Contrast must composite rgba layers and skip gradient-backed text, or it reports the whole app as failing.
+- Tap-target checks must read BOTH `::before` and `::after` for an absolutely-positioned reach box.
+- Image checks must wait for `img.complete` before trusting `naturalWidth===0`.

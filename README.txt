@@ -1,3 +1,111 @@
+AMIR PT — v241 · 01/10/2026
+===========================
+
+"Fully QA my PT app. Test every page, button, exercise, workout flow and
+setting on my iPhone. Find visual problems, broken functionality, bad UX,
+calculation errors and inconsistencies. Keep a list of every issue, retest
+after fixes, and continue until everything passes."
+
+So: a real harness, not a read-through. Headless Safari-class Chromium at
+iPhone SE (375), iPhone 13 (390) and 15 Pro Max (430), with touch, en-GB and
+an iPhone user agent; six weeks of seeded history written through the app's
+own save path and then RELOADED, so everything is judged after a real boot
+rather than against a half-rendered screen. 584 handlers fired on every
+screen. Thirteen issues found. All thirteen fixed and retested.
+
+WHAT WAS ACTUALLY BROKEN
+-------------------------
+
+1. THE WEIGHT AND REPS BOXES WERE RAW BROWSER INPUTS. White background,
+   black text, grey inset border, square corners — the browser default,
+   because `.logrow input` set padding and font size and never set a colour.
+   Ten of them on screen at once, on the most-touched control in the app,
+   inside a near-black UI. It had been that way since the first commit.
+   They now use the app's own field styling, with a focus ring.
+
+2. THE PHOTO DATE FIELD COULD NEVER FILL. `<span id="lbDate">` and
+   `<input id="lbDate" type="date">` shared one id, so getElementById
+   returned the span and `dt.value=` went nowhere. That is the one control
+   for checking whether a photo's date is right — the exact question left
+   open about the August shots. The input is `lbDateIn` now.
+
+3. PILATES AND MOBILITY ALWAYS READ "last time: never". lastDoneOf() fell
+   back to the strength log, and a flow day logs no sets, so it could never
+   match one however many he had done. Two of his five training days, wrong
+   every week. It now matches flow days on what they actually record — a
+   completion with flow:true, and the holds in DB.mobility — including the
+   "mobpil" kind that Mobility & Pilates carries.
+
+4. A SECOND "Run Weekly Review" BUTTON THAT LOOKED DEAD. It had a second
+   <div id="reviewOut"> under it; duplicate id, so its output rendered into
+   the card further up the page and pressing it appeared to do nothing.
+   The orphan is gone; the card keeps its own.
+
+5. HALF THE THEN & NOW ROW WAS OFF-SCREEN. Six buttons in an overflow-x
+   strip on a 390px phone: First vs latest, Heaviest and Lightest all sat
+   past the right edge with no scrollbar and no hint. Heaviest and Lightest
+   are the two he asked for by name. They wrap now; all six are visible.
+
+6. EVERY LABEL IN THE APP FAILED WCAG AA. --dim and --label were #71614e:
+   3.1 to 3.35:1 against the cards they sit on, where 4.5 is the floor.
+   Section headings, hints, "last time" lines, the muscle line under every
+   exercise in the library. Raised to #9b8873 — same hue, 5.2 to 5.9:1,
+   still clearly quieter than --muted so the hierarchy survives. Every
+   screen now passes, measured with the translucent layers composited the
+   way the screen actually paints them.
+
+7. THE SLEEP AND ENERGY SLIDERS WERE 9 PIXELS TALL. The element box is the
+   hit area, so 9px was all there was to grab. The track still looks 9px;
+   the input is 44px of transparent reach.
+
+8. TAP TARGETS. The ✕ on a history row was 32x26, the day-header × 34x34,
+   the toggles 52x30, the "2-3 sets" pills 28px. Isolated controls get a
+   transparent 44px box centred on them (on ::before, because ::after is
+   already drawing the toggle knob and the chevron). Controls that sit in
+   touching rows got real height instead, so an oversized hit area can
+   never steal a tap from its neighbour. Nothing moved and nothing grew.
+   Everything interactive is now at least 37px, most of it 44.
+
+9. THE PHOTO EMPTY STATE ASKED FOR A SHOT HE CANNOT LABEL. "take a front,
+   a side and a back shot" — there is no Back pose, only Front and Side.
+
+10. THE PROGRESS COLLAPSIBLE CLONED CARD TITLES INCLUDING THEIR IDS, so
+    photoCount, phaseTag and objChipTop each existed twice and
+    getElementById was a coin toss. The ids are stripped from the hidden
+    original, leaving the visible copy as the only one.
+
+11. THE ROWING LOG PRINTED ISO DATES. "2000m · 8:42 2026-08-25", in an app
+    whose own rule is day-first for everything he reads. It was the only
+    place in the app doing it. Now 25/08/2026.
+
+12. The rowing error said "Use mm:ss.s e.g. 7:42.3" next to a field
+    labelled mm:ss. It says mm:ss now.
+
+13. Wrapping the Then & now buttons left the next heading sitting on top of
+    them. 12px of air under the row.
+
+WHAT WAS CHECKED AND WAS FINE
+------------------------------
+584 handlers fired across all seven screens: no page errors, no console
+errors, no failed requests. The full workout flow — build, log, rest timer,
+complete, undo, re-complete, reload — intact. Rowing, weigh-in correction
+and measurements all validate their input and reject junk. A brand-new
+install renders every screen with no holes, no NaN and no dangling labels.
+Extreme values (0.5kg, 400kg, 999.5kg x 100 reps, a 99:59 row) produce no
+NaN or Infinity anywhere, and the spreadsheet still builds. An 80-character
+day name causes no horizontal scroll at any of the three widths. Offline:
+the service worker caches 331 files, the app boots with no network, the
+history is intact and the Train screen renders 22 images with none broken.
+No banned movement (leg press, leg curl, leg extension, hip thrust) appears
+in any generated session, and no dumbbell recommendation exceeds 10kg.
+
+A NOTE ON THE DATE PICKER
+--------------------------
+The native <input type="date"> renders in the BROWSER's locale, not the
+page's, so in this test rig it showed 10/01/2026. On his phone, set to the
+UK or Spain, it is day-first. Nothing to fix — and the line underneath it
+now reads the date back in the app's own day-first format anyway.
+
 AMIR PT — v240 · 29/09/2026
 ===========================
 

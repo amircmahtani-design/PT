@@ -14,12 +14,12 @@
 <link rel="manifest" href="manifest.json" />
 <style>
 :root{
-  --bg:#0a0806;--card:#15110d;--card2:#1e1811;--line:#2c2318;--txt:#f4ede2;--muted:#a9967f;--dim:#71614e;
+  --bg:#0a0806;--card:#15110d;--card2:#1e1811;--line:#2c2318;--txt:#f4ede2;--muted:#a9967f;--dim:#9b8873;
   --orange:#ff8a2b;--gold:#f0b24a;--red:#ff5a4d;--green:#3fe08a;
   /* Decorative accents retired — they now resolve to the one accent or to neutrals,
      so nothing competes with the primary action. Green/amber/red are semantic only. */
   --cyan:var(--dim);--blue:var(--dim);--purple:var(--dim);
-  --label:#71614e;--hair:#1e1811;
+  --label:#9b8873;--hair:#1e1811;
   --pill:#261e15;--radius:20px;--safe-top:env(safe-area-inset-top,0px);--safe-bot:env(safe-area-inset-bottom,0px);
 }
 *{box-sizing:border-box;-webkit-tap-highlight-color:transparent;}
@@ -148,8 +148,13 @@ h2.display{font-size:25px;font-weight:800;letter-spacing:-.4px;margin:6px 0;colo
    A base rule gives every hint the same voice; inline styles still win. */
 .hint{color:var(--dim);font-weight:600;font-size:13px;line-height:1.5;}
 .field .hint{color:var(--dim);font-weight:600;font-size:13px;}
-input[type=range]{-webkit-appearance:none;width:100%;height:9px;border-radius:6px;outline:none;background:linear-gradient(90deg,#ff7a1a,#f0b24a);}
-input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:28px;height:28px;border-radius:50%;background:radial-gradient(circle at 35% 30%,#fff,#ffd9a3);box-shadow:0 2px 8px #000a;border:2px solid #ff7a1a;}
+/* v241 — the element box IS the hit area, and 9px of it is a fiddle on a
+   phone. The track stays 9px; the input is 44px of transparent reach. */
+input[type=range]{-webkit-appearance:none;width:100%;height:44px;border-radius:0;outline:none;background:transparent;}
+input[type=range]::-webkit-slider-runnable-track{height:9px;border-radius:6px;background:linear-gradient(90deg,#ff7a1a,#f0b24a);}
+input[type=range]::-moz-range-track{height:9px;border-radius:6px;background:linear-gradient(90deg,#ff7a1a,#f0b24a);}
+input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:28px;height:28px;margin-top:-9.5px;border-radius:50%;background:radial-gradient(circle at 35% 30%,#fff,#ffd9a3);box-shadow:0 2px 8px #000a;border:2px solid #ff7a1a;}
+input[type=range]::-moz-range-thumb{width:28px;height:28px;border:2px solid #ff7a1a;border-radius:50%;background:#fff;}
 .txtin{width:100%;background:#0d0a07;border:1px solid var(--line);border-radius:13px;padding:15px;color:var(--txt);font-size:17px;font-weight:600;}
 .txtin:focus{outline:none;border-color:var(--orange);}
 .txtin::placeholder{color:var(--dim);}
@@ -224,9 +229,32 @@ textarea.txtin{min-height:88px;resize:vertical;line-height:1.45;}
 .setchip.e3{background:#2a1512;border-color:#7d2c24;color:#ff8a7d;}
 .logrow.noweight input[inputmode='numeric']{flex:1 1 auto;}
 .logrow{display:flex;gap:8px;margin-top:12px;align-items:stretch;}
-.logrow input{flex:1 1 0;min-width:0;width:100%;text-align:center;padding:13px 6px;font-size:16px;}
+/* v241 — these had no colour rule at all, so the weight and reps boxes on
+   every exercise card rendered as a raw white browser input with black text
+   and a grey inset border. The most-touched control in the app. */
+.logrow input{flex:1 1 0;min-width:0;width:100%;text-align:center;padding:13px 6px;font-size:16px;
+  background:#0d0a07;border:1px solid var(--line);border-radius:12px;color:var(--txt);font-weight:700;
+  -webkit-appearance:none;appearance:none;}
+.logrow input:focus{outline:none;border-color:var(--orange);}
+.logrow input::placeholder{color:var(--dim);font-weight:600;}
 .logrow button{flex:0 0 82px;background:linear-gradient(100deg,#ff8a2b,#ff5a1a);color:#fff;border-radius:12px;font-weight:800;}
-.swapbtn{display:inline-block;margin-top:10px;background:var(--card2);border:1px solid var(--line);color:var(--muted);border-radius:9px;padding:7px 12px;font-size:12.5px;font-weight:700;}
+/* v241 — reach, not size: a transparent 44px box centred on the control, so
+   the thumb hits what the eye is aiming at. Nothing moves and nothing grows.
+   On ::before, because ::after is already drawing something on several of
+   these (the switch knob, the tinysec chevron) and would be clobbered.
+   Only isolated controls get a box — on a row of touching chips an oversized
+   hit area would steal taps from the neighbour, so those get real height. */
+.del,.wkx,.switch,.addbtn,.pill,.linkbtn,.demoover,.ob,.btn.sec,.btn.ghost,.st,
+.coolall-set>summary{position:relative;}
+.del::before,.wkx::before,.switch::before,.addbtn::before,.pill::before,
+.linkbtn::before,.demoover::before,.ob::before,.btn.sec::before,.btn.ghost::before,.st::before,
+.swapbtn::before,.coolall-set>summary::before{
+  content:"";position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);
+  width:max(100%,44px);height:max(100%,44px);border-radius:inherit;}
+/* These sit in rows, so they grow instead of overlapping. */
+.mchip,.quickcmp button{min-height:40px;}
+.repsin{min-height:40px;}
+.swapbtn{display:inline-block;position:relative;margin-top:10px;background:var(--card2);border:1px solid var(--line);color:var(--muted);border-radius:9px;padding:7px 12px;font-size:12.5px;font-weight:700;}
 .posnote{font-size:11.5px;font-weight:700;color:var(--dim);margin:8px 0 4px;}
 .hpos{display:none;font-size:22px;font-weight:800;color:var(--green);
   letter-spacing:.5px;margin:6px 0 2px;}
@@ -309,9 +337,9 @@ textarea.txtin{min-height:88px;resize:vertical;line-height:1.45;}
   padding:7px 12px;font-size:12.5px;font-weight:800;}
 .mvb .mvtime.run{background:#0c2716;border-color:#1fbf68;color:var(--green);}
 .splitsel{flex:0 0 auto;background:var(--card2);color:var(--txt);border:1px solid var(--line);border-radius:10px;
-  padding:9px 8px;font-size:13px;font-weight:700;max-width:150px;-webkit-appearance:none;appearance:none;
+  padding:13px 8px;font-size:13px;font-weight:700;max-width:150px;-webkit-appearance:none;appearance:none;
   background-image:linear-gradient(45deg,transparent 50%,var(--muted) 50%),linear-gradient(135deg,var(--muted) 50%,transparent 50%);
-  background-position:calc(100% - 15px) calc(1em + 1px),calc(100% - 10px) calc(1em + 1px);
+  background-position:calc(100% - 15px) calc(1em + 5px),calc(100% - 10px) calc(1em + 5px);
   background-size:5px 5px,5px 5px;background-repeat:no-repeat;padding-right:28px;}
 .tmrpick{background:#12100d;border:1px solid var(--line);border-radius:14px;padding:13px;}
 .tmrpick .tpl{font-size:11.5px;font-weight:800;text-transform:uppercase;letter-spacing:.7px;color:var(--label);margin-bottom:9px;}
@@ -614,8 +642,10 @@ details.sec2[open] .secsum2:after{content:"\2212";}
 .athv{flex:0 0 auto;font-size:17px;font-weight:800;color:#fff;text-align:right;}
 .athv .aths{display:block;font-size:11px;font-weight:700;color:var(--label);margin-top:2px;}
 .athd{flex:0 0 auto;font-size:11px;font-weight:800;min-width:54px;text-align:right;}
-.quickcmp{display:flex;gap:6px;overflow-x:auto;padding:2px 0 0;}
-.quickcmp button{flex:0 0 auto;padding:7px 12px;border-radius:11px;background:var(--pill);border:1px solid var(--line);
+/* v241 — six buttons in an overflow-x row on a 390px phone put Heaviest and
+   Lightest off-screen with no affordance. They wrap now; all six are visible. */
+.quickcmp{display:flex;flex-wrap:wrap;gap:6px;padding:2px 0 12px;}
+.quickcmp button{flex:0 0 auto;padding:9px 12px;border-radius:11px;background:var(--pill);border:1px solid var(--line);
   color:var(--muted);font-size:12px;font-weight:700;}
 /* v210 — these two carry weight, date and angle in one line, and a closed
    select on a phone shows perhaps twenty characters of it. */
@@ -694,7 +724,7 @@ details.sec2[open] .secsum2:after{content:"\2212";}
 .tinysec{border-top:1px solid var(--hair);padding-top:10px;}
 .tinysec>summary{list-style:none;cursor:pointer;font-size:12px;font-weight:800;
   text-transform:uppercase;letter-spacing:.7px;color:var(--label);padding:6px 0;
-  display:flex;align-items:center;gap:7px;min-height:32px;}
+  display:flex;align-items:center;gap:7px;min-height:44px;}
 .tinysec>summary::-webkit-details-marker{display:none;}
 .tinysec>summary::after{content:"\203a";margin-left:auto;font-size:17px;color:var(--dim);transition:transform .2s;}
 .tinysec[open]>summary::after{transform:rotate(90deg);}
@@ -1362,11 +1392,10 @@ a{color:var(--orange);}
       <button class="btn sec btnicon mt" onclick="exportXLSX()"><svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><path d="M7 10l5 5 5-5"/><path d="M12 15V3"/></svg>Export my progress (.xlsx)</button>
     </div>
 
-    <div style="text-align:center;margin:14px 0 4px">
-
-    </div>
-    <button class="btn sec btnicon" onclick="weeklyReview()"><svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 3v18h18"/><path d="M7 15l4-4 3 3 5-6"/></svg>Run Weekly Review</button>
-    <div id="reviewOut"></div>
+    <!-- v241 — a second Run Weekly Review lived here with a second
+         <div id="reviewOut">. Duplicate ids mean getElementById only ever finds
+         the first, so this button's output rendered into the card above and
+         pressing it looked like nothing happened. The card has its own. -->
   </section>
 
 
@@ -1695,7 +1724,7 @@ a{color:var(--orange);}
          photo takes its date from its own id, which is right when the shot
          was taken in the app and wrong if it was ever imported, and every
          comparison downstream inherits the error with no way to correct it. -->
-    <input class="txtin" id="lbDate" type="date" onchange="setPhotoDate(this.value)" aria-label="date this photo was taken" />
+    <input class="txtin" id="lbDateIn" type="date" onchange="setPhotoDate(this.value)" aria-label="date this photo was taken" />
     <button class="lbx" onclick="lbSetThen()">Then</button>
     <button class="lbx" onclick="lbSetNow()">Now</button>
     <button class="lbx" style="color:var(--red)" onclick="delPhotoFromBox()">Delete</button>
@@ -14441,6 +14470,30 @@ function lastDoneOf(split){
     .sort().reverse()[0];
   if(exact) return label(daysSince(exact));
 
+  /* v241 — a flow day logs no sets, so the lift-based fallback below could
+     never match one: Pilates and Mobility & Pilates read "last time: never"
+     however many he had done. Two of his five training days, wrong every week.
+     Match them on what a flow day actually records — a completion with
+     flow:true, and for mobility the holds in DB.mobility. */
+  const kind=(()=>{ try{ return splitKindOf(split); }catch(e){ return ""; } })();
+  if(kind==="pilates" || kind==="mobility" || kind==="mobpil" || kind==="yoga" || kind==="recovery"){
+    const isPil=t=>/pilates|barre|reformer/i.test(String(t||""));
+    /* "Mobility & Pilates" is its own kind, "mobpil", and is satisfied by
+       either half of it. */
+    const both = kind==="mobpil" ||
+      (/pilates|barre/i.test(split) && /mobil|stretch|yoga|flow/i.test(split));
+    const hit=Object.keys(comp).filter(d=>{
+        const c=comp[d]; if(!c||!c.flow) return false;
+        return both? true : (kind==="pilates"? isPil(c.title) : !isPil(c.title));
+      }).sort().reverse()[0];
+    let best=hit||"";
+    if(kind!=="pilates" || both){
+      const m=(DB.mobility||[]).map(x=>x&&x.d).filter(Boolean).sort().reverse()[0];
+      if(m && m>best) best=m;
+    }
+    return best? label(daysSince(best)) : "last time: never";
+  }
+
   const all=sessionsByDate(null);
   const dates=Object.keys(all).sort().reverse();
   for(const d of dates){
@@ -14874,11 +14927,11 @@ function renderRowing(){
 function renderRowingLog(){
   const el=document.getElementById('rowingLog'); if(!el) return;
   if(!DB.rowing.length){ el.innerHTML=""; return; }
-  el.innerHTML="<div class='muted' style='font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;margin-bottom:4px'>All entries</div>"+DB.rowing.map((r,i)=>"<div class='pb'><span class='n'>"+r.dist+" · "+r.time+"<span class='muted' style='font-weight:600;font-size:12px'> "+(r.date||'')+"</span></span><button class='del' onclick='delRow("+i+")'>✕</button></div>").join('');
+  el.innerHTML="<div class='muted' style='font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;margin-bottom:4px'>All entries</div>"+DB.rowing.map((r,i)=>"<div class='pb'><span class='n'>"+r.dist+" · "+r.time+"<span class='muted' style='font-weight:600;font-size:12px'> "+(r.date? ukDate(r.date) : '')+"</span></span><button class='del' onclick='delRow("+i+")'>✕</button></div>").join('');
 }
 function addRowing(){
   const dist=val('rowDist'), time=val('rowTime').trim();
-  if(isNaN(timeToSec(time))){ toast("Use mm:ss.s  e.g. 7:42.3"); return; }
+  if(isNaN(timeToSec(time))){ toast("Use mm:ss \u2014 e.g. 8:42"); return; }
   DB.rowing.push({dist,time,date:today()}); save(); renderRowing(); renderRowPace(); renderRowingLog(); document.getElementById('rowTime').value=""; toast("Row logged 🚣");
 }
 function delRow(i){ DB.rowing.splice(i,1); save(); renderRowing(); renderRowPace(); renderRowingLog(); toast("Deleted"); }
@@ -15037,7 +15090,7 @@ function renderPhotos(){
   if(!list.length){
     wrap.innerHTML="<div class='muted' style='font-size:14px;padding:8px 0'>"+
       (total? "Nothing labelled "+escapeHtml(_poseFilter)+" yet. Tap a photo to label it."
-            : "No photos yet — take a front, a side and a back shot today and you've got your baseline.")+"</div>";
+            : "No photos yet — take a front and a side shot today and you've got your baseline.")+"</div>";
     if(recNote) wrap.innerHTML=recNote+wrap.innerHTML;
     renderCompareControls(); return;
   }
@@ -15138,7 +15191,11 @@ function paintLightbox(keepZoom){
   const d=document.getElementById('lbDate'); if(d) d.textContent=photoWhenLong(p);
   const a=document.getElementById('lbAgo'); if(a) a.textContent=photoAgo(p)+(p.pose?" · "+p.pose:" · not labelled yet")+photoWeightTag(p);
   const s=document.getElementById('lbPose'); if(s) s.value=p.pose||"Other";
-  const dt=document.getElementById('lbDate');
+  /* v241 — this used to read 'lbDate', which is also the id of the SPAN three
+     lines up. getElementById returned the span, so .value went nowhere and the
+     date field under the photo was always blank — the one control for checking
+     whether a photo's date is right. */
+  const dt=document.getElementById('lbDateIn');
   if(dt) dt.value=(p.d||new Date(p.t||Date.now()).toISOString().slice(0,10)).slice(0,10);
   /* v192 — say which of the two he is on, so the next arrow is obviously a
      toggle between them rather than a way out of the comparison. */
@@ -16856,7 +16913,7 @@ function scheduleInApp(){
    v18 ADDITIONS — draggable rest timer · weekly training memory · AI planner
    · Firestore sync
    ========================================================================== */
-const APP_VERSION="v240 · 29/09/2026";
+const APP_VERSION="v241 · 01/10/2026";
 
 /* ===== 1. REST TIMER — drag it anywhere so it never blocks the chat box ===== */
 let _rtDrag=null;
@@ -20779,7 +20836,13 @@ function buildSections(screen){
     card.parentNode.insertBefore(d, card);
     body.appendChild(card);
     d.appendChild(body);
-    if(title) title.style.display='none';   /* the summary is the title now */
+    if(title){
+      title.style.display='none';   /* the summary is the title now */
+      /* v241 — the summary above holds a copy of this title's chip, id and all.
+         Two elements with one id makes getElementById a coin toss; strip them
+         from the hidden original so the visible copy is the only one. */
+      title.querySelectorAll('[id]').forEach(e=>e.removeAttribute('id'));
+    }
     card.dataset.wrapped="1";
     d.addEventListener('toggle',()=>{
       DB.prefs=DB.prefs||{}; DB.prefs.openSec=DB.prefs.openSec||{};
