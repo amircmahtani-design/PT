@@ -1,3 +1,71 @@
+AMIR PT — v247 · 02/10/2026
+===========================
+
+"It still says 36 days. It should be a streak like how many days have I worked
+out without break. So it motivates me to continue."
+
+v245 made the number honest about what it was. It was still the wrong thing.
+
+IT WAS A TALLY, NOT A STREAK
+-----------------------------
+It counted SESSIONS, and it forgave up to two missed training days every time
+it walked back, so it only ever climbed. A number that cannot be lost cannot
+motivate. That is a lifetime total wearing a streak's clothes.
+
+WHAT IT IS NOW
+---------------
+  42  DAYS WITHOUT A BREAK
+      since 21/08/2026 · 30 sessions and 12 rest days.
+      This is your best run yet.
+      Rest days keep it going. Missing a training day ends it.
+
+Days, not sessions. Every calendar day in the run counts, rest days included —
+so it ticks up on a Saturday too, which is the whole point of a streak — and
+it ENDS the first time a training day goes by with nothing on it. No
+tolerance. That is what "without a break" means.
+
+Today is never a miss. The day is not over.
+
+WHEN IT BREAKS
+---------------
+  0   DAYS WITHOUT A BREAK
+      Train today and it starts.
+      Your best is 42 days — go and beat it.
+
+      SHOW ME THE DAYS
+      It ended on 01/10/2026 — a training day with nothing on it.
+      [ That was a rest day ]
+
+Three things that matter there. It says exactly which day ended it. The best
+run is still on the card, so a lost streak is not a blank slate. And if that
+day was a deliberate day off — travel, illness, a Tuesday he swapped — he can
+say so, and the run mends. That is him declaring what the day was, not the app
+pretending it never happened.
+
+Best-ever is computed over his whole history under the same rule.
+
+A NEAR MISS WORTH RECORDING
+----------------------------
+The edit that replaced renderStreakCard reached one block too far and took
+`let _cgId=0;` and the "D. CHARTS" header with it. Nothing in the app failed
+at boot, the syntax check passed, and the layout screenshots were clean —
+every chart on Progress would simply have thrown the moment it drew. It
+surfaced because the test suite logs a row and a weigh-in, and both redraw a
+chart: "ReferenceError: _cgId is not defined".
+
+That is the third time a splice has silently eaten a neighbouring line in this
+app. The rule stands and stands harder: after any multi-line replacement, read
+the whole diff for what was REMOVED, not only what was added.
+
+Verified, 11 checks: the number is days and not sessions; days = sessions +
+rest days; the detail, DB.streak, the card and computeStreak() all agree; it
+says where it started; rest days sit inside the run; a missed training day
+ends it (42 → 2); marking that day rest mends it (2 → 42); today is never a
+miss; best-ever is never below the current run; every day in the run is
+listed; it survives a reload. Plus the full suite — layout and contrast clean
+at 375 and 390, round2 14/14, backfill 18/18, Pilates 11/11, rowing 8/8, week
+10/10, verify16 16/16, journey and wed236 clean, no page or console errors.
+
 AMIR PT — v246 · 01/10/2026
 ===========================
 

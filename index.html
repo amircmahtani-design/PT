@@ -1194,7 +1194,7 @@ a{color:var(--orange);}
       <summary class="hsum"><span class="t">Streak</span><span class="chev">›</span></summary>
       <div class="hbody">
       <div class="powerbox"><div class="num" id="streakNum">0</div>
-        <div><div class="lab">Sessions in this run</div>
+        <div><div class="lab">Days without a break</div>
           <div id="streakSub" style="font-size:13px;font-weight:600;color:var(--muted);margin-top:3px"></div></div></div>
       <details class="tinysec mt">
         <summary>Show me the days</summary>
@@ -17100,7 +17100,7 @@ function scheduleInApp(){
    v18 ADDITIONS — draggable rest timer · weekly training memory · AI planner
    · Firestore sync
    ========================================================================== */
-const APP_VERSION="v246 · 01/10/2026";
+const APP_VERSION="v247 · 02/10/2026";
 
 /* ===== 1. REST TIMER — drag it anywhere so it never blocks the chat box ===== */
 let _rtDrag=null;
@@ -18019,23 +18019,74 @@ function plannedRestOn(iso,dow){
    just returns the days as well as the count now, so the card can list them
    and he can delete one that never happened. */
 function streakDetail(){
-  const out={days:[], start:"", sessions:0, span:0};
-  const dates=showedUpDates(); if(!dates.size) return out;
-  let t=dnum(today()), gap=0;
-  if(!dates.has(isoDay(t))) t-=864e5;          // today hasn't happened yet — that's fine
-  for(let i=0;i<400;i++){
+  /* ===== v247 · DAYS WITHOUT A BREAK ==================================
+     "It should be a streak like how many days have I worked out without
+     break. So it motivates me to continue."
+
+     It was counting SESSIONS, and it forgave up to two missed training days
+     every time, so it only ever climbed. That is a tally, not a streak.
+
+     A streak is days. This one counts every calendar day in the current run,
+     rest days included — so it goes up on a Saturday too, which is the point
+     of a streak — and it BREAKS the first time a training day goes by with
+     nothing on it. No tolerance: that is what "without a break" means, and a
+     number that cannot be lost cannot motivate.
+
+     Today is never a miss. The day is not over. */
+  const out={days:[], start:"", streak:0, sessions:0, rest:0, best:0, brokeOn:"", brokeWhat:""};
+  const dates=showedUpDates();
+  const run=[];                                  /* newest first */
+  let t=dnum(today());
+  for(let i=0;i<730;i++){
     const iso=isoDay(t);
-    if(dates.has(iso)){ out.days.push(iso); gap=0; }
-    else if(plannedRestOn(iso)){ /* a rest day he planned — step over it */ }
-    else { gap++; if(gap>2) break; }           // up to 2 unplanned misses is still the same run
+    const trained=dates.has(iso);
+    const resting=(function(){ try{ return plannedRestOn(iso); }catch(e){ return false; } })();
+    if(i===0 && !trained && !resting){ t-=864e5; continue; }   /* today is still open */
+    if(trained)      run.push({iso, trained:true});
+    else if(resting) run.push({iso, trained:false});
+    else { out.brokeOn=iso; break; }
     t-=864e5;
   }
-  out.sessions=out.days.length;
-  out.start=out.days.length? out.days[out.days.length-1] : "";
-  try{ out.span=out.start? (daysSince(out.start)+1) : 0; }catch(e){ out.span=0; }
+  /* A run that starts on a Sunday he rested really started on the Monday. */
+  while(run.length && !run[run.length-1].trained) run.pop();
+  out.days=run.map(x=>x.iso);
+  out.streak=run.length;
+  out.sessions=run.filter(x=>x.trained).length;
+  out.rest=out.streak-out.sessions;
+  out.start=run.length? run[run.length-1].iso : "";
+  out.trained={}; run.forEach(x=>{ if(x.trained) out.trained[x.iso]=1; });
+  try{ out.best=Math.max(out.streak, bestStreakEver()); }catch(e){ out.best=out.streak; }
   return out;
 }
-function computeStreak(){ return streakDetail().sessions; }
+/* The longest run he has ever put together, under the same rule. Worth having:
+   losing a streak is a lot easier to take when the best one is still on the
+   card, and it gives him something to beat. */
+function bestStreakEver(){
+  const dates=showedUpDates(); if(!dates.size) return 0;
+  const first=[...dates].sort()[0];
+  let t=dnum(first), end=dnum(today())-864e5;     /* today is not over */
+  let best=0, cur=0;
+  for(let i=0;i<2000 && t<=end;i++){
+    const iso=isoDay(t);
+    if(dates.has(iso)) cur++;
+    else if((function(){ try{ return plannedRestOn(iso); }catch(e){ return false; } })()) cur++;
+    else { if(cur>best) best=cur; cur=0; }
+    t+=864e5;
+  }
+  return Math.max(best,cur);
+}
+function computeStreak(){ return streakDetail().streak; }
+/* He decides what a day was. Marking a missed day as rest is him saying it was
+   planned, not the app pretending it never happened — and it is the only way a
+   broken streak can honestly be mended. */
+function markRestDay(iso){
+  if(!iso) return;
+  if(!confirm("Mark "+ukDate(iso)+" as a rest day?\n\nIt stops that day breaking your streak. Nothing is added to your record.")) return;
+  setDayState({restDay:true}, iso);
+  save(); updateStreak();
+  try{ renderStreakCard(); renderWeek(); renderItin(); }catch(e){}
+  toast(ukDate(iso)+" is a rest day");
+}
 /* What that day actually was, and whether it is safe to take off. A day with
    logged sets or a logged row is real training \u2014 removing it would throw away
    the numbers too, so that is done in Progress, not here. */
@@ -18065,22 +18116,33 @@ function removeStreakDay(iso){
 }
 function renderStreakCard(){
   const d=streakDetail();
-  const n=document.getElementById('streakNum'); if(n) n.textContent=d.sessions;
+  const n=document.getElementById('streakNum'); if(n) n.textContent=d.streak;
   const sub=document.getElementById('streakSub');
-  if(sub) sub.innerHTML = d.sessions
-    ? "since "+escapeHtml(ukDate(d.start))+" \u2014 "+d.span+" day"+(d.span===1?"":"s")+
-      ".<br>Rest days don't break it; three days off does."
-    : "Nothing counting yet.";
+  if(sub) sub.innerHTML = d.streak
+    ? "since "+escapeHtml(ukDate(d.start))+" \u00b7 "+d.sessions+" session"+(d.sessions===1?"":"s")+
+      (d.rest? " and "+d.rest+" rest day"+(d.rest===1?"":"s") : "")+"."+
+      (d.best>d.streak? "<br>Your best is "+d.best+" days." : (d.streak>1? "<br>This is your best run yet." : ""))+
+      "<br>Rest days keep it going. Missing a training day ends it."
+    /* A broken streak is exactly when the best one is worth seeing. */
+    : ("Train today and it starts."+(d.best? "<br>Your best is <b>"+d.best+" days</b> \u2014 go and beat it." : ""));
   const el=document.getElementById('streakList'); if(!el) return;
-  el.innerHTML = d.days.length
-    ? "<div class='hint' style='margin:2px 0 8px'>Every day counting toward it, newest first. If one of these never happened, take it off.</div>"+
-      d.days.map(iso=>{ const w=streakWhat(iso);
+  const broke = d.brokeOn
+    ? "<div class='bfhave'>It ended on <b>"+escapeHtml(ukDate(d.brokeOn))+"</b> \u2014 a training day with nothing on it."+
+      "<br><button class='swapbtn' onclick=\"markRestDay('"+d.brokeOn+"')\">That was a rest day</button></div>"
+    : "";
+  el.innerHTML = (d.days.length
+    ? "<div class='hint' style='margin:2px 0 8px'>Every day in the run, newest first. If one of these never happened, take it off.</div>"+
+      d.days.map(iso=>{
+        if(!d.trained[iso]) return "<div class='hline'><span class='en'>"+escapeHtml(ukDate(iso))+
+          " <span class='muted' style='font-weight:600;font-size:12px'>rest day</span></span>"+
+          "<span class='muted' style='font-size:11px'>planned</span></div>";
+        const w=streakWhat(iso);
         return "<div class='hline'><span class='en'>"+escapeHtml(ukDate(iso))+
           " <span class='muted' style='font-weight:600;font-size:12px'>"+escapeHtml(w.text)+
           (w.backfilled? " \u00b7 logged later" : "")+"</span></span>"+
           (w.removable? "<button class='del' onclick=\"removeStreakDay('"+iso+"')\">\u2715</button>"
                       : "<span class='muted' style='font-size:11px'>logged</span>")+"</div>"; }).join("")
-    : "";
+    : "")+broke;
 }
 
 /* ===== D. CHARTS — the numbers you actually care about ===== */
