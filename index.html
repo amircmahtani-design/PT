@@ -1522,12 +1522,12 @@ a{color:var(--orange);}
 
     <div class="section-h">Rest timers</div>
     <div class="card">
-      <div class="notebox mb">These are the defaults. Any exercise can override its own between-sets rest on the Train sheet, and the coach can change either when it has a reason to — but nothing is fixed any more.</div>
+      <div class="notebox mb">Between sets is the default for an exercise that doesn't name its own — most of today's do: a compound rests 1m 45s, an isolation 1m, an abs finisher 30s. The rest <b>before</b> an exercise is that exercise's own rest, because that is what you are about to do, so the second number is a ceiling rather than a flat wait. Any exercise can override itself on the Train sheet, and the coach can change either when it has a reason to.</div>
       <div class="exsets"><span class="l">Between sets</span>
         <button class="st" onclick="setDefaultRest('sets',-15)">−</button>
         <span class="n" id="restSetsVal" style="min-width:70px">90s</span>
         <button class="st" onclick="setDefaultRest('sets',15)">+</button></div>
-      <div class="exsets" style="margin-top:8px"><span class="l">Between exercises</span>
+      <div class="exsets" style="margin-top:8px"><span class="l">Between exercises, at most</span>
         <button class="st" onclick="setDefaultRest('ex',-15)">−</button>
         <span class="n" id="restExVal" style="min-width:70px">2 min 30s</span>
         <button class="st" onclick="setDefaultRest('ex',15)">+</button></div>
@@ -1579,6 +1579,7 @@ a{color:var(--orange);}
       <div class="field" style="margin-bottom:14px"><label>OpenAI API Key</label>
         <input class="txtin" id="setKey" type="password" placeholder="sk-..." />
         <div class="hint mt">Stored only on this device and <b>never synced to the cloud</b> — if your data was cleared you'll need to paste it again. Get one at <b>platform.openai.com/api-keys</b>. Needs a paid account — gpt-5.5 &amp; photo analysis don't work on the free tier.</div></div>
+      <div class="notebox mb" id="modelNote249" style="display:none"></div>
       <div class="field" style="margin-bottom:12px"><label>Model</label>
         <select class="txtin" id="setModel" onchange="onModelChange()">
           <option value="gpt-5.5">gpt-5.5 · newest (needs paid account)</option>
@@ -1887,7 +1888,7 @@ const DEFAULTS = {
     equipment:"Adjustable dumbbells, barbell + plates, bench, pull-up bar, Concept2 rower, resistance bands",
     injuries:"TFCC tear (left wrist) — avoid loaded wrist extension and heavy pressing on a straight wrist. Neutral grip wherever possible. Klinefelter syndrome — recovery is the limiting factor, not effort. Patient strength curve, consistent progressive overload, no heroics.",
     rules:"Never make me choose workouts. Tell me exactly what to do. Technique beats weight. Never ego lift. Only increase load after previous weight mastered with excellent form. Consistency beats intensity. Be direct, funny, encouraging."},
-  ai:{provider:"openai", key:"", model:"gpt-4o-mini", giphyKey:""},
+  ai:{provider:"openai", key:"", model:"gpt-5.5", giphyKey:""},
   memory:"", reminder:"07:00",
   /* v159 — his week, in his words: "Monday cardio, Tuesday legs and core,
      Wednesday mobility, Thursday pull, Friday push, sat sun rest". The old
@@ -1931,7 +1932,7 @@ const DEFAULTS = {
   /* His nutritionist owns these. They live here only so the coach can see what
      the deficit is doing to his RECOVERY and program around it. */
   nutrition:{calorieTarget:1500, proteinTarget:null, phase:"Lean recomp — nutritionist-led", log:[]},
-  cardio:null, readiness:null, restCall:null,
+  cardio:null, readiness:null, restCall:null, sheetKeep:null,
   /* v211 — "use 3 sets as standard". It is a setting, not a day pass, so it
      lives here as the default and survives a reinstall. Tapping Program on
      the sets row clears it and hands the session back to the block. */
@@ -1950,7 +1951,7 @@ const DEFAULTS = {
   timeBudget:{mins:65, row:true, rowMins:10},
   /* v65.2 — rest was 90s between sets from the exercise record and a HARDCODED
      150s between exercises that nothing could change. Both are settings now. */
-  rest:{ sets:90, ex:150 },
+  rest:{ sets:90, ex:120 },
   cloud:{on:true, config:JSON.stringify(FB_CONFIG,null,2), syncId:FB_SYNC_DEFAULT, last:null, syncKeys:false},
   prefs:{visualMode:"auto", showIcons:true, exerciseGifs:true, workoutFormat:"list", coachStyle:"Warm, confident and direct",
          restPos:null, restMini:false,
@@ -2340,6 +2341,20 @@ function mergeDefaults(parsed){ let d={...structuredClone(DEFAULTS),...parsed};
 
      Plain string literals only — nothing here may reference anything declared
      later in this file. That is the v235 rule and it is not being broken. */
+  /* ===== v249 · the coach was running on the cheapest model =============
+     "The coach AI is actually pretty thick if I'm honest."
+     gpt-4o-mini was the shipped default, not a choice he made — it is what
+     the app put there and he had no reason to open that setting. A 19k-token
+     system prompt on a mini model is the whole explanation. This moves anyone
+     still sitting on that default up to the newest model. It only ever touches
+     the exact string this app shipped, so a model he picked himself is left
+     alone, and Settings → AI coach puts it back in one tap.
+     Plain string literals only — the v235 rule. */
+  if(!d.modelV249){
+    d.modelV249=1;
+    d.ai=d.ai||{};
+    if(!d.ai.model || d.ai.model==="gpt-4o-mini"){ d.ai.model="gpt-5.5"; d.aiModelRaised=1; }
+  }
   if(!d.weekV243){
     d.weekV243=1;
     d.dayTypes=d.dayTypes||{};
@@ -7593,6 +7608,50 @@ function ensureAbsFinisher(w){
 }
 /* Did he put ANYTHING on the record today — any set of any movement, a row,
    a mobility hold, a finished session? Then today is his. */
+/* ===== v249 · THIRTY-TWO WAYS TO LOSE A SESSION =======================
+   v248 stopped two things rebuilding a session he was in the middle of. It
+   stopped exactly two, and there are thirty-two lines in this file that set
+   DB.workout to null — every one of which hands the next ensureWorkout() a
+   blank slate and gets a fresh sheet built over the top. Telling the coach his
+   knee hurts does it. A check-in does it. Changing phase, mode, location, the
+   time budget, his own profile — all of them do it. That is the real reason
+   "it changed my workout half way" kept coming back: the fix went to the
+   symptom each time, and there were thirty more symptoms behind it.
+
+   One gate, in the one place that REBUILDS. Anything may still null the sheet;
+   nothing gets a new one built over logged work. The sheet is snapshotted the
+   moment he logs against it and handed back instead.
+
+   rebuildToday() is the only way through, and it is what "New exercises" and
+   the coach's explicit rebuild call — a deliberate request, which this has
+   never been about. */
+let _allowRebuild=false;
+function keepTodaySheet(){
+  try{
+    const w=DB.workout;
+    if(!w || !Array.isArray(w.main) || !w.main.length) return;
+    if(w.date && w.date!==today()) return;
+    if(!loggedAnythingToday()) return;
+    DB.sheetKeep={date:today(), w:JSON.parse(JSON.stringify(w))};
+  }catch(e){}
+}
+function restoreTodaySheet(){
+  if(_allowRebuild) return false;
+  try{
+    const k=DB.sheetKeep;
+    if(!k || k.date!==today() || !k.w || !Array.isArray(k.w.main) || !k.w.main.length) return false;
+    if(!loggedAnythingToday()) return false;
+    DB.workout=JSON.parse(JSON.stringify(k.w));
+    save();
+    toast("Today\u2019s sheet kept \u2014 you\u2019ve logged sets on it. \u201cNew exercises\u201d rebuilds it.");
+    return true;
+  }catch(e){ return false; }
+}
+function rebuildToday(){
+  _allowRebuild=true;
+  try{ DB.workout=null; DB.sheetKeep=null; ensureWorkout(); }
+  finally{ _allowRebuild=false; }
+}
 function loggedAnythingToday(){
   const t=today();
   try{
@@ -7657,8 +7716,12 @@ function ensureWorkout(){
      also stopped the planner overwriting a session he'd touched, one could sit
      there for days. A new day is a new session. */
   if(DB.workout && DB.workout.date && DB.workout.date!==today()) DB.workout=null;
+  /* v249 — the gate. Thirty-two lines in this file can null the sheet; none of
+     them gets a rebuild over work he has already logged. */
+  if(!DB.workout) restoreTodaySheet();
   if(!DB.workout){ DB.workout=buildWorkout(); resyncGroups(DB.workout); save();
     try{ renderHeroCard(); }catch(e){} }
+  keepTodaySheet();
   renderWorkoutSheet(DB.workout);
 }
 /* "New exercises" — rebuild today's session with different movements from the
@@ -7669,7 +7732,12 @@ function rerollWorkout(){
   const logged=(DB.workout&&DB.workout.main||[]).reduce((a,e)=>a+todaySets(e.name).length,0);
   if(logged && !confirm("You've already logged "+logged+" set"+(logged===1?"":"s")+" today.\n\nSwapping in new exercises keeps everything you've logged in your history, but today's sheet will show different movements. Carry on?")) return;
   _reroll++;
+  /* v249 — a deliberate reroll replaces what the gate is holding, otherwise the
+     next thing to null the sheet would hand him back the session he just
+     chose to leave. */
+  DB.sheetKeep=null;
   DB.workout=buildWorkout(); resyncGroups(DB.workout); save();
+  try{ keepTodaySheet(); }catch(e){}
   renderWorkoutSheet(DB.workout);
   const t=document.getElementById('heroTitle'); if(t)t.textContent=DB.workout.title;
   const su=document.getElementById('heroSub'); if(su)su.textContent=DB.workout.note;
@@ -8186,6 +8254,21 @@ function _renderSheetInner(w){
      invites the planner to fill it back in. */
   if(todayCleared()){ host.innerHTML=clearedSheetHTML(); try{ renderTrainDayPick(); }catch(e){} return; }
   if(!w){ host.innerHTML=""; try{ renderTrainDayPick(); }catch(e){} return; }
+  /* ===== v249 · THE WHOLE TRAIN SHEET THREW AT BOOT ======================
+     Thirty-two lines null DB.workout; two of them (12250, 13142) leave a bare
+     object behind instead. boot() renders DB.workout directly whenever it is
+     truthy, so a sheet with no warmup array reached here and the FIRST thing
+     it touched was w.warmup.map — one TypeError, and the entire Train screen
+     rendered nothing at all. No error on screen, no sheet, nothing.
+
+     It is the same shape as every other fault this week: one rule (what a
+     well-formed sheet is) enforced in one place (ensureWorkout) and then
+     bypassed by a caller. So the renderer stops assuming. A sheet missing its
+     parts is given them rather than being allowed to take the screen down. */
+  if(!Array.isArray(w.warmup)) w.warmup=[];
+  if(!Array.isArray(w.main)) w.main=[];
+  if(!Array.isArray(w.cooldown)) w.cooldown=[];
+  if(!w.groups || typeof w.groups!=="object") w.groups={};
   /* Requirement 16: nothing reaches the sheet unchecked, and anything the
      check CHANGED is disclosed rather than quietly applied. */
   let _v={fixes:[],warnings:[]};
@@ -8350,7 +8433,7 @@ function restSeconds(str){ return parseRestSeconds(str); }
    default > 90. */
 function restDefaults(){
   const r=(DB.prefs&&DB.prefs.rest)||DB.rest||{};
-  return { sets:(r.sets|0)||90, ex:(r.ex|0)||150 };
+  return { sets:(r.sets|0)||90, ex:(r.ex|0)||120 };
 }
 function restForEx(e){
   if(!e) return restDefaults().sets;
@@ -8361,11 +8444,32 @@ function restForEx(e){
   if(e.restSec>0) return e.restSec;
   return restDefaults().sets;
 }
-function restBetweenEx(){
-  const d=restDefaults().ex;
-  /* Travelling with dumbbells only — shorter rests keep the session inside the
-     time he actually has. */
-  return (DB.workout&&DB.workout.travel)? Math.min(90,d) : d;
+/* ===== v249 · "FAR TOO LONG FOR BREAKS BETWEEN EXERCISES" ==============
+   This was a flat 150 seconds, set in v65 when every rest in the app was one
+   global number, and never revisited. v200 made the SESSION name its own rest
+   per movement — 105s on a compound, 60s on an isolation, 30s on an abs
+   finisher — and this was left behind as a third, independent copy of the
+   rest rule. So it ran two and a half minutes before a 30-second plank, which
+   is longer than it rests between sets of his heaviest press. Backwards.
+
+   The rest before an exercise is governed by what that exercise ASKS FOR.
+   You are walking to the station during it. Going into a heavy compound you
+   want to be fresh; going into a side plank you want to keep moving.
+
+   So: the rest before an exercise is that exercise's own rest. The Settings
+   number becomes the CEILING — the longest it may ever run — rather than a
+   flat value, so turning it down shortens everything and turning it up can
+   never make a plank wait two minutes. */
+function restBetweenEx(next){
+  const cap=restDefaults().ex;
+  const travel=!!(DB.workout&&DB.workout.travel);
+  let want;
+  if(next && typeof next==="object") want=restForEx(next);
+  else if(typeof next==="number" && next>0) want=next;
+  else want=restDefaults().sets;        /* nothing named — the between-sets rest */
+  want=Math.max(30,want);               /* long enough to change station */
+  if(travel) want=Math.min(60,want);    /* dumbbells only — density carries it */
+  return Math.min(cap,want);
 }
 function fmtRest(sec){
   sec=Math.max(0,Math.round(sec));
@@ -8384,7 +8488,7 @@ function bumpExRest(i,delta){
 }
 function setDefaultRest(kind,delta){
   DB.prefs=DB.prefs||{};
-  DB.prefs.rest=Object.assign({sets:90,ex:150}, DB.prefs.rest||DB.rest||{});
+  DB.prefs.rest=Object.assign({sets:90,ex:120}, DB.prefs.rest||DB.rest||{});
   let v=DB.prefs.rest[kind]+delta;
   v=Math.max(15,Math.min(600,Math.round(v/15)*15));
   DB.prefs.rest[kind]=v; save();
@@ -8425,7 +8529,14 @@ function bumpRunningRest(delta){
     return;
   }
   restEnd+=delta*1000;
-  if(_restCtx.kind==="ex"){ setDefaultRest('ex',delta); }
+  /* v249 — "Between exercises" is a ceiling now, not a flat value, so nudging
+     it was nudging something that wasn't running. What IS running is the rest
+     before the NEXT exercise, which is that exercise's own rest. Move that. */
+  if(_restCtx.kind==="ex"){
+    const nx=DB.workout&&DB.workout.main&&DB.workout.main[(_restCtx.idx|0)+1];
+    if(nx){ const sec=Math.max(15,Math.min(600,restForEx(nx)+delta)); nx.restSec=sec; nx.rest=fmtRest(sec); save(); }
+    else setDefaultRest('ex',delta);
+  }
   else if(_restCtx.idx!=null){
     const e=DB.workout&&DB.workout.main[_restCtx.idx];
     if(e){ const sec=Math.max(15,Math.min(600,restForEx(e)+delta)); e.restSec=sec; e.rest=fmtRest(sec); save(); }
@@ -9267,8 +9378,12 @@ function afterLog(i){
   }
   if(done>=target){
     const next=DB.workout.main[i+1];
+    /* v249 — it ran a two-and-a-half-minute countdown AFTER the last set of
+       the day, with nothing to count down to. The session is over; stop the
+       clock instead of starting one. */
+    if(!next){ stopRest(); toast("Last exercise done \u2014 nice work \ud83d\udcaa"); return; }
     _restCtx={kind:"ex",idx:i};
-    startRest(restBetweenEx(), next? ("Rest before "+next.name) : "Last exercise done — nice work");
+    startRest(restBetweenEx(next), "Rest before "+next.name);
   } else {
     _restCtx={kind:"set",idx:i};
     startRest(restForEx(ex), ex.name+" · next set in");
@@ -9451,7 +9566,7 @@ function chooseSwap(i,j){
 function groupRest(i){
   const next=DB.workout&&DB.workout.main[i+1];
   _restCtx={kind:"ex",idx:i};
-  startRest(restBetweenEx(), next? ("Rest before "+next.name) : "Rest — last exercise");
+  startRest(restBetweenEx(next), next? ("Rest before "+next.name) : "Rest \u2014 last exercise");
 }
 /* "What did I lift last time?" — answered on the exercise itself, not three taps away. */
 function lastSessionOf(name){
@@ -10358,7 +10473,7 @@ async function logSet(i,name){
   const sl=document.getElementById('sl'+i);
   if(sl) sl.insertAdjacentHTML('beforeend',setChip(rec,i,todaySets(ex.name).length-1));
   refreshCoachLine(i);
-  ri.value=''; wi.value=w; afterLog(i);
+  ri.value=''; wi.value=w; try{ keepTodaySheet(); }catch(e){} afterLog(i);
   showEffortPrompt(i,ex);
   refreshDoneCard();
   const cb=document.getElementById('cb'+i); if(cb) cb.innerHTML="<div class='coachbubble'><div class='who'>◆ Coach <span class='typing'><i></i><i></i><i></i></span></div></div>";
@@ -11775,7 +11890,7 @@ async function weeklyReview(){
     "what you're changing for next week and why, and whether I need a deload. Be direct. No cheerleading. "+
     "If you're changing the programme or the schedule, emit the directives to do it.";
   try{
-    const reply=await callAI([{role:"system",content:coachSystem()},{role:"user",content:usr}],700);
+    const reply=await callAI([{role:"system",content:coachSystem()},{role:"user",content:usr}],1100,{effort:"medium"});
     let shown=reply, notes=[];
     try{ const r=applyCoachDirectives(reply); shown=r.cleaned; notes=r.notes||[]; }catch(e){}
     out.innerHTML="<div class='card mt'><div class='card-title'><span>Week in review · "+ukDate()+"</span></div>"+
@@ -12012,13 +12127,36 @@ function v115Brief(){
 "Anchors hold for the block so they can be loaded. Accessories, angles, rep ranges and structure rotate. Do not serve him the same session twice for want of a better idea, and do not randomise for the sake of variety either \u2014 rotate towards what the week is short of.\n";
 }
 function aiIsReasoning(model){ return /^gpt-5/i.test(model)||/^o\d/i.test(model); }
-function aiBody(messages,maxTokens){ const model=DB.ai.model||"gpt-4o-mini"; const b={model,messages};
-  if(aiIsReasoning(model)){ b.max_completion_tokens=Math.max((maxTokens||300)+1500,2000); b.reasoning_effort="low"; } else { b.max_tokens=maxTokens||300; b.temperature=.8; } return b; }
-async function callAI(messages,maxTokens){
+/* ===== v249 · "THE COACH AI IS ACTUALLY PRETTY THICK" ==================
+   It was not thick. It was a 19,000-token system prompt — every rule in this
+   app, his whole history, the action envelopes — handed to gpt-4o-mini, the
+   cheapest model OpenAI sells, with a 700-token reply cap and the temperature
+   at 0.8. A small model given that much instruction drops the middle of it,
+   and 0.8 then had it sampling creatively from the half it still held. That is
+   not a dim coach, it is a coach being asked to do something it cannot do.
+
+   Three changes. Temperature down, because a coach giving him numbers should
+   give the same answer twice. Room to finish a sentence. And on a reasoning
+   model the chat gets real thinking budget instead of "low", which was set
+   when the only calls were one-line utilities. The model default moves too —
+   see the migration. */
+function aiBody(messages,maxTokens,opt){
+  opt=opt||{};
+  const model=DB.ai.model||"gpt-5.5"; const b={model,messages};
+  if(aiIsReasoning(model)){
+    b.max_completion_tokens=Math.max((maxTokens||500)+2000,2500);
+    b.reasoning_effort=opt.effort||"low";
+  } else {
+    b.max_tokens=maxTokens||500;
+    b.temperature=(opt.temp!=null)? opt.temp : .45;
+  }
+  return b;
+}
+async function callAI(messages,maxTokens,opt){
   let ctl=null,timer=null;
   try{ if(DB.ai.provider!=="openai"||!DB.ai.key) return null;
     try{ ctl=new AbortController(); timer=setTimeout(()=>{try{ctl.abort();}catch(e){}},60000); }catch(e){ ctl=null; }
-    const res=await fetch("https://api.openai.com/v1/chat/completions",{method:"POST",signal:ctl?ctl.signal:undefined,headers:{"Content-Type":"application/json","Authorization":"Bearer "+DB.ai.key},body:JSON.stringify(aiBody(messages,maxTokens))});
+    const res=await fetch("https://api.openai.com/v1/chat/completions",{method:"POST",signal:ctl?ctl.signal:undefined,headers:{"Content-Type":"application/json","Authorization":"Bearer "+DB.ai.key},body:JSON.stringify(aiBody(messages,maxTokens,opt))});
     if(!res.ok){ let m=""; try{ m=((await res.json()).error||{}).message||""; }catch(_){} console.warn("AI",res.status,m); toast("AI error "+res.status+(m?": "+m.slice(0,50):"")); return null; }
     const j=await res.json(); return (j.choices&&j.choices[0]&&j.choices[0].message&&j.choices[0].message.content||"").trim()||null;
   }catch(e){ console.warn(e); if(e&&e.name==="AbortError") toast("Coach timed out \u2014 try again"); return null; }
@@ -13139,7 +13277,7 @@ function coachSkipEx(a){
 }
 function coachEndSession(a){
   const why=String(a||"").trim();
-  DB.workout=DB.workout||{};
+  DB.workout=DB.workout||{};   /* v249 — _renderSheetInner fills in what this leaves out */
   DB.workout.endedEarly={why, at:new Date().toISOString()};
   if(why) { DB.checkins=DB.checkins||[];
             const c=DB.checkins.find(x=>x.date===today());
@@ -13819,7 +13957,7 @@ function intentActions(){
     unSuperset:(x)=>{ if(x){ const f=find(x); if(f){ const r=coachRemoveSuperset(f); return r? n("\u2702 Superset removed") : null; } }
       const c=coachClearTechniques(); return c? n("\u2702 Back to straight sets") : null; },
     hush:()=>{ try{ stopSpeaking(); }catch(e){} return n("\ud83d\udd07 Stopped"); },
-    rebuild:()=>{ DB.workout=null; try{ ensureWorkout(); }catch(e){} save(); return n("\u21ba Rebuilt today\u2019s session"); },
+    rebuild:()=>{ try{ rebuildToday(); }catch(e){} save(); return n("\u21ba Rebuilt today\u2019s session"); },
     timing:(x,timed)=>{ if(!has()) return null;
       const f=find(x); if(!f) return null;
       const i=coachFindExIdx(f);
@@ -16590,9 +16728,23 @@ function importMemory(inp){ const fl=inp.files[0]; if(!fl)return; const rd=new F
 function extractChatGPT(json){ const data=JSON.parse(json); if(Array.isArray(data)){ const out=[]; data.forEach(conv=>{ const map=conv.mapping||{}; Object.values(map).forEach(nd=>{ const m=nd&&nd.message; if(m&&m.content&&Array.isArray(m.content.parts)){ const t=m.content.parts.filter(x=>typeof x==='string').join(" ").trim(); if(t) out.push(((m.author&&m.author.role)||"")+": "+t);}});}); return out.join("\n"); } if(data&&typeof data==='object') return JSON.stringify(data,null,2); return json; }
 const KNOWN_MODELS=["gpt-5.5","gpt-4o","gpt-4o-mini","gpt-4.1-mini"];
 function onModelChange(){ const sel=val('setModel'); document.getElementById('customModelWrap').style.display = sel==='__custom'?'block':'none'; }
+/* v249 — the model was raised out from under him, so it says so, here, where
+   he would come to put it back. */
+function renderModelNote(){
+  const el=document.getElementById('modelNote249'); if(!el) return;
+  if(!(DB.aiModelRaised && DB.ai && DB.ai.model==="gpt-5.5")){ el.style.display="none"; return; }
+  el.style.display="block";
+  el.innerHTML="Your coach was running on <b>gpt-4o-mini</b> \u2014 the cheapest model, and the "+
+    "app\u2019s old default rather than anything you chose. It was being handed every rule in "+
+    "this app at once, which is more than a small model can hold, and that is why it kept "+
+    "missing things. It is on <b>gpt-5.5</b> now. It costs more per message and it is "+
+    "noticeably better. Pick gpt-4o-mini below and Save to go back.";
+}
 function saveAI(){
   DB.ai.key=val('setKey').trim(); const sel=val('setModel'); const custom=val('setModelCustom').trim();
-  DB.ai.model = sel==='__custom' ? (custom||'gpt-5.5') : sel; save();
+  DB.ai.model = sel==='__custom' ? (custom||'gpt-5.5') : sel;
+  DB.aiModelRaised=0; save();                 /* v249 — his pick, so the notice is done */
+  try{ renderModelNote(); }catch(e){}
   const out=document.getElementById('aiTest');
   if(DB.ai.provider==="demo"||!DB.ai.key){ out.textContent="Demo mode — offline coach active. Add a key for live AI + photos."; return; }
   out.innerHTML="<span class='spin'></span> Testing "+DB.ai.model+"…";
@@ -17205,7 +17357,7 @@ function scheduleInApp(){
    v18 ADDITIONS — draggable rest timer · weekly training memory · AI planner
    · Firestore sync
    ========================================================================== */
-const APP_VERSION="v248 · 02/10/2026";
+const APP_VERSION="v249 · 02/10/2026";
 
 /* ===== 1. REST TIMER — drag it anywhere so it never blocks the chat box ===== */
 let _rtDrag=null;
@@ -19301,13 +19453,29 @@ function estimateMinutes(names,sets,t){
   const warm = LOC().short? 3 : 5;
   const cool = 4;
   let lift=0;
-  (names||[]).forEach(item=>{
+  const arr=names||[];
+  arr.forEach((item,idx)=>{
     /* Accepts a plain name or a workout entry with its own set count. */
     const n=(typeof item==="object")? item.name : item;
     const k=(typeof item==="object" && item.sets>=1)? item.sets : sets;
-    const per=workSecsFor(n)+restSecsFor(n,k);
-    lift += (per*k)/60;
-    lift += 1;                                 // changing station / setting up
+    /* The LAST set of an exercise is not followed by a between-sets rest —
+       it is followed by the walk to the next station. Bill k work periods,
+       k-1 rests, and one changeover. */
+    lift += (workSecsFor(n)*k)/60;
+    lift += (restSecsFor(n,k)*Math.max(0,k-1))/60;
+    /* v249 — this billed a flat one minute per station change while the app
+       ran a two-and-a-half-minute countdown, so every estimate came in eight
+       minutes under what the session actually took. It bills what the timer
+       runs: the next exercise's own rest. Nothing after the last one. */
+    if(idx < arr.length-1){
+      const nx=arr[idx+1];
+      const nn=(typeof nx==="object")? nx.name : nx;
+      const nk=(typeof nx==="object" && nx.sets>=1)? nx.sets : sets;
+      let gap=Math.max(30, restSecsFor(nx,nk));
+      if(LOC().short) gap=Math.min(60,gap);
+      gap=Math.min(((DB.prefs&&DB.prefs.rest&&DB.prefs.rest.ex)|0)||120, gap);
+      lift += gap/60;
+    }
   });
   return {row,warm,cool,lift:Math.round(lift),total:Math.round(row+warm+cool+lift)};
 }
@@ -25591,7 +25759,7 @@ async function sendChat(){
       /* v141 \u2014 600 tokens. A seven-movement plan plus the envelopes that
          build it does not fit in 600 tokens, and the envelopes are what got
          cut: the reply arrived mid-sentence and nothing reached Train. */
-      reply=await callAI(msgs,1400); if(reply) aiUsed=true;
+      reply=await callAI(msgs,1400,{effort:"medium"}); if(reply) aiUsed=true;
     }
     if(!reply){
       /* Offline or unkeyed: the honest failure outranks anything generic. */
@@ -25626,7 +25794,7 @@ async function sendChat(){
             "SYSTEM: You said you would change something but you emitted no action, so NOTHING changed in the app and I will not let that reply reach him. "+
             "Answer again. Keep your reasoning and your tone, but include the [[ACTION: {...}]] envelope that makes it real. "+
             "If what he said was a statement of fact rather than a request, accept it, say what it changes, and emit whatever action follows from it. "+
-            "If you genuinely cannot act on it, say so plainly in one line and ask the single question you need answered. Never list example phrasings at him."}],600);
+            "If you genuinely cannot act on it, say so plainly in one line and ask the single question you need answered. Never list example phrasings at him."}],900,{effort:"medium"});
       }catch(e){}
       if(repaired){
         const e2=parseActionEnvelopes(repaired);
@@ -25716,6 +25884,7 @@ function boot(){
 
   if(KNOWN_MODELS.includes(DB.ai.model)){ document.getElementById('setModel').value=DB.ai.model; } else if(DB.ai.model){ document.getElementById('setModel').value='__custom'; document.getElementById('setModelCustom').value=DB.ai.model; }
   onModelChange();
+  try{ renderModelNote(); }catch(e){}
   document.getElementById('setMemory').value=DB.memory||""; memInfo();
   document.getElementById('setRemindTime').value=DB.reminder||"07:00";
   document.getElementById('setName').value=DB.profile.name; document.getElementById('setGoal').value=DB.profile.goal; document.getElementById('setPhase').value=DB.profile.phase;
@@ -25764,7 +25933,13 @@ function boot(){
   try{ const a=ensureAbsFinisher();
         if(a) setTimeout(()=>toast("Added "+a.names.join(" and ")+" — today's abs finishers"),900); }catch(e){}
   if(todayCleared()){ renderWorkoutSheet(null); try{ renderHeroCard(); }catch(e){} }
-  else if(DB.workout){ renderWorkoutSheet(DB.workout); try{ renderHeroCard(); }catch(e){} }
+  /* v249 — boot used to hand DB.workout straight to the renderer, which is how
+     a bare {} left behind by one of the nullers took the Train screen down.
+     A sheet with no movements on it is not a sheet: let ensureWorkout build
+     one, which is the one function that knows what a sheet has to have. */
+  else if(DB.workout && Array.isArray(DB.workout.main) && DB.workout.main.length){
+    renderWorkoutSheet(DB.workout); try{ renderHeroCard(); }catch(e){} }
+  else if(DB.workout){ try{ ensureWorkout(); }catch(e){} try{ renderHeroCard(); }catch(e){} }
   /* v133 — the hero card left Home, and this was the one place that wrote to
      it without checking it was there. Everything it used to say is on Train. */
   else { const t=document.getElementById('heroTitle'); if(t) t.textContent = split==="Rest"?"Rest & Recover":split;

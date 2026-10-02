@@ -1,3 +1,124 @@
+AMIR PT — v249 · 02/10/2026
+===========================
+
+"Sadly the app is also giving me far too long for breaks between exercises.
+Not sure what's happened to the app but it's making so many mistakes.
+Also please find out why I have SO MANY mistakes. I had perfected this app.
+Now it's constantly failing. And honestly the coach AI is actually pretty
+thick if I'm honest."
+
+Three questions. The rests, the failure rate, and the coach. All three have
+the same answer underneath, which is the useful part.
+
+THE RESTS
+----------
+A flat 150 seconds before every exercise. Set in v65, when every rest in this
+app was one global number, and never looked at again.
+
+v200 made the SESSION name its own rest per movement — 1m 45s on a compound,
+1m on an isolation, 30s on an abs finisher. The between-EXERCISE rest was left
+behind as a third, independent copy of the rest rule. So it ran two and a half
+minutes before a 30-second side plank: longer than it rests between sets of
+your heaviest press. Backwards.
+
+The rest before an exercise is governed by what that exercise ASKS FOR — you
+are walking to the station during it. Going into a heavy compound you want to
+be fresh; going into a plank you want to keep moving. So that is what it runs
+now. Push day, before:
+
+  150 · 150 · 150 · 150 · 150 · 150 · 150   = 17m 30s of standing around
+
+and after:
+
+  105 · 105 ·  60 ·  60 ·  30 ·  30 · none  = 6m 30s
+
+Eleven minutes back. The Settings number "Between exercises" is now a CEILING
+rather than a flat wait, so turning it down shortens everything and turning it
+up can never make a plank wait two minutes.
+
+Two more things in the same place. There was a two-and-a-half-minute countdown
+after the LAST set of the day, counting down to nothing — the session is over,
+so it stops the clock instead. And the session estimate billed one minute per
+station change while the app ran two and a half, so every session came in about
+eight minutes under what it actually took. It bills what the timer will run.
+Push day now estimates 54 minutes and takes 54 minutes.
+
+WHY SO MANY MISTAKES
+---------------------
+You are right, and it is one thing, not many.
+
+This file is 25,800 lines and 1,311 functions. Every fix this month went to the
+place the fault surfaced rather than the place it came from. The result is the
+same rule written out in several places, and a bug appears the moment two copies
+drift. There are seventeen comments in this file that literally say so — "a
+second, independent copy", "one rule, two implementations", "the two had
+drifted". Every one is a bug I shipped, found, and then fixed in one copy.
+
+The rest timer above is exactly that: the rest rule existed in three places and
+I only ever updated two.
+
+"It changed my workout half way" is the same, and it is the clearest example.
+THIRTY-TWO lines in this file set today's session to null, and every one of them
+hands the next rebuild a blank slate. v248 guarded two. Telling the coach your
+knee hurts did it. A check-in did it. Changing phase, mode, location, your time
+budget, your own profile — all of them did it. I fixed the two that you happened
+to hit and left thirty.
+
+So v249 does not add a thirty-first guard. It puts ONE gate in the one function
+that rebuilds. Anything may still null the sheet; nothing gets a new one built
+over work you have logged. The sheet is kept the moment you log against it and
+handed back instead, with a line on screen saying so. "New exercises" is still
+a way through, because that is you asking.
+
+Tested by firing the five real ways it used to happen — coach injury, coach
+clear-injuries, phase change, mode change, and a raw null — at a session with
+a set logged. All five leave it alone now.
+
+AND ONE THING THAT WAS ALREADY BROKEN
+--------------------------------------
+Found while testing the above, on v248: the entire Train sheet was throwing at
+boot. Two of those thirty-two lines leave a bare object behind rather than a
+null, boot handed it straight to the renderer, and the first thing the renderer
+touched was a list that wasn't there. One TypeError and the Train screen rendered
+NOTHING — no sheet, no error, just empty.
+
+Same shape again: one rule about what a well-formed sheet is, enforced in one
+function, bypassed by a caller. The renderer no longer assumes; a sheet missing
+its parts is given them. And boot repairs rather than rendering a half-built one.
+
+I only caught this because I made my own test harness print stack traces instead
+of just the message. It had been passing every suite.
+
+THE COACH
+----------
+It is not thick. It is a 19,000-token system prompt — every rule in this app,
+your whole history, the action envelopes — handed to gpt-4o-mini, the cheapest
+model OpenAI sells, with a 700-token reply cap and the temperature at 0.8.
+
+A small model given that much instruction drops the middle of it. Temperature
+0.8 then had it sampling creatively from the half it still held. That is not a
+dim coach; that is a coach being asked to do something it cannot do.
+
+  · Model: gpt-4o-mini → gpt-5.5. That was the app's shipped default, not
+    anything you chose, and you had no reason to open that setting. It only
+    moves someone still sitting on the exact default this app shipped, so a
+    model you picked yourself is untouched. It costs more per message and it is
+    noticeably better. Settings → AI coach says so, where you'd go to change it
+    back, and one tap puts it back.
+  · Temperature 0.8 → 0.45. A coach giving you numbers should give the same
+    answer twice.
+  · Reply cap 700 → 1100, and on a reasoning model the chat gets real thinking
+    budget instead of "low", which was set when the only calls were one-liners.
+
+WHAT I AM CHANGING ABOUT HOW I WORK
+------------------------------------
+The pattern is clear enough to name. Before fixing anything, count the places
+the rule lives — grep for every writer, not just the one that bit. Fix the
+place it comes from, not the place it surfaced. And my own test harness has been
+hiding faults from me: it was swallowing stack traces, and a check in this very
+session reported a timer's state at the wrong moment and told me a working fix
+was broken twice. A harness I don't distrust is worse than no harness.
+
 AMIR PT — v248 · 02/10/2026
 ===========================
 
