@@ -6457,7 +6457,10 @@ function earnedIt(name,topW,step,need,easy,loReps){
       text:"Stay at "+topW+"kg and go for "+target+" reps — the next weight up is "+next+
            "kg, a "+Math.round(jump)+"% jump you'd be grinding. Earn it with reps first."};
   }
-  return {w:next, up:true,
+  /* v252 — the box checks this flag before it will show a number above what
+     he actually lifted. Since v251 this function is only reachable from a
+     rated session, so it is always an increase he asked for by tapping. */
+  return {w:next, up:true, earnedEasy:true, from:topW,
     text:next+"kg — "+need+" clean sets at "+topW+"kg"+(easy?", all easy":", all about right")+". That's mastered. Earned it."};
 }
 function renderKit(){
@@ -9695,6 +9698,40 @@ function recForCard(e){
   }catch(err){}
   return st||null;
 }
+/* ===== v252 · "IT SHOULD READ 5. IF I DECIDE TO CHANGE IT THAT'S ON ME" =
+     "The number in weights should match what I did last week, not just any
+     number."
+
+     Said plainly, and it is the rule. The box is the thing he taps Log on, so
+     it is a record of what he is about to lift — not a forecast. It starts
+     from his own log.
+
+     v250 made the box and the line agree, and v251 stopped the progression
+     inventing increases he had not earned. Both were fixes to the paths I
+     could find. This is the rail: whatever any of the eleven stamping sites
+     or the progression itself comes back with, the box may not show a number
+     ABOVE his last session's top weight unless that increase is one he
+     authorised — by tapping Easy, or by asking for a weight today. Anything
+     else is clamped back to what he actually lifted, and the note says so.
+
+     Below last week's weight is allowed without argument: a deload, a backed
+     off day and his own correction are all reasons to go lighter, and none of
+     them is the app talking him up. */
+function prefillTarget(e){
+  const rc=recForCard(e);
+  let w=rc && rc.w;
+  let clamped=null;
+  try{
+    const prev=lastSessionOf(e.name);
+    const lastTop=(prev&&prev.sets&&prev.sets.length)? Math.max(...prev.sets.map(x=>(x&&+x.w)||0)) : null;
+    if(lastTop!=null && lastTop>0 && w!=null && +w>lastTop+0.001){
+      const authorised = !!(rc && (rc.earnedEasy || rc.manual ||
+        (rc.at && new Date(rc.at).toISOString().slice(0,10)===today())));
+      if(!authorised){ clamped=+w; w=lastTop; }
+    }
+  }catch(err){}
+  return {w, rc, clamped};
+}
 function prefillWeight(e){
   if(!e || e.timed) return "";
   const done=todaySets(e.name);
@@ -9712,11 +9749,8 @@ function prefillWeight(e){
     }
     return lastW||"";
   }
-  /* First set: what the coach is calling for, which is last session's weight
-     unless he has earned an increase. v250 — through the resolver, so the box
-     and the line under it cannot say different numbers. */
-  const rc=recForCard(e);
-  if(rc && rc.w) return rc.w;
+    const pt=prefillTarget(e);
+  if(pt && pt.w) return pt.w;
   try{
     const s=lastSessionOf(e.name);
     if(s&&s.sets&&s.sets.length) return Math.max(...s.sets.map(x=>x.w||0))||"";
@@ -9755,13 +9789,18 @@ function prefillNote(e){
   if(!e || e.timed) return "";
   if(todaySets(e.name).length) return "";
   let s=null; try{ s=lastSessionOf(e.name); }catch(err){}
-  const rc=recForCard(e);          /* v250 — the note describes the number in the box */
+  const _pt=prefillTarget(e);      /* v250/v252 — the note describes the number actually in the box */
+  const rc=_pt.rc, _clamped=_pt.clamped;
   if(!s||!s.sets||!s.sets.length){
     /* v116 — isLoadless is true for bands AND bodyweight, so a crunch was
        being told to pick a band tension. Say the thing that applies. */
     if(eqOf(e.name)==="band") return "<div class='prefill'>First time on this one \u2014 pick a band tension you can control for 12\u201320 clean reps.</div>";
     if(isLoadless(e.name)) return "<div class='prefill'>First time on this one \u2014 find a rep number you can hit with clean form on every set.</div>";
-    return (rc&&rc.estimate)? "<div class='prefill'>Filled in with a suggested starting weight \u2014 first time on this one.</div>" : "";
+    if(rc&&rc.estimate) return "<div class='prefill'>Filled in with a suggested starting weight \u2014 first time on this one.</div>";
+    /* v252 — no history and nothing to extrapolate from. An empty box is the
+       honest answer, but an empty box with no words beside it just looks
+       broken. Say which it is. */
+    return "<div class='prefill'>First time on this one \u2014 nothing to fill in from yet. Pick a weight you can control for every rep, and the box follows your log from next time.</div>";
   }
   /* v131 \u2014 this used to restate last session's numbers, which the Last/Today
      summary two lines below now says properly and in line. All that is left
@@ -9770,7 +9809,12 @@ function prefillNote(e){
   const top=Math.max(...s.sets.map(x=>x.w||0));
   if(isLoadless(e.name))
     return "<div class='prefill'>Beat your lowest set from last time.</div>";
-  const up=(rc&&rc.w&&rc.w>top);
+  /* v252 — if the rail brought the number back to last week's, this is not a
+     jump he earned and must not be described as one. */
+  if(_clamped!=null)
+    return "<div class='prefill'>Filled in with last week\u2019s "+escapeHtml(String(top))+
+           "kg. Change it if you want to \u2014 the weight moves when you rate a set Easy.</div>";
+  const up=(rc&&rc.w&&_pt.w&&_pt.w>top);
   /* v190 \u2014 at the top of the rack the weight is not "the same again", it is
      the only one there is, and the reps are the thing that moved. Say so, or
      the unchanged kilos read as no progression at all. */
@@ -17490,7 +17534,7 @@ function scheduleInApp(){
    v18 ADDITIONS — draggable rest timer · weekly training memory · AI planner
    · Firestore sync
    ========================================================================== */
-const APP_VERSION="v251 · 02/10/2026";
+const APP_VERSION="v252 · 02/10/2026";
 
 /* ===== 1. REST TIMER — drag it anywhere so it never blocks the chat box ===== */
 let _rtDrag=null;

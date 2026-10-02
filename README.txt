@@ -1,3 +1,73 @@
+AMIR PT — v252 · 02/10/2026
+===========================
+
+"And the number in weights should match what I did last week, not just any
+number. This should read 5. If I decide to change it that's on me."
+
+FIRST: HE WAS LOOKING AT AN OLD BUILD
+--------------------------------------
+That card was fixed in v250, an hour before the screenshot. Checked against
+his exact data — Lateral Raise, 5kg x 16, 16, 16, rated about right — v251
+already read 5 in the box, 5 on the aim-for line, and "Filled in for you"
+underneath.
+
+He is behind because the app will NOT reload itself while he is mid-session,
+which is the v248 rule working: losing a logged set to a surprise reload is
+worse than a late fix. His 18:22 screenshot was v247-era, 18:36 was v248-era,
+so updates ARE arriving — I had just shipped four versions in the hour he was
+training. The orange UPDATE READY bar above the tab bar is the way through
+during a session.
+
+That is an explanation, not an excuse. He is reporting bugs against a build I
+have already moved past, which wastes his time, and he has no way of knowing
+which version he is reading.
+
+THE RULE, AS A RAIL RATHER THAN A FIX
+--------------------------------------
+He has now said this three times in three different words, and I have fixed it
+three times in three different places:
+
+  v248  the suggestion row was labelled "Today" and read as a record
+  v250  the box read a stale stamp while the line read his log
+  v251  the progression raised the weight with no effort rating at all
+
+Each fix was correct and each one went to a path I had found. That is the
+pattern he is actually complaining about, so this one is not another path. It
+is an invariant:
+
+  THE PREFILLED WEIGHT MAY NOT BE HIGHER THAN WHAT HE LIFTED LAST SESSION
+  UNLESS HE AUTHORISED THE INCREASE.
+
+Authorised means one of two things, both of them him: he tapped Easy and the
+progression earned the step, or he (or the coach, today) asked for a weight.
+Anything else is clamped back to his own log and the note says so plainly:
+
+  "Filled in with last week's 5kg. Change it if you want to — the weight
+   moves when you rate a set Easy."
+
+Going LIGHTER is never argued with. A deload, a backed-off day and his own
+correction are all reasons to drop the weight, and none of them is the app
+talking him up.
+
+It is now one function — prefillTarget() — and the box, the note and the
+aim-for line all read it. Three displays, one answer.
+
+Tested by pointing the progression at 99kg and checking the box still reads 5.
+That is the point of a rail: it does not care which path produced the number.
+
+ALSO
+-----
+A first-time lift with nothing to extrapolate from showed an empty box and no
+words at all, which looks broken rather than honest. It now says what it is:
+"First time on this one — nothing to fill in from yet. Pick a weight you can
+control for every rep, and the box follows your log from next time."
+
+Twelve checks, including Easy still raising a bench press 47.5 to 50, Easy on
+a 5kg dumbbell correctly adding reps instead of a 20% jump, a weight asked for
+today standing, and a lighter weight never being clamped up. Full regression:
+17/17, 9/9, 23/23, 8/8, 5/5, 14/14, 12/12, 9/9, 11/11, 18/18, 10/10, 11/11,
+8/8, contrast 0 failing, no page errors.
+
 AMIR PT — v251 · 02/10/2026
 ===========================
 
