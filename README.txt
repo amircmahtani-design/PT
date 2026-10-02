@@ -1,3 +1,66 @@
+AMIR PT — v250 · 02/10/2026
+===========================
+
+"Last week I did 5 kg and it fills the pre weight with 10."
+
+The card was saying two different things at once.
+
+  [ 10 ]  [ 13 ]  Log
+  Filled in with the jump you earned — type over it if it's wrong.
+
+  LAST   5kg × 13, 13, 13   about right   25/09/2026
+  TODAY  5kg × 6-8
+
+The LAST line read your real history: 5kg. The line under it said to aim for
+5kg. And the box above both was filled with 10, under a note claiming it was a
+jump you had earned — a doubling, on the one lift where 10kg is the heaviest
+dumbbell in the room.
+
+ONE QUESTION, TWO ANSWERS. AGAIN.
+----------------------------------
+This is the same fault as the rest timer in v249 and the session rebuilds in
+v248, for the third time in three versions: one question answered in two
+places, and the two drifted.
+
+The "aim for" line asks progressionFor(), which computes live from your log.
+The box read e.rec — a value STAMPED onto the sheet entry and then carried
+around with it. Eleven separate places stamp it: a coach instruction ("use
+10kg"), a "that was easy" jump, a deload, an equipment change, a backed-off
+day. Every one of those was a correct decision when it was made. None of them
+is still correct a week later, and nothing ever cleared them.
+
+So a decision from a previous session was sitting on that entry, and the box
+preferred it to your actual training history.
+
+WHAT IT DOES NOW
+-----------------
+A stamp is honoured for exactly as long as it is a decision about TODAY. After
+that the box asks the same function the line asks, and the two cannot disagree
+again.
+
+  · A weight you or the coach asked for today — honoured, and now the "aim
+    for" line shows that number too, instead of quietly showing a different
+    one.
+  · A jump you earned mid-session from an "easy" rating — honoured, as before.
+  · Anything older — ignored. The box shows what your log says.
+  · The note under the box reads from the same number, so it can no longer
+    claim a jump you have not earned.
+
+Your card will now read 5kg in the box, 5kg on the aim-for line, and "Filled
+in for you" rather than "the jump you earned".
+
+Tested on your exact card — a week-old 10kg stamp against a 5kg × 13, 13, 13
+history — plus a call made today, a mid-session earned jump, and an entry with
+nothing stamped at all. Nine checks, and the one that matters is that the box
+and the line now return the same number in every one of them.
+
+ONE THING I HAVE NOT CHANGED
+-----------------------------
+Your DB Shoulder Press is showing 4 sets · 6-8 reps · rest 2 min. The programme
+prescribes 3 sets · 8-12 · 1m 45s, so something has overridden it — most likely
+the coach, at some point. That is a decision, and decisions are yours, so I have
+left it alone. If you did not ask for it, say so and I will find what did.
+
 AMIR PT — v249 · 02/10/2026
 ===========================
 

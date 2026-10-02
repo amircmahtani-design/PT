@@ -9610,6 +9610,40 @@ function lastTimeHTML(name){
 
    Computed at RENDER time from live history rather than read from a value
    stored when the session was built \u2014 that stored copy is what went stale. */
+/* ===== v250 · "LAST WEEK I DID 5KG AND IT FILLS THE PRE WEIGHT WITH 10" ==
+   The card said two different things at once. The LAST line read his real
+   history, 5kg × 13, 13, 13. The line under it said to aim for 5kg. And the
+   box above both was filled with 10, under a note claiming it was "the jump
+   you earned" — a jump of double, on the one lift where 10kg is the heaviest
+   dumbbell in the room.
+
+   The same fault as the rest timer and as the session rebuilds: ONE question
+   answered in TWO places. The Aim-for line asks progressionFor(), computed
+   live from the log. The box read e.rec — a value STAMPED onto the sheet
+   entry and then carried with it. Eleven different places stamp it: a coach
+   instruction ("use 10kg"), an "that was easy" jump, a deload, an equipment
+   change. Every one of them is a decision that was right when it was made.
+   None of them is still right a week later, and nothing ever cleared them.
+
+   So the stamp is honoured for exactly as long as it is a decision about
+   TODAY. After that the box asks the same function the line asks, and the two
+   cannot disagree again. */
+function recForCard(e){
+  if(!e) return null;
+  const st=e.rec;
+  /* A deliberate call made today — his, or the coach's, or a jump he earned
+     mid-session — outranks the computed one. That is the whole point of it. */
+  try{
+    if(st && st.at && new Date(st.at).toISOString().slice(0,10)===today()) return st;
+  }catch(err){}
+  /* Anything older is a decision about a session that is over. */
+  try{
+    if(typeof isLoadless==="function" && isLoadless(e.name)) return st||null;
+    const live=recommendLoad(e.name);
+    if(live && live.w!=null) return live;
+  }catch(err){}
+  return st||null;
+}
 function prefillWeight(e){
   if(!e || e.timed) return "";
   const done=todaySets(e.name);
@@ -9628,8 +9662,10 @@ function prefillWeight(e){
     return lastW||"";
   }
   /* First set: what the coach is calling for, which is last session's weight
-     unless he has earned an increase. */
-  if(e.rec && e.rec.w) return e.rec.w;
+     unless he has earned an increase. v250 — through the resolver, so the box
+     and the line under it cannot say different numbers. */
+  const rc=recForCard(e);
+  if(rc && rc.w) return rc.w;
   try{
     const s=lastSessionOf(e.name);
     if(s&&s.sets&&s.sets.length) return Math.max(...s.sets.map(x=>x.w||0))||"";
@@ -9668,12 +9704,13 @@ function prefillNote(e){
   if(!e || e.timed) return "";
   if(todaySets(e.name).length) return "";
   let s=null; try{ s=lastSessionOf(e.name); }catch(err){}
+  const rc=recForCard(e);          /* v250 — the note describes the number in the box */
   if(!s||!s.sets||!s.sets.length){
     /* v116 — isLoadless is true for bands AND bodyweight, so a crunch was
        being told to pick a band tension. Say the thing that applies. */
     if(eqOf(e.name)==="band") return "<div class='prefill'>First time on this one \u2014 pick a band tension you can control for 12\u201320 clean reps.</div>";
     if(isLoadless(e.name)) return "<div class='prefill'>First time on this one \u2014 find a rep number you can hit with clean form on every set.</div>";
-    return (e.rec&&e.rec.estimate)? "<div class='prefill'>Filled in with a suggested starting weight \u2014 first time on this one.</div>" : "";
+    return (rc&&rc.estimate)? "<div class='prefill'>Filled in with a suggested starting weight \u2014 first time on this one.</div>" : "";
   }
   /* v131 \u2014 this used to restate last session's numbers, which the Last/Today
      summary two lines below now says properly and in line. All that is left
@@ -9682,15 +9719,15 @@ function prefillNote(e){
   const top=Math.max(...s.sets.map(x=>x.w||0));
   if(isLoadless(e.name))
     return "<div class='prefill'>Beat your lowest set from last time.</div>";
-  const up=(e.rec&&e.rec.w&&e.rec.w>top);
+  const up=(rc&&rc.w&&rc.w>top);
   /* v190 \u2014 at the top of the rack the weight is not "the same again", it is
      the only one there is, and the reps are the thing that moved. Say so, or
      the unchanged kilos read as no progression at all. */
-  if(e.rec&&e.rec.ceiling){
-    if(e.rec.outgrown && e.rec.swapTo)
+  if(rc&&rc.ceiling){
+    if(rc.outgrown && rc.swapTo)
       return "<div class='prefill'>Filled in with last time\u2019s numbers. "+escapeHtml(String(top))+
-             "kg has nothing left to give at these reps \u2014 "+escapeHtml(e.rec.swapTo)+" is the next movement, and the button below does the swap.</div>";
-    if(e.rec.harder) return "<div class='prefill'>"+escapeHtml(String(top))+"kg is your heaviest dumbbell and the reps have gone as far as they usefully go \u2014 same weight, harder work: three seconds down, a pause at the top, or one arm at a time.</div>";
+             "kg has nothing left to give at these reps \u2014 "+escapeHtml(rc.swapTo)+" is the next movement, and the button below does the swap.</div>";
+    if(rc.harder) return "<div class='prefill'>"+escapeHtml(String(top))+"kg is your heaviest dumbbell and the reps have gone as far as they usefully go \u2014 same weight, harder work: three seconds down, a pause at the top, or one arm at a time.</div>";
     return "<div class='prefill'>"+escapeHtml(String(top))+"kg is your heaviest dumbbell, so the reps are the progression \u2014 the box is filled in with today\u2019s target.</div>";
   }
   return up
@@ -10139,10 +10176,23 @@ function coachLineHTML(e){
        over the training. */
     todayTxt=fmtNum(p.recommended)+"kg \u00d7 "+(p.repTarget? (p.repTarget+" reps") : shortTarget(e));
   } else {
-    todayTxt=firstSentence((p&&p.target) || (e.rec&&e.rec.text) || "");
+    const _rc=(typeof recForCard==="function")? recForCard(e) : (e&&e.rec);
+    todayTxt=firstSentence((p&&p.target) || (_rc&&_rc.text) || "");
   }
   /* v136 — and once every set is in, a prescription is not what the row is
      for. It said "Today 27.5kg × 8–12" over four completed sets at 25kg. */
+  /* v250 — and when there IS a live call for today (he asked for a weight, or
+     he earned a jump mid-session), that call is the number in the box, so it
+     has to be the number on this line too. A card does not get to show two
+     answers to the same question. */
+  try{
+    const dc=recForCard(e);
+    if(dc && dc.w && dc.at && new Date(dc.at).toISOString().slice(0,10)===today()
+       && !(p && p.outgrown) && !(p && p.harder)
+       && !(p && p.recommended!=null && +p.recommended===+dc.w)){
+      todayTxt=fmtNum(dc.w)+"kg \u00d7 "+((p&&p.repTarget)? (p.repTarget+" reps") : shortTarget(e));
+    }
+  }catch(err){}
   const target=(typeof exSets==="function")? (exSets(e)||0) : 0;
   const nDone=(p && p.doneToday)||0;
   if(target && nDone>=target){
@@ -17357,7 +17407,7 @@ function scheduleInApp(){
    v18 ADDITIONS — draggable rest timer · weekly training memory · AI planner
    · Firestore sync
    ========================================================================== */
-const APP_VERSION="v249 · 02/10/2026";
+const APP_VERSION="v250 · 02/10/2026";
 
 /* ===== 1. REST TIMER — drag it anywhere so it never blocks the chat box ===== */
 let _rtDrag=null;
