@@ -2350,6 +2350,32 @@ function mergeDefaults(parsed){ let d={...structuredClone(DEFAULTS),...parsed};
      the exact string this app shipped, so a model he picked himself is left
      alone, and Settings → AI coach puts it back in one tap.
      Plain string literals only — the v235 rule. */
+  /* ===== v251 · "REPLACE THE 52.5KG BENCH PRESS WITH 47.5KG" ===========
+     He asked for this directly and the app gave him no way to do it, so it
+     does it once, here. Narrow on purpose: Bench Press only, sets logged at
+     exactly 52.5kg only, rewritten to 47.5kg. Reps and effort taps untouched.
+     A real 50kg set from today is a different number and is left alone.
+
+     The 52.5 was never lifted. It came from two faults that are both fixed
+     now — v248's logSet filing a set by slot rather than by name, and the
+     progression doubling its own step on an Easy tap (47.5 + 2.5 × 2), which
+     v251 stops computing.
+     Plain string literals only — the v235 rule. */
+  if(!d.benchFixV251){
+    d.benchFixV251=1;
+    try{
+      var _bp=(d.strength||{})["Bench Press"]||[];
+      var _n=0;
+      for(var _i=0;_i<_bp.length;_i++){
+        var _ss=(_bp[_i]&&_bp[_i].sets)||[];
+        for(var _j=0;_j<_ss.length;_j++){
+          if(_ss[_j] && !_ss[_j].timed && Math.abs((+_ss[_j].w||0)-52.5)<0.001){ _ss[_j].w=47.5; _n++; }
+        }
+        if(_n) _bp[_i].corrected=true;
+      }
+      if(_n) d.benchFixV251Count=_n;
+    }catch(e){}
+  }
   if(!d.modelV249){
     d.modelV249=1;
     d.ai=d.ai||{};
@@ -6009,7 +6035,7 @@ function recommendLoadRaw(ex){
         text:"New one \u2014 and "+g.w+"kg is the heaviest dumbbell you own, so start there. Find your rep number on the first set: reps and tempo are the progression here, not weight.",
         why:g.why};
       if(g && g.w>0) return {w:g.w, up:false, estimate:true,
-        text:"New one — try "+g.w+"kg for the first set and work up from there. "+g.why+". Rate it easy and I'll jump it straight away."};
+        text:"New one — try "+g.w+"kg for the first set and work up from there. "+g.why+". Rate it easy and it goes up one step next time."};
     }catch(e){}
     return null;
   }
@@ -6114,10 +6140,35 @@ function recommendLoadRaw(ex){
         text:"Stay at "+topW+"kg today \u2014 it was easy last time, but this morning reads as a day to recover rather than push.",
         why:"Adding load on a deload reading is how a cut turns into a stall. The weight is earned; it will still be earned when you are fresh.",
         next:"Repeat "+topW+"kg, own the reps, and it goes up next session."};
-    if(eff<=1.5) return earnedIt(ex,topW,bump*2,need,true,lo);
-    return earnedIt(ex,topW,bump,need,false,lo);
+    /* ===== v251 · "WEIGHT GOES UP ONLY WHEN I SAY IT'S EASY" ============
+       One step. Not two. A double jump is how 47.5kg became 52.5kg —
+       47.5 + 2.5 × 2 — a weight he has never pressed, produced by the app
+       on the strength of one Easy tap. v248 capped the number on its way to
+       the screen; this stops it being computed. On a deficit a double jump
+       is not ambition, it is a missed session. */
+    return earnedIt(ex,topW,bump,need,eff<=1.5,lo);
   }
-  if(fullSets && repsHeld && lo>=10) return earnedIt(ex,topW,bump,need,false,lo);
+  /* ===== v251 · NOTHING IS EARNED BY TURNING UP ========================
+     "Weight goes up only when I say it's easy, not before. I'm on low calorie
+     intake so unless it's easy weights don't go up."
+
+     This line raised the weight off rep count alone, with NO effort tap
+     anywhere in the session — and then printed "4 clean sets, all about
+     right. That's mastered." He had rated nothing. The app made the rating
+     up and then quoted it back to him as the reason.
+
+     v212 wrote this rule down and enforced it only inside the branch where
+     a rating exists. Outside that branch the old behaviour was still
+     running, which is the same fault as everything else this week: one rule,
+     two paths, and the one with no rating was the one that bumped.
+
+     The weight holds, and it asks for the one thing that would move it. */
+  if(fullSets && repsHeld && lo>=10)
+    return {w:topW, up:false, needsRating:true,
+      text:"Stay at "+topW+"kg — "+need+" clean sets at "+lo+"+ reps, but you haven't said how it felt. "+
+           "Tap Easy under a set and the weight goes up next time.",
+      why:"On a deficit the load moves when the load is easy, and nothing else is evidence of that. Reps and sets say you finished; only the tap says you had it to spare.",
+      next:"Same weight. Rate the sets as you go — that is the thing that moves it."};
   return {text:"Stay at "+topW+"kg. Master it with excellent form before we add load. No ego lifting.",up:false,w:topW};
 }
 /* ===== v67.1 · LOADS HE CAN ACTUALLY MAKE ==============================
@@ -15409,6 +15460,38 @@ function addRowing(){
   toast(rowLoggedLine(rec));
 }
 function delRow(i){ DB.rowing.splice(i,1); save(); renderRowing(); renderRowPace(); renderRowingLog(); toast("Deleted"); }
+/* ===== v251 · A WRONG NUMBER COULD ONLY BE DESTROYED ===================
+   "Please replace the 52.5kg bench press with 47.5kg."
+
+   He could not. The only button on a logged lift was ✕ — delete the whole
+   day. Correcting one wrong weight meant throwing the session away with it,
+   or asking me. A log you cannot correct is a log you stop trusting, which is
+   exactly where he got to.
+
+   This edits the weight in place and keeps the reps and the effort taps. */
+function fixStrength(ex,date){
+  const arr=(DB.strength||{})[ex]||[];
+  const sess=arr.find(s=>s.date===date);
+  if(!sess||!(sess.sets||[]).length){ toast("Nothing logged there"); return; }
+  const tops=[...new Set(sess.sets.filter(x=>x&&!x.timed).map(x=>+x.w||0))].sort((a,b)=>b-a);
+  if(!tops.length){ toast("No weight on that one to correct"); return; }
+  const cur=tops[0];
+  const raw=prompt("What weight was this actually?\n\n"+ex+" · "+ukDate(date)+
+                   "\nLogged at "+tops.map(w=>w+"kg").join(", ")+
+                   "\n\nThe reps and how it felt are kept.", String(cur));
+  if(raw==null) return;
+  const w=parseFloat(String(raw).replace(/[^\d.]/g,""));
+  if(isNaN(w)||w<0){ toast("Give me a number in kg"); return; }
+  let n=0;
+  sess.sets.forEach(x=>{ if(x && !x.timed && (+x.w||0)===cur){ x.w=w; n++; } });
+  if(!n){ toast("Nothing changed"); return; }
+  sess.corrected=true;
+  save();
+  try{ renderStrengthPBs(); }catch(e){}
+  try{ renderHistory(); }catch(e){}
+  try{ refreshAllViews(); }catch(e){}
+  toast(ex+" · "+cur+"kg → "+w+"kg on "+ukDate(date));
+}
 function delStrength(ex,date){ if(!DB.strength[ex])return; DB.strength[ex]=DB.strength[ex].filter(s=>s.date!==date); if(!DB.strength[ex].length) delete DB.strength[ex]; save(); renderStrengthPBs(); renderHistory(); toast("Deleted"); }
 /* ===== v61 · PHOTOS: A TIMELINE, NOT A PILE =====
    Every shot now carries a real timestamp and a pose label, so they group into
@@ -16710,7 +16793,7 @@ function renderHistory(){
       const reps=l.sets.map(s=>{ const m=effortMeta(effortOf(s));
         const txt=s.w+"\u00d7"+s.r;
         return m? "<span style='color:"+m.col+"' title='"+m.lab+"'>"+txt+"</span>" : txt; }).join(" ");
-      return "<div class='hline'><span class='en'>"+l.ex+" <span class='muted' style='font-weight:600;font-size:12px'>"+reps+"</span></span><span class='ev'>"+top+"kg <button class='del' onclick=\"delStrength('"+l.ex.replace(/'/g,"\\'")+"','"+d+"')\">\u2715</button></span></div>"; }).join('');
+      return "<div class='hline'><span class='en'>"+l.ex+" <span class='muted' style='font-weight:600;font-size:12px'>"+reps+"</span></span><span class='ev'>"+top+"kg <button class='del' onclick=\"fixStrength('"+l.ex.replace(/'/g,"\\'")+"','"+d+"')\" aria-label='correct this weight'>\u270e</button> <button class='del' onclick=\"delStrength('"+l.ex.replace(/'/g,"\\'")+"','"+d+"')\">\u2715</button></span></div>"; }).join('');
     const rowLines=g.rows.map(r=>"<div class='hline'><span class='en'>\ud83d\udea3 Row "+r.dist+"</span><span class='ev'>"+r.time+"</span></div>").join('');
     /* v242 — a session logged after the fact has no movement list, and
        "0 moves" reads like he did nothing. Say what is actually known. */
@@ -17407,7 +17490,7 @@ function scheduleInApp(){
    v18 ADDITIONS — draggable rest timer · weekly training memory · AI planner
    · Firestore sync
    ========================================================================== */
-const APP_VERSION="v250 · 02/10/2026";
+const APP_VERSION="v251 · 02/10/2026";
 
 /* ===== 1. REST TIMER — drag it anywhere so it never blocks the chat box ===== */
 let _rtDrag=null;
