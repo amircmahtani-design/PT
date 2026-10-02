@@ -1,3 +1,75 @@
+AMIR PT — v248 · 02/10/2026
+===========================
+
+"It changed my workout half way. I'm currently doing incline dumbbell press.
+Put it back. I've done 2 sets. It says I did bench press 52.5kg and that's
+impossible. Max I've ever done is maybe 47.5 — so now my app is lieing to me."
+
+Two complaints, four separate faults behind them. All four are fixed.
+
+FIRST — YOUR TWO SETS WERE NEVER AT RISK
+-----------------------------------------
+Sets are stored under the exercise NAME, not the slot they sat in. Your two
+incline dumbbell press sets are in the log and always were, whatever the sheet
+did around them.
+
+1. THE GUARD THAT WENT BLIND
+-----------------------------
+Nothing is supposed to rewrite a session you have started. The check that
+enforced that asked: "has anything been logged against an exercise ON today's
+sheet?" So the first time a rebuild swapped a movement OFF the sheet, the sets
+you had logged against it became invisible to the guard — and the next rebuild
+was free to run straight over a session in progress. One change licensed the
+next.
+
+It now asks a question that cannot be gamed: has ANYTHING happened today? Any
+logged set under any name, a row, a mobility entry, a completed day, a started
+session clock. If yes, today's sheet is yours and nothing touches it. The v243
+week migration had the same hole — it only looked at the session clock — and
+has the same answer now.
+
+2. "TODAY" ON A CARD MEANT A TARGET, NOT A RECEIPT
+---------------------------------------------------
+The app never claimed you pressed 52.5kg. That row was the SUGGESTION for your
+next set — and it was labelled "Today", sitting directly under a row labelled
+"Last". A target and a receipt cannot share a vocabulary. Read in that
+position, "Today 52.5kg" is a statement about what you lifted.
+
+It says "Aim for" now.
+
+3. A LOAD SUGGESTION CAN NO LONGER OUTRUN YOU
+----------------------------------------------
+There was no rail on how far ahead the progression could reach. If it ran on it
+could ask for a number you have never been near, and now you had a 52.5 on
+screen under a bench press.
+
+A suggestion may now be at most ONE step past your best ever set on that
+movement. Your best bench press is 47.5kg, so the most it can ask for is 50kg —
+and when it tries for more it says so plainly: "50kg — one step past your best
+of 47.5kg. The 52.5kg above came from the progression running on and has been
+brought back." The dumbbell ceiling of 10kg per arm still wins over everything.
+
+4. SETS ARE FILED BY NAME, NOT BY POSITION
+-------------------------------------------
+This is the mechanism by which a weight you never pressed could get into your
+bench press history. The Log button baked in the SLOT NUMBER at the moment the
+card was drawn. If the sheet changed between the card being drawn and you
+tapping Log, slot 3 was a different movement than it had been — and your set
+was filed against whatever now stood there.
+
+Every Log button now carries the name of the movement it was drawn for. If that
+movement has moved, the set follows the name. If it has gone from the sheet
+entirely, the app refuses and tells you, rather than guessing:
+"'Incline Dumbbell Press' is not on today's sheet any more — nothing logged."
+
+THERE IS STILL ONE WRONG ENTRY TO DELETE
+-----------------------------------------
+The "LAST 52.5kg" line reads real stored history. So a 52.5 bench press really
+is sitting in your log — filed there by fault 4 above. The app can stop
+creating them; it will not delete one on your behalf.
+
+  Progress → Session history → find the bench press entry → ✕
+
 AMIR PT — v247 · 02/10/2026
 ===========================
 

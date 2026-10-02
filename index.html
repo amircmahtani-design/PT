@@ -2349,8 +2349,22 @@ function mergeDefaults(parsed){ let d={...structuredClone(DEFAULTS),...parsed};
     /* Today's sheet is rebuilt only if the app built it and he has not begun
        moving through it — a session he has shaped or started is never
        rewritten behind him. */
+    /* v248 — this checked the session CLOCK and nothing else, so a sheet he
+       had already logged sets on could still be thrown away and rebuilt. Any
+       mark on today at all means leave today alone; tomorrow rebuilds anyway. */
     try{
-      if(!d.session || !d.session.start) d.workout=null;
+      const t=(new Date()).toISOString().slice(0,10);
+      let touched=false;
+      if(d.session && d.session.date===t && d.session.start) touched=true;
+      if(!touched && d.completed && d.completed[t]) touched=true;
+      if(!touched && d.rowing) touched=(d.rowing||[]).some(r=>r&&r.date===t);
+      if(!touched && d.strength){
+        const st=d.strength;
+        for(const k in st){ const a=st[k]||[];
+          for(let i=0;i<a.length;i++) if(a[i] && a[i].date===t && (a[i].sets||[]).length){ touched=true; break; }
+          if(touched) break; }
+      }
+      if(!touched) d.workout=null;
     }catch(e){}
   }
   /* ===== v221 · MONDAY IS A PILATES DAY =============================
@@ -5723,6 +5737,28 @@ function recommendLoad(ex){
     out.why=kc+"kg is the top of your rack, so no rule underneath this one gets to ask for more than that.";
     return out;
   }
+  /* ===== v248 · NOTHING MAY ASK FOR MORE THAN ONE STEP PAST HIS BEST =====
+     "It says I did bench press 52.5kg and that's impossible. Max I've ever
+     done is maybe 47.5."
+
+     kitCeilingKg caps a dumbbell at the heaviest one he owns. A barbell has
+     no such ceiling, so a progression chain — or one bad entry in the history
+     — could walk the number anywhere, and the card would print it as today's
+     target. A suggestion is only ever an invitation to the NEXT step, so one
+     step past his best ever is the whole of what it is allowed to be. */
+  try{
+    const best=bestEverTop(ex);
+    if(best!=null && r.w!=null){
+      const step=loadStepFor(ex);
+      const ceiling=best+step;
+      if(r.w>ceiling+0.01){
+        return Object.assign({}, r, {w:ceiling, up:true, capped:true, pastBest:true,
+          text:ceiling+"kg — one step past your best of "+best+"kg. "+
+               "The "+r.w+"kg above came from the progression running on and has been brought back.",
+          why:"A suggestion is the next step, not a leap. Your best on this is "+best+"kg, so "+ceiling+"kg is the most it may ask for."});
+      }
+    }
+  }catch(e){}
   /* The ceiling applies before anything else touches the number. */
   const cap=loadCapFor(ex);
   if(cap && r.w!=null && r.w>cap.kg){
@@ -5745,6 +5781,21 @@ function recommendLoad(ex){
       : w+"kg \u2014 "+L.label,
     layoff:L.gap
   };
+}
+/* The heaviest he has ever actually put on this movement, across his whole
+   log. Not today's — today's sets are what the suggestion is feeding. */
+function bestEverTop(ex){
+  const h=(DB.strength||{})[ex]; if(!h||!h.length) return null;
+  let best=null;
+  h.forEach(s=>{ if(!s||s.date==="prev") return;
+    (s.sets||[]).forEach(x=>{ if(x&&!x.timed){ const w=+x.w||0; if(w>0&&(best==null||w>best)) best=w; } }); });
+  return best;
+}
+/* The smallest honest jump for this movement: a dumbbell moves in whole
+   bells, a barbell in the smallest pair of plates he has. */
+function loadStepFor(ex){
+  try{ if(kitCeilingKg(ex)!=null) return 2; }catch(e){}
+  return 2.5;
 }
 function lastTopWeight(ex){
   const h=DB.strength[ex]; if(!h||!h.length) return null;
@@ -7540,6 +7591,21 @@ function ensureAbsFinisher(w){
   try{ save(); }catch(err){}
   return {names:added, regions:missing};
 }
+/* Did he put ANYTHING on the record today — any set of any movement, a row,
+   a mobility hold, a finished session? Then today is his. */
+function loggedAnythingToday(){
+  const t=today();
+  try{
+    const st=DB.strength||{};
+    for(const k in st){ const a=st[k]||[];
+      for(let i=0;i<a.length;i++) if(a[i] && a[i].date===t && (a[i].sets||[]).length) return true; }
+  }catch(e){}
+  try{ if((DB.rowing||[]).some(r=>r&&r.date===t)) return true; }catch(e){}
+  try{ if((DB.mobility||[]).some(m=>m&&m.d===t)) return true; }catch(e){}
+  try{ if((DB.completed||{})[t]) return true; }catch(e){}
+  try{ if(DB.session && DB.session.date===t && DB.session.start) return true; }catch(e){}
+  return false;
+}
 function upgradeTodayToProgram(){
   const w=DB.workout;
   if(!w) return false;
@@ -7556,9 +7622,19 @@ function upgradeTodayToProgram(){
   let prog=null;
   try{ prog=programFor(pickSplit()); }catch(e){ return false; }
   if(!prog) return false;
-  let logged=0;
-  try{ logged=(w.main||[]).reduce((n,e)=>n+todaySets(e.name).length,0); }catch(e){}
-  if(logged) return false;
+  /* ===== v248 · ANYTHING LOGGED TODAY CLOSES THIS DOOR =================
+     "It changed my workout half way. I'm currently doing incline dumbbell
+     press. Put it back. I've done 2 sets."
+
+     This counted sets only for the movements still on the sheet. So the
+     moment one rebuild swapped a movement out, the sets he had logged on it
+     stopped being visible to the guard, and the NEXT version was free to
+     rebuild over the top of a session he was standing in the middle of.
+
+     The question is not "has he logged anything on these exercises". It is
+     "has he logged anything at all today" — if he has, he is training, and
+     the sheet is his until the day is over. */
+  if(loggedAnythingToday()) return false;
   DB.workout=null;
   try{ ensureWorkout(); }catch(e){}
   try{ save(); }catch(e){}
@@ -9764,10 +9840,10 @@ function logRowHTML(e,i){
   if(!meta.weight)
     return "<div class='logrow noweight'><input id='w"+i+"' type='hidden' value='0'>"+
       "<input id='r"+i+"' inputmode='numeric' placeholder='"+unitPh+"' value='"+prefillReps(e)+"'>"+
-      "<button onclick='logSet("+i+")'>Log</button></div>"+prefillNote(e);
+      "<button onclick='logSet("+i+",\""+jsAttr(e.name)+"\")'>Log</button></div>"+prefillNote(e);
   return "<div class='logrow'><input id='w"+i+"' inputmode='decimal' placeholder='kg' value='"+prefillWeight(e)+"'>"+
     "<input id='r"+i+"' inputmode='numeric' placeholder='"+unitPh+"' value='"+prefillReps(e)+"'>"+
-    "<button onclick='logSet("+i+")'>Log</button></div>"+prefillNote(e);
+    "<button onclick='logSet("+i+",\""+jsAttr(e.name)+"\")'>Log</button></div>"+prefillNote(e);
 }
 function exBlockHTML(e,i){
   /* v115 — the progression panel says everything this line said and more, so
@@ -9958,7 +10034,12 @@ function coachLineHTML(e){
     rows.push("<div class='cl done'><span class='k'>Done</span><span class='v'>all "+target+" sets logged</span></div>");
   } else if(todayTxt){
     const left=(target && nDone)? (" · "+(target-nDone)+" to go") : "";
-    rows.push("<div class='cl now'><span class='k'>Today</span><span class='v'>"+escapeHtml(todayTxt+left)+"</span></div>");
+    /* ===== v248 · "IT SAYS I DID BENCH PRESS 52.5KG AND THAT'S IMPOSSIBLE" ==
+       It never said he did. This row is the SUGGESTION for the next set, and
+       it was labelled "Today" — which on a card under a line labelled "Last"
+       reads as a record of what he lifted. A target and a receipt cannot
+       share a vocabulary. It says what it is now. */
+    rows.push("<div class='cl now'><span class='k'>Aim for</span><span class='v'>"+escapeHtml(todayTxt+left)+"</span></div>");
   }
   /* ===== v196 · THE OFFER, NOT JUST THE OBSERVATION ====================
      "The exercise needs to change." It does, and a sentence telling him so
@@ -10231,8 +10312,32 @@ function toggleHold(i){
 }
 function holdReply(sec){ let v = sec>=60?"Beast — over a minute.":sec>=40?"Solid hold.":sec>=20?"Good — build on that.":"Every second counts."; return v+"<br>Logged <b>"+sec+"s</b>. Brace harder next round. 💪"; }
 
-async function logSet(i){
-  const ex=DB.workout&&DB.workout.main[i]; if(!ex) return;
+async function logSet(i,name){
+  /* ===== v248 · THE SET GOES ON THE MOVEMENT HE WAS LOOKING AT =========
+     This read DB.workout.main[i] and nothing else. The index is baked into
+     the button when the card is drawn, so if the sheet changed underneath him
+     between the draw and the tap, position i was a different movement and his
+     set was filed against it. That is how a weight he has never pressed ends
+     up in the Bench Press history.
+
+     The button carries the NAME it was drawn for now. If position i no longer
+     holds it, find it by name; if it has gone from the sheet, refuse rather
+     than guess. */
+  let ex=DB.workout&&DB.workout.main&&DB.workout.main[i];
+  if(name){
+    if(!ex || ex.name!==name){
+      const j=(DB.workout&&DB.workout.main||[]).findIndex(x=>x&&x.name===name);
+      if(j<0){
+        toast("\u201c"+name+"\u201d is not on today\u2019s sheet any more \u2014 nothing logged");
+        try{ renderWorkoutSheet(DB.workout); }catch(e){}
+        return;
+      }
+      /* The boxes belong to the card he typed into, so they stay at the
+         index the BUTTON was drawn with. Only the movement moves. */
+      ex=DB.workout.main[j];
+    }
+  }
+  if(!ex) return;
   const wi=document.getElementById('w'+i), ri=document.getElementById('r'+i);
   if(!wi||!ri) return;
   const meta=logMeta(ex.name,ex);
@@ -17100,7 +17205,7 @@ function scheduleInApp(){
    v18 ADDITIONS — draggable rest timer · weekly training memory · AI planner
    · Firestore sync
    ========================================================================== */
-const APP_VERSION="v247 · 02/10/2026";
+const APP_VERSION="v248 · 02/10/2026";
 
 /* ===== 1. REST TIMER — drag it anywhere so it never blocks the chat box ===== */
 let _rtDrag=null;
